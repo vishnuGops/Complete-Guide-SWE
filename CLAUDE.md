@@ -6,7 +6,7 @@ Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` fi
 
 DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists ~200 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **planning complete and audited, implementation not started.** Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Current state: **server-side complete through P3** — shared schemas, problem format and validator, judge (Python and Java), SQLite persistence, status engine and the Fastify API, with three pilot problems. Next: design tokens (P0-8), the authoring pipeline and seed content (P2-9, P2-10), and the walking skeleton (P4-1). Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
 ## Stack (decided, see ROADMAP D1–D17)
 
