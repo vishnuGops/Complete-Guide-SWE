@@ -1,6 +1,9 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,5 +25,19 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    /*
+     * A database of its own.
+     *
+     * These tests submit real solutions through the real judge, and every one
+     * of those is a row someone else has to live with: without this the suite
+     * writes its practice history into `data/devpromax.db`, which is the
+     * developer's. `data/` is gitignored, so this file is created on first run
+     * and can be deleted at any time.
+     *
+     * Note `reuseExistingServer`: a dev server already running on this port is
+     * reused as-is and will be using the normal database. The specs are written
+     * to work either way - none of them deletes anything.
+     */
+    env: { DEVPROMAX_DB: path.join(REPO_ROOT, 'data', 'e2e.db') },
   },
 });

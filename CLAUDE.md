@@ -6,7 +6,7 @@ Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` fi
 
 DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists ~200 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **M0 reached (2026-09-17)** — the app runs end to end: 20 validated problems, the judge, the Fastify API, design tokens and primitives, and a web UI where all three pilots can be solved in both languages (`npm run dev`, then `apps/web/e2e/m0.spec.ts` proves it). Next is M1: the app shell, statement renderer, list filters, the real workspace and the results UI (P4-2 onwards). Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Current state: **M1 reached (2026-09-17)** — the vertical slice works: 20 validated problems, the judge, the Fastify API, and a web UI you can filter, read, solve and watch flip to Solved, in both languages and from the keyboard alone (`npm run dev`; `apps/web/e2e/flows.spec.ts` walks it and `e2e/a11y.spec.ts` audits it in both themes). Next is M2, the coach (P5-1 onwards): the provider's streaming half, the versioned prompts, and the AI Help panel. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
 ## Stack (decided, see ROADMAP D1–D17)
 
@@ -35,7 +35,7 @@ npm start                   # production build + serve on 127.0.0.1
 npm test                    # Vitest unit + contract + judge integration
 npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
 npm run test:integration    # only *.integration.test.ts (spawns real python/java)
-npm run test:e2e            # Playwright
+npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db)
 npm run lint && npm run typecheck
 npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)
 npm run problems:new <topic> <slug>
