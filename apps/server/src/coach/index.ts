@@ -10,7 +10,7 @@ export {
   coachFeedbackJsonSchema,
   parseFeedback,
   streamCoachFeedback,
-  type CoachStreamEvent,
+  type FeedbackChunk,
   type FeedbackStreamOptions,
 } from './feedback.js';
 export {
@@ -20,6 +20,14 @@ export {
   type ContextInput,
 } from './context.js';
 export { PROMPT_VERSION, systemPrompt } from './prompts/index.js';
+export {
+  hasMeaningfulBody,
+  isUnchangedStarter,
+  normalise,
+  precheck,
+  type PrecheckInput,
+  type PrecheckResult,
+} from './precheck.js';
 
 /** The one place a provider id becomes an implementation. */
 export function createCoachProvider(

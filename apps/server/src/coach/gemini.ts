@@ -110,8 +110,12 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
                 parts: [{ text: turn.content }],
               })),
               generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema: toGeminiSchema(schema),
+                ...(schema
+                  ? {
+                      responseMimeType: 'application/json',
+                      responseSchema: toGeminiSchema(schema),
+                    }
+                  : {}),
                 maxOutputTokens: MAX_OUTPUT_TOKENS,
               },
             }),

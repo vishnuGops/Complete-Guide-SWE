@@ -125,3 +125,61 @@ export const COACH_SKIP_MESSAGE: Record<CoachSkipReason, string> = {
   no_meaningful_code: 'There is no solution body to review yet. Sketch an approach first.',
   no_api_key: 'Add an Anthropic or Gemini API key in Settings to use AI Help.',
 };
+
+/** A follow-up question in an existing conversation (`POST /api/coach/chat`). */
+export const coachChatRequestSchema = z.object({
+  sessionId: z.uuid(),
+  message: z.string().min(1).max(4000),
+});
+export type CoachChatRequest = z.infer<typeof coachChatRequestSchema>;
+
+// ---------------------------------------------------------------------------
+// The wire format of a coaching turn
+// ---------------------------------------------------------------------------
+
+/**
+ * What the two coach routes send, one event per SSE frame (P5-3).
+ *
+ * Errors are events rather than HTTP statuses because by the time a provider
+ * fails, the response has usually already begun: the status line went out with
+ * the first token. A client that only checked `response.ok` would show a
+ * half-written answer and no indication that it stopped. `retryable` is carried
+ * through from `CoachProviderError` so the panel can offer the right button.
+ */
+export const coachStreamEventSchema = z.discriminatedUnion('type', [
+  /** The conversation this turn belongs to, sent once before any text. */
+  z.object({
+    type: z.literal('start'),
+    sessionId: z.uuid(),
+  }),
+  /** A new piece of `feedbackMarkdown`, to append. */
+  z.object({
+    type: z.literal('markdown'),
+    delta: z.string(),
+  }),
+  /** The validated whole. Absent when the turn ended in an error. */
+  z.object({
+    type: z.literal('done'),
+    feedback: coachFeedbackSchema,
+  }),
+  /** Plain prose, for a chat reply that has no rubric attached. */
+  z.object({
+    type: z.literal('reply'),
+    content: z.string(),
+  }),
+  z.object({
+    type: z.literal('error'),
+    message: z.string(),
+    retryable: z.boolean(),
+  }),
+  /**
+   * The local pre-check refused before any token was spent (D13). Not an error:
+   * nothing went wrong, the request was simply not worth making.
+   */
+  z.object({
+    type: z.literal('skipped'),
+    reason: coachSkipReasonSchema,
+    message: z.string(),
+  }),
+]);
+export type CoachStreamEvent = z.infer<typeof coachStreamEventSchema>;

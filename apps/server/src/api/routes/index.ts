@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { registerCoachRoutes } from './coach.js';
 import { registerDraftRoutes } from './drafts.js';
 import { registerProblemRoutes } from './problems.js';
 import { registerProgressRoutes } from './progress.js';
@@ -9,12 +10,11 @@ import type { ApiDeps } from './types.js';
 export type { ApiDeps } from './types.js';
 
 /**
- * The whole HTTP surface (ROADMAP P3-1).
+ * The whole HTTP surface (ROADMAP P3-1, completed by P5-3).
  *
- * The coach routes (`POST /api/coach/feedback`, `POST /api/coach/chat`) are
- * deliberately absent: they stream a provider's response, and the provider's
- * streaming half arrives with P5-1. Registering them now as stubs would put two
- * endpoints in the contract that answer nothing.
+ * Every route here answers with JSON except the two coach routes, which answer
+ * with an event stream because their whole point is showing an answer while it
+ * is still being written.
  */
 export function registerRoutes(app: FastifyInstance, deps: ApiDeps): void {
   registerProblemRoutes(app, deps);
@@ -22,4 +22,5 @@ export function registerRoutes(app: FastifyInstance, deps: ApiDeps): void {
   registerDraftRoutes(app, deps);
   registerProgressRoutes(app, deps);
   registerSettingsRoutes(app, deps);
+  registerCoachRoutes(app, deps);
 }

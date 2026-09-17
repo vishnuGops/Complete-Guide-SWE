@@ -64,8 +64,13 @@ export interface StreamOptions {
    * JSON Schema the response must satisfy. Shared so the two vendors cannot
    * drift into accepting different shapes; built from the zod schema in
    * `feedback.ts` so it cannot drift from the parser either.
+   *
+   * Omitted for plain-prose turns such as a follow-up chat reply (P5-3).
+   * Asking for a bare JSON string instead would be worse than asking for
+   * nothing: the answer would arrive quoted and escaped, and the panel would
+   * render the escapes.
    */
-  schema: JsonSchema;
+  schema?: JsonSchema;
   signal?: AbortSignal;
 }
 

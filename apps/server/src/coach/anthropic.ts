@@ -142,7 +142,7 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
               role: turn.role === 'coach' ? ('assistant' as const) : ('user' as const),
               content: turn.content,
             })),
-            output_config: { format: { type: 'json_schema', schema } },
+            ...(schema ? { output_config: { format: { type: 'json_schema', schema } } } : {}),
           },
           { signal, timeout: STREAM_TIMEOUT_MS },
         );

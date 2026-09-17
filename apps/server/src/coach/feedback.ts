@@ -20,7 +20,7 @@ import {
  * same message, as an Anthropic one.
  */
 
-export type CoachStreamEvent =
+export type FeedbackChunk =
   /** A new piece of `feedbackMarkdown`, for the panel to append. */
   | { type: 'markdown'; delta: string }
   /** The validated whole, once the stream has ended. */
@@ -57,7 +57,7 @@ export interface FeedbackStreamOptions {
 export async function* streamCoachFeedback(
   provider: CoachProvider,
   options: FeedbackStreamOptions,
-): AsyncGenerator<CoachStreamEvent> {
+): AsyncGenerator<FeedbackChunk> {
   const markdown = createStringStreamer('feedbackMarkdown');
   let raw = '';
 
