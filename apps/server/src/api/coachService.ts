@@ -1,7 +1,11 @@
 import {
   COACH_SKIP_MESSAGE,
+  applyProgressEvent,
+  initialProgress,
+  meetsMastery,
   statusRank,
   type CoachChatRequest,
+  type CoachFeedback,
   type CoachFeedbackRequest,
   type CoachStreamEvent,
   type Language,
@@ -157,11 +161,50 @@ export async function* streamFeedback(
         content: chunk.feedback.feedbackMarkdown,
         feedback: chunk.feedback,
       });
+      applyMastery(chunk.feedback, request, deps);
       yield { type: 'done', feedback: chunk.feedback };
     }
   } catch (error) {
     yield toErrorEvent(error);
   }
+}
+
+/**
+ * Records the coach's verdict against the progress engine (ROADMAP P5-4, D11).
+ *
+ * Three gates, and all three have to hold, which is why this is a function
+ * rather than a line:
+ *
+ *   1. **The coach says so.** `mastered` comes back in the structured answer.
+ *   2. **The scores agree with it.** `meetsMastery` re-checks every dimension
+ *      against the threshold, so a model that sets the flag while scoring a 2
+ *      somewhere does not get to promote. The flag is a claim; the scores are
+ *      the evidence, and disagreement resolves against the claim.
+ *   3. **The judge has agreed the code is correct.** `applyProgressEvent`
+ *      refuses `coach_mastered` below Solved on its own, so this cannot promote
+ *      code that has never passed - a rubric about code the judge has not
+ *      accepted is a judgement about something unproven.
+ *
+ * A failed check writes `coach_not_mastered`, which deliberately changes
+ * nothing. It is the coach declining to promote, not grounds to take away a
+ * status the user has already earned.
+ */
+function applyMastery(
+  feedback: CoachFeedback,
+  request: CoachFeedbackRequest,
+  deps: CoachServiceDeps,
+): void {
+  const claimed = feedback.mastered && meetsMastery(feedback.scores);
+
+  const current =
+    deps.repos.progress.get(request.slug, request.language) ??
+    initialProgress(request.slug, request.language);
+
+  deps.repos.progress.put(
+    applyProgressEvent(current, {
+      event: claimed ? 'coach_mastered' : 'coach_not_mastered',
+    }),
+  );
 }
 
 /**

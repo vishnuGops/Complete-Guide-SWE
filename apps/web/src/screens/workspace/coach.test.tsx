@@ -428,3 +428,97 @@ describe('the Coach tab', () => {
     );
   });
 });
+
+describe('the mastery nudge (P5-4)', () => {
+  /** Adds a judge route that answers with the given verdict. */
+  function withJudge(verdict: 'AC' | 'WA') {
+    return {
+      match: path('/api/submit'),
+      body: () => ({
+        slug: SLUG,
+        language: 'python',
+        kind: 'submit',
+        problemVersion: 1,
+        verdict,
+        passed: verdict === 'AC' ? 1 : 0,
+        total: 1,
+        totalTimeMs: 12,
+        compileErrors: [],
+        tests: [],
+        outputTruncated: false,
+        isolationFallback: false,
+      }),
+    };
+  }
+
+  it('offers a mastery check after an accepted submit, without running one', async () => {
+    server = fakeServer([
+      ...baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])),
+      withJudge('AC'),
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText(/interview-ready/i)).toBeInTheDocument();
+    // D13: an accepted submit is not a request. Nothing was called.
+    expect(server.requests.some((r) => r.url.pathname.startsWith('/api/coach'))).toBe(false);
+  });
+
+  it('does not offer one after a rejected submit', async () => {
+    server = fakeServer([
+      ...baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])),
+      withJudge('WA'),
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(server.requests.some((r) => r.url.pathname === '/api/submit')).toBe(true);
+    });
+    expect(screen.queryByText(/interview-ready/i)).not.toBeInTheDocument();
+  });
+
+  it('can be dismissed without asking anything', async () => {
+    server = fakeServer([
+      ...baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])),
+      withJudge('AC'),
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await screen.findByText(/interview-ready/i);
+
+    await user.click(screen.getByRole('button', { name: 'Not now' }));
+
+    expect(screen.queryByText(/interview-ready/i)).not.toBeInTheDocument();
+    expect(server.requests.some((r) => r.url.pathname.startsWith('/api/coach'))).toBe(false);
+  });
+
+  it('sends masteryCheck when the offer is taken', async () => {
+    server = fakeServer([
+      ...baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])),
+      withJudge('AC'),
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await screen.findByText(/interview-ready/i);
+
+    await user.click(screen.getByRole('button', { name: 'Check it' }));
+    await screen.findByText(ANSWER.summary);
+
+    const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === '/api/coach/feedback');
+    const body = JSON.parse(String((call?.[1] as RequestInit).body)) as { masteryCheck: boolean };
+    expect(body.masteryCheck).toBe(true);
+  });
+});

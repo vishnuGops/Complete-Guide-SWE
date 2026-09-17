@@ -298,3 +298,78 @@ describe('streamChat', () => {
     ).rejects.toMatchObject({ statusCode: 404 });
   });
 });
+
+describe('mastery (P5-4, D11)', () => {
+  const perfect = {
+    ...ANSWER,
+    scores: {
+      correctness: 4,
+      timeComplexity: 4,
+      spaceComplexity: 4,
+      edgeCases: 4,
+      readability: 4,
+    },
+    mastered: true,
+  };
+
+  /** Puts the problem in the state an accepted submit would leave it. */
+  function markSolved() {
+    repos.progress.put({
+      slug: SLUG,
+      language: 'python',
+      status: 'solved',
+      attempts: 1,
+      solvedAt: '2026-09-17T00:00:00.000Z',
+      masteredAt: null,
+      lastAttemptedAt: '2026-09-17T00:00:00.000Z',
+    });
+  }
+
+  async function ask(feedback: unknown) {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(feedback)));
+    await collect(streamFeedback(feedbackRequest({ masteryCheck: true }), deps(fetch)));
+    return repos.progress.get(SLUG, 'python');
+  }
+
+  it('promotes a solved problem when the coach and the scores agree', async () => {
+    markSolved();
+    const after = await ask(perfect);
+
+    expect(after?.status).toBe('mastered');
+    expect(after?.masteredAt).not.toBeNull();
+  });
+
+  it('refuses to promote code the judge has never accepted', async () => {
+    // No solved row: the rubric is a judgement about something unproven.
+    const after = await ask(perfect);
+    expect(after?.status).not.toBe('mastered');
+  });
+
+  it('refuses to promote when the flag disagrees with the scores', async () => {
+    // The flag is a claim and the scores are the evidence; disagreement
+    // resolves against the claim.
+    markSolved();
+    const after = await ask({
+      ...perfect,
+      scores: { ...perfect.scores, edgeCases: 2 },
+      mastered: true,
+    });
+
+    expect(after?.status).toBe('solved');
+  });
+
+  it('does not demote on a failed check', async () => {
+    markSolved();
+    const after = await ask({ ...ANSWER, mastered: false });
+
+    // Declining to promote is not grounds to take away a status already earned.
+    expect(after?.status).toBe('solved');
+    expect(after?.attempts).toBe(1);
+  });
+
+  it('does not count a coaching turn as an attempt', async () => {
+    markSolved();
+    const after = await ask(perfect);
+    expect(after?.attempts).toBe(1);
+  });
+});

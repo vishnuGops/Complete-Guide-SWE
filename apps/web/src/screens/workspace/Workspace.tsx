@@ -130,6 +130,7 @@ export function Workspace() {
   const [tab, setTab] = useState<'testcases' | 'results'>('testcases');
   const [leftTab, setLeftTab] = useState('description');
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [offerMastery, setOfferMastery] = useState(false);
 
   const coach = useCoach(slug, language);
   const navigate = useNavigate();
@@ -163,6 +164,7 @@ export function Workspace() {
     setCustomInputs([]);
     setTab('testcases');
     setLeftTab('description');
+    setOfferMastery(false);
   }
 
   /**
@@ -219,6 +221,9 @@ export function Workspace() {
           setResult(next);
           setTab('results');
           if (layout.panelCollapsed) setLayout({ panelCollapsed: false });
+          // The mastery nudge (P5-4). Offered, never taken: a coaching turn
+          // costs money, so an accepted submit must not start one by itself.
+          if (kind === 'submit' && next.verdict === 'AC') setOfferMastery(true);
         },
       },
     );
@@ -232,9 +237,10 @@ export function Workspace() {
    * the time they find it the prose they were meant to watch arrive is already
    * finished.
    */
-  const askCoach = () => {
+  const askCoach = (options: { masteryCheck?: boolean } = {}) => {
     setLeftTab('coach');
-    coach.ask({ slug, language, code });
+    setOfferMastery(false);
+    coach.ask({ slug, language, code, ...options });
   };
 
   useShortcut(
@@ -254,7 +260,13 @@ export function Workspace() {
   useShortcut('togglePanel', () => {
     setLayout({ panelCollapsed: !layout.panelCollapsed });
   });
-  useShortcut('aiHelp', () => askCoach(), ready);
+  useShortcut(
+    'aiHelp',
+    () => {
+      askCoach();
+    },
+    ready,
+  );
 
   if (isPending) return <WorkspaceSkeleton />;
   if (error) {
@@ -370,6 +382,46 @@ export function Workspace() {
             value="results"
             className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0"
           >
+            {/*
+              The mastery nudge (ROADMAP P5-4, D13).
+
+              Non-blocking and non-modal on purpose: it appears above the result
+              the user came here to read, and ignoring it is one of the two
+              buttons. A dialog would interrupt the moment a problem is solved
+              to ask for money, which is the wrong thing to do with that moment.
+
+              It is a `role="status"`, not an alert - nothing is wrong. Offering
+              rather than running is the whole point: D13 says the coach is
+              never auto-called, and an accepted submit is not a request.
+            */}
+            {offerMastery && (
+              <div
+                className="border-border bg-surface-sunken flex shrink-0 items-center gap-3 border-b px-4 py-2"
+                role="status"
+              >
+                <p className="text-fg-muted flex-1 text-sm">
+                  Accepted. Ask the coach whether this is interview-ready?
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    askCoach({ masteryCheck: true });
+                  }}
+                >
+                  Check it
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setOfferMastery(false);
+                  }}
+                >
+                  Not now
+                </Button>
+              </div>
+            )}
+
             {failure ? (
               <p className="text-danger-fg p-4 text-sm" role="alert">
                 {failure.message}
@@ -473,7 +525,13 @@ export function Workspace() {
             content="Ask the coach about the code you have written"
             keys={SHORTCUTS.aiHelp.keys}
           >
-            <Button variant="ghost" disabled={coach.state.phase === 'streaming'} onClick={askCoach}>
+            <Button
+              variant="ghost"
+              disabled={coach.state.phase === 'streaming'}
+              onClick={() => {
+                askCoach();
+              }}
+            >
               AI Help
             </Button>
           </Tooltip>
@@ -522,7 +580,9 @@ export function Workspace() {
               coach={
                 <CoachPanel
                   state={coach.state}
-                  onAsk={askCoach}
+                  onAsk={() => {
+                    askCoach();
+                  }}
                   onFollowUp={coach.followUp}
                   onStop={coach.stop}
                   onOpenSettings={() => {
