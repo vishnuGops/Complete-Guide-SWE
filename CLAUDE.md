@@ -33,6 +33,8 @@ npm install                 # all workspaces
 npm run dev                 # web + server with hot reload
 npm start                   # production build + serve on 127.0.0.1
 npm test                    # Vitest unit + contract + judge integration
+npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
+npm run test:integration    # only *.integration.test.ts (spawns real python/java)
 npm run test:e2e            # Playwright
 npm run lint && npm run typecheck
 npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)

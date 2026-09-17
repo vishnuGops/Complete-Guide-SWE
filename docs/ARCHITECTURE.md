@@ -180,3 +180,40 @@ Windows install failure.
 
 Mocking the judge's subprocesses would test nothing that matters: nearly every
 bug this layer can have lives in exactly the things a mock removes.
+
+---
+
+## 6. Continuous integration
+
+Two workflows, both in `.github/workflows/`.
+
+`ci.yml` runs on every pull request and every push to `main`:
+
+| Job      | Runners                           | Steps                                                           |
+| -------- | --------------------------------- | --------------------------------------------------------------- |
+| `static` | `ubuntu-latest`, `windows-latest` | `lint`, `format:check`, `typecheck`, and `build` on Ubuntu only |
+| `test`   | `ubuntu-latest`, `windows-latest` | `test:unit`, `test:integration`, `problems:validate`            |
+| `e2e`    | `ubuntu-latest`                   | Playwright golden paths, report uploaded as an artifact         |
+
+`nightly-e2e.yml` runs the Playwright suite on `windows-latest` at 06:00 UTC and
+on demand. Windows E2E is slow and the flakiest lane we have, so it does not
+gate PRs — but Windows is the owner's primary platform, and a break there is a
+break for the only user who matters.
+
+The split between `test:unit` and `test:integration` is the `*.integration.test.ts`
+suffix. Unit tests run in seconds and need nothing but Node; integration tests
+spawn real `python` and `javac`/`java`, which is why they run on both operating
+systems rather than just the cheap one. `problems:validate` runs the full
+validator, not `--static`: the content gate is that both reference solutions
+pass every test in both languages.
+
+Toolchain versions come from `.nvmrc` (Node), `setup-python` 3.12 and
+`setup-java` temurin 21 — the floor of the supported range, so a feature newer
+than the floor fails in CI rather than on a user's machine. The judge resolves
+`python`, `javac` and `java` from `PATH`, which is exactly what both setup
+actions provide on both runners, so no `DEVPROMAX_*` overrides are needed.
+
+**Branch protection is a repository setting, not a file.** On GitHub, under
+Settings → Branches → `main`, require these checks before merging:
+`static (ubuntu-latest)`, `static (windows-latest)`, `test (ubuntu-latest)`,
+`test (windows-latest)`, `e2e (ubuntu-latest)`.
