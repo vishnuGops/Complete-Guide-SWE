@@ -2,7 +2,7 @@ import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyBaseLogger } from 'fastify';
 import type { ProviderOptions } from './coach/index.js';
 import { createCatalogue, type Catalogue } from './api/catalogue.js';
-import { applyErrorHandling } from './api/errors.js';
+import { applyErrorHandling, badRequest } from './api/errors.js';
 import { applyHardening } from './api/hardening.js';
 import { registerRoutes } from './api/routes/index.js';
 import type { JudgeFn } from './api/runService.js';
@@ -47,6 +47,26 @@ export async function buildServer(options: BuildOptions = {}) {
 
   applyHardening(app);
   applyErrorHandling(app);
+
+  // Fastify rejects an empty body sent with `Content-Type: application/json`,
+  // which is exactly what a client that always sets the header produces for a
+  // POST that takes no arguments - `/api/settings/test-connection` and
+  // `/api/settings/reset-progress` are both that shape. An absent body is not a
+  // malformed one, so it parses to `undefined` and the route's schema decides.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+    const text = typeof body === 'string' ? body.trim() : '';
+    if (text === '') {
+      done(null, undefined);
+      return;
+    }
+    try {
+      done(null, JSON.parse(text));
+    } catch {
+      // Our own error type, so this leaves through the same envelope as every
+      // other failure rather than as an unhandled 500.
+      done(badRequest('The request body could not be read as JSON.'), undefined);
+    }
+  });
 
   const catalogue =
     options.catalogue ??

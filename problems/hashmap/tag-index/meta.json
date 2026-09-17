@@ -5,11 +5,7 @@
   "title": "Tag Index",
   "version": 1,
   "topic": "hashmap",
-  "patterns": [
-    "design",
-    "two maps",
-    "invariant"
-  ],
+  "patterns": ["design", "two maps", "invariant"],
   "tier": "Medium",
   "rating": 6,
   "order": 5,
@@ -17,9 +13,7 @@
   "entry": "TagIndex",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "min-value-stack"
-  ],
+  "related": ["min-value-stack"],
   "targetComplexity": {
     "time": "O(1) per operation",
     "space": "O(n)"

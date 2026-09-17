@@ -1,7 +1,7 @@
 ## Approach
 
 The problem is two steps that are easy to conflate. First count: a map from value
-to how many times it occurs. Second order: sort the *distinct* values, not the
+to how many times it occurs. Second order: sort the _distinct_ values, not the
 log, using a comparison built from the counts.
 
 The tie rule is what makes the answer unique, and it has to be part of the

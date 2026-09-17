@@ -5,11 +5,7 @@
   "title": "Balanced Brackets",
   "version": 1,
   "topic": "stack",
-  "patterns": [
-    "stack",
-    "matching pairs",
-    "strings"
-  ],
+  "patterns": ["stack", "matching pairs", "strings"],
   "tier": "Easy",
   "rating": 2,
   "order": 1,
@@ -17,9 +13,7 @@
   "entry": "isBalanced",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "min-value-stack"
-  ],
+  "related": ["min-value-stack"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(n)"

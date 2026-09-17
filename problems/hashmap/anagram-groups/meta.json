@@ -5,11 +5,7 @@
   "title": "Words Built From The Same Letters",
   "version": 1,
   "topic": "hashmap",
-  "patterns": [
-    "frequency map",
-    "grouping",
-    "canonical key"
-  ],
+  "patterns": ["frequency map", "grouping", "canonical key"],
   "tier": "Medium",
   "rating": 5,
   "order": 2,
@@ -17,9 +13,7 @@
   "entry": "groupAnagrams",
   "expect": "return",
   "comparator": "unorderedListOfLists",
-  "related": [
-    "first-unique-symbol"
-  ],
+  "related": ["first-unique-symbol"],
   "targetComplexity": {
     "time": "O(total letters)",
     "space": "O(total letters)"

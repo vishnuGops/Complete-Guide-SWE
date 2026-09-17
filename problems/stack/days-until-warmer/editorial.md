@@ -4,7 +4,7 @@ Checking every later day for each day is `O(n^2)` and repeats a lot of work: the
 same warm day gets discovered separately by every cold day before it.
 
 Turn it around. Keep the days that are still waiting for an answer, as indices.
-When a new day arrives, it answers *every* waiting day colder than it - pop them
+When a new day arrives, it answers _every_ waiting day colder than it - pop them
 and write down the distance. Then the new day starts waiting too.
 
 The days on that stack are always in non-increasing temperature order, which is

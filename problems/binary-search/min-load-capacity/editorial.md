@@ -1,6 +1,6 @@
 ## Approach
 
-There is nothing to search in the input here; the search is over the *answer*.
+There is nothing to search in the input here; the search is over the _answer_.
 
 Two observations make that work. First, a capacity is easy to check: fill each
 day greedily until the next parcel would overflow, then start a new day, and see

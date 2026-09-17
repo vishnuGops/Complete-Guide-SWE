@@ -19,6 +19,6 @@ what makes the space constant rather than proportional to the input.
 ## Pitfalls
 
 - Returning the letter instead of its index.
-- Scanning the count structure in the second pass, which finds *a* unique letter
+- Scanning the count structure in the second pass, which finds _a_ unique letter
   but not necessarily the first one in the message.
 - Forgetting the empty message, which must answer `-1` rather than crash.

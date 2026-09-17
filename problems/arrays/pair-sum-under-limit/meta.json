@@ -5,11 +5,7 @@
   "title": "Pairs Under The Limit",
   "version": 1,
   "topic": "arrays",
-  "patterns": [
-    "two pointers",
-    "sorted input",
-    "counting"
-  ],
+  "patterns": ["two pointers", "sorted input", "counting"],
   "tier": "Medium",
   "rating": 4,
   "order": 6,
@@ -17,9 +13,7 @@
   "entry": "countPairs",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "pair-sum-index"
-  ],
+  "related": ["pair-sum-index"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(1)"

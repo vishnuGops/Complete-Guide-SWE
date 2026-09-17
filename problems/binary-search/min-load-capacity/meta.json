@@ -5,11 +5,7 @@
   "title": "Smallest Workable Capacity",
   "version": 1,
   "topic": "binary-search",
-  "patterns": [
-    "binary search on the answer",
-    "feasibility check",
-    "greedy"
-  ],
+  "patterns": ["binary search on the answer", "feasibility check", "greedy"],
   "tier": "Medium",
   "rating": 6,
   "order": 2,
@@ -17,9 +13,7 @@
   "entry": "minCapacity",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "rotated-lookup"
-  ],
+  "related": ["rotated-lookup"],
   "targetComplexity": {
     "time": "O(n log S)",
     "space": "O(1)"

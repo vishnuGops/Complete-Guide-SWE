@@ -5,11 +5,7 @@
   "title": "Merge Maintenance Windows",
   "version": 1,
   "topic": "sorting",
-  "patterns": [
-    "intervals",
-    "sort by start",
-    "sweep"
-  ],
+  "patterns": ["intervals", "sort by start", "sweep"],
   "tier": "Medium",
   "rating": 5,
   "order": 0,

@@ -1,7 +1,7 @@
 ## Approach
 
 Words belong together when they are the same word once you stop caring about
-order. That is exactly what a *canonical key* captures: something computed from a
+order. That is exactly what a _canonical key_ captures: something computed from a
 word that is identical for every member of its group and different for every
 non-member.
 

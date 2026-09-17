@@ -5,11 +5,7 @@
   "title": "Days Until Warmer",
   "version": 1,
   "topic": "stack",
-  "patterns": [
-    "monotonic stack",
-    "next greater element",
-    "single pass"
-  ],
+  "patterns": ["monotonic stack", "next greater element", "single pass"],
   "tier": "Medium",
   "rating": 5,
   "order": 2,
@@ -17,9 +13,7 @@
   "entry": "daysUntilWarmer",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "bracket-balance"
-  ],
+  "related": ["bracket-balance"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(n)"

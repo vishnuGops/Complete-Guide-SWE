@@ -5,11 +5,7 @@
   "title": "Value Pairs A Fixed Gap Apart",
   "version": 1,
   "topic": "hashmap",
-  "patterns": [
-    "hash set",
-    "complement lookup",
-    "counting"
-  ],
+  "patterns": ["hash set", "complement lookup", "counting"],
   "tier": "Medium",
   "rating": 4,
   "order": 3,
@@ -17,9 +13,7 @@
   "entry": "countDistinctPairs",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "pair-sum-index"
-  ],
+  "related": ["pair-sum-index"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(n)"

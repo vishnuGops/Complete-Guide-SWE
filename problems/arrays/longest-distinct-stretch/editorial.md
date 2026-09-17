@@ -1,6 +1,6 @@
 ## Approach
 
-The property that makes a sliding window work is that legality is *monotone*:
+The property that makes a sliding window work is that legality is _monotone_:
 cutting readings off a legal stretch cannot raise its number of distinct values,
 so every stretch inside a legal one is also legal. That means the right edge
 never has to move backwards.

@@ -5,11 +5,7 @@
   "title": "Longest Consecutive Run",
   "version": 1,
   "topic": "hashmap",
-  "patterns": [
-    "hash set",
-    "membership",
-    "amortised scan"
-  ],
+  "patterns": ["hash set", "membership", "amortised scan"],
   "tier": "Medium",
   "rating": 5,
   "order": 4,
@@ -17,9 +13,7 @@
   "entry": "longestRun",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "pair-difference-count"
-  ],
+  "related": ["pair-difference-count"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(n)"

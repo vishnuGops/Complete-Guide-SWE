@@ -5,11 +5,7 @@
   "title": "First Reading Not Below",
   "version": 1,
   "topic": "binary-search",
-  "patterns": [
-    "boundary binary search",
-    "lower bound",
-    "sorted input"
-  ],
+  "patterns": ["boundary binary search", "lower bound", "sorted input"],
   "tier": "Easy",
   "rating": 3,
   "order": 0,

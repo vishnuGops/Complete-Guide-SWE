@@ -5,11 +5,7 @@
   "title": "Order By How Often",
   "version": 1,
   "topic": "sorting",
-  "patterns": [
-    "frequency map",
-    "custom sort",
-    "tie breaking"
-  ],
+  "patterns": ["frequency map", "custom sort", "tie breaking"],
   "tier": "Medium",
   "rating": 4,
   "order": 1,
@@ -17,9 +13,7 @@
   "entry": "byFrequency",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "anagram-groups"
-  ],
+  "related": ["anagram-groups"],
   "targetComplexity": {
     "time": "O(n log n)",
     "space": "O(n)"

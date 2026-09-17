@@ -9,7 +9,7 @@ That means two maps:
 - `tagOfItem`: item to the tag it currently carries.
 - `itemsPerTag`: tag to how many items carry it.
 
-The second is derived from the first, which makes it a *cached* value and makes
+The second is derived from the first, which makes it a _cached_ value and makes
 consistency the whole job. Exactly one place changes an item's tag, and it
 always does the same three things: read the old tag, decrement its count, then
 write the new tag and increment its count.

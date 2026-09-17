@@ -525,6 +525,22 @@ describe('settings', () => {
     expect(response.json()).toMatchObject({ ok: true, provider: 'anthropic' });
   });
 
+  it('accepts a bodyless POST that still declares JSON', async () => {
+    // What a client that always sets Content-Type sends for a POST with no
+    // arguments. Fastify rejects an empty JSON body by default.
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/settings/reset-progress',
+      headers: {
+        host: '127.0.0.1:5174',
+        [serverConfig.clientHeader]: 'devpromax-web',
+        'content-type': 'application/json',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
   it('says so when there is no key to test', async () => {
     const response = await api('POST', '/api/settings/test-connection');
 

@@ -5,11 +5,7 @@
   "title": "Longest Limited Stretch",
   "version": 1,
   "topic": "arrays",
-  "patterns": [
-    "sliding window",
-    "frequency map",
-    "two pointers"
-  ],
+  "patterns": ["sliding window", "frequency map", "two pointers"],
   "tier": "Medium",
   "rating": 5,
   "order": 5,
@@ -17,9 +13,7 @@
   "entry": "longestStretch",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "window-average-peak"
-  ],
+  "related": ["window-average-peak"],
   "targetComplexity": {
     "time": "O(n)",
     "space": "O(k)"
