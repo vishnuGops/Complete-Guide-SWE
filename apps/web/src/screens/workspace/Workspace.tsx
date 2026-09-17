@@ -28,6 +28,9 @@ import { useShortcut } from '../../shortcuts/ShortcutProvider.js';
 import {
   Button,
   ConfirmDialog,
+  ErrorState,
+  Loading,
+  Skeleton,
   StatusMark,
   Tabs,
   TabsContent,
@@ -72,9 +75,41 @@ const DEFAULT_EDITOR_PREFS = editorPrefsSchema.parse({});
 /** How long after the last keystroke a draft is written. */
 const AUTOSAVE_MS = 800;
 
+/**
+ * The workspace, before it has a problem (ROADMAP P4-10).
+ *
+ * The three panels in their real proportions - statement left, editor right,
+ * results below - because the alternative is a blank screen that becomes a
+ * three-panel layout, and the eye has to find everything twice.
+ */
+function WorkspaceSkeleton() {
+  return (
+    <Loading label="Loading the problem" className="flex h-full min-h-0 flex-col">
+      <span className="border-border flex h-10 shrink-0 items-center gap-2 border-b px-3">
+        <Skeleton className="h-6 w-16" />
+        <Skeleton className="h-6 w-16" />
+        <Skeleton className="ml-auto h-6 w-32" />
+      </span>
+      <span className="flex min-h-0 flex-1">
+        <span className="border-border w-2/5 shrink-0 border-r p-4">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="mt-4 h-3 w-full" />
+          <Skeleton className="mt-2 h-3 w-full" />
+          <Skeleton className="mt-2 h-3 w-4/5" />
+        </span>
+        <span className="flex-1 p-4">
+          <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="mt-2 h-3 w-2/3" />
+          <Skeleton className="mt-2 h-3 w-1/3" />
+        </span>
+      </span>
+    </Loading>
+  );
+}
+
 export function Workspace() {
   const { slug = '' } = useParams<{ slug: string }>();
-  const { data: problem, isPending, error } = useProblem(slug);
+  const { data: problem, isPending, error, refetch } = useProblem(slug);
   const { data: settings } = useSettings();
   const theme = useResolvedTheme();
 
@@ -199,12 +234,16 @@ export function Workspace() {
     setLayout({ panelCollapsed: !layout.panelCollapsed });
   });
 
-  if (isPending) return <p className="text-fg-muted p-6 text-sm">Loading…</p>;
+  if (isPending) return <WorkspaceSkeleton />;
   if (error) {
     return (
-      <p className="text-danger-fg p-6 text-sm" role="alert">
-        {error.message}
-      </p>
+      <ErrorState
+        title="This problem could not load."
+        error={error}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
     );
   }
 
@@ -250,34 +289,46 @@ export function Workspace() {
       }}
       className="flex min-h-0 w-full flex-col"
     >
-      <TabsList className="shrink-0 px-2">
-        <TabsTrigger value="testcases">
-          Testcases
-          {customIssues.length > 0 && (
-            <span className="text-danger-fg ml-1 text-2xs" aria-label="has errors">
-              !
-            </span>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="results">Results</TabsTrigger>
+      {/*
+        The toggle sits beside the tab strip, not in it.
 
-        <Tooltip
-          content={layout.panelCollapsed ? 'Show the panel' : 'Hide the panel'}
-          keys={SHORTCUTS.togglePanel.keys}
-        >
-          <Button
-            size="sm"
-            variant="ghost"
-            className="my-1 ml-auto"
-            aria-expanded={!layout.panelCollapsed}
-            onClick={() => {
-              setLayout({ panelCollapsed: !layout.panelCollapsed });
-            }}
+        A `tablist` may contain tabs and nothing else, and a button inside one
+        is a critical axe finding rather than a style question: assistive
+        technology counts "tab 3 of 3" and then hands over something that is not
+        a tab (P4-10). The trailing cell repeats the strip's bottom border so
+        the line still runs the width of the panel.
+      */}
+      <div className="flex shrink-0 items-stretch">
+        <TabsList className="flex-1 px-2">
+          <TabsTrigger value="testcases">
+            Testcases
+            {customIssues.length > 0 && (
+              <span className="text-danger-fg ml-1 text-2xs" aria-label="has errors">
+                !
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
+        </TabsList>
+
+        <div className="border-border flex items-center border-b pr-2">
+          <Tooltip
+            content={layout.panelCollapsed ? 'Show the panel' : 'Hide the panel'}
+            keys={SHORTCUTS.togglePanel.keys}
           >
-            {layout.panelCollapsed ? 'Show' : 'Hide'}
-          </Button>
-        </Tooltip>
-      </TabsList>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-expanded={!layout.panelCollapsed}
+              onClick={() => {
+                setLayout({ panelCollapsed: !layout.panelCollapsed });
+              }}
+            >
+              {layout.panelCollapsed ? 'Show' : 'Hide'}
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
 
       {!layout.panelCollapsed && (
         <>

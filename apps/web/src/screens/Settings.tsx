@@ -3,7 +3,7 @@ import { editorPrefsSchema, judgePrefsSchema, type ResetProgressResponse } from 
 import { useResetProgress, useSettings, useUpdateSettings } from '../api/hooks.js';
 import { ThemeToggle } from '../app/ThemeToggle.js';
 import { useAppTheme } from '../app/useAppTheme.js';
-import { Button, ConfirmDialog, Input } from '../ui/index.js';
+import { Button, ConfirmDialog, ErrorState, Input, Loading, Skeleton } from '../ui/index.js';
 
 /**
  * Settings (ROADMAP P4-2 for the route, P3-4 for what is behind it).
@@ -135,19 +135,40 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
   return said.length === 0 ? 'There was nothing to clear.' : `Cleared ${said.join(', ')}.`;
 }
 
+/** The three sections' worth of rows, at the height they will be. */
+function SettingsSkeleton() {
+  return (
+    <Loading label="Loading settings" className="mx-auto max-w-2xl px-6 py-6">
+      <Skeleton className="h-6 w-28" />
+      <span className="mt-6 block">
+        {Array.from({ length: 5 }, (_, index) => (
+          <span key={index} className="flex items-center justify-between gap-6 py-3">
+            <Skeleton className="h-3 w-48" />
+            <Skeleton className="h-6 w-20" />
+          </span>
+        ))}
+      </span>
+    </Loading>
+  );
+}
+
 export function Settings() {
-  const { data: settings, isPending, error } = useSettings();
+  const { data: settings, isPending, error, refetch } = useSettings();
   const update = useUpdateSettings();
   const reset = useResetProgress();
   const { theme, setTheme } = useAppTheme();
   const [confirming, setConfirming] = useState(false);
 
-  if (isPending) return <p className="text-fg-muted p-6 text-sm">Loading settings…</p>;
+  if (isPending) return <SettingsSkeleton />;
   if (error) {
     return (
-      <p className="text-danger-fg p-6 text-sm" role="alert">
-        {error.message}
-      </p>
+      <ErrorState
+        title="Settings could not load."
+        error={error}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
     );
   }
 

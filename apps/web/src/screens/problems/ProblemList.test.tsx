@@ -189,8 +189,9 @@ describe('per-topic progress (P4-8)', () => {
 
     // The number is the answer and the bar is its shape, so both are checked:
     // a bar that disagreed with the count beside it would be worse than none.
+    // The name is the spelled-out one, not "Arrays1/4" (P4-10).
     expect(
-      await screen.findByRole('checkbox', { name: /Arrays\s*1\s*\/\s*4/ }),
+      await screen.findByRole('checkbox', { name: 'Arrays, 1 of 4 solved' }),
     ).toBeInTheDocument();
 
     const bars = screen.getAllByTestId('topic-progress');
@@ -211,6 +212,31 @@ describe('per-topic progress (P4-8)', () => {
 
     await screen.findByRole('row', { name: /Pair Sum Index/ });
     expect(screen.queryByTestId('topic-progress')).not.toBeInTheDocument();
+  });
+});
+
+describe('the error state (P4-10)', () => {
+  it('says what failed and recovers when the retry works', async () => {
+    // The first request fails, the second succeeds - which is what a restarted
+    // dev server looks like from the browser, and the reason the retry exists.
+    let attempts = 0;
+    fakeServer([
+      {
+        match: path('/api/problems'),
+        body: () => {
+          attempts += 1;
+          if (attempts === 1) throw new Error('unreachable');
+          return aList(PROBLEMS);
+        },
+      },
+    ]);
+    renderApp(<ProblemList />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('The problem list could not load.');
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('row', { name: /Pair Sum Index/ })).toBeInTheDocument();
   });
 });
 

@@ -3,7 +3,10 @@ import { PROGRESS_STATUSES, THEMES, type Theme } from '@devpromax/shared';
 import { applyTheme } from '../theme.js';
 import {
   Button,
+  ErrorState,
   Input,
+  Loading,
+  Skeleton,
   StatusMark,
   Tabs,
   TabsContent,
@@ -332,6 +335,34 @@ export function KitchenSink() {
           <span className="text-fg-muted text-xs">
             Tab to a button: the tooltip opens on focus.
           </span>
+        </div>
+      </Section>
+
+      <Section title="Loading and error states">
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <Loading label="Loading problems">
+              {Array.from({ length: 4 }, (_, index) => (
+                <span key={index} className="flex items-center gap-3 py-1.5">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 flex-1" />
+                  <Skeleton className="h-3 w-12" />
+                </span>
+              ))}
+            </Loading>
+            <p className="text-fg-muted mt-3 text-xs">
+              Skeletons are held back for 150ms and never pulse. On this machine most queries answer
+              before they appear at all, which is the point.
+            </p>
+          </div>
+          <div>
+            <ErrorState
+              className="p-0"
+              title="The problem list could not load."
+              error={new Error('fetch failed: the server is not answering on 127.0.0.1:5174')}
+              onRetry={() => undefined}
+            />
+          </div>
         </div>
       </Section>
 

@@ -7,7 +7,7 @@ import {
   type ProblemSummary,
 } from '@devpromax/shared';
 import { useProblems } from '../../api/hooks.js';
-import { Button, Input, StatusMark, cn } from '../../ui/index.js';
+import { Button, ErrorState, Input, Loading, Skeleton, StatusMark, cn } from '../../ui/index.js';
 import { Filters } from './Filters.js';
 import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters } from './query.js';
 
@@ -98,6 +98,28 @@ function Row({ problem }: { problem: ProblemSummary }) {
   );
 }
 
+/**
+ * The table, before the table (ROADMAP P4-10).
+ *
+ * Rows of the height the real ones will be, so the header does not jump down
+ * the page when the answer arrives. Eight of them: enough to read as a list,
+ * few enough that a short catalogue does not shrink on arrival.
+ */
+function ListSkeleton() {
+  return (
+    <Loading label="Loading problems" className="p-3">
+      {Array.from({ length: 8 }, (_, index) => (
+        <span key={index} className="flex items-center gap-3 px-1 py-1.5">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 flex-1" />
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-3 w-16" />
+        </span>
+      ))}
+    </Loading>
+  );
+}
+
 export function ProblemList() {
   const [params, setParams] = useSearchParams();
   const filters = filtersFromSearch(params);
@@ -132,7 +154,7 @@ export function ProblemList() {
     };
   }, [search, setParams]);
 
-  const { data, isPending, isFetching, error } = useProblems(filters);
+  const { data, isPending, isFetching, error, refetch } = useProblems(filters);
 
   const apply = (next: ProblemFilters) => {
     setSearch(next.q);
@@ -153,9 +175,13 @@ export function ProblemList() {
 
   if (error) {
     return (
-      <p className="text-danger-fg p-6 text-sm" role="alert">
-        {error.message}
-      </p>
+      <ErrorState
+        title="The problem list could not load."
+        error={error}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
     );
   }
 
@@ -198,7 +224,7 @@ export function ProblemList() {
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {isPending ? (
-            <p className="text-fg-muted p-6 text-sm">Loading problems…</p>
+            <ListSkeleton />
           ) : data.items.length === 0 ? (
             <div className="p-6">
               <p className="text-fg-muted text-sm">

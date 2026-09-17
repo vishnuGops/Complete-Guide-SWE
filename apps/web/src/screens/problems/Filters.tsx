@@ -77,9 +77,20 @@ function Check({
         >
           <span className="truncate">{label}</span>
           {count && (
-            <span className="text-fg-subtle tnum text-2xs shrink-0">
-              {count.solved}/{count.total}
-            </span>
+            <>
+              <span aria-hidden className="text-fg-subtle tnum text-2xs shrink-0">
+                {count.solved}/{count.total}
+              </span>
+              {/*
+                The same fact, spelled out for a screen reader (P4-10). "1/4"
+                beside a topic is a shorthand the eye expands for free and a
+                reader announces as "Arrays one slash four" - which is the sort
+                of accessible name that technically contains the information.
+              */}
+              <span className="sr-only">
+                , {count.solved} of {count.total} solved
+              </span>
+            </>
           )}
         </label>
       </div>

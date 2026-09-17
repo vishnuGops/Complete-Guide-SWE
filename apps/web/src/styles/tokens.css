@@ -345,3 +345,36 @@
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Loading placeholders (ROADMAP P4-10).
+ *
+ * Two decisions, both of them about a local-first app where the server is on
+ * the same machine:
+ *
+ *   - **No pulse.** A shimmer is decoration that moves, which section 1 of
+ *     docs/DESIGN.md rules out, and it draws the eye to the one part of the
+ *     screen that has nothing to say yet.
+ *   - **Held back for 150ms.** Most queries here answer in single-digit
+ *     milliseconds, and a skeleton that appears and vanishes inside one frame
+ *     is a flash of grey where content should have been - worse than showing
+ *     nothing at all. The delay is an `animation-delay` on a zero-length
+ *     animation, so it is a step rather than a fade, and the reduced-motion
+ *     rule in base.css (which shortens durations, not delays) leaves it alone.
+ *
+ * The fill is `border`, which looks like the wrong token and is the only right
+ * one: a placeholder has to read against the page *and* against a panel, and in
+ * dark `bg` and `surface-sunken` are the same colour - a sunken-coloured block
+ * on the list page was invisible, in the one theme nobody had looked at yet.
+ */
+@utility skeleton {
+  background-color: var(--color-border);
+  opacity: 0;
+  animation: skeleton-appear 0s linear 150ms forwards;
+}
+
+@keyframes skeleton-appear {
+  to {
+    opacity: 1;
+  }
+}

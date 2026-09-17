@@ -80,6 +80,18 @@ export function useUpdateSettings(): UseMutationResult<SettingsView, Error, Sett
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.updateSettings,
+    /**
+     * Any settings read still in flight is abandoned first.
+     *
+     * Without this, a page whose first settings fetch has not landed yet and
+     * whose user has already clicked a theme gets the answer to the *older*
+     * question written over the newer one, and the theme bounces back a moment
+     * after being chosen. Rare by hand, reliable enough under a test runner
+     * that it was found by one (P4-10).
+     */
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: keys.settings });
+    },
     // The server merges the patch and answers with the whole view, so there is
     // nothing to refetch - writing the answer into the cache is the update.
     onSuccess: (view) => {

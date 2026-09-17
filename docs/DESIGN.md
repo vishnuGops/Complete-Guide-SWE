@@ -4,7 +4,7 @@ The rules this app's interface is built and reviewed against (ROADMAP D16,
 P0-8). `ROADMAP.md` section 2 says what was decided; this says what it means in
 front of a screen.
 
-It is a working document with teeth: section 10 is a checklist, and a screen
+It is a working document with teeth: section 12 is a checklist, and a screen
 that fails it does not merge. Where it is silent, decide in the spirit of
 section 1 and then write down what you decided.
 
@@ -193,12 +193,57 @@ the OS, which is why `applyTheme('system')` removes the attribute instead of
 writing a resolved value.
 
 **Minimum width is 1024px.** Below that the workspace stops being usable and we
-say so rather than reflowing into a phone layout nobody will practise on.
+say so rather than reflowing into a phone layout nobody will practise on. The
+shell hides the app and shows that sentence under `max-[1023px]`, in CSS: no
+resize listener, no state, and nothing to be wrong on the first paint. Whichever
+half is hidden is `display: none`, so it is out of the accessibility tree too —
+a notice with the whole app still tabbable behind it would be worse than none.
 
 **Motion** is 75ms, colour and opacity. Nothing slides, bounces or fades in on
 load. `prefers-reduced-motion` is respected globally in `styles/base.css`.
 
-## 10. Review checklist
+## 10. Loading, empty and error
+
+Every screen that waits on a query has all three, and each one is a sentence
+rather than a spinner.
+
+**Loading** is a skeleton in the shape of what is coming — rows where the rows
+will be — built from the `Skeleton` primitive and wrapped in `Loading`, which
+adds the one thing a screen reader needs (`role="status"`, "Loading problems")
+and hides the blocks themselves. Two rules, both written down in the `skeleton`
+utility in `tokens.css`: it never pulses, and it stays invisible for its first
+150ms. On a local server most queries answer before it ever appears, which is
+the intended outcome — a flash of grey where content should have been is worse
+than a beat of nothing.
+
+**Empty** says why it is empty and, where there is one, offers the way out: a
+filtered list that matched nothing gets a "Clear all filters" button, and a
+catalogue with no problems in it names the command that would find them. "No
+results" on its own is a dead end.
+
+**Error** says what failed, what the server said, and offers "Try again"
+(`ErrorState`). The retry earns its place here specifically: the usual cause is
+the local server restarting under a file watcher, which fixes itself in the time
+it takes to read the message.
+
+## 11. Accessibility, checked twice
+
+The checklist below is read by a person. Two things are also machine-checked,
+because they are the two that rot quietly:
+
+- `styles/contrast.test.ts` measures the token pairs out of `tokens.css`, in
+  both themes, on every unit-test run.
+- `e2e/a11y.spec.ts` runs axe over all four screens in both themes in a real
+  browser, and fails on any `serious` or `critical` finding. It is a real
+  browser because computed contrast, visibility and layout do not exist in
+  jsdom. Monaco is excluded — its internals are not ours to fix — and nothing
+  else is.
+
+Automated rules catch a minority of real barriers. They have never caught a
+confusing label or a focus order that jumps across the screen; that is what the
+checklist is for.
+
+## 12. Review checklist
 
 Every UI change is checked against this list. It is short so it actually gets
 used.
@@ -213,10 +258,12 @@ used.
 - [ ] No shadow except on something that floats.
 - [ ] Nothing from the section 2 list: no card grid, no hero, no gradient, no
       emoji in chrome, no second accent.
-- [ ] Loading, empty and error states exist — an empty list says why it is empty.
+- [ ] Loading, empty and error states exist — an empty list says why it is empty
+      (section 10).
 - [ ] Numbers read in columns use `tnum`.
 - [ ] Any new component is needed by the screen being built, not by a future one.
 - [ ] Behaviour worth keeping has an RTL test; a golden path has a Playwright one.
+- [ ] `npm run test:e2e` still passes, axe included, in both themes.
 
 ---
 

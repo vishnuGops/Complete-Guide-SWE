@@ -73,7 +73,9 @@ test.describe('M0: solve the pilot problems from the browser', () => {
         await page.getByRole('button', { name: 'Submit' }).click();
 
         await expect(page.getByTestId('verdict')).toHaveText('Accepted', { timeout: 120_000 });
-        await expect(page.getByTestId('solved')).toBeVisible();
+        // The header's status is refetched from the server, so this also proves
+        // the submit was recorded and not merely answered (P4-8).
+        await expect(page.getByTestId('problem-status')).toHaveText(`Solved in ${language.label}`);
       });
     }
   }

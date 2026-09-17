@@ -6,16 +6,23 @@
  * `ConfirmDialog`, joined them with P4-6: reset-to-starter is the first thing in
  * the app that destroys the user's work, and Settings' reset-all-progress is the
  * second. `StatusMark` joined them with P4-8, when the workspace header became
- * the second place that has to draw a problem's status. Everything else
- * - tables, panels, verdict banners, the diff view - is built with the screen
- * that needs it, so it is designed against a real layout rather than invented in
+ * the second place that has to draw a problem's status, and `Loading` and
+ * `ErrorState` with P4-10, which is when the fourth screen was waiting on a
+ * query and the fourth copy of "Loading…" was about to be written.
+ *
+ * Everything else - tables, panels, verdict banners, the diff view - is built
+ * with the screen that needs it, so it is designed against a real layout rather than invented in
  * a vacuum and then bent to fit.
  */
 export { Button } from './Button.js';
 export { ConfirmDialog } from './ConfirmDialog.js';
 export type { ConfirmDialogProps } from './ConfirmDialog.js';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './Button.js';
+export { ErrorState } from './ErrorState.js';
+export type { ErrorStateProps } from './ErrorState.js';
 export { Input } from './Input.js';
+export { Loading, Skeleton } from './Loading.js';
+export type { LoadingProps } from './Loading.js';
 export { StatusMark } from './StatusMark.js';
 export type { StatusMarkProps } from './StatusMark.js';
 export type { InputProps } from './Input.js';

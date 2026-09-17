@@ -96,9 +96,33 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1">
+      <main className="min-h-0 flex-1 max-[1023px]:hidden">
         <Outlet />
       </main>
+
+      {/*
+        The 1024px floor (ROADMAP P4-10, docs/DESIGN.md section 9).
+
+        Below it the workspace stops being a workspace: a statement, an editor
+        and a results panel cannot all be useful in 800px, and the honest answer
+        is to say so rather than reflow into a phone layout nobody will practise
+        algorithms on.
+
+        Done in CSS rather than by measuring the window, so there is no resize
+        listener, no state, and nothing to be wrong on the first paint. The two
+        halves are `display: none` in turn, so whichever is hidden is out of the
+        accessibility tree as well as off the screen.
+      */}
+      <div className="hidden min-h-0 flex-1 place-content-center p-8 max-[1023px]:grid">
+        <div className="max-w-prose">
+          <h1 className="text-md font-semibold">This window is too narrow.</h1>
+          <p className="text-fg-muted mt-2 text-sm">
+            DevProMax needs about 1024px of width: the workspace puts a problem statement, an editor
+            and the judge&rsquo;s results on screen at once, and below that they stop being readable
+            rather than merely tight. Widen the window and it comes back.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
