@@ -53,7 +53,11 @@ export default tseslint.config(
   },
   {
     // CLIs talk to the user through stdout by design.
-    files: ['apps/server/src/problems/cli/**/*.ts', '**/*.config.{ts,js}', 'scripts/**/*.ts'],
+    files: [
+      'apps/server/src/problems/cli/**/*.ts',
+      '**/*.config.{ts,js}',
+      '**/scripts/**/*.{ts,js,mjs}',
+    ],
     rules: { 'no-console': 'off' },
   },
   {
