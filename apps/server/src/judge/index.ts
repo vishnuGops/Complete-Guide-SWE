@@ -18,6 +18,7 @@ import {
   type Verdict,
 } from '@devpromax/shared';
 import { compareValues, loadChecker, type CompareResult } from './comparators.js';
+import { javaExecutor } from './executors/java.js';
 import { pythonExecutor } from './executors/python.js';
 import type { Executor } from './executors/types.js';
 import {
@@ -34,8 +35,9 @@ import { createWorkspace, type Workspace } from './workspace.js';
 export { RunQueue } from './queue.js';
 export { sweepStaleWorkspaces } from './workspace.js';
 
-const EXECUTORS: Partial<Record<Language, Executor>> = {
+const EXECUTORS: Record<Language, Executor> = {
   python: pythonExecutor,
+  java: javaExecutor,
 };
 
 /**
@@ -94,7 +96,6 @@ export async function runProblem(options: RunProblemOptions): Promise<RunResult>
 export async function runProblemUnqueued(options: RunProblemOptions): Promise<RunResult> {
   const { meta, language, code, tests, kind } = options;
   const executor = EXECUTORS[language];
-  if (!executor) throw new Error(`no executor for ${language}`);
   const multiplier = options.timeoutMultiplier ?? 1;
   const perTestMs = Math.round(timeoutFor(meta.limits, language) * multiplier);
   const started = Date.now();
