@@ -3,13 +3,14 @@ import { useParams } from 'react-router-dom';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
+  PROGRESS_LABEL,
   customTestShapeFrom,
   editorPrefsSchema,
-  isAccepted,
   parseCustomTests,
   type CompileError,
   type CustomTestInput,
   type Language,
+  type ProgressStatus,
   type RunResult,
 } from '@devpromax/shared';
 import {
@@ -27,6 +28,7 @@ import { useShortcut } from '../../shortcuts/ShortcutProvider.js';
 import {
   Button,
   ConfirmDialog,
+  StatusMark,
   Tabs,
   TabsContent,
   TabsList,
@@ -207,7 +209,7 @@ export function Workspace() {
   }
 
   const failure = run.error ?? submit.error;
-  const solved = result !== null && result.kind === 'submit' && isAccepted(result.verdict);
+  const status = problem.summary.statusByLanguage[language] ?? 'not_started';
 
   const resetToStarter = () => {
     const starter = problem.starters[language];
@@ -363,11 +365,29 @@ export function Workspace() {
           Reset
         </Button>
 
-        {solved && (
-          <p className="text-success-fg ml-2 text-xs" data-testid="solved">
-            Solved in {LANGUAGE_LABEL[language]}.
-          </p>
-        )}
+        {/*
+          Live status propagation (ROADMAP P4-8), and the whole of the
+          confirmation an accepted submit gets.
+
+          Read from the server, not from the run result sitting in state: an
+          accepted submit invalidates this problem's query (`useJudge`), the
+          refetch brings back the new status, and the mark flips. That is why
+          the status is right on arrival too - a problem solved yesterday says
+          so before anything is run today, which a flag set by this session's
+          own submit never could.
+
+          `role="status"` makes the flip a polite announcement, so the one
+          confirmation that exists reaches a screen reader as well as an eye.
+          There is no toast and no confetti: the status flipping to Solved *is*
+          the reward (docs/DESIGN.md section 2). The region is rendered even
+          while it is empty, because a live region inserted at the same moment
+          as its text is a live region that announces nothing.
+        */}
+        <p className="ml-2 flex items-center" role="status" data-testid="problem-status">
+          {status !== 'not_started' && (
+            <StatusMark status={status} label={statusLine(status, language)} />
+          )}
+        </p>
 
         <div className="ml-auto flex items-center gap-2">
           <Tooltip content="Run the samples and your own cases" keys={SHORTCUTS.run.keys}>
@@ -421,4 +441,19 @@ export function Workspace() {
       />
     </div>
   );
+}
+
+/**
+ * The header's one line of status.
+ *
+ * Solved and Mastered name the language; In progress does not. Which language a
+ * problem was *solved* in is the question the language switch immediately
+ * raises - Python solved and Java untouched is the normal state of a problem
+ * halfway through - while "in progress in Python" is a distinction nobody is
+ * waiting on. Not started says nothing at all; see the caller.
+ */
+function statusLine(status: ProgressStatus, language: Language): string {
+  return status === 'solved' || status === 'mastered'
+    ? `${PROGRESS_LABEL[status]} in ${LANGUAGE_LABEL[language]}`
+    : PROGRESS_LABEL[status];
 }

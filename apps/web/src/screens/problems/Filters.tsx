@@ -59,29 +59,59 @@ function Check({
 }) {
   const id = useId();
   return (
-    <div className="flex items-center gap-2 py-0.5">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="focus-ring accent-accent size-3.5 shrink-0 cursor-pointer"
-      />
-      <label
-        htmlFor={id}
-        className={cn(
-          'flex min-w-0 flex-1 cursor-pointer items-baseline justify-between gap-2 text-sm',
-          checked ? 'text-fg' : 'text-fg-muted',
-        )}
-      >
-        <span className="truncate">{label}</span>
-        {count && (
-          <span className="text-fg-subtle tnum text-2xs shrink-0">
-            {count.solved}/{count.total}
-          </span>
-        )}
-      </label>
+    <div className="py-0.5">
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="focus-ring accent-accent size-3.5 shrink-0 cursor-pointer"
+        />
+        <label
+          htmlFor={id}
+          className={cn(
+            'flex min-w-0 flex-1 cursor-pointer items-baseline justify-between gap-2 text-sm',
+            checked ? 'text-fg' : 'text-fg-muted',
+          )}
+        >
+          <span className="truncate">{label}</span>
+          {count && (
+            <span className="text-fg-subtle tnum text-2xs shrink-0">
+              {count.solved}/{count.total}
+            </span>
+          )}
+        </label>
+      </div>
+      {count && count.total > 0 && <TopicBar solved={count.solved} total={count.total} />}
     </div>
+  );
+}
+
+/**
+ * How far through a topic the user is (ROADMAP P4-8).
+ *
+ * Two pixels, indented to sit under its label. The number beside the topic is
+ * the answer; this is the shape of the answer, which is what makes fourteen of
+ * them comparable at a glance without reading fourteen pairs of numbers. It
+ * carries no meaning the count does not already carry, so it is `aria-hidden`
+ * and adds no second thing for a screen reader to get through.
+ *
+ * It updates for free: an accepted submit invalidates the list query, the
+ * response carries fresh per-topic counts, and the bar is a function of those.
+ */
+function TopicBar({ solved, total }: { solved: number; total: number }) {
+  const percent = Math.round((solved / total) * 100);
+  return (
+    <span aria-hidden className="mt-1 ml-5.5 block">
+      <span className="bg-surface-sunken block h-0.5 overflow-hidden rounded-xs">
+        <span
+          className="bg-success block h-full"
+          style={{ width: `${String(percent)}%` }}
+          data-testid="topic-progress"
+        />
+      </span>
+    </span>
   );
 }
 

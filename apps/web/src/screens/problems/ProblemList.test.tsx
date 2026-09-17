@@ -176,6 +176,44 @@ describe('filters', () => {
   });
 });
 
+describe('per-topic progress (P4-8)', () => {
+  it('draws a bar in proportion to how much of the topic is solved', async () => {
+    serve({
+      ...aList(PROBLEMS),
+      byTopic: [
+        { topic: 'arrays', total: 4, solved: 1, mastered: 0, inProgress: 1 },
+        { topic: 'stack', total: 2, solved: 2, mastered: 1, inProgress: 0 },
+      ],
+    });
+    renderApp(<ProblemList />);
+
+    // The number is the answer and the bar is its shape, so both are checked:
+    // a bar that disagreed with the count beside it would be worse than none.
+    expect(
+      await screen.findByRole('checkbox', { name: /Arrays\s*1\s*\/\s*4/ }),
+    ).toBeInTheDocument();
+
+    const bars = screen.getAllByTestId('topic-progress');
+    expect(bars).toHaveLength(2);
+    expect(bars[0]).toHaveStyle({ width: '25%' });
+    expect(bars[1]).toHaveStyle({ width: '100%' });
+  });
+
+  it('draws nothing for a topic with no problems in it', async () => {
+    // Thirteen of the fourteen topics are empty until P6 fills them, and a
+    // zero-width bar under each is thirteen rules for no information - and a
+    // division by zero on the way there.
+    serve({
+      ...aList(PROBLEMS),
+      byTopic: [{ topic: 'arrays', total: 0, solved: 0, mastered: 0, inProgress: 0 }],
+    });
+    renderApp(<ProblemList />);
+
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+    expect(screen.queryByTestId('topic-progress')).not.toBeInTheDocument();
+  });
+});
+
 describe('empty states', () => {
   it('explains an empty filtered list and offers a way out', async () => {
     serve({ ...aList([]), total: 20, matched: 0 });

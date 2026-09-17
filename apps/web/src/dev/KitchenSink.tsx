@@ -1,7 +1,16 @@
 import { useState, type ReactNode } from 'react';
-import { THEMES, type Theme } from '@devpromax/shared';
+import { PROGRESS_STATUSES, THEMES, type Theme } from '@devpromax/shared';
 import { applyTheme } from '../theme.js';
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, Tooltip } from '../ui/index.js';
+import {
+  Button,
+  Input,
+  StatusMark,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Tooltip,
+} from '../ui/index.js';
 
 /**
  * The token and primitive reference (ROADMAP P0-8).
@@ -324,6 +333,20 @@ export function KitchenSink() {
             Tab to a button: the tooltip opens on focus.
           </span>
         </div>
+      </Section>
+
+      <Section title="Status mark">
+        <div className="flex flex-wrap items-center gap-6">
+          {PROGRESS_STATUSES.map((status) => (
+            <StatusMark key={status} status={status} />
+          ))}
+          <StatusMark status="solved" label="Solved in Python" />
+        </div>
+        <p className="text-fg-muted mt-3 text-xs">
+          Not started prints no word - the mark is the absence of fill, and the label is there for a
+          screen reader. Mastered is Solved plus a ring: two greens a reader who cannot separate
+          them still tells apart by shape.
+        </p>
       </Section>
     </div>
   );

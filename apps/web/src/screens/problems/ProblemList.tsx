@@ -7,9 +7,8 @@ import {
   type ProblemSummary,
 } from '@devpromax/shared';
 import { useProblems } from '../../api/hooks.js';
-import { Button, Input, cn } from '../../ui/index.js';
+import { Button, Input, StatusMark, cn } from '../../ui/index.js';
 import { Filters } from './Filters.js';
-import { StatusMark } from './StatusMark.js';
 import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters } from './query.js';
 
 /**

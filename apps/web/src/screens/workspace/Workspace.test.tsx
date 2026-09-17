@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ProblemDetail, RunResult } from '@devpromax/shared';
+import type { Language, ProblemDetail, RunResult } from '@devpromax/shared';
 import {
   aProblemDetail,
   fakeServer,
@@ -63,16 +63,43 @@ function aRunResult(overrides: Partial<RunResult> = {}): RunResult {
   };
 }
 
+/**
+ * The fake server keeps the problem in a `let`, which matters for P4-8: an
+ * accepted submit moves the status *on the server*, and the workspace is only
+ * allowed to learn about it by refetching. A route that answered with the same
+ * not-started detail forever would let a header that flipped itself pass.
+ */
 function serve(detail: ProblemDetail = aProblemDetail(), extra: FakeRoute[] = []) {
+  let current = detail;
   return fakeServer([
     ...extra,
-    { match: path(`/api/problems/${SLUG}`), body: () => detail },
+    { match: path(`/api/problems/${SLUG}`), body: () => current },
     { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: [] }) },
     { match: path('/api/settings'), body: () => someSettings() },
     { match: path('/api/run'), body: () => aRunResult() },
-    { match: path('/api/submit'), body: () => aRunResult({ kind: 'submit' }) },
+    {
+      match: path('/api/submit'),
+      body: () => {
+        current = solvedIn('python', current);
+        return aRunResult({ kind: 'submit' });
+      },
+    },
     { match: (url) => url.pathname.startsWith('/api/drafts/'), body: () => ({ draft: null }) },
   ]);
+}
+
+/** The detail the API would answer with once `language` has been accepted. */
+function solvedIn(language: Language, detail: ProblemDetail): ProblemDetail {
+  const statusByLanguage = { ...detail.summary.statusByLanguage, [language]: 'solved' as const };
+  return {
+    ...detail,
+    summary: {
+      ...detail.summary,
+      status: 'solved',
+      statusByLanguage,
+      solvedAt: '2026-09-17T12:00:00.000Z',
+    },
+  };
 }
 
 function open() {
@@ -246,7 +273,7 @@ describe('running and submitting', () => {
     expect(server.requests.some((request) => request.url.pathname === '/api/submit')).toBe(false);
   });
 
-  it('submits on Ctrl+Shift+Enter and says so', async () => {
+  it('submits on Ctrl+Shift+Enter', async () => {
     const server = serve();
     open();
     await screen.findByLabelText('Code');
@@ -255,7 +282,6 @@ describe('running and submitting', () => {
     await waitFor(() => {
       expect(server.requests.some((request) => request.url.pathname === '/api/submit')).toBe(true);
     });
-    expect(await screen.findByTestId('solved')).toHaveTextContent('Solved in Python.');
   });
 
   it('shows the results tab once a run comes back', async () => {
@@ -288,6 +314,47 @@ describe('the bottom panel', () => {
     await user.keyboard('{Control>}[KeyJ]{/Control}');
     await waitFor(() => {
       expect(screen.getByText('Samples')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('live status propagation (P4-8)', () => {
+  it('flips the header to Solved once the server says so, and announces it', async () => {
+    serve();
+    open();
+    await screen.findByLabelText('Code');
+
+    // Nothing claimed before anything has been submitted.
+    const readout = screen.getByTestId('problem-status');
+    expect(readout).toBeEmptyDOMElement();
+    expect(readout).toHaveAttribute('role', 'status');
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(readout).toHaveTextContent('Solved in Python');
+    });
+  });
+
+  it('says so on arrival for a problem solved in an earlier session', async () => {
+    serve(solvedIn('python', aProblemDetail()));
+    open();
+
+    expect(await screen.findByTestId('problem-status')).toHaveTextContent('Solved in Python');
+  });
+
+  it('reports the language being edited, not the best of them', async () => {
+    serve(solvedIn('python', aProblemDetail()));
+    open();
+    await screen.findByLabelText('Code');
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Java' }));
+
+    // The problem is solved; this language is not, and a header that said
+    // "Solved" over an empty Java editor would be lying about the thing on
+    // screen.
+    await waitFor(() => {
+      expect(screen.getByTestId('problem-status')).toBeEmptyDOMElement();
     });
   });
 });

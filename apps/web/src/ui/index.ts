@@ -5,7 +5,8 @@
  * them can be written well without Radix or without the tokens. A fifth,
  * `ConfirmDialog`, joined them with P4-6: reset-to-starter is the first thing in
  * the app that destroys the user's work, and Settings' reset-all-progress is the
- * second. Everything else
+ * second. `StatusMark` joined them with P4-8, when the workspace header became
+ * the second place that has to draw a problem's status. Everything else
  * - tables, panels, verdict banners, the diff view - is built with the screen
  * that needs it, so it is designed against a real layout rather than invented in
  * a vacuum and then bent to fit.
@@ -15,6 +16,8 @@ export { ConfirmDialog } from './ConfirmDialog.js';
 export type { ConfirmDialogProps } from './ConfirmDialog.js';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './Button.js';
 export { Input } from './Input.js';
+export { StatusMark } from './StatusMark.js';
+export type { StatusMarkProps } from './StatusMark.js';
 export type { InputProps } from './Input.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs.js';
 export { Tooltip, TooltipProvider } from './Tooltip.js';
