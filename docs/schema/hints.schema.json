@@ -12,5 +12,7 @@
       }
     }
   },
-  "required": ["hints"]
+  "required": [
+    "hints"
+  ]
 }

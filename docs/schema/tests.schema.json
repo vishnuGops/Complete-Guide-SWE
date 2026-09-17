@@ -38,7 +38,9 @@
                   }
                 }
               },
-              "required": ["method"],
+              "required": [
+                "method"
+              ],
               "additionalProperties": false
             }
           },
@@ -59,7 +61,10 @@
                   "$ref": "#/$defs/__schema0"
                 }
               },
-              "required": ["index", "value"],
+              "required": [
+                "index",
+                "value"
+              ],
               "additionalProperties": false
             }
           },
@@ -68,7 +73,9 @@
             "minLength": 1
           }
         },
-        "required": ["args"],
+        "required": [
+          "args"
+        ],
         "additionalProperties": false
       }
     },
@@ -104,7 +111,9 @@
                   }
                 }
               },
-              "required": ["method"],
+              "required": [
+                "method"
+              ],
               "additionalProperties": false
             }
           },
@@ -125,7 +134,10 @@
                   "$ref": "#/$defs/__schema0"
                 }
               },
-              "required": ["index", "value"],
+              "required": [
+                "index",
+                "value"
+              ],
               "additionalProperties": false
             }
           },
@@ -134,12 +146,17 @@
             "minLength": 1
           }
         },
-        "required": ["args"],
+        "required": [
+          "args"
+        ],
         "additionalProperties": false
       }
     }
   },
-  "required": ["samples", "hidden"],
+  "required": [
+    "samples",
+    "hidden"
+  ],
   "additionalProperties": false,
   "$defs": {
     "__schema0": {
