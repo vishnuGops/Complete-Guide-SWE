@@ -5,3 +5,8 @@ temp/
 coverage/
 playwright-report/
 *.min.*
+
+# Planning docs are hand-maintained. Prettier repads markdown tables, which
+# would turn every one-cell ROADMAP status change into a whole-table diff.
+ROADMAP.md
+CLAUDE.md
