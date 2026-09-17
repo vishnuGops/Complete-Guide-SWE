@@ -13,6 +13,13 @@ export {
   type CoachStreamEvent,
   type FeedbackStreamOptions,
 } from './feedback.js';
+export {
+  buildContext,
+  CONTEXT_BUDGET_CHARS,
+  type AttemptMemory,
+  type ContextInput,
+} from './context.js';
+export { PROMPT_VERSION, systemPrompt } from './prompts/index.js';
 
 /** The one place a provider id becomes an implementation. */
 export function createCoachProvider(
