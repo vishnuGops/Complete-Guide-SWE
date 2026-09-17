@@ -374,6 +374,49 @@ function checkSources(pkg: ProblemPackage): ValidationIssue[] {
 // Entry points
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Rule: a scaffold is not a problem
+// ---------------------------------------------------------------------------
+
+/** The marker `problems:new` leaves behind (P2-9). Exact case, so prose is safe. */
+const PLACEHOLDER = /\bTODO\b/g;
+
+/**
+ * Nothing in a problem package may still say TODO.
+ *
+ * `problems:new` fills every file with placeholders on purpose, which makes this
+ * the rule that turns "the scaffold parses" into "the scaffold is not finished".
+ * Without it a half-written problem is one `problems:gen` away from looking
+ * valid, and the thing it would be missing is the part only a human can write.
+ */
+function checkPlaceholders(pkg: ProblemPackage): ValidationIssue[] {
+  const bodies: [string, string][] = [
+    ['meta.json', JSON.stringify(pkg.meta)],
+    ['tests.json', JSON.stringify(pkg.tests)],
+    ['hints.json', JSON.stringify(pkg.hints)],
+    ['statement.md', pkg.statement],
+    ['editorial.md', pkg.editorial],
+    ['starter.py', pkg.sources.starterPython],
+    ['reference.py', pkg.sources.referencePython],
+    ['starter.java', pkg.sources.starterJava],
+    ['reference.java', pkg.sources.referenceJava],
+    ...(pkg.generatorPython !== undefined
+      ? ([['generator.py', pkg.generatorPython]] as [string, string][])
+      : []),
+  ];
+
+  return bodies.flatMap(([name, body]) => {
+    const count = body.match(PLACEHOLDER)?.length ?? 0;
+    if (count === 0) return [];
+    return [
+      error(
+        relFile(pkg.location, name),
+        `still has ${count} TODO placeholder(s) from the scaffold`,
+      ),
+    ];
+  });
+}
+
 /** Every rule that needs only one problem package. */
 export function validateProblemPackage(pkg: ProblemPackage): ValidationIssue[] {
   return [
@@ -382,6 +425,7 @@ export function validateProblemPackage(pkg: ProblemPackage): ValidationIssue[] {
     ...checkComparator(pkg),
     ...checkProse(pkg),
     ...checkSources(pkg),
+    ...checkPlaceholders(pkg),
   ];
 }
 
