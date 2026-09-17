@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A stretch is described by where it starts and where it ends. If a stretch is legal, is every stretch inside it legal too?",
+    "That means you never have to shrink from the right. Grow a window on the right and shrink it from the left only when it becomes illegal.",
+    "Keep a count per value inside the window. Adding a value that was not there raises the distinct count; removing its last copy lowers it.",
+    "Advance the right edge one reading at a time. While the window holds more than limit distinct values, drop the leftmost reading and decrement its count, removing it from the map when it reaches zero. Record the window length at every step."
+  ]
+}

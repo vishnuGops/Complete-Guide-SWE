@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A day is waiting for an answer until a warmer day turns up. How many days can be waiting at once?",
+    "Keep the days that are still waiting. When a new day arrives, it answers every waiting day that is colder than it.",
+    "Those waiting days are always in decreasing temperature order - a day warmer than the one before it would have answered it already. That is a monotonic stack.",
+    "Push day indices. For each new day, while the stack is not empty and the new temperature is strictly greater than the temperature at the top index, pop and write the index difference into the answer. Whatever is left on the stack at the end keeps its 0."
+  ]
+}

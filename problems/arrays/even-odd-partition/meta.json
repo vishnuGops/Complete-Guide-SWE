@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "even-odd-partition",
+  "slug": "even-odd-partition",
+  "title": "Even Readings First",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": [
+    "in-place",
+    "stable partition",
+    "two passes"
+  ],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 2,
+  "mode": "function",
+  "entry": "partitionEvenFirst",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": [
+    "shift-right-in-place"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "first-unique-symbol",
+  "slug": "first-unique-symbol",
+  "title": "First Symbol That Stands Alone",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": [
+    "frequency map",
+    "two passes",
+    "strings"
+  ],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 0,
+  "mode": "function",
+  "entry": "firstUnique",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

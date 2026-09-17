@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "window-average-peak",
+  "slug": "window-average-peak",
+  "title": "Peak Window Start",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": [
+    "sliding window",
+    "fixed window",
+    "running sum"
+  ],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 3,
+  "mode": "function",
+  "entry": "peakWindowStart",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "balance-point"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

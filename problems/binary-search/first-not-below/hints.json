@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Every reading before the answer is below the threshold and every reading from the answer onwards is not. What does that shape let you do?",
+    "The list is split into a false half and a true half by the test values[i] >= threshold. Binary search finds that boundary.",
+    "Keep a half-open range [low, high) that always contains the answer. Start with low = 0 and high = n, which is what makes the not-found case fall out.",
+    "While low < high: mid = low + (high - low) / 2; if values[mid] >= threshold, the answer is at mid or before, so high = mid; otherwise low = mid + 1. Return low."
+  ]
+}

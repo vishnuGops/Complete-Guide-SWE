@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The queue is already sorted. What does that tell you about the heaviest parcel and whether it can pair with anything?",
+    "Look at the lightest and the heaviest at the same time. If even those two are over the limit, the heaviest cannot pair with anyone.",
+    "Put one pointer at each end. When the two ends fit, every parcel between them also fits with the lighter one - count them all at once.",
+    "While low < high: if weights[low] + weights[high] <= limit, add high - low to the count and advance low; otherwise step high back. Each pointer moves at most n times."
+  ]
+}

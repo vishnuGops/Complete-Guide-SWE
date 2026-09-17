@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "merge-overlapping-windows",
+  "slug": "merge-overlapping-windows",
+  "title": "Merge Maintenance Windows",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": [
+    "intervals",
+    "sort by start",
+    "sweep"
+  ],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 0,
+  "mode": "function",
+  "entry": "mergeWindows",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [],
+  "targetComplexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  }
+}

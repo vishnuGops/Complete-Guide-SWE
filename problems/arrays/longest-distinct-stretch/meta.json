@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "longest-distinct-stretch",
+  "slug": "longest-distinct-stretch",
+  "title": "Longest Limited Stretch",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": [
+    "sliding window",
+    "frequency map",
+    "two pointers"
+  ],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 5,
+  "mode": "function",
+  "entry": "longestStretch",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "window-average-peak"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(k)"
+  }
+}

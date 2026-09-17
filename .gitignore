@@ -14,6 +14,10 @@ data/
 .env.*
 !.env.example
 
+# Python bytecode left behind by generators and references
+__pycache__/
+*.pyc
+
 # test output
 coverage/
 playwright-report/

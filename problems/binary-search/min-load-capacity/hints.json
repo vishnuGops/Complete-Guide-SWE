@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose someone hands you a capacity. How hard is it to check whether that capacity is enough?",
+    "Checking is a single greedy pass: fill the day until the next parcel would not fit, then start a new day. Count the days.",
+    "Now notice that if a capacity works, every larger capacity works too. The workable capacities form a suffix, and you are looking for where it starts.",
+    "Binary search the capacity between max(weights) and sum(weights), using the greedy day count as the test. That is the same boundary search as first-not-below, applied to an answer rather than an array."
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "tag-index",
+  "slug": "tag-index",
+  "title": "Tag Index",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": [
+    "design",
+    "two maps",
+    "invariant"
+  ],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 5,
+  "mode": "operations",
+  "entry": "TagIndex",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "min-value-stack"
+  ],
+  "targetComplexity": {
+    "time": "O(1) per operation",
+    "space": "O(n)"
+  }
+}

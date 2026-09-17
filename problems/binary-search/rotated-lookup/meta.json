@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "rotated-lookup",
+  "slug": "rotated-lookup",
+  "title": "Lookup In A Rotated Series",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": [
+    "binary search",
+    "rotated array",
+    "invariant"
+  ],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 1,
+  "mode": "function",
+  "entry": "findRotated",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "first-not-below"
+  ],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

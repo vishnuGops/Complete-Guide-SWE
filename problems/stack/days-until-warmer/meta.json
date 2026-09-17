@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "days-until-warmer",
+  "slug": "days-until-warmer",
+  "title": "Days Until Warmer",
+  "version": 1,
+  "topic": "stack",
+  "patterns": [
+    "monotonic stack",
+    "next greater element",
+    "single pass"
+  ],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "daysUntilWarmer",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "bracket-balance"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "When you meet a closing bracket, only one opening bracket can possibly match it. Which one?",
+    "The most recent one still open. That is a last-in-first-out question, which is what a stack is.",
+    "Push every opening bracket. On a closing bracket, pop and check the kinds match; if the stack is empty there was nothing to close.",
+    "Two failure modes besides a mismatch: a closing bracket with an empty stack, and a non-empty stack once the fragment ends. Both mean false."
+  ]
+}

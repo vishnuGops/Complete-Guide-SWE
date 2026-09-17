@@ -135,8 +135,13 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
 - Enforce the statement's guarantees inside the generator (loop until the case
   has exactly one valid pair, never call `pop` on an empty stack). A case that
   breaks a guarantee makes the reference's behaviour the specification.
-- Include one case at the size the constraints allow. It is the only thing
-  standing between an accepted `O(n²)` and an `O(n)` target.
+- Include one case at the size the constraints allow, and state the constraint
+  as the size you actually generate. A statement promising `n <= 10^5` whose
+  largest test is 500 elements is a promise the tests do not keep, and it is the
+  only thing standing between an accepted `O(n²)` and an `O(n)` target.
+- Size that case for the trap, not for show. Where a quadratic solution is the
+  plausible wrong answer, go large enough that it times out; where it is not,
+  a few thousand elements is plenty and keeps `tests.json` reviewable.
 
 ## 7. Before you open a PR
 

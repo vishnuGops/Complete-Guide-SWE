@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "For a value v, which other value would complete a pair? There is only one candidate.",
+    "Membership is the only thing you need to ask about that candidate, and a set answers it in constant time.",
+    "Put the distinct values in a set, then for each distinct value v check whether v + gap is also in the set.",
+    "Iterate over the distinct values, not the list, so repeats cannot count a pair twice. A gap of zero is the one case where the candidate is v itself, and there you need a count rather than membership."
+  ]
+}

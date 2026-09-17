@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "In the order they arrive, any window can overlap any other. What order would make overlaps only ever happen between neighbours?",
+    "Sort by start. Then a window can only overlap the one being built, because every later window starts at or after this one.",
+    "Walk the sorted windows keeping a current window. If the next one starts at or before the current end, stretch the current end; otherwise emit the current window and start a new one.",
+    "Stretch with end = max(currentEnd, nextEnd), not with nextEnd: a window can be entirely swallowed by the one before it. Do not forget to emit the final window after the loop."
+  ]
+}

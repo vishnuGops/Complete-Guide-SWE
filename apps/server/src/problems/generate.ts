@@ -368,6 +368,42 @@ export async function generateHiddenTests(
 // Writing the result back
 // ---------------------------------------------------------------------------
 
+/** Width a line is allowed to reach before a value is broken across lines. */
+const WRAP_WIDTH = 100;
+
+/**
+ * JSON that a human can review.
+ *
+ * `JSON.stringify(value, null, 2)` puts every element of every array on its own
+ * line, which turns a thousand-element test case into a thousand lines and a
+ * tests.json into something no reviewer will ever open. This keeps the nesting
+ * readable but collapses anything that fits on one line, which is most of a test
+ * case and all of its numbers.
+ */
+export function formatJson(value: unknown, indent = 0): string {
+  const pad = ' '.repeat(indent);
+  const compact = JSON.stringify(value);
+  if (compact === undefined) return 'null';
+  if (compact.length + indent <= WRAP_WIDTH) return compact;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]';
+    const items = value.map((item) => `${pad}  ${formatJson(item, indent + 2)}`);
+    return ['[', items.join(',\n'), `${pad}]`].join('\n');
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value).filter(([, v]) => v !== undefined);
+    if (entries.length === 0) return '{}';
+    const items = entries.map(
+      ([key, v]) => `${pad}  ${JSON.stringify(key)}: ${formatJson(v, indent + 2)}`,
+    );
+    return ['{', items.join(',\n'), `${pad}}`].join('\n');
+  }
+
+  return compact;
+}
+
 export interface WriteResult {
   changed: boolean;
   previous: number;
@@ -397,10 +433,13 @@ export function writeHiddenTests(
     samples: pkg.tests.samples,
     hidden,
   };
-  fs.writeFileSync(testsPath, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(testsPath, `${formatJson(body)}\n`, 'utf8');
 
   const result: WriteResult = { changed, previous: previous.length, next: hidden.length };
-  if (!changed || options.bumpVersion === false) return result;
+  // A problem that never had hidden tests has no history to protect, so its
+  // first generation leaves it at version 1 rather than shipping a brand-new
+  // problem at version 2.
+  if (!changed || previous.length === 0 || options.bumpVersion === false) return result;
 
   const metaPath = path.join(pkg.location.dir, 'meta.json');
   const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as Record<string, unknown>;

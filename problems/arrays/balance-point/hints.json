@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Each index needs two sums: everything before it and everything after it. How many of those do you actually have to compute from scratch?",
+    "The total of the whole row never changes. Given the total and the sum of everything before index i, the sum after it needs no second loop.",
+    "Keep a running left sum as you walk. The right sum is total - left - values[i].",
+    "Start with left = 0 and total = sum(values). At each index compare left with total - left - values[i], return immediately on a match, then add values[i] to left."
+  ]
+}

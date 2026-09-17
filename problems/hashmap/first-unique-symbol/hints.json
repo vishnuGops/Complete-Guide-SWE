@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You cannot tell whether the first letter is unique until you have seen the whole message. What does that say about how many passes you need?",
+    "Count how often each letter appears. There are only 26 of them, so the count fits in a fixed amount of space.",
+    "Count in one pass, then walk the message again in order and return the first index whose letter has a count of one.",
+    "The second pass must walk the message, not the counts: the answer is the earliest position, and a map of counts has no position in it."
+  ]
+}

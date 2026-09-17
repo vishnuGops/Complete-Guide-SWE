@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two neighbouring windows share all but two readings. What actually changes when the window slides one place right?",
+    "Keep a running total instead of re-adding the whole window: sliding right adds the reading that enters and removes the one that leaves.",
+    "Sum the first window directly, then slide across the rest updating that total in constant time per step.",
+    "total += values[start + width - 1] - values[start - 1]. Track the best total and where it started, and update only when the new total is strictly larger - that is what keeps the earlier index on a tie."
+  ]
+}

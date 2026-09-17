@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "pair-sum-under-limit",
+  "slug": "pair-sum-under-limit",
+  "title": "Pairs Under The Limit",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": [
+    "two pointers",
+    "sorted input",
+    "counting"
+  ],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 6,
+  "mode": "function",
+  "entry": "countPairs",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "pair-sum-index"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

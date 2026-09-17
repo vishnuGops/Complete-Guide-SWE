@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two words belong together when something about them is identical. What could you compute from a word that ignores the order of its letters?",
+    "You need a key that is the same for every word in a group and different for every word outside it - a canonical form of the word.",
+    "Sorting a word's letters gives such a key, and so does a count of each of the 26 letters. Group the words in a map keyed by that.",
+    "Walk the words once, compute the key, append the word to map[key], and return the map's values. The values are the groups; their order is whatever the map gives you, which the judge does not mind."
+  ]
+}

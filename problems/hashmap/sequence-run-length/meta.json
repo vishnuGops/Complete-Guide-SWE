@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "sequence-run-length",
+  "slug": "sequence-run-length",
+  "title": "Longest Consecutive Run",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": [
+    "hash set",
+    "membership",
+    "amortised scan"
+  ],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 4,
+  "mode": "function",
+  "entry": "longestRun",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "pair-difference-count"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

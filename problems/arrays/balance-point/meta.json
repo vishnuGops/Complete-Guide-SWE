@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "balance-point",
+  "slug": "balance-point",
+  "title": "Balance Point",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": [
+    "prefix sum",
+    "running total",
+    "single pass"
+  ],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 4,
+  "mode": "function",
+  "entry": "balancePoint",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "window-average-peak"
+  ],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}
