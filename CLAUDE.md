@@ -1,18 +1,20 @@
 # CLAUDE.md — DevProMax
 
-Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` first; it holds the goals, the architecture decisions (D1–D12) and the prioritised task table.
+Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` first; it holds the goals, the architecture decisions (D1–D18) and the prioritised task table.
 
 ## What this project is
 
 DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists ~200 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **planning complete, implementation not started.** Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Current state: **planning complete and audited, implementation not started.** Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
-## Stack (decided, see ROADMAP D1–D11)
+## Stack (decided, see ROADMAP D1–D17)
 
-- TypeScript everywhere. npm workspaces: `apps/web` (React 19, Vite, Monaco, Tailwind v4 tokens, Radix primitives), `apps/server` (Fastify, Drizzle + better-sqlite3), `packages/shared` (zod schemas + types), `packages/judge`, `packages/problems`.
-- Judge runs `python` and `javac`/`java` as local subprocesses with a harness. No Docker on the dev machine.
-- Problems are directories under `problems/<topic>/<slug>/`, validated by `npm run problems:validate`.
+- TypeScript everywhere. npm workspaces: `apps/web` (React 19, Vite, React Router, TanStack Query, Monaco, Tailwind v4 tokens, Radix primitives), `apps/server` (Fastify; `judge/`, `problems/`, `coach/`, `db/`, `api/` folders inside), `packages/shared` (zod schemas + types). No other workspaces.
+- Persistence is `node:sqlite` with hand-written SQL and checked-in migrations. No ORM. `better-sqlite3` only as a documented fallback.
+- Judge runs `python` and `javac`/`java` as local subprocesses with a harness. All tests of a run execute in one process with a per-test watchdog; isolation per test only after a timeout. Two test modes (`function`, `operations`) and three expect modes (`return`, `mutatedArgs`, `both`). Java arguments are typed by reflection from a fixed supported-type table. Custom checkers are TypeScript run in-process.
+- The API binds to `127.0.0.1`, checks the `Host` header, and requires the `X-DevProMax-Client` header on every `/api` request. Do not loosen this.
+- Problems are directories under `problems/<topic>/<slug>/`, validated by `npm run problems:validate`. Hidden tests come from each problem's `generator.py` with the reference solution as oracle.
 - LLM access goes through a `CoachProvider` adapter with Anthropic and Gemini implementations. Never call a vendor SDK directly from UI or route code.
 - The coach is **on-demand only** (AI Help button). Never auto-call the LLM on Run/Submit. Skip the API call when the code is the untouched starter or has no meaningful body.
 - Package scope is `@devpromax/*`; the SQLite file is `data/devpromax.db`.
@@ -21,30 +23,34 @@ Current state: **planning complete, implementation not started.** Legacy content
 
 - Windows 11, PowerShell primary shell. Paths may contain spaces; always quote.
 - Installed: Node 24, npm 11, Python 3.14, OpenJDK 25. Not installed: Docker, pnpm, uv.
-- Judge and tests must work on both Windows and Linux; CI runs both. Use `path.join`, spawn without `shell: true`, kill process trees explicitly.
+- Supported user runtimes: Python ≥ 3.10, Java ≥ 21. Compile Java with `--release 21`; the harness must not use features newer than Python 3.10.
+- Judge and tests must work on both Windows and Linux; CI runs judge integration on both. Use `path.join`, spawn without `shell: true`, pass UTF-8 flags, kill process trees explicitly.
 
 ## Commands (to be kept current as tooling lands)
 
 ```
 npm install                 # all workspaces
 npm run dev                 # web + server with hot reload
-npm start                   # production build + serve on localhost
+npm start                   # production build + serve on 127.0.0.1
 npm test                    # Vitest unit + contract + judge integration
 npm run test:e2e            # Playwright
 npm run lint && npm run typecheck
-npm run problems:validate [slug]   # schema + reference solutions pass in both languages
+npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)
 npm run problems:new <topic> <slug>
+npm run problems:gen <slug>                   # regenerate hidden tests from generator.py
 ```
 
-Until P0-4 lands, none of these exist yet. Do not invent others without adding them here.
+Until P0-5 lands, none of these exist yet. Do not invent others without adding them here.
 
 ## Conventions
 
 - **TypeScript strict**, no `any` without a comment explaining why. Shared request/response shapes live in `packages/shared` and are the single source of truth for both sides.
 - **Tests ship with the change.** Judge changes need integration tests that spawn real interpreters. UI behaviour needs RTL tests; golden paths need Playwright. New problems must pass `problems:validate` before commit.
-- **Problem content** must be original wording (no copied LeetCode text), include ≥ 3 visible samples and ≥ 10 hidden tests with edge cases (empty, single element, max size, duplicates, negatives), hints ladder, editorial, and starter + reference in both languages.
-- **Design** follows `docs/DESIGN.md` once written; until then: one accent colour, neutral greys, 8-pt spacing, Inter + JetBrains Mono, no gradients, no hero sections, no emoji in UI chrome, no card grids with drop shadows, real keyboard support, both themes. If a screen looks like a generic dashboard template, it is wrong.
-- **Coach prompts** are versioned files under `docs/COACH_PROMPTS.md` / `apps/server/src/coach/prompts/`. The coach never reveals a full solution unless the problem is Solved and the user explicitly asked.
+- **Problem content** must be original wording (no copied LeetCode text), include ≥ 3 visible samples with explanations and ≥ 10 generated hidden tests with edge cases (empty, single element, max size, duplicates, negatives), a hints ladder, an editorial, and starter + reference in both languages. Follow `docs/AUTHORING.md` once it exists.
+- **Design** follows `docs/DESIGN.md` once written; until then: one accent colour, neutral greys, 8-pt spacing, Inter + JetBrains Mono, no gradients, no hero sections, no emoji in UI chrome, no card grids with drop shadows, real keyboard support, both themes. Build components with the screen that needs them, not ahead of time. If a screen looks like a generic dashboard template, it is wrong.
+- **Shortcuts**: `Ctrl+Enter` run, `Ctrl+Shift+Enter` submit, `Ctrl+J` toggle bottom panel, `Ctrl+Shift+H` AI Help. Never bind `Ctrl+/` (Monaco comment toggle).
+- **Progress status** changes only on Run, Submit, coach mastery, or manual override. Saving a draft never changes status.
+- **Coach prompts** are versioned files under `apps/server/src/coach/prompts/` and documented in `docs/COACH_PROMPTS.md`. The coach never reveals a full solution unless the problem is Solved and the user explicitly asked.
 - **Secrets**: API keys are stored locally, masked in the UI, never logged, never included in exports or fixtures.
 - Prefer small, reviewable commits scoped to one ROADMAP task. Commit messages reference the task ID, e.g. `P2-3: Java executor with compile-error mapping`.
 
@@ -52,12 +58,12 @@ Until P0-4 lands, none of these exist yet. Do not invent others without adding t
 
 - The task table is **always sorted by Priority**. Insert new tasks at the right priority and renumber the rows below.
 - Update a task's Status (`Not started` / `In progress` / `Done` / `Blocked`) in the same commit as the work.
-- If an implementation deviates from a decision in section 2, update the decision row with the new reasoning rather than silently diverging.
+- If an implementation deviates from a decision in section 2, update the decision row with the new reasoning rather than silently diverging, and add a line to the revision history.
 
 ## Do not
 
 - Edit or delete anything in `temp/` (owner wants it kept until the app is built out, see P8-5).
 - Add a UI component library (shadcn, MUI, Chakra, Ant). Radix primitives + our tokens only.
-- Add a second backend language or a second package manager.
-- Run user-submitted code outside the judge's workspace/limit machinery.
+- Add a second backend language, a second package manager, an ORM, or OpenAPI generation.
+- Run user-submitted code outside the judge's workspace/limit machinery, or expose the server beyond `127.0.0.1`.
 - Commit `data/`, `node_modules/`, build outputs, or any `.env`.
