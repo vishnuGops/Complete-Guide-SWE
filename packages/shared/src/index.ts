@@ -8,6 +8,7 @@ export * from './language.js';
 export * from './curriculum.js';
 export * from './problem.js';
 export * from './judge.js';
+export * from './customTests.js';
 export * from './progress.js';
 export * from './coach.js';
 export * from './settings.js';

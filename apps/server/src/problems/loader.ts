@@ -220,3 +220,29 @@ export function loadProblem(location: ProblemLocation): LoadResult {
 
   return { pkg, issues };
 }
+
+/**
+ * Finds and reads one problem by slug.
+ *
+ * Matches on the directory name rather than on `meta.slug`, because the two are
+ * required to agree (the validator enforces it) and matching on the directory
+ * means one problem is read instead of the whole catalogue.
+ *
+ * Returns null when there is no such problem, and throws when the problem exists
+ * but does not parse - a broken package is a bug in the catalogue, not a missing
+ * page, and the two must not be reported the same way.
+ */
+export function loadProblemBySlug(
+  slug: string,
+  root: string = paths.problems,
+): ProblemPackage | null {
+  const location = discoverProblems(root).find((candidate) => candidate.slugDir === slug);
+  if (!location) return null;
+
+  const { pkg, issues } = loadProblem(location);
+  if (!pkg) {
+    const detail = issues.map((issue) => `${issue.file}: ${issue.message}`).join('; ');
+    throw new Error(`problem "${slug}" could not be read (${detail})`);
+  }
+  return pkg;
+}

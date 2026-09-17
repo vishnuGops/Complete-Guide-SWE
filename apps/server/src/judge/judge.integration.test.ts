@@ -493,6 +493,56 @@ describe('hidden test reveal policy', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Custom cases (ROADMAP P2-6)
+// ---------------------------------------------------------------------------
+
+describe('custom cases', () => {
+  it('reports the value a custom case produced instead of grading it', async () => {
+    // A custom case has no expected output, so "correct" is not a question the
+    // judge can answer about it - only "here is what your code returned".
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        return n * 10\n',
+      { tests: [{ source: 'custom', test: { args: [4] } }] },
+    );
+
+    expect(result.verdict).toBe('AC');
+    expect(result.tests[0]?.actual).toBe(40);
+    expect(result.tests[0]?.expected).toBeUndefined();
+    expect(result.tests[0]?.revealed).toBe(true);
+  });
+
+  it('still reports a crash in a custom case as a runtime error', async () => {
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        raise ValueError("boom")\n',
+      { tests: [{ source: 'custom', test: { args: [4] } }] },
+    );
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toContain('boom');
+  });
+
+  it('grades the samples beside it as usual', async () => {
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        return n * 10\n',
+      {
+        tests: [
+          { source: 'sample', test: { args: [1], expected: 1 } },
+          { source: 'custom', test: { args: [2] } },
+        ],
+      },
+    );
+
+    expect(result.verdict).toBe('WA');
+    expect(result.tests[0]?.verdict).toBe('WA');
+    expect(result.tests[1]?.verdict).toBe('AC');
+    expect(result.tests[1]?.actual).toBe(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Workspace hygiene
 // ---------------------------------------------------------------------------
 

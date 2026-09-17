@@ -388,6 +388,22 @@ async function buildTestResult(args: BuildArgs): Promise<TestResult> {
     };
   }
 
+  // A custom case is input the user typed, with no expected output to compare
+  // against: Run with custom input answers "what does my code do with this",
+  // not "is my code correct". Reaching the end of it without raising is the
+  // whole result, so the value is reported and the verdict stays AC.
+  if (entry.source === 'custom') {
+    return {
+      ...base,
+      verdict: 'AC',
+      timeMs: record.timeMs,
+      stdout: record.stdout,
+      stderr: record.stderr,
+      ...(record.returned !== undefined ? { actual: record.returned } : {}),
+      ...(record.mutatedArgs ? { actualMutatedArgs: record.mutatedArgs } : {}),
+    };
+  }
+
   const comparison = await judgeOutputs(record, entry.test, meta, checker);
   return {
     ...base,

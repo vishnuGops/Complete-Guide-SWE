@@ -154,6 +154,32 @@ Argument typing comes from the user's own signature (D5) — Python reads the
 method's annotations, Java reflects on the declared parameter types — so no
 metadata anywhere repeats what the starter already says.
 
+### 3.5 Run and Submit
+
+Both go through the same judge; they differ in what they run and what they are
+allowed to write down (`apps/server/src/api/runService.ts`).
+
+|            | Tests                             | Recorded                                                                                           |
+| ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Run**    | Samples plus the user's own cases | That they are working on it: In progress, and an activity event                                    |
+| **Submit** | Samples plus every hidden test    | The code, verdict, slowest test, and the problem version it faced; an accepted run makes it Solved |
+
+A **custom case is input with no expectation**. Run with custom input answers
+"what does my code do with this", which is a different question from "is my code
+correct", so the judge reports the value rather than grading it — a crash is
+still a runtime error, but a surprising answer is not a wrong one. The arity and,
+for operations problems, the legal method names come from the problem's own
+samples, which are what the harness actually calls the solution with. The same
+parser runs in the editor and on the server (`packages/shared/src/customTests.ts`):
+the editor validating as the user types is a convenience for them, not a
+guarantee to us.
+
+**Hidden tests stay hidden, except the first one that fails.** A Submit that
+only said "wrong answer on test 7" would give the user nothing to work with; a
+Submit that showed all forty would hand them the test set. The policy lives in
+the judge rather than in the service, because it has to apply to everything that
+runs hidden tests — including the validator, which turns it off deliberately.
+
 ---
 
 ## 4. Persistence
