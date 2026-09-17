@@ -11,6 +11,9 @@ export default defineConfig({
         new URL('../../packages/shared/src/index.ts', import.meta.url),
       ),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // `monaco-vim` is UMD and requires the pre-0.56 spelling, which Monaco's
+      // exports map now resolves to `esm/vs/esm/vs/...`. See src/editor/monaco.ts.
+      'monaco-editor/esm/vs/editor/editor.api': 'monaco-editor/editor/editor.api.js',
     },
   },
   server: {
