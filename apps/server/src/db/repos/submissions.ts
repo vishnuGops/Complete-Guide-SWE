@@ -46,6 +46,8 @@ export interface SubmissionRepo {
   /** The newest accepted submission, used to seed the editorial diff and mastery check. */
   latestAccepted(slug: string, language: Language): Submission | null;
   countByProblem(slug: string): number;
+  /** Wipes the archive; returns how many rows went. Used by reset-all-progress. */
+  clear(): number;
 }
 
 export function createSubmissionRepo(db: Database): SubmissionRepo {
@@ -54,6 +56,7 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
   );
   const getStmt = db.prepare(`SELECT ${COLUMNS} FROM submissions WHERE id = ?`);
   const countStmt = db.prepare('SELECT COUNT(*) AS n FROM submissions WHERE slug = ?');
+  const clearStmt = db.prepare('DELETE FROM submissions');
   const latestAcceptedStmt = db.prepare(
     `SELECT ${COLUMNS} FROM submissions
      WHERE slug = ? AND language = ? AND verdict = 'AC'
@@ -123,6 +126,10 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
     countByProblem(slug) {
       const row = countStmt.get(slug) as Row | undefined;
       return row ? num(row, 'n') : 0;
+    },
+
+    clear() {
+      return Number(clearStmt.run().changes);
     },
   };
 }

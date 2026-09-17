@@ -18,7 +18,8 @@ export interface DraftRepo {
   listByProblem(slug: string): Draft[];
   /** Used by reset-to-starter, which should leave no draft behind. */
   remove(slug: string, language: Language): boolean;
-  clear(): void;
+  /** Returns how many rows went, which reset-all-progress reports back. */
+  clear(): number;
 }
 
 export function createDraftRepo(db: Database): DraftRepo {
@@ -58,7 +59,7 @@ export function createDraftRepo(db: Database): DraftRepo {
     },
 
     clear() {
-      clearStmt.run();
+      return Number(clearStmt.run().changes);
     },
   };
 }

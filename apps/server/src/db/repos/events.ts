@@ -65,7 +65,8 @@ export interface EventRepo {
   list(query?: ActivityQuery): ActivityRecord[];
   /** Counts per UTC day, newest first. */
   dailyCounts(since?: string): DailyCount[];
-  clear(): void;
+  /** Returns how many rows went, which reset-all-progress reports back. */
+  clear(): number;
 }
 
 export function createEventRepo(db: Database): EventRepo {
@@ -134,7 +135,7 @@ export function createEventRepo(db: Database): EventRepo {
     },
 
     clear() {
-      clearStmt.run();
+      return Number(clearStmt.run().changes);
     },
   };
 }

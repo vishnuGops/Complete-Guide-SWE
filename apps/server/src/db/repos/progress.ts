@@ -31,7 +31,8 @@ export interface ProgressRepo {
   /** Writes the row exactly as given; the caller has already decided it. */
   put(progress: ProblemProgress): ProblemProgress;
   remove(slug: string, language: Language): boolean;
-  clear(): void;
+  /** Returns how many rows went, which reset-all-progress reports back. */
+  clear(): number;
 }
 
 export function createProgressRepo(db: Database): ProgressRepo {
@@ -86,7 +87,7 @@ export function createProgressRepo(db: Database): ProgressRepo {
     },
 
     clear() {
-      clearStmt.run();
+      return Number(clearStmt.run().changes);
     },
   };
 }

@@ -63,6 +63,8 @@ export interface CoachRepo {
   /** Feedback turns for a problem, newest first - the input to P5-5's attempt memory. */
   recentFeedback(slug: string, language: Language, limit: number): CoachMessage[];
   deleteSession(id: string): boolean;
+  /** Drops every conversation; messages go with them by cascade. */
+  clearSessions(): number;
 }
 
 const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, created_at';
@@ -97,6 +99,7 @@ export function createCoachRepo(db: Database): CoachRepo {
      LIMIT ?`,
   );
   const deleteSession = db.prepare('DELETE FROM coach_sessions WHERE id = ?');
+  const clearSessions = db.prepare('DELETE FROM coach_sessions');
 
   return {
     createSession(slug, language) {
@@ -166,6 +169,10 @@ export function createCoachRepo(db: Database): CoachRepo {
     deleteSession(id) {
       // coach_messages cascades (and PRAGMA foreign_keys is ON per connection).
       return deleteSession.run(id).changes > 0;
+    },
+
+    clearSessions() {
+      return Number(clearSessions.run().changes);
     },
   };
 }

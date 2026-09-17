@@ -1,0 +1,16 @@
+import type { CoachProvider as CoachProviderId } from '@devpromax/shared';
+import { createAnthropicProvider } from './anthropic.js';
+import { createGeminiProvider } from './gemini.js';
+import type { CoachProvider, ProviderOptions } from './provider.js';
+
+export * from './provider.js';
+export { ANTHROPIC_DEFAULT_MODEL, createAnthropicProvider } from './anthropic.js';
+export { GEMINI_DEFAULT_MODEL, createGeminiProvider } from './gemini.js';
+
+/** The one place a provider id becomes an implementation. */
+export function createCoachProvider(
+  id: CoachProviderId,
+  options: ProviderOptions = {},
+): CoachProvider {
+  return id === 'anthropic' ? createAnthropicProvider(options) : createGeminiProvider(options);
+}
