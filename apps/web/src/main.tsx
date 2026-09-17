@@ -3,10 +3,20 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.js';
+import { applyTheme, cachedTheme } from './theme.js';
 import './styles.css';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('#root not found');
+
+/**
+ * The theme, before anything renders (ROADMAP P4-2).
+ *
+ * From the local cache rather than from settings, because settings are a fetch
+ * away and a page that paints light and then flips to dark is worse than one
+ * that guesses. `useAppTheme` reconciles it the moment the server answers.
+ */
+applyTheme(cachedTheme());
 
 /**
  * One query client for the app (ROADMAP P4-1).

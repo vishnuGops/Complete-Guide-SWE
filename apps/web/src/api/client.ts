@@ -1,10 +1,17 @@
 import type {
   ApiError as ApiErrorBody,
+  DraftResponse,
   Language,
   ProblemDetail,
+  ProblemListQuery,
   ProblemListResponse,
+  ProgressResponse,
+  ResetProgressResponse,
   RunResult,
+  SettingsUpdate,
   SettingsView,
+  SubmissionListResponse,
+  TestCase,
 } from '@devpromax/shared';
 
 /**
@@ -78,13 +85,59 @@ export interface RunBody {
   slug: string;
   language: Language;
   code: string;
+  /** Ignored by `/api/submit`, which runs the problem's own tests only. */
+  customTests?: TestCase[];
+}
+
+/**
+ * The list query as a URL.
+ *
+ * Repeated keys rather than a comma-joined value: that is what a
+ * `URLSearchParams` round trip produces, so the address bar and this agree
+ * character for character, and the server accepts both anyway (`multi()` in
+ * `shared/api.ts`).
+ *
+ * Defaults are omitted, so the tidy URL is the unfiltered one - `/` rather than
+ * `/?sort=default&dir=asc`.
+ */
+export function problemQueryString(query: Partial<ProblemListQuery>): string {
+  const params = new URLSearchParams();
+  for (const topic of query.topic ?? []) params.append('topic', topic);
+  for (const tier of query.tier ?? []) params.append('tier', tier);
+  for (const status of query.status ?? []) params.append('status', status);
+  if (query.q) params.set('q', query.q);
+  if (query.language) params.set('language', query.language);
+  if (query.sort && query.sort !== 'default') params.set('sort', query.sort);
+  if (query.dir && query.dir !== 'asc') params.set('dir', query.dir);
+  return params.toString();
 }
 
 export const api = {
-  problems: (): Promise<ProblemListResponse> => request('/api/problems'),
+  problems: (query: Partial<ProblemListQuery> = {}): Promise<ProblemListResponse> => {
+    const search = problemQueryString(query);
+    return request(search ? `/api/problems?${search}` : '/api/problems');
+  },
   problem: (slug: string): Promise<ProblemDetail> =>
     request(`/api/problems/${encodeURIComponent(slug)}`),
+  submissions: (slug: string): Promise<SubmissionListResponse> =>
+    request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
+  progress: (): Promise<ProgressResponse> => request('/api/progress'),
+
   settings: (): Promise<SettingsView> => request('/api/settings'),
+  updateSettings: (patch: SettingsUpdate): Promise<SettingsView> =>
+    request('/api/settings', { method: 'PUT', body: JSON.stringify(patch) }),
+  /** Destructive, and confirmed in the UI before it is ever called (P3-4). */
+  resetProgress: (): Promise<ResetProgressResponse> =>
+    request('/api/settings/reset-progress', { method: 'POST' }),
+
+  saveDraft: (slug: string, language: Language, code: string): Promise<DraftResponse> =>
+    request(`/api/drafts/${encodeURIComponent(slug)}/${language}`, {
+      method: 'PUT',
+      body: JSON.stringify({ code }),
+    }),
+  /** Reset-to-starter: deleting the draft is what makes the reset survive a reload. */
+  deleteDraft: (slug: string, language: Language): Promise<DraftResponse> =>
+    request(`/api/drafts/${encodeURIComponent(slug)}/${language}`, { method: 'DELETE' }),
 
   run: (body: RunBody): Promise<RunResult> =>
     request('/api/run', { method: 'POST', body: JSON.stringify(body) }),
