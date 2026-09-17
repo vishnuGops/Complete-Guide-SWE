@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "`smallest` has to answer in constant time, so it cannot scan. That means the answer has to already be sitting somewhere when the call arrives.",
+    "The smallest value changes only when you push or pop. Whatever you store has to survive a pop that removes the current minimum — so remembering a single number is not enough.",
+    "Keep a second stack alongside the first. Its top is always the smallest value among the elements currently in the stack.",
+    "On push, store `min(value, previous top of the min stack)`. On pop, pop both stacks. Every operation is then a handful of constant-time list operations."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "min-value-stack",
+  "slug": "min-value-stack",
+  "title": "Min Value Stack",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["design", "auxiliary stack", "amortised O(1)"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 0,
+  "mode": "operations",
+  "entry": "MinValueStack",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["pair-sum-index"],
+  "targetComplexity": { "time": "O(1) per operation", "space": "O(n)" }
+}

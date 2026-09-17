@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "pair-sum-index",
+  "slug": "pair-sum-index",
+  "title": "Pair Sum Index",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["hash map", "complement lookup", "one pass"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 0,
+  "mode": "function",
+  "entry": "pairSumIndex",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["shift-right-in-place"],
+  "targetComplexity": { "time": "O(n)", "space": "O(n)" }
+}

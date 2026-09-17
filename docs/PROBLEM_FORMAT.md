@@ -441,7 +441,8 @@ import java.util.*;
 
 class Solution {
     public int[] pairSumIndex(int[] nums, int target) {
-
+        // Replace this placeholder with your answer.
+        return new int[0];
     }
 }
 ```
@@ -449,6 +450,11 @@ class Solution {
 - Compiled with `--release 21`. The class is `Solution` (or the `entry` class in
   `operations` mode) and must not be `public` — the harness compiles it alongside
   its own `Main`.
+- **A non-void Java starter must return something.** An empty body is a compile
+  error in Java, and the validator requires starters to compile (§11). Use a
+  cheap placeholder with a comment, as above. The payoff is that Run on an
+  untouched starter gives the user a Wrong Answer they can read, instead of a
+  compile error that tells them nothing about the problem.
 - `import java.util.*;` is always present in the starter, even when unused.
 - The method signature is what the harness reflects on, so parameter types must
   come from the supported-type table in §5.1.

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Shifting by `n` leaves the row exactly as it was. What does that tell you about a shift of 10^9?",
+    "Only `shift % n` matters. After that reduction, every element moves to `(i + shift) % n` — but writing that directly into a copy costs O(n) extra memory, which you are not allowed.",
+    "Reverse the whole row. The last `shift` elements are now at the front, but each block is backwards. Reverse the two blocks separately to fix them.",
+    "Three reversals: the whole array, then `[0, shift)`, then `[shift, n)`. Each is an in-place two-pointer swap loop."
+  ]
+}

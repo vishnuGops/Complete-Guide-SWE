@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "For each value you look at, there is exactly one other value that would complete the pair. Can you name it without searching for it?",
+    "The partner of `values[i]` is `target - values[i]`. The question is whether you have already walked past it.",
+    "Walk the array once, keeping a map from value to the index where you first saw it. Before recording `values[i]`, ask the map whether its partner is already there.",
+    "Check for the partner *before* inserting the current value, or an element will happily pair with itself."
+  ]
+}
