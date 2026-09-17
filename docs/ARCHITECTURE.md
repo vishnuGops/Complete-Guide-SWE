@@ -164,6 +164,31 @@ along with the judge workspaces. There is no ORM: eight tables do not justify
 one, and removing the last native module from the stack removes the most common
 Windows install failure.
 
+**Migrations** are `.sql` files in `apps/server/src/db/migrations/`, named
+`NNN_snake_case.sql` and numbered contiguously from `001`. The runner compares
+`PRAGMA user_version` with the highest checked-in version and applies what is
+missing, each migration and its version bump inside one transaction — so an
+interrupted upgrade leaves the database on the last version that fully applied,
+never between two. Contiguity is enforced rather than assumed: the failure this
+guards against is two branches each adding an `002_`, where whichever merged
+second would never run on a database that already recorded version 2.
+
+**Tables**: `submissions`, `drafts`, `problem_progress`, `coach_sessions`,
+`coach_messages`, `notes`, `settings`, `events`. Timestamps are ISO-8601 UTC
+strings, which is exactly what the zod schemas in `@devpromax/shared` carry, so
+no value is converted on the way in or out and string ordering is chronological
+ordering. Closed enumerations (language, verdict, status) carry CHECK
+constraints; `events.type` deliberately does not, because nothing branches on it
+and the set of things worth recording grows with the learning features.
+
+**Repositories** in `apps/server/src/db/repos/` are the only place SQL lives.
+Routes receive a `Repositories` handle, never a raw database, which is what keeps
+a new query testable against an in-memory database without starting a server.
+They store and retrieve; they do not decide. In particular `problem_progress`
+rows are written exactly as given, because the rule that a later Wrong Answer
+never demotes Solved belongs to the status engine (P3-3), and a rule implemented
+in two places is a rule that will disagree with itself.
+
 ---
 
 ## 5. Testing strategy

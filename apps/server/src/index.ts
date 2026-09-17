@@ -2,14 +2,31 @@ import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyBaseLogger } from 'fastify';
 import { applyHardening } from './api/hardening.js';
 import { serverConfig } from './config.js';
+import { createDatabase, type Repositories } from './db/index.js';
 import { logger } from './logger.js';
 import { sweepStaleWorkspaces } from './judge/index.js';
 
-export async function buildServer() {
+export interface BuildOptions {
+  /** Tests pass an in-memory database; production opens `data/devpromax.db`. */
+  repositories?: Repositories;
+}
+
+export async function buildServer(options: BuildOptions = {}) {
   // Widened to FastifyBaseLogger on purpose: keeping pino's concrete Logger type
   // makes the instance type incompatible with plain `FastifyInstance`, which
   // every plugin signature in this project uses.
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger });
+
+  // Opening the database applies any pending migration, so a build that adds one
+  // migrates on first start rather than failing at the first query that needs it.
+  const repositories = options.repositories ?? createDatabase();
+
+  // Only close what we opened: a caller that passed its own handle owns it.
+  if (options.repositories === undefined) {
+    app.addHook('onClose', async () => {
+      repositories.close();
+    });
+  }
 
   applyHardening(app);
 
