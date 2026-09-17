@@ -37,16 +37,30 @@ export interface CustomTestShape {
 }
 
 export function customTestShape(meta: ProblemMeta, tests: TestsFile): CustomTestShape {
-  const sample = tests.samples[0];
+  return customTestShapeFrom(meta.mode, tests.samples);
+}
+
+/**
+ * The same derivation from the two things it actually reads.
+ *
+ * The web app never sees a `ProblemMeta` or a `TestsFile` - `ProblemDetail`
+ * carries the mode and the samples and deliberately withholds the rest - but the
+ * Run panel has to mark a bad argument with the same message the server would
+ * give. Taking the mode and the samples rather than the files they came from is
+ * what lets both callers reach one implementation (ROADMAP P4-6).
+ */
+export function customTestShapeFrom(
+  mode: ProblemMeta['mode'],
+  samples: readonly TestCase[],
+): CustomTestShape {
+  const sample = samples[0];
   const methods =
-    meta.mode === 'operations'
-      ? [
-          ...new Set(tests.samples.flatMap((test) => (test.ops ?? []).map((op) => op.method))),
-        ].sort()
+    mode === 'operations'
+      ? [...new Set(samples.flatMap((test) => (test.ops ?? []).map((op) => op.method)))].sort()
       : [];
 
   return {
-    mode: meta.mode,
+    mode,
     argCount: sample?.args.length ?? 0,
     methods,
     example: (sample?.args ?? []).map((arg) => JSON.stringify(arg)),

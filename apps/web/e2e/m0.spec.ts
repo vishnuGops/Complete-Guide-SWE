@@ -83,6 +83,9 @@ test.describe('M0: solve the pilot problems from the browser', () => {
     await page.goto('/');
     await page.getByRole('link', { name: pilot.title }).click();
 
+    // Named rather than assumed: the workspace opens in the language last used,
+    // which is a setting shared by every test in this file (P3-4).
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
     await setEditorContents(page, reference(pilot.topic, pilot.slug, 'reference.py'));
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.getByTestId('verdict')).toHaveText('Accepted', { timeout: 120_000 });
@@ -96,6 +99,7 @@ test.describe('M0: solve the pilot problems from the browser', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'Pair Sum Index' }).click();
 
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
     await setEditorContents(
       page,
       [
