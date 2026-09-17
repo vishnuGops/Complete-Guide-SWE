@@ -1,7 +1,33 @@
-# Java bytecode
-*.class
+# dependencies
+node_modules/
 
-# Common Java build output folders
-out/
+# build outputs
+dist/
 build/
-target/
+*.tsbuildinfo
+
+# runtime data (SQLite DB + judge workspaces) — never commit
+data/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# test output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
+npm-debug.log*

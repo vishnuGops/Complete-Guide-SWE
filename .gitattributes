@@ -1,0 +1,13 @@
+# Normalise to LF in the repo and in the working tree. The judge ships Python and
+# Java harness sources that are written to disk verbatim and compiled on both
+# Windows and Linux; mixed line endings there cause real bugs.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.db binary
