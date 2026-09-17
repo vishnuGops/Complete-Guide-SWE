@@ -91,3 +91,17 @@ describe('sweepStaleWorkspaces', () => {
     expect(await sweepStaleWorkspaces(path.join(makeRoot(), 'never-created'))).toBe(0);
   });
 });
+
+describe('path resolution', () => {
+  it('is absolute even when the root is relative', async () => {
+    // The harness runs with its cwd set to the workspace, so a relative path in
+    // the payload would resolve against the workspace instead of against ours.
+    const root = makeRoot();
+    const relative = path.relative(process.cwd(), root);
+    const workspace = await createWorkspace(relative);
+
+    expect(path.isAbsolute(workspace.dir)).toBe(true);
+    expect(path.isAbsolute(workspace.file('solution.py'))).toBe(true);
+    expect(fs.existsSync(workspace.dir)).toBe(true);
+  });
+});

@@ -308,3 +308,16 @@ describe('preview', () => {
     expect(text).toContain('chars)');
   });
 });
+
+describe('unknown comparators', () => {
+  it('fails loudly rather than returning undefined', async () => {
+    // Reaching this means unparsed meta.json got in: `"comparator": "exact"` is
+    // a legal shorthand on disk but only becomes {kind:'exact'} via the schema.
+    await expect(
+      compareValues(1 as never, 1 as never, {
+        comparator: 'exact' as never,
+        test,
+      }),
+    ).rejects.toThrow(/unknown comparator/);
+  });
+});

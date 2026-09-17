@@ -21,7 +21,10 @@ export interface Workspace {
 
 export async function createWorkspace(root: string = paths.judgeWorkspaces): Promise<Workspace> {
   const id = randomUUID();
-  const dir = path.join(root, id);
+  // Resolved, not joined: every path handed to a harness has to be absolute.
+  // The subprocess runs with its cwd set to the workspace, so a relative path
+  // would resolve against the workspace itself rather than against ours.
+  const dir = path.resolve(root, id);
   await fs.mkdir(dir, { recursive: true });
 
   const file = (name: string): string => path.join(dir, name);

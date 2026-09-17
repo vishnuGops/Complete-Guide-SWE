@@ -322,6 +322,16 @@ export async function compareValues(
         ? { pass: true, ...(result.message ? { message: result.message } : {}) }
         : result;
     }
+    default: {
+      // Unreachable for a comparator that came through the schema, which is the
+      // point: reaching it means something handed the judge a raw meta.json
+      // without parsing it, and a silent `undefined` here would surface much
+      // later as an unreadable crash.
+      const unknown: never = comparator;
+      throw new Error(
+        `unknown comparator ${JSON.stringify(unknown)}; problem metadata must be parsed with problemMetaSchema`,
+      );
+    }
   }
 }
 
