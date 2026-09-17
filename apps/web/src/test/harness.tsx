@@ -57,6 +57,12 @@ export function renderApp(
 export interface Route {
   /** Matched against the path plus query string, in declaration order. */
   match: (url: URL) => boolean;
+  /**
+   * The response body, JSON-encoded for you - or a whole `Response`, returned
+   * as-is. The second form exists for the coach routes (P5-3), which answer
+   * with an event stream rather than JSON; encoding one as JSON would test a
+   * shape the server never sends.
+   */
   body: (url: URL, init: RequestInit | undefined) => unknown;
 }
 
@@ -88,8 +94,11 @@ export function fakeServer(routes: Route[]): FakeServer {
         );
       }
 
+      const body = route.body(url, init);
+      if (body instanceof Response) return Promise.resolve(body);
+
       return Promise.resolve(
-        new Response(JSON.stringify(route.body(url, init)), {
+        new Response(JSON.stringify(body), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }),

@@ -118,6 +118,36 @@ for (const theme of THEMES) {
       ).toEqual([]);
     });
   }
+
+  /**
+   * The Coach tab, audited separately because it has to be opened (P5-3).
+   *
+   * Worth its own case rather than a fifth entry in `PAGES`: the panel under it
+   * is a different surface from the statement - a rubric drawn as pips, a live
+   * region that fills in as text arrives, and a text box named only by its
+   * `aria-label` - and none of it is on screen until the tab is selected.
+   *
+   * The tab also proved worth auditing: it exposed a heading jump from `h1` to
+   * `h3` in the testcase panel that Hints and Submissions had had since P4-6,
+   * hidden because Description's markdown happened to supply the missing `h2`.
+   */
+  test(`the coach panel has no serious a11y violations in ${theme}`, async ({ page }) => {
+    await useTheme(page, theme, '/problems/pair-sum-index');
+    await expect(page.getByRole('heading', { name: 'Pair Sum Index' })).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Coach' }).click();
+    await expect(page.getByRole('button', { name: /Ask for help/i })).toBeVisible();
+
+    const { violations } = await audit(page).analyze();
+    const serious = violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    );
+
+    expect(
+      serious.map((violation) => `${violation.impact ?? 'unknown'} ${violation.id}`),
+      describe(violations, `the coach panel in ${theme}`),
+    ).toEqual([]);
+  });
 }
 
 test('says so instead of reflowing below 1024px', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   LANGUAGE_LABEL,
   TOPIC_LABEL,
@@ -14,15 +14,17 @@ import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
 /**
  * The left half of the workspace (ROADMAP P4-6).
  *
- * Four tabs, and each one is a different answer to "I am stuck": read the
- * problem again, take a hint, read how it is done, or look at what you already
- * tried. They are tabs rather than a scrolling column because the panel is
- * 400px wide and a hint the user has not asked for is a spoiler.
+ * Five tabs, and each one is a different answer to "I am stuck": read the
+ * problem again, take a hint, ask the coach, read how it is done, or look at
+ * what you already tried. They are tabs rather than a scrolling column because
+ * the panel is 400px wide and a hint the user has not asked for is a spoiler.
  *
- * Notes and Coach are named in the roadmap for this panel and are not here:
- * there is no notes route in the API yet (P7-4 adds it) and the coach's stream
- * arrives with P5-1. A tab that cannot save what you type into it is worse than
- * no tab.
+ * Coach arrived with P5-3, and sits between Hints and Editorial on purpose:
+ * that is its place on the ladder from "a nudge" to "the whole answer", and the
+ * tab order is the only thing on screen that says so.
+ *
+ * Notes is still absent - there is no notes route in the API until P7-4, and a
+ * tab that cannot save what you type into it is worse than no tab.
  */
 
 function Hints({ hints }: { hints: readonly string[] }) {
@@ -151,11 +153,22 @@ function Submissions({ slug }: { slug: string }) {
   );
 }
 
-export function StatementPanel({ problem }: { problem: ProblemDetail }) {
+export interface StatementPanelProps {
+  problem: ProblemDetail;
+  /**
+   * Controlled so AI Help can open the Coach tab from the toolbar. Without
+   * this, pressing the button would start a turn on a tab the user cannot see.
+   */
+  tab: string;
+  onTab: (tab: string) => void;
+  coach: ReactNode;
+}
+
+export function StatementPanel({ problem, tab, onTab, coach }: StatementPanelProps) {
   const { summary } = problem;
 
   return (
-    <Tabs defaultValue="description" className="flex min-h-0 w-full flex-col">
+    <Tabs value={tab} onValueChange={onTab} className="flex min-h-0 w-full flex-col">
       {/*
         Above the tabs, not inside Description. Which problem you are looking at
         is not a fact about one tab: on Hints or Submissions the title would
@@ -182,6 +195,7 @@ export function StatementPanel({ problem }: { problem: ProblemDetail }) {
       <TabsList className="shrink-0 px-2">
         <TabsTrigger value="description">Description</TabsTrigger>
         <TabsTrigger value="hints">Hints</TabsTrigger>
+        <TabsTrigger value="coach">Coach</TabsTrigger>
         <TabsTrigger value="editorial">Editorial</TabsTrigger>
         <TabsTrigger value="submissions">
           Submissions
@@ -206,6 +220,10 @@ export function StatementPanel({ problem }: { problem: ProblemDetail }) {
 
       <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
         <Hints hints={problem.hints} />
+      </TabsContent>
+
+      <TabsContent value="coach" className="min-h-0 flex-1 overflow-y-auto pt-0">
+        {coach}
       </TabsContent>
 
       <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">

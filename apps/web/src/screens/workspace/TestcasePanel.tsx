@@ -191,8 +191,15 @@ export function TestcasePanel({ samples, shape, inputs, onChange, issues }: Test
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {/*
+        `h2`, not `h3`. The only `h1` on this screen is the problem title, and
+        the `h2`s that used to sit between them belong to the statement's
+        markdown - so on any left tab but Description these jumped straight from
+        1 to 3. Latent since P4-6 and invisible to the axe gate, which is set at
+        serious; adding the Coach tab (P5-3) made it a third way to reach.
+      */}
       <section>
-        <h3 className="text-fg mb-2 text-xs font-semibold">Samples</h3>
+        <h2 className="text-fg mb-2 text-xs font-semibold">Samples</h2>
         <ul className="flex flex-col gap-2">
           {samples.map((test, index) => (
             <SampleCase key={index} test={test} index={index} />
@@ -202,7 +209,7 @@ export function TestcasePanel({ samples, shape, inputs, onChange, issues }: Test
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-fg text-xs font-semibold">Your cases</h3>
+          <h2 className="text-fg text-xs font-semibold">Your cases</h2>
           <Button size="sm" onClick={addCase} disabled={inputs.length >= MAX_CUSTOM_TESTS}>
             Add a case
           </Button>

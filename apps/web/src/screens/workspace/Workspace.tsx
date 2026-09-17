@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
@@ -39,11 +39,13 @@ import {
   Tooltip,
   cn,
 } from '../../ui/index.js';
+import { CoachPanel } from './CoachPanel.js';
 import { ResultsPanel } from './ResultsPanel.js';
 import { StatementPanel } from './StatementPanel.js';
 import { SplitPane } from './SplitPane.js';
 import { TestcasePanel } from './TestcasePanel.js';
 import { useWorkspaceLayout } from './layout.js';
+import { useCoach } from './useCoach.js';
 
 /**
  * The problem workspace (ROADMAP P4-6).
@@ -62,9 +64,10 @@ import { useWorkspaceLayout } from './layout.js';
  *     invalidates nothing: browsing and typing must not mark twenty problems as
  *     attempted.
  *
- * The AI Help button belongs beside Run and Submit and is not here yet - the
- * coach's streaming half arrives with P5-1, and `Ctrl+Shift+H` is in the
- * shortcut table waiting for it.
+ * AI Help sits beside Run and Submit (P5-3) and is the only thing here that
+ * calls a vendor. It is on-demand by design (D13): nothing on the Run or Submit
+ * path touches the coach, and the button opens the Coach tab as it starts so
+ * the answer is never streaming somewhere the user cannot see.
  */
 
 // Monaco is about three megabytes. The list page must not pay for it.
@@ -125,7 +128,11 @@ export function Workspace() {
   const [result, setResult] = useState<RunResult | null>(null);
   const [customInputs, setCustomInputs] = useState<CustomTestInput[]>([]);
   const [tab, setTab] = useState<'testcases' | 'results'>('testcases');
+  const [leftTab, setLeftTab] = useState('description');
   const [confirmingReset, setConfirmingReset] = useState(false);
+
+  const coach = useCoach(slug, language);
+  const navigate = useNavigate();
 
   const run = useJudge('run');
   const submit = useJudge('submit');
@@ -155,6 +162,7 @@ export function Workspace() {
     setResult(null);
     setCustomInputs([]);
     setTab('testcases');
+    setLeftTab('description');
   }
 
   /**
@@ -216,6 +224,19 @@ export function Workspace() {
     );
   };
 
+  /**
+   * The one call in this component that reaches a vendor.
+   *
+   * Opening the Coach tab is part of asking, not a nicety: a turn that streams
+   * into a hidden tab looks to the user like a button that did nothing, and by
+   * the time they find it the prose they were meant to watch arrive is already
+   * finished.
+   */
+  const askCoach = () => {
+    setLeftTab('coach');
+    coach.ask({ slug, language, code });
+  };
+
   useShortcut(
     'run',
     () => {
@@ -233,6 +254,7 @@ export function Workspace() {
   useShortcut('togglePanel', () => {
     setLayout({ panelCollapsed: !layout.panelCollapsed });
   });
+  useShortcut('aiHelp', () => askCoach(), ready);
 
   if (isPending) return <WorkspaceSkeleton />;
   if (error) {
@@ -441,6 +463,23 @@ export function Workspace() {
         </p>
 
         <div className="ml-auto flex items-center gap-2">
+          {/*
+            Ghost, not primary: Run and Submit are the loop, and AI Help is the
+            thing you reach for when the loop is not working. It is also the
+            only control here that spends money, which is a second reason not
+            to make it the most clickable thing on the bar (D13).
+          */}
+          <Tooltip
+            content="Ask the coach about the code you have written"
+            keys={SHORTCUTS.aiHelp.keys}
+          >
+            <Button variant="ghost" disabled={coach.state.phase === 'streaming'} onClick={askCoach}>
+              AI Help
+            </Button>
+          </Tooltip>
+
+          <span className="bg-border mx-1 h-4 w-px" aria-hidden />
+
           <Tooltip content="Run the samples and your own cases" keys={SHORTCUTS.run.keys}>
             <Button
               variant="secondary"
@@ -476,7 +515,22 @@ export function Workspace() {
         className={cn('flex-1')}
         first={
           <div className="border-border flex min-h-0 w-full border-r">
-            <StatementPanel problem={problem} />
+            <StatementPanel
+              problem={problem}
+              tab={leftTab}
+              onTab={setLeftTab}
+              coach={
+                <CoachPanel
+                  state={coach.state}
+                  onAsk={askCoach}
+                  onFollowUp={coach.followUp}
+                  onStop={coach.stop}
+                  onOpenSettings={() => {
+                    void navigate('/settings');
+                  }}
+                />
+              }
+            />
           </div>
         }
         second={editorColumn}
