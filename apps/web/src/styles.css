@@ -1,1 +1,17 @@
+/*
+ * The one stylesheet the app loads. Order matters: fonts, then Tailwind, then
+ * our tokens (which extend Tailwind's theme), then the base element layer.
+ *
+ * The font imports name the weight axis directly rather than the package's
+ * index, which would also pull Inter's optical-size and static faces. Each
+ * @font-face carries a unicode-range, so a browser downloading English text
+ * fetches the latin file and nothing else. Italics are imported for Inter
+ * because problem statements are markdown and use emphasis; code is never
+ * italic, so JetBrains Mono ships upright only.
+ */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/inter/wght-italic.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
 @import 'tailwindcss';
+@import './styles/tokens.css';
+@import './styles/base.css';

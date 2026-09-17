@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { languageSchema } from './language.js';
 import { coachProviderSchema } from './coach.js';
 
-export const themeSchema = z.enum(['light', 'dark', 'system']);
+/** `system` follows the OS; the other two override it (ROADMAP P0-8). */
+export const THEMES = ['light', 'dark', 'system'] as const;
+export const themeSchema = z.enum(THEMES);
 export type Theme = z.infer<typeof themeSchema>;
 
 export const editorPrefsSchema = z.object({

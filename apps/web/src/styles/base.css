@@ -1,0 +1,61 @@
+/*
+ * Base layer: the handful of element defaults the whole app depends on.
+ *
+ * Kept deliberately short. Anything that is really a component's business
+ * belongs in that component, where it can be seen next to the markup it styles.
+ */
+
+@layer base {
+  html {
+    /* The tool's own scale (see tokens.css); 16px would cost a third of a
+     * two-hundred-row list and half the editor. */
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-feature-settings: 'liga' 0; /* No ligatures in code: `!=` must read as two characters. */
+  }
+
+  /* Radix sets this on the trigger of an open popover; never on a mouse click. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Respect the OS setting. Radix animates its overlays, and a user who has
+   * asked for less motion has asked for a reason.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* A scrollbar that does not repaint the page in Chrome's default grey. */
+  * {
+    scrollbar-color: var(--color-border-strong) transparent;
+    scrollbar-width: thin;
+  }
+}

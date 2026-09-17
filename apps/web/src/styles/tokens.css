@@ -1,0 +1,347 @@
+/*
+ * Design tokens (ROADMAP P0-8, D16). The reasoning is in docs/DESIGN.md.
+ *
+ * Two layers, and the split is the whole point:
+ *
+ *   1. **Palettes** - fixed ramps that never change with the theme. `neutral-700`
+ *      is the same colour in light and dark; only which end of the ramp a
+ *      surface uses changes.
+ *   2. **Semantic tokens** - `--bg`, `--fg`, `--border`, `--accent`. These are
+ *      what components use, and they are the only thing the theme swaps.
+ *
+ * A component that writes `bg-neutral-100` has hard-coded a light theme and will
+ * be wrong in dark. Components use the semantic names; the ramps exist so the
+ * semantic names have somewhere to point.
+ *
+ * Colours are OKLCH: equal steps in lightness look like equal steps, which is
+ * what makes a ramp usable rather than merely present.
+ */
+
+@theme {
+  /* ------------------------------------------------------------------
+   * Neutrals. Very slightly cool (hue 260) - a true grey reads green
+   * against the accent, and a warm grey reads like a document.
+   * ------------------------------------------------------------------ */
+  --color-neutral-0: oklch(1 0 0);
+  --color-neutral-50: oklch(0.985 0.002 260);
+  --color-neutral-100: oklch(0.967 0.003 260);
+  --color-neutral-200: oklch(0.925 0.005 260);
+  --color-neutral-300: oklch(0.845 0.008 260);
+  --color-neutral-400: oklch(0.724 0.012 260);
+  --color-neutral-500: oklch(0.622 0.014 262);
+  --color-neutral-600: oklch(0.465 0.014 262);
+  --color-neutral-700: oklch(0.392 0.014 262);
+  --color-neutral-800: oklch(0.292 0.013 264);
+  --color-neutral-850: oklch(0.243 0.012 264);
+  --color-neutral-900: oklch(0.203 0.011 264);
+  --color-neutral-950: oklch(0.163 0.01 264);
+  --color-neutral-1000: oklch(0.132 0.009 264);
+
+  /* ------------------------------------------------------------------
+   * The one accent (D16). Indigo-violet, chosen for hue distance: green,
+   * amber and red are spoken for by verdicts, and an accent that shares a
+   * hue with a verdict turns every status dot into a guess.
+   * ------------------------------------------------------------------ */
+  --color-accent-100: oklch(0.93 0.045 280);
+  --color-accent-200: oklch(0.875 0.075 280);
+  --color-accent-300: oklch(0.785 0.11 280);
+  --color-accent-400: oklch(0.69 0.15 280);
+  --color-accent-500: oklch(0.606 0.18 280);
+  --color-accent-600: oklch(0.545 0.19 280);
+  --color-accent-700: oklch(0.472 0.17 280);
+  --color-accent-800: oklch(0.386 0.138 280);
+  --color-accent-900: oklch(0.3 0.1 280);
+
+  /* ------------------------------------------------------------------
+   * Semantic hues. Three, and each one means exactly one thing:
+   * success = the judge accepted it, warn = it ran but not within limits,
+   * danger = it failed. Nothing decorative is ever drawn in these.
+   * ------------------------------------------------------------------ */
+  --color-success-100: oklch(0.94 0.04 155);
+  --color-success-300: oklch(0.8 0.13 155);
+  --color-success-500: oklch(0.62 0.14 153);
+  --color-success-700: oklch(0.46 0.115 152);
+  --color-success-900: oklch(0.3 0.07 152);
+
+  --color-warn-100: oklch(0.955 0.04 80);
+  --color-warn-300: oklch(0.855 0.125 80);
+  --color-warn-500: oklch(0.752 0.145 72);
+  --color-warn-700: oklch(0.515 0.115 66);
+  --color-warn-900: oklch(0.36 0.08 68);
+
+  --color-danger-100: oklch(0.945 0.03 22);
+  --color-danger-300: oklch(0.79 0.125 22);
+  --color-danger-500: oklch(0.602 0.196 25);
+  /*
+   * One red cannot do both jobs: a red dark enough to carry white text on a
+   * button is too dark to read against a near-black page, and a red bright
+   * enough for a status dot on that page is too bright for white text. So there
+   * are two - 500 is the status fill, 600 is the button (contrast.test.ts).
+   */
+  --color-danger-600: oklch(0.478 0.185 25);
+  --color-danger-700: oklch(0.485 0.185 25);
+  --color-danger-900: oklch(0.32 0.11 25);
+
+  /* ------------------------------------------------------------------
+   * Type. Inter for UI, JetBrains Mono for code (D16), both self-hosted:
+   * the app works offline except for the coach, and a font that arrives
+   * from a CDN is a font that does not arrive on a plane.
+   * ------------------------------------------------------------------ */
+  --font-sans:
+    'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Consolas',
+    monospace;
+
+  /*
+   * A tool's scale, not a website's: `base` is 14px because this app shows a
+   * table of two hundred rows and a code editor, and 16px body text would push
+   * a third of both off the screen. Nothing below 12px carries meaning.
+   */
+  --text-2xs: 0.6875rem; /* 11px - dense metadata only, never prose */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem; /* 12px - labels, table metadata */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.8125rem; /* 13px - dense UI: buttons, tabs, table cells */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem; /* 14px - body, statements */
+  --text-base--line-height: 1.5rem;
+  --text-md: 1rem; /* 16px - lead paragraphs */
+  --text-md--line-height: 1.625rem;
+  --text-lg: 1.125rem; /* 18px - panel titles */
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.375rem; /* 22px - page titles */
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.75rem; /* 28px - the largest thing in the app */
+  --text-2xl--line-height: 2.25rem;
+
+  /*
+   * 8-pt grid (D16). The step stays 4px so `p-2` is 8px and every even step
+   * lands on the grid; odd steps are the deliberate half-step for dense insets
+   * (a 6px gap inside a button), not a licence to freestyle.
+   */
+  --spacing: 0.25rem;
+
+  /* Tool-like, not card-like. Nothing in this app is rounder than 8px. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+
+  /*
+   * One shadow, and it is only for things that float above the page -
+   * tooltips, menus, dialogs. Panels and rows are separated by a border,
+   * because a grid of shadowed cards is the house style of every generic
+   * dashboard and we are not that (D16).
+   */
+  --shadow-overlay:
+    0 8px 24px -8px oklch(0.15 0.01 264 / 0.28), 0 2px 6px -2px oklch(0.15 0.01 264 / 0.16);
+}
+
+/*
+ * Semantic tokens, declared `inline` so utilities emit `var(--bg)` rather than
+ * a copy of its value - which is what lets the theme blocks below re-point them
+ * without regenerating a stylesheet.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-overlay: var(--overlay);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-on-accent: var(--fg-on-accent);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-hover: var(--border-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-success-subtle: var(--success-subtle);
+  --color-warn: var(--warn);
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-subtle: var(--warn-subtle);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-solid: var(--danger-solid);
+
+  --color-focus: var(--focus);
+}
+
+/* ---------------------------------------------------------------------------
+ * Light theme - the default, and what `:root` alone means.
+ * ------------------------------------------------------------------------- */
+:root {
+  --bg: var(--color-neutral-100);
+  --surface: var(--color-neutral-0);
+  --surface-raised: var(--color-neutral-0);
+  --surface-sunken: var(--color-neutral-50);
+  --overlay: var(--color-neutral-0);
+
+  --fg: var(--color-neutral-900);
+  --fg-muted: var(--color-neutral-700);
+  --fg-subtle: var(--color-neutral-600);
+  --fg-on-accent: var(--color-neutral-0);
+
+  --border: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
+  --border-hover: var(--color-neutral-400);
+
+  --accent: var(--color-accent-600);
+  --accent-hover: var(--color-accent-700);
+  /* Accent as *text* needs more contrast than accent as a fill. */
+  --accent-fg: var(--color-accent-700);
+  --accent-subtle: var(--color-accent-100);
+
+  --success: var(--color-success-500);
+  --success-fg: var(--color-success-700);
+  --success-subtle: var(--color-success-100);
+  /* On a light background a legible amber is a dark amber; 500 disappears. */
+  --warn: var(--color-warn-700);
+  --warn-fg: var(--color-warn-700);
+  --warn-subtle: var(--color-warn-100);
+  --danger: var(--color-danger-500);
+  --danger-solid: var(--color-danger-600);
+  --danger-fg: var(--color-danger-700);
+  --danger-subtle: var(--color-danger-100);
+
+  --focus: var(--color-accent-500);
+
+  color-scheme: light;
+}
+
+/*
+ * Dark theme. Applied two ways, and the order matters: the media query is what
+ * "system" means, and the explicit attribute must win over it in both
+ * directions so that choosing Light on a machine set to dark actually works.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: var(--color-neutral-1000);
+    --surface: var(--color-neutral-950);
+    --surface-raised: var(--color-neutral-900);
+    --surface-sunken: var(--color-neutral-1000);
+    --overlay: var(--color-neutral-850);
+
+    --fg: var(--color-neutral-100);
+    --fg-muted: var(--color-neutral-400);
+    --fg-subtle: var(--color-neutral-500);
+    --fg-on-accent: var(--color-neutral-0);
+
+    --border: var(--color-neutral-850);
+    --border-strong: var(--color-neutral-700);
+    --border-hover: var(--color-neutral-600);
+
+    --accent: var(--color-accent-600);
+    --accent-hover: var(--color-accent-500);
+    --accent-fg: var(--color-accent-300);
+    --accent-subtle: var(--color-accent-900);
+
+    --success: var(--color-success-500);
+    --success-fg: var(--color-success-300);
+    --success-subtle: var(--color-success-900);
+    --warn: var(--color-warn-500);
+    --warn-fg: var(--color-warn-300);
+    --warn-subtle: var(--color-warn-900);
+    --danger: var(--color-danger-500);
+    --danger-solid: var(--color-danger-600);
+    --danger-fg: var(--color-danger-300);
+    --danger-subtle: var(--color-danger-900);
+
+    --focus: var(--color-accent-400);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: var(--color-neutral-1000);
+  --surface: var(--color-neutral-950);
+  --surface-raised: var(--color-neutral-900);
+  --surface-sunken: var(--color-neutral-1000);
+  --overlay: var(--color-neutral-850);
+
+  --fg: var(--color-neutral-100);
+  --fg-muted: var(--color-neutral-400);
+  --fg-subtle: var(--color-neutral-500);
+  --fg-on-accent: var(--color-neutral-0);
+
+  --border: var(--color-neutral-850);
+  --border-strong: var(--color-neutral-700);
+  --border-hover: var(--color-neutral-600);
+
+  --accent: var(--color-accent-600);
+  --accent-hover: var(--color-accent-500);
+  --accent-fg: var(--color-accent-300);
+  --accent-subtle: var(--color-accent-900);
+
+  --success: var(--color-success-500);
+  --success-fg: var(--color-success-300);
+  --success-subtle: var(--color-success-900);
+  --warn: var(--color-warn-500);
+  --warn-fg: var(--color-warn-300);
+  --warn-subtle: var(--color-warn-900);
+  --danger: var(--color-danger-500);
+  --danger-solid: var(--color-danger-600);
+  --danger-fg: var(--color-danger-300);
+  --danger-subtle: var(--color-danger-900);
+
+  --focus: var(--color-accent-400);
+}
+
+/*
+ * An escape hatch, not the mechanism: a `dark:` variant that follows the same
+ * two rules as the blocks above. Reach for it only where a semantic token
+ * genuinely cannot express the difference; if you are writing several in one
+ * component, the component is missing a token.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']) *, :root:not([data-theme='light'])) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme='dark'] *, :root[data-theme='dark']) {
+    @slot;
+  }
+}
+
+/*
+ * The focus ring, as one utility rather than four classes repeated in every
+ * component. Keyboard-only (`:focus-visible`), never suppressed, and drawn with
+ * an offset so it reads on both a filled button and a bare link.
+ */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* For controls flush against a panel edge, where an offset ring would clip. */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+}
+
+/*
+ * Timings, counters and test numbers sit in columns and are read by comparison.
+ * Proportional digits make them jump as they update.
+ */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
