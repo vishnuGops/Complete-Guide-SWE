@@ -9,6 +9,7 @@ import {
   type CheckerFn,
   type JsonValue,
   type Language,
+  type CompileError,
   type ProblemMeta,
   type RunKind,
   type RunResult,
@@ -494,3 +495,31 @@ function applyRevealPolicy(
 }
 
 export { OUTPUT_CAP_BYTES };
+
+/**
+ * Compiles (Java) or parses (Python) a source file without running anything.
+ *
+ * Used by the validator to prove a starter is a legal program before a user is
+ * ever handed it (ROADMAP P2-7): a starter that does not compile turns someone's
+ * first Run into a compile error that says nothing about the problem.
+ */
+export async function checkCompiles(
+  language: Language,
+  code: string,
+  options: { workspaceRoot?: string; timeoutMultiplier?: number } = {},
+): Promise<{ ok: boolean; errors: CompileError[]; timeMs: number }> {
+  const executor = EXECUTORS[language];
+  const workspace = await createWorkspace(options.workspaceRoot);
+  try {
+    const prepared = await executor.prepare(
+      workspace,
+      code,
+      Math.round(DEFAULT_COMPILE_TIMEOUT_MS * (options.timeoutMultiplier ?? 1)),
+    );
+    return prepared.ok
+      ? { ok: true, errors: [], timeMs: prepared.timeMs }
+      : { ok: false, errors: prepared.errors, timeMs: prepared.timeMs };
+  } finally {
+    await workspace.dispose();
+  }
+}

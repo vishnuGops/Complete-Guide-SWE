@@ -8,6 +8,7 @@ import {
 } from '@devpromax/shared';
 import { paths } from '../config.js';
 import { discoverProblems, loadProblem, relFile } from './loader.js';
+import { checkReferences, type ReferenceCheckOptions } from './references.js';
 import type { ProblemPackage, ProblemValidation, ValidationIssue } from './types.js';
 import { hasErrors } from './types.js';
 
@@ -490,4 +491,44 @@ function checkCatalogue(results: readonly ProblemValidation[]): ValidationIssue[
   }
 
   return issues;
+}
+
+// ---------------------------------------------------------------------------
+// Full validation: static rules plus reference execution (ROADMAP P2-7)
+// ---------------------------------------------------------------------------
+
+export interface FullValidateOptions extends ValidateOptions, ReferenceCheckOptions {}
+
+/**
+ * Static validation plus the merge gate: both reference solutions must pass
+ * every one of the problem's own tests, in both languages, and both starters
+ * must be compilable programs.
+ *
+ * A problem whose static structure is already broken is skipped rather than run:
+ * spawning six interpreters to confirm that a package missing its tests.json
+ * does not work would just bury the real message.
+ */
+export async function validateCatalogueFull(
+  options: FullValidateOptions = {},
+): Promise<CatalogueValidation> {
+  const staticReport = validateCatalogue(options);
+
+  const results: ProblemValidation[] = [];
+  for (const result of staticReport.results) {
+    if (!result.pkg || hasErrors(result.issues)) {
+      results.push(result);
+      continue;
+    }
+    const referenceIssues = await checkReferences(result.pkg, options);
+    results.push({ ...result, issues: [...result.issues, ...referenceIssues] });
+  }
+
+  const everything = [...results.flatMap((r) => r.issues), ...staticReport.crossIssues];
+  return {
+    results,
+    crossIssues: staticReport.crossIssues,
+    errorCount: everything.filter((i) => i.severity === 'error').length,
+    warningCount: everything.filter((i) => i.severity === 'warning').length,
+    ok: !hasErrors(everything),
+  };
 }
