@@ -277,3 +277,38 @@ describe('tierForRating', () => {
     expect(tierForRating(11)).toBeUndefined();
   });
 });
+
+describe('strictness of the on-disk format', () => {
+  it('rejects an unknown key in meta.json, so typos fail loudly', () => {
+    const result = problemMetaSchema.safeParse({ ...functionMeta, paterns: ['hash map'] });
+    expect(result.success).toBe(false);
+  });
+
+  it('allows the $schema pointer used for editor completion', () => {
+    expect(
+      problemMetaSchema.safeParse({
+        ...functionMeta,
+        $schema: '../../../docs/schema/meta.schema.json',
+      }).success,
+    ).toBe(true);
+    expect(
+      testsFileSchema.safeParse({
+        $schema: '../../../docs/schema/tests.schema.json',
+        samples: [],
+        hidden: [],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an unknown key in a test case', () => {
+    expect(testCaseSchema.safeParse({ args: [1], output: 2 }).success).toBe(false);
+  });
+
+  it('rejects an unknown key in tests.json', () => {
+    expect(testsFileSchema.safeParse({ samples: [], hidden: [], extra: [] }).success).toBe(false);
+  });
+
+  it('rejects an unknown key in an operation', () => {
+    expect(operationSchema.safeParse({ method: 'get', arguments: [1] }).success).toBe(false);
+  });
+});

@@ -1,0 +1,418 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DevProMax problem meta.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "topic": {
+          "type": "string",
+          "enum": [
+            "arrays",
+            "hashmap",
+            "sorting",
+            "binary-search",
+            "linked-list",
+            "stack",
+            "matrix",
+            "binary-tree",
+            "heap",
+            "graph",
+            "backtracking",
+            "dynamic-programming",
+            "bit-manipulation",
+            "data-structures"
+          ]
+        },
+        "patterns": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["Easy", "Medium", "Hard"]
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "comparator": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["exact", "unorderedList", "unorderedListOfLists", "checker"]
+            },
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "exact"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "unorderedList"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "unorderedListOfLists"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "floatTolerance"
+                    },
+                    "eps": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": ["kind", "eps"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "checker"
+                    }
+                  },
+                  "required": ["kind"]
+                }
+              ]
+            }
+          ]
+        },
+        "limits": {
+          "default": {},
+          "type": "object",
+          "properties": {
+            "timeoutMs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "enum": ["python", "java"]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 60000
+              }
+            }
+          }
+        },
+        "related": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "targetComplexity": {
+          "type": "object",
+          "properties": {
+            "time": {
+              "type": "string",
+              "minLength": 1
+            },
+            "space": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["time", "space"]
+        },
+        "mode": {
+          "type": "string",
+          "const": "function"
+        },
+        "entry": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        },
+        "expect": {
+          "type": "string",
+          "enum": ["return", "mutatedArgs", "both"]
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "title",
+        "version",
+        "topic",
+        "patterns",
+        "tier",
+        "rating",
+        "order",
+        "mode",
+        "entry",
+        "expect"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "topic": {
+          "type": "string",
+          "enum": [
+            "arrays",
+            "hashmap",
+            "sorting",
+            "binary-search",
+            "linked-list",
+            "stack",
+            "matrix",
+            "binary-tree",
+            "heap",
+            "graph",
+            "backtracking",
+            "dynamic-programming",
+            "bit-manipulation",
+            "data-structures"
+          ]
+        },
+        "patterns": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["Easy", "Medium", "Hard"]
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "comparator": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["exact", "unorderedList", "unorderedListOfLists", "checker"]
+            },
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "exact"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "unorderedList"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "unorderedListOfLists"
+                    }
+                  },
+                  "required": ["kind"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "floatTolerance"
+                    },
+                    "eps": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": ["kind", "eps"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "checker"
+                    }
+                  },
+                  "required": ["kind"]
+                }
+              ]
+            }
+          ]
+        },
+        "limits": {
+          "default": {},
+          "type": "object",
+          "properties": {
+            "timeoutMs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "enum": ["python", "java"]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 60000
+              }
+            }
+          }
+        },
+        "related": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "targetComplexity": {
+          "type": "object",
+          "properties": {
+            "time": {
+              "type": "string",
+              "minLength": 1
+            },
+            "space": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["time", "space"]
+        },
+        "mode": {
+          "type": "string",
+          "const": "operations"
+        },
+        "entry": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z0-9_]*$"
+        },
+        "expect": {
+          "type": "string",
+          "const": "return"
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "title",
+        "version",
+        "topic",
+        "patterns",
+        "tier",
+        "rating",
+        "order",
+        "mode",
+        "entry",
+        "expect"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

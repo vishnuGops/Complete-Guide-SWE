@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { jsonValueSchema } from './json.js';
+import { jsonValueSchema, type JsonValue } from './json.js';
 import { languageSchema, type Language } from './language.js';
 import { ratingSchema, tierForRating, tierSchema, topicSchema } from './curriculum.js';
 
@@ -82,7 +82,7 @@ export const DEFAULT_COMPARATOR: Comparator = { kind: 'exact' };
 // ---------------------------------------------------------------------------
 
 /** One `[method, args]` call in `operations` mode. */
-export const operationSchema = z.object({
+export const operationSchema = z.strictObject({
   method: z.string().min(1),
   args: z.array(jsonValueSchema).default([]),
 });
@@ -95,13 +95,13 @@ export type Operation = z.infer<typeof operationSchema>;
  * legal JSON value and a sparse parallel array could not distinguish "expected
  * to become null" from "not checked".
  */
-export const mutatedArgSchema = z.object({
+export const mutatedArgSchema = z.strictObject({
   index: z.int().min(0),
   value: jsonValueSchema,
 });
 export type MutatedArg = z.infer<typeof mutatedArgSchema>;
 
-export const testCaseSchema = z.object({
+export const testCaseSchema = z.strictObject({
   /** Optional author-facing label, surfaced in results ("empty input"). */
   name: z.string().min(1).optional(),
   /**
@@ -126,7 +126,9 @@ export type TestCase = z.infer<typeof testCaseSchema>;
 export const MIN_SAMPLE_TESTS = 3;
 export const MIN_HIDDEN_TESTS = 10;
 
-export const testsFileSchema = z.object({
+export const testsFileSchema = z.strictObject({
+  /** Optional pointer to docs/schema/tests.schema.json, for editor completion. */
+  $schema: z.string().optional(),
   samples: z.array(testCaseSchema),
   hidden: z.array(testCaseSchema),
 });
@@ -163,7 +165,9 @@ export function timeoutFor(limits: Limits | undefined, language: Language): numb
 // Problem metadata (meta.json)
 // ---------------------------------------------------------------------------
 
-const problemMetaBase = z.object({
+const problemMetaBase = z.strictObject({
+  /** Optional pointer to docs/schema/meta.schema.json, for editor completion. */
+  $schema: z.string().optional(),
   id: problemIdSchema,
   slug: slugSchema,
   title: z.string().min(3).max(120),
@@ -224,3 +228,26 @@ export const problemMetaSchema = z
   });
 
 export type ProblemMeta = z.infer<typeof problemMetaSchema>;
+
+// ---------------------------------------------------------------------------
+// Custom checkers (ROADMAP D6)
+// ---------------------------------------------------------------------------
+
+/** What a problem's `checker.ts` receives for one test. */
+export interface CheckerInput {
+  /** The test as authored, so a checker can re-derive the answer from the input. */
+  input: TestCase;
+  expected: JsonValue | undefined;
+  actual: JsonValue | undefined;
+}
+
+export type CheckerResult =
+  | { pass: true; message?: string }
+  /** The message is shown to the user, so say what was wrong, not just "incorrect". */
+  | { pass: false; message: string };
+
+/**
+ * A problem's custom comparator. This is our TypeScript, loaded in-process by the
+ * judge - never user code.
+ */
+export type CheckerFn = (args: CheckerInput) => CheckerResult | Promise<CheckerResult>;

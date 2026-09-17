@@ -38,6 +38,7 @@ npm run lint && npm run typecheck
 npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)
 npm run problems:new <topic> <slug>
 npm run problems:gen <slug>                   # regenerate hidden tests from generator.py
+npm run problems:schema [--check]             # regenerate docs/schema/*.json from the zod schemas
 ```
 
 Until P0-5 lands, none of these exist yet. Do not invent others without adding them here.
@@ -46,6 +47,7 @@ Until P0-5 lands, none of these exist yet. Do not invent others without adding t
 
 - **TypeScript strict**, no `any` without a comment explaining why. Shared request/response shapes live in `packages/shared` and are the single source of truth for both sides.
 - **Tests ship with the change.** Judge changes need integration tests that spawn real interpreters. UI behaviour needs RTL tests; golden paths need Playwright. New problems must pass `problems:validate` before commit.
+- **Problem format** is specified in `docs/PROBLEM_FORMAT.md`; `docs/schema/*.schema.json` is generated from the zod schemas by `npm run problems:schema` and must never be hand-edited.
 - **Problem content** must be original wording (no copied LeetCode text), include ≥ 3 visible samples with explanations and ≥ 10 generated hidden tests with edge cases (empty, single element, max size, duplicates, negatives), a hints ladder, an editorial, and starter + reference in both languages. Follow `docs/AUTHORING.md` once it exists.
 - **Design** follows `docs/DESIGN.md` once written; until then: one accent colour, neutral greys, 8-pt spacing, Inter + JetBrains Mono, no gradients, no hero sections, no emoji in UI chrome, no card grids with drop shadows, real keyboard support, both themes. Build components with the screen that needs them, not ahead of time. If a screen looks like a generic dashboard template, it is wrong.
 - **Shortcuts**: `Ctrl+Enter` run, `Ctrl+Shift+Enter` submit, `Ctrl+J` toggle bottom panel, `Ctrl+Shift+H` AI Help. Never bind `Ctrl+/` (Monaco comment toggle).
