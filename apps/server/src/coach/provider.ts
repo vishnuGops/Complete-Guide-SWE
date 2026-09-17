@@ -7,13 +7,19 @@ import { COACH_PROVIDER_LABEL, type CoachProvider as CoachProviderId } from '@de
  * services talk to a `CoachProvider`, and swapping Anthropic for Gemini is a
  * settings change rather than a code change.
  *
- * Only `testConnection` exists so far, because that is all P3-4's Settings
- * screen needs - "is this key any good, and does this model exist". The
- * `stream()` half of the interface arrives with P5-1, which also decides whether
- * the streaming path is worth taking each vendor's official SDK as a dependency.
- * A key check is one authenticated GET, and an SDK per provider to make it would
- * be a dependency bought for the wrong reason - so this is `fetch`, injectable,
- * and the tests never touch the network.
+ * P5-1 added the `stream()` half and, with it, answered the dependency question
+ * P3-4 left open. The answer is different per vendor, which looks inconsistent
+ * until you look at what each one is being asked for:
+ *
+ *   - **Anthropic** goes through the official `@anthropic-ai/sdk`. Streaming
+ *     structured output means SSE framing, `content_block_delta` variants,
+ *     mid-stream error events and typed error classes - all of it already
+ *     written, tested and versioned by the vendor. Hand-rolling that to save one
+ *     dependency would be trading a supported implementation for a worse one.
+ *   - **Gemini** stays on `fetch`. Its streaming endpoint is a plain
+ *     `alt=sse` response of JSON objects, and that is genuinely all there is.
+ *
+ * Both are injectable and no test in this repo touches the network (D17).
  */
 
 export interface TestConnectionOptions {
@@ -31,11 +37,55 @@ export interface ConnectionResult {
   model: string | null;
 }
 
+/**
+ * One turn of the conversation, in the only two roles both vendors share.
+ *
+ * The system prompt is not in here: it is passed separately because it is the
+ * part that must stay byte-identical across requests to be cacheable, and
+ * putting it in the same list as the volatile turns invites it being rebuilt.
+ */
+export interface CoachTurn {
+  role: 'user' | 'coach';
+  content: string;
+}
+
+export interface StreamOptions {
+  apiKey: string;
+  /** null asks the provider for its own default. */
+  model: string | null;
+  /**
+   * The static half of the prompt - the rubric, the tone, the rules. Identical
+   * on every request so Anthropic can cache it (D12); see `anthropic.ts`.
+   */
+  system: string;
+  /** Problem, code, judge results and prior attempts. Different every time. */
+  messages: readonly CoachTurn[];
+  /**
+   * JSON Schema the response must satisfy. Shared so the two vendors cannot
+   * drift into accepting different shapes; built from the zod schema in
+   * `feedback.ts` so it cannot drift from the parser either.
+   */
+  schema: JsonSchema;
+  signal?: AbortSignal;
+}
+
+/** Just enough of JSON Schema to name what crosses the provider seam. */
+export type JsonSchema = Record<string, unknown>;
+
 export interface CoachProvider {
   readonly id: CoachProviderId;
   /** Used when the user has not picked a model. */
   readonly defaultModel: string;
   testConnection(options: TestConnectionOptions): Promise<ConnectionResult>;
+  /**
+   * Streams the raw JSON response as it is generated.
+   *
+   * Deliberately yields *text*, not parsed objects: the document is incomplete
+   * until the last chunk, so there is nothing to parse yet, and both vendors can
+   * honestly produce this. Turning the pieces into markdown deltas and a
+   * validated `CoachFeedback` is `feedback.ts`'s job, once, for both.
+   */
+  stream(options: StreamOptions): AsyncIterable<string>;
 }
 
 export type FetchLike = typeof fetch;
@@ -43,6 +93,30 @@ export type FetchLike = typeof fetch;
 export interface ProviderOptions {
   /** Swapped out in tests; there is no network in CI (ROADMAP P5-7). */
   fetch?: FetchLike;
+}
+
+/**
+ * A provider failure with a message fit to show the user.
+ *
+ * The thing this class exists to stop is a vendor's raw error reaching the Coach
+ * panel. "400 invalid_request_error: messages.1: ..." is written for an API
+ * integrator; someone practising binary search needs "the key was rejected,
+ * paste a different one". `retryable` separates "try again" from "change
+ * something" so the UI can offer the right button (P5-3).
+ */
+export class CoachProviderError extends Error {
+  readonly retryable: boolean;
+
+  constructor(message: string, options: { retryable?: boolean; cause?: unknown } = {}) {
+    super(message, { cause: options.cause });
+    this.name = 'CoachProviderError';
+    this.retryable = options.retryable ?? false;
+  }
+}
+
+/** Statuses worth a second attempt: rate limits and the vendor's own outages. */
+export function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
 }
 
 /** How long a key check may take before it is abandoned. */

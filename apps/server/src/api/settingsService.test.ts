@@ -26,7 +26,16 @@ const KEY = 'sk-ant-api03-abcdefghijklmnop';
 
 function stubFetch(seen: { apiKey?: string } = {}): FetchLike {
   return (async (_input: RequestInfo | URL, init?: RequestInit) => {
-    const headers = (init?.headers ?? {}) as Record<string, string>;
+    // The Anthropic SDK builds a `Headers`; our own Gemini code passes an object
+    // literal. Which one arrives is the caller's business, so read both - the
+    // assertion is about the key being sent, not about how it was spelled.
+    const raw = init?.headers;
+    const headers = Object.fromEntries(
+      (raw instanceof Headers
+        ? [...raw.entries()]
+        : Object.entries((raw ?? {}) as Record<string, string>)
+      ).map(([name, value]) => [name.toLowerCase(), String(value)]),
+    );
     seen.apiKey = headers['x-api-key'] ?? headers['x-goog-api-key'];
     return new Response(JSON.stringify({ data: [{ id: 'claude-opus-5' }] }), { status: 200 });
   }) as FetchLike;

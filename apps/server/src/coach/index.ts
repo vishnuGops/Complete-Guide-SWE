@@ -6,6 +6,13 @@ import type { CoachProvider, ProviderOptions } from './provider.js';
 export * from './provider.js';
 export { ANTHROPIC_DEFAULT_MODEL, createAnthropicProvider } from './anthropic.js';
 export { GEMINI_DEFAULT_MODEL, createGeminiProvider } from './gemini.js';
+export {
+  coachFeedbackJsonSchema,
+  parseFeedback,
+  streamCoachFeedback,
+  type CoachStreamEvent,
+  type FeedbackStreamOptions,
+} from './feedback.js';
 
 /** The one place a provider id becomes an implementation. */
 export function createCoachProvider(

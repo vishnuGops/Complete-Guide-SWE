@@ -15,6 +15,25 @@ import { createCoachProvider, type FetchLike } from './index.js';
 interface Call {
   url: string;
   headers: Record<string, string>;
+  body: string;
+}
+
+/**
+ * Headers reach `fetch` in three shapes, and which one you get is the caller's
+ * business rather than ours: the Anthropic SDK builds a `Headers`, our own
+ * Gemini code passes an object literal. Normalising here keeps the assertions
+ * about *what was sent* rather than about how the sender happened to spell it.
+ * Names are lower-cased because HTTP header names are case-insensitive.
+ */
+function normaliseHeaders(headers: HeadersInit | undefined): Record<string, string> {
+  if (headers === undefined) return {};
+  const entries =
+    headers instanceof Headers
+      ? [...headers.entries()]
+      : Array.isArray(headers)
+        ? headers
+        : Object.entries(headers);
+  return Object.fromEntries(entries.map(([name, value]) => [name.toLowerCase(), String(value)]));
 }
 
 function stubFetch(respond: () => Response | Promise<Response>): {
@@ -25,7 +44,8 @@ function stubFetch(respond: () => Response | Promise<Response>): {
   const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     calls.push({
       url: String(input),
-      headers: Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>)),
+      headers: normaliseHeaders(init?.headers),
+      body: typeof init?.body === 'string' ? init.body : '',
     });
     return respond();
   }) as FetchLike;

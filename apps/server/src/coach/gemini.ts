@@ -1,11 +1,16 @@
 import {
+  CoachProviderError,
   describeNetworkError,
   describeStatus,
+  isRetryableStatus,
   judgeModel,
   TEST_CONNECTION_TIMEOUT_MS,
   type CoachProvider,
+  type JsonSchema,
   type ProviderOptions,
+  type StreamOptions,
 } from './provider.js';
+import { sseJsonObjects } from './sse.js';
 
 /**
  * Google Gemini (ROADMAP D12).
@@ -69,5 +74,144 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
 
       return judgeModel('gemini', wanted, available);
     },
+
+    /**
+     * The coaching turn (P5-1).
+     *
+     * Gemini's equivalents of the three things the Anthropic side asks for:
+     *
+     *   - `systemInstruction` for the static half of the prompt. There is no
+     *     cache-control to set - Gemini's implicit caching decides for itself -
+     *     but keeping the split means the prompt is built the same way for both,
+     *     and a future explicit cache has the seam it needs.
+     *   - `responseMimeType` + `responseSchema` for structured output. Gemini's
+     *     schema dialect is a subset of JSON Schema, so the shared schema is
+     *     narrowed on the way in rather than sent as-is.
+     *   - No thinking parameter: 2.5-series models reason by default.
+     */
+    async *stream({ apiKey, model, system, messages, schema, signal }: StreamOptions) {
+      const wanted = stripPrefix(model ?? GEMINI_DEFAULT_MODEL);
+      const timeout = AbortSignal.timeout(STREAM_TIMEOUT_MS);
+
+      let response: Response;
+      try {
+        response = await doFetch(
+          `${BASE_URL}/models/${encodeURIComponent(wanted)}:streamGenerateContent?alt=sse`,
+          {
+            method: 'POST',
+            headers: {
+              'x-goog-api-key': apiKey,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: messages.map((turn) => ({
+                role: turn.role === 'coach' ? 'model' : 'user',
+                parts: [{ text: turn.content }],
+              })),
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: toGeminiSchema(schema),
+                maxOutputTokens: MAX_OUTPUT_TOKENS,
+              },
+            }),
+            signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+          },
+        );
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError' && signal?.aborted) {
+          throw new CoachProviderError('The request was cancelled.', { cause: error });
+        }
+        throw new CoachProviderError(describeNetworkError('gemini', error), {
+          retryable: true,
+          cause: error,
+        });
+      }
+
+      if (!response.ok) {
+        throw new CoachProviderError(describeStatus('gemini', response.status), {
+          retryable: isRetryableStatus(response.status),
+        });
+      }
+
+      if (response.body === null) {
+        throw new CoachProviderError('Google Gemini returned an empty response.', {
+          retryable: true,
+        });
+      }
+
+      for await (const chunk of sseJsonObjects(response.body)) {
+        const text = extractText(chunk);
+        if (text !== '') yield text;
+      }
+    },
   };
+}
+
+/** Same reasoning as the Anthropic cap: truncation would be a parse failure. */
+const MAX_OUTPUT_TOKENS = 8192;
+
+const STREAM_TIMEOUT_MS = 120_000;
+
+/**
+ * Gemini rejects JSON Schema keywords it does not implement, so the shared
+ * schema is filtered down to the subset it accepts rather than sent whole.
+ * Dropping a keyword only loosens validation, and the response is re-checked
+ * against the real zod schema afterwards either way.
+ */
+const SUPPORTED_KEYWORDS = new Set([
+  'type',
+  'format',
+  'description',
+  'nullable',
+  'enum',
+  'items',
+  'properties',
+  'required',
+  'minimum',
+  'maximum',
+]);
+
+function toGeminiSchema(schema: JsonSchema): JsonSchema {
+  const out: JsonSchema = {};
+
+  for (const [key, value] of Object.entries(schema)) {
+    if (!SUPPORTED_KEYWORDS.has(key)) continue;
+
+    if (key === 'properties' && typeof value === 'object' && value !== null) {
+      const properties: JsonSchema = {};
+      for (const [name, child] of Object.entries(value as Record<string, unknown>)) {
+        properties[name] = toGeminiSchema(child as JsonSchema);
+      }
+      out[key] = properties;
+    } else if (key === 'items' && typeof value === 'object' && value !== null) {
+      out[key] = toGeminiSchema(value as JsonSchema);
+    } else {
+      out[key] = value;
+    }
+  }
+
+  return out;
+}
+
+interface GeminiChunk {
+  candidates?: { content?: { parts?: { text?: unknown }[] } }[];
+}
+
+/**
+ * Pulls the text out of one streamed chunk.
+ *
+ * Every level is optional because a chunk can carry a safety verdict, a finish
+ * reason or usage metadata and no text at all. Those are not errors, they are
+ * just not text, so the shape is checked rather than assumed.
+ */
+function extractText(chunk: Record<string, unknown>): string {
+  const candidates = (chunk as GeminiChunk).candidates ?? [];
+  let text = '';
+  for (const candidate of candidates) {
+    for (const part of candidate.content?.parts ?? []) {
+      if (typeof part.text === 'string') text += part.text;
+    }
+  }
+  return text;
 }
