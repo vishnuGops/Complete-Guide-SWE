@@ -1,0 +1,234 @@
+/*
+ * Rendered markdown (ROADMAP P4-3).
+ *
+ * A problem statement is the one place in this app where prose has to be
+ * comfortable to read, and it still has to sit in a 400px panel next to an
+ * editor. So: 14px body on a 1.5 line, headings that separate by weight rather
+ * than by size, and vertical rhythm on the 8-pt grid.
+ *
+ * This is a stylesheet rather than a `components` map of Tailwind classes
+ * because the renderer produces elements we never name - a nested list inside a
+ * table cell, a `<sup>` from a footnote - and every one of them has to look
+ * deliberate. One place to read the whole typographic system beats thirty
+ * className strings.
+ */
+
+@layer components {
+  .md-prose {
+    color: var(--color-fg);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    overflow-wrap: break-word;
+  }
+
+  .md-prose > :first-child {
+    margin-top: 0;
+  }
+
+  .md-prose > :last-child {
+    margin-bottom: 0;
+  }
+
+  /*
+   * Spacing is written as `calc(var(--spacing) * n)` rather than
+   * `var(--spacing-n)`. Tailwind v4 has no `--spacing-3` variable - it has one
+   * `--spacing` step and multiplies it in each utility - so the shorter
+   * spelling resolves to nothing and the declaration is dropped, which looks
+   * exactly like forgetting to write it.
+   */
+  .md-prose p,
+  .md-prose ul,
+  .md-prose ol,
+  .md-prose blockquote,
+  .md-prose pre,
+  .md-prose table {
+    margin: 0 0 calc(var(--spacing) * 3) 0;
+  }
+
+  /*
+   * Headings rank by weight and spacing, not by size. A statement's `##` is a
+   * section marker inside a panel - at 22px it would compete with the problem
+   * title in the toolbar above it.
+   */
+  .md-prose h1,
+  .md-prose h2,
+  .md-prose h3,
+  .md-prose h4 {
+    margin: calc(var(--spacing) * 6) 0 calc(var(--spacing) * 2) 0;
+    font-weight: 600;
+    line-height: var(--text-md--line-height);
+  }
+
+  .md-prose h1 {
+    font-size: var(--text-lg);
+  }
+
+  .md-prose h2 {
+    font-size: var(--text-md);
+  }
+
+  .md-prose h3,
+  .md-prose h4 {
+    font-size: var(--text-base);
+  }
+
+  .md-prose h3 {
+    color: var(--color-fg);
+  }
+
+  .md-prose h4 {
+    color: var(--color-fg-muted);
+  }
+
+  .md-prose strong {
+    font-weight: 600;
+  }
+
+  .md-prose ul,
+  .md-prose ol {
+    padding-left: calc(var(--spacing) * 5);
+  }
+
+  .md-prose ul {
+    list-style: disc;
+  }
+
+  .md-prose ol {
+    list-style: decimal;
+  }
+
+  .md-prose li {
+    margin: calc(var(--spacing) * 1) 0;
+  }
+
+  .md-prose li > ul,
+  .md-prose li > ol {
+    margin: calc(var(--spacing) * 1) 0;
+  }
+
+  .md-prose a {
+    color: var(--color-accent-fg);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .md-prose blockquote {
+    border-left: 2px solid var(--color-border-strong);
+    padding-left: calc(var(--spacing) * 3);
+    color: var(--color-fg-muted);
+  }
+
+  .md-prose hr {
+    margin: calc(var(--spacing) * 6) 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .md-prose img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  /* ----------------------------------------------------------------------
+   * Code. Inline code is a phrase inside a sentence, so it is tinted rather
+   * than boxed; a block is a quotation, so it gets a panel.
+   * -------------------------------------------------------------------- */
+
+  .md-prose :not(pre) > code {
+    background-color: var(--color-surface-sunken);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: 0.05em 0.3em;
+    font-size: 0.9em;
+  }
+
+  .md-prose pre {
+    background-color: var(--color-surface-sunken);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: calc(var(--spacing) * 3);
+    overflow-x: auto;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+  }
+
+  .md-prose pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* ----------------------------------------------------------------------
+   * Tables. Rows separated by a rule, never by a zebra fill: statements use
+   * tables for two-column definitions, and striping implies a data grid.
+   * -------------------------------------------------------------------- */
+
+  .md-prose table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  .md-prose th,
+  .md-prose td {
+    border-bottom: 1px solid var(--color-border);
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .md-prose th {
+    color: var(--color-fg-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Syntax highlighting, in one accent (docs/DESIGN.md section 3).
+ *
+ * Every published highlight.js theme is five or six hues, and three of ours are
+ * spoken for: green, amber and red mean accepted, over-budget and failed
+ * everywhere else in this app, and a keyword painted in "success green" inside
+ * an editorial teaches the eye the wrong thing. So the theme is the one the
+ * design system already has - structure in the accent, commentary receding,
+ * everything else the body colour - which is enough to read code by and is the
+ * only version of this that stays honest in both themes.
+ */
+@layer components {
+  .md-prose .hljs-keyword,
+  .md-prose .hljs-built_in,
+  .md-prose .hljs-literal,
+  .md-prose .hljs-type,
+  .md-prose .hljs-meta {
+    color: var(--color-accent-fg);
+    font-weight: 500;
+  }
+
+  .md-prose .hljs-comment,
+  .md-prose .hljs-quote {
+    color: var(--color-fg-subtle);
+    font-style: italic;
+  }
+
+  .md-prose .hljs-string,
+  .md-prose .hljs-number,
+  .md-prose .hljs-regexp,
+  .md-prose .hljs-symbol {
+    color: var(--color-fg-muted);
+  }
+
+  .md-prose .hljs-title,
+  .md-prose .hljs-title.class_,
+  .md-prose .hljs-title.function_,
+  .md-prose .hljs-section {
+    color: var(--color-fg);
+    font-weight: 500;
+  }
+}

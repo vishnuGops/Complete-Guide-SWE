@@ -107,6 +107,13 @@ ratings — get the `tnum` utility. Proportional digits jump as they update.
 **8-pt grid.** The Tailwind step is 4px, so even steps (`p-2` = 8px) land on the
 grid. Odd steps are a deliberate half-step for dense insets, not a free hand.
 
+In hand-written CSS — `markdown.css` is the only place there is any — a spacing
+step is `calc(var(--spacing) * 3)`, never `var(--spacing-3)`. Tailwind v4 has one
+`--spacing` variable and multiplies it inside each utility; there is no
+`--spacing-3` to reference, so the shorter spelling resolves to nothing, the
+declaration is dropped, and the result looks exactly like forgetting to write it.
+It cost every margin in the problem statement once.
+
 **Radii** stop at 8px (`rounded-lg`), and almost everything is `rounded-md`
 (5px). Rounder reads as a card, and cards read as a dashboard.
 

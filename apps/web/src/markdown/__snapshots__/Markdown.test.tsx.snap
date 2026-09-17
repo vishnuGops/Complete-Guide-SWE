@@ -1,0 +1,119 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the pilot statements > renders arrays/pair-sum-index the same way as it did 1`] = `
+"<div class="md-prose"><p>You are handed a row of integers and a target total. Exactly one pair of
+positions in that row adds up to the target. Find it.</p>
+<p>Return the two positions, smaller first. A value may not be paired with itself:
+the two positions must be different, although the values sitting at them may
+happen to be equal.</p>
+<h2>Input</h2>
+<ul>
+<li><code>values</code> — a list of integers, <code>2 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>target</code> — an integer, <code>-2 * 10^9 &lt;= target &lt;= 2 * 10^9</code></li>
+</ul>
+<h2>Output</h2>
+<p>A list of two integers: the indices of the pair, in ascending order.</p>
+<h2>Constraints</h2>
+<ul>
+<li><code>2 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>-10^9 &lt;= values[i] &lt;= 10^9</code></li>
+<li>Exactly one pair of distinct indices sums to <code>target</code>.</li>
+</ul>
+<h2>Examples</h2>
+<h3>Example 1</h3>
+<p>Input: <code>values = [4, 9]</code>, <code>target = 13</code>
+Output: <code>[0, 1]</code></p>
+<p>There is only one pair to consider, and <code>4 + 9 == 13</code>.</p>
+<h3>Example 2</h3>
+<p>Input: <code>values = [-8, -3, 5, 11]</code>, <code>target = -11</code>
+Output: <code>[0, 1]</code></p>
+<p><code>values[0] + values[1] == -8 + -3 == -11</code>. No other pair reaches <code>-11</code>.</p>
+<h3>Example 3</h3>
+<p>Input: <code>values = [7, 7, 2]</code>, <code>target = 14</code>
+Output: <code>[0, 1]</code></p>
+<p>The two sevens are at different positions, so they form a legal pair even though
+their values are equal. Pairing index 0 with itself would not be allowed.</p></div>"
+`;
+
+exports[`the pilot statements > renders arrays/shift-right-in-place the same way as it did 1`] = `
+"<div class="md-prose"><p>A row of integers is to be shifted to the right by <code>shift</code> positions. Every
+element moves <code>shift</code> places towards the end, and whatever falls off the end
+wraps around to the front.</p>
+<p>Rewrite the row <strong>in place</strong>. The judge ignores whatever you return and checks
+the contents of <code>values</code> after your method finishes, so allocating a second array
+of length <code>n</code> and returning it will not pass — and neither will reassigning the
+parameter to a new list, which leaves the caller's array untouched.</p>
+<h2>Input</h2>
+<ul>
+<li><code>values</code> — a list of integers, <code>1 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>shift</code> — a non-negative integer, possibly much larger than <code>values.length</code></li>
+</ul>
+<h2>Output</h2>
+<p>Nothing is returned. After the call, <code>values[(i + shift) % n]</code> must hold whatever
+<code>values[i]</code> held before it, where <code>n</code> is the length of the row.</p>
+<h2>Constraints</h2>
+<ul>
+<li><code>1 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>-10^9 &lt;= values[i] &lt;= 10^9</code></li>
+<li><code>0 &lt;= shift &lt;= 10^9</code></li>
+<li>You may use only <code>O(1)</code> extra space.</li>
+</ul>
+<h2>Examples</h2>
+<h3>Example 1</h3>
+<p>Input: <code>values = [1, 2, 3, 4, 5]</code>, <code>shift = 2</code>
+After: <code>values = [4, 5, 1, 2, 3]</code></p>
+<p>The last two elements wrap to the front; everything else slides two places right.</p>
+<h3>Example 2</h3>
+<p>Input: <code>values = [4, 5, 6]</code>, <code>shift = 3</code>
+After: <code>values = [4, 5, 6]</code></p>
+<p>A shift equal to the length brings every element back where it started.</p>
+<h3>Example 3</h3>
+<p>Input: <code>values = [-3, -1, 0, 2, 8]</code>, <code>shift = 9</code>
+After: <code>values = [-1, 0, 2, 8, -3]</code></p>
+<p>Only <code>9 % 5 == 4</code> matters. A shift of four is the same as moving the single
+leading element to the back.</p></div>"
+`;
+
+exports[`the pilot statements > renders stack/min-value-stack the same way as it did 1`] = `
+"<div class="md-prose"><p>Design a stack of integers that can also report the smallest value it currently
+holds, without searching for it.</p>
+<p>Implement a class <code>MinValueStack</code> supporting four operations:</p>
+<ul>
+<li><code>push(value)</code> — put <code>value</code> on top of the stack. Returns nothing.</li>
+<li><code>pop()</code> — remove the top value and return it.</li>
+<li><code>top()</code> — return the top value without removing it.</li>
+<li><code>smallest()</code> — return the smallest value anywhere in the stack.</li>
+</ul>
+<p>Every operation must run in <code>O(1)</code> time. <code>smallest()</code> in particular may not walk
+the stack.</p>
+<h2>Input</h2>
+<p>A sequence of calls, applied in order to one freshly constructed
+<code>MinValueStack</code>. The constructor takes no arguments.</p>
+<h2>Output</h2>
+<p>The value returned by each call, in order. <code>push</code> returns nothing, which the
+judge records as <code>null</code>.</p>
+<h2>Constraints</h2>
+<ul>
+<li>At most <code>10^4</code> calls in total.</li>
+<li><code>-10^9 &lt;= value &lt;= 10^9</code></li>
+<li><code>pop</code>, <code>top</code> and <code>smallest</code> are never called on an empty stack.</li>
+<li>Every operation must run in <code>O(1)</code> time.</li>
+</ul>
+<h2>Examples</h2>
+<h3>Example 1</h3>
+<p>Calls: <code>push(3)</code>, <code>push(1)</code>, <code>smallest()</code>, <code>pop()</code>, <code>smallest()</code>
+Returns: <code>[null, null, 1, 1, 3]</code></p>
+<p>After both pushes the stack is <code>[3, 1]</code> with <code>1</code> on top, so <code>smallest()</code> is <code>1</code>.
+<code>pop()</code> removes and returns that <code>1</code>, leaving <code>[3]</code> — and the smallest value is
+now <code>3</code> again.</p>
+<h3>Example 2</h3>
+<p>Calls: <code>push(5)</code>, <code>push(5)</code>, <code>pop()</code>, <code>smallest()</code>
+Returns: <code>[null, null, 5, 5]</code></p>
+<p>Two equal values are two separate elements. Removing one of them leaves the other
+behind, so <code>5</code> is still in the stack and still the smallest.</p>
+<h3>Example 3</h3>
+<p>Calls: <code>push(-2)</code>, <code>push(7)</code>, <code>top()</code>, <code>smallest()</code>
+Returns: <code>[null, null, 7, -2]</code></p>
+<p><code>top()</code> reports the most recently pushed value, <code>smallest()</code> the smallest one
+anywhere. They have no reason to agree.</p></div>"
+`;
