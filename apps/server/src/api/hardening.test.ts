@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../index.js';
 import { serverConfig } from '../config.js';
+import { silentLogger } from '../logger.js';
 import { __testing } from './hardening.js';
 
 const CLIENT_HEADER = serverConfig.clientHeader;
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  app = await buildServer();
+  app = await buildServer({ logger: silentLogger });
   app.post('/api/echo', async (request) => ({ body: request.body }));
   app.get('/api/ping', async () => ({ ok: true }));
   await app.ready();

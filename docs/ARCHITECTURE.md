@@ -217,7 +217,67 @@ in two places is a rule that will disagree with itself.
 
 ---
 
-## 5. Testing strategy
+## 5. The HTTP API
+
+Fastify, bound to `127.0.0.1`, behind the four checks in section 2. Every route
+lives in `apps/server/src/api/routes/`, is thin, and delegates to a service in
+`apps/server/src/api/` that can be tested without a server.
+
+| Route                                    | Does                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /api/problems`                      | List + filters (`topic`, `tier`, `status`, `q`, `language`) + sort                                  |
+| `GET /api/problems/:slug`                | Everything the workspace opens with: statement, samples, hints, starters, drafts, progress, related |
+| `GET /api/problems/:slug/assets/*`       | Images referenced by a statement, from that problem's `assets/` only                                |
+| `GET /api/problems/:slug/submissions`    | Submission history, newest first                                                                    |
+| `POST /api/run` · `POST /api/submit`     | The judge, with the Run/Submit semantics of section 3.5                                             |
+| `GET /api/progress`                      | Per-status, per-topic and per-tier counts over the whole catalogue                                  |
+| `PUT` · `DELETE /api/drafts/:slug/:lang` | Autosave, and reset-to-starter                                                                      |
+| `PUT /api/progress/:slug/:lang`          | The manual override — the only thing that may move a status down (D11)                              |
+| `GET` · `PUT /api/settings`              | Settings, with the coach API key write-only (below)                                                 |
+| `POST /api/settings/test-connection`     | One authenticated call to the configured provider                                                   |
+| `POST /api/settings/reset-progress`      | Wipes practice, keeps notes and settings                                                            |
+
+The coach routes (`POST /api/coach/feedback`, `POST /api/coach/chat`) are not
+here yet: they stream a provider's response and arrive with the provider's
+streaming half in P5-1.
+
+**Validation.** Requests are parsed with the zod schemas in
+`packages/shared/src/api.ts` — the same file the web client imports, so a shape
+cannot drift between the two sides. Fastify's own JSON-schema validation is not
+used; one validator and one source of truth is worth more than the marginal
+speed of the other.
+
+**Errors** all leave through one envelope, `{ error, message, issues? }`
+(`api/errors.ts`), including Fastify's own — a 404 for an unknown route and a 400
+for a malformed body look like everything else, so the client has one failure
+shape to handle rather than two. `error` is a machine-readable tag (`NotFound`,
+`BadRequest`, `NoApiKey`, `JudgeError`); `message` is a sentence fit to show a
+user; `issues` point at the offending field.
+
+**The catalogue** (`api/catalogue.ts`) reads `problems/` once in production and
+per request everywhere else, because an author with `npm run dev` open expects an
+edited statement on reload while a running app should not re-read two hundred
+directories per keystroke. A package that does not parse is logged and skipped:
+`npm run problems:validate` is the gate for correctness, and one problem being
+mid-edit must not take the list page down.
+
+**Two things are withheld by the server rather than by the UI.** Hidden tests
+never leave the judge except for the first failing one (section 3.5), and the
+editorial is `null` until the problem is solved — a locked editorial that was
+already in the payload is not locked.
+
+**The coach API key is write-only across this boundary.** `GET /api/settings`
+returns a `SettingsView`, which has no `apiKey` field at all: the UI sees
+`apiKeyMasked` (last four characters) and `apiKeySource` (`none` / `settings` /
+`env`). `COACH_API_KEY` in the environment overrides the stored key, because a
+shell that exports one expects it to be used. The raw key leaves the database in
+exactly one direction — into a provider request made from
+`apps/server/src/coach/`, behind the `CoachProvider` adapter, which is also the
+only place that knows which vendor is configured.
+
+---
+
+## 6. Testing strategy
 
 | Layer                               | Tool                                  | What it proves                                                                                                           |
 | ----------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -234,7 +294,7 @@ bug this layer can have lives in exactly the things a mock removes.
 
 ---
 
-## 6. Continuous integration
+## 7. Continuous integration
 
 Two workflows, both in `.github/workflows/`.
 

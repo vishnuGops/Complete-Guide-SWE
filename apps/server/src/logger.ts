@@ -24,3 +24,9 @@ export const logger = pino({
       }
     : {}),
 });
+
+/**
+ * A logger that says nothing. Tests pass this to `buildServer` so a suite that
+ * makes a hundred requests does not bury its own failures in request logs.
+ */
+export const silentLogger = pino({ level: 'silent' });
