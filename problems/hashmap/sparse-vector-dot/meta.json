@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "sparse-vector-dot",
+  "slug": "sparse-vector-dot",
+  "title": "Dot Product Of Sparse Readings",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": ["design", "hash map", "two pointers"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 10,
+  "mode": "operations",
+  "entry": "SparseReadings",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["tag-index", "pair-difference-count"],
+  "targetComplexity": {
+    "time": "O(k) per dot product, where k is the number of stored readings",
+    "space": "O(k)"
+  }
+}

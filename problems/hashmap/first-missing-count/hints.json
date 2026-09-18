@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "With `n` counts, how large can the answer possibly be? What does that tell you about which values are worth looking at?",
+    "The answer is between 1 and `n + 1`, because `n` values cannot cover `1 .. n + 1`. Everything outside that range is junk.",
+    "If you could put value `v` at position `v - 1` for every `v` in range, the answer would be the first position holding the wrong value. A hash set of the in-range values does the same job in `O(n)` space.",
+    "Place the values by swapping: while `counts[i]` is in range and is not already where it belongs, swap it there. Each swap puts one value home for good, so the total work is linear despite the inner loop."
+  ]
+}

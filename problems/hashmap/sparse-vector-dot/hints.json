@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What is the smallest thing you could keep about a row that still lets you reconstruct every product it takes part in?",
+    "The positions that are not zero, and what they hold. A map from position to value, or a list of (position, value) pairs kept in order.",
+    "For the product, only positions present in *both* rows contribute. With maps, walk the smaller one and look each position up in the larger.",
+    "With sorted pair lists, two pointers walk both rows at once: advance whichever position is behind, and multiply when they meet."
+  ]
+}

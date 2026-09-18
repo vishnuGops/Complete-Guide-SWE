@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "the shape holds",
+      "args": ["abba","rain snow snow rain"],
+      "expected": true,
+      "explanation": "`a` is `rain` and `b` is `snow` everywhere."
+    },
+    {
+      "name": "a letter would need two words",
+      "args": ["abba","rain snow snow snow"],
+      "expected": false,
+      "explanation": "The last position needs `a` to be `snow`, but `a` is already `rain`."
+    },
+    {
+      "name": "two letters would share a word",
+      "args": ["abab","rain rain rain rain"],
+      "expected": false,
+      "explanation": "Each letter maps consistently, but `b` claims the word `a` already has."
+    }
+  ],
+  "hidden": [
+    {"name":"one letter, one word","args":["a","rain"],"expected":true},
+    {"name":"one letter against two words","args":["a","rain snow"],"expected":false},
+    {"name":"two letters sharing a word","args":["ab","rain rain"],"expected":false},
+    {"name":"one letter used twice, correctly","args":["aa","rain rain"],"expected":true},
+    {"name":"one letter needing two words","args":["aa","rain snow"],"expected":false},
+    {
+      "name": "three letters, twice over",
+      "args": ["abcabc","rain snow hail rain snow hail"],
+      "expected": true
+    },
+    {"args":["abab","wind rain wind rain"],"expected":true},
+    {"args":["baaa","rain wind wind wind"],"expected":true},
+    {"args":["abaaccbaa","dust snow dust dust mist mist snow dust dust"],"expected":true},
+    {"args":["aabacacaa","dust dust hail dust rain dust fog dust dust"],"expected":false},
+    {
+      "args": [
+        "acadbbbbceaeaebbedea",
+        "dust wind dust ice dew dew dew dew wind fog dust fog dust fog dew dew fog ice fog dust"
+      ],
+      "expected": true
+    },
+    {
+      "args": [
+        "edddbeceaedeaeecbbba",
+        "dew fog fog fog hail dew rain dew snow dew fog dew snow dew dew mist hail hail hail snow"
+      ],
+      "expected": false
+    },
+    {
+      "args": [
+        "bacdcdadbdbbaacdabdcdcdbdcccbcdcabbaaacbdbacbbacaacaddaaddcc",
+        "sun ice snow hail snow hail ice hail sun hail sun sun ice ice snow hail ice sun hail snow hail snow hail sun hail snow snow snow sun snow hail snow ice sun sun ice ice ice snow sun hail sun ice snow sun sun ice snow ice ice snow ice hail hail ice ice hail hail snow snow"
+      ],
+      "expected": true
+    },
+    {
+      "args": [
+        "cadcabcaddaaaaaabbddbcadcbaacaacddacdccdcacdddaccdccabdadcba",
+        "ice dew rain ice dew snow ice dew mist mist dew dew dew dew dew dew snow snow mist mist snow ice dew mist ice snow dew dew ice dew dew ice mist mist dew ice mist ice ice mist ice dew ice mist mist mist dew ice ice mist ice ice dew snow mist dew mist ice snow dew"
+      ],
+      "expected": false
+    },
+    {"name":"four letters claiming one word","args":["abcd","mist mist mist mist"],"expected":false},
+    {
+      "name": "the stated maximum shape and sentence length",
+      "args": [
+        "gghgfbjhhcbbegadddghbiijicajdghcichadaefhghbigagehjeccdcchecgifaijcjhffbjjiagdcgfgdgifdeehhjfjajfeccaddjhgajfhighgdcciafeefgcfchjjejbjiagebbibfbgheggehcjffdbbfihgdgbhehjaiafcihfjfgdicgbhghciigeafebedchcdhfaaebjbbfididehcjgiieeceggicgechhfafggijddijcifeccagchcheejbdeefeghfbaehfhidbhidhjhgfcfbcaghbcch",
+        "blustered blustered sweltered blustered drizzling southerly snowdrift sweltered sweltered easterlyx southerly southerly overcasts blustered northerly westerlyx westerlyx westerlyx blustered sweltered southerly hailstone hailstone snowdrift hailstone easterlyx northerly snowdrift westerlyx blustered sweltered easterlyx hailstone easterlyx sweltered northerly westerlyx northerly overcasts drizzling sweltered blustered sweltered southerly hailstone blustered northerly blustered overcasts sweltered snowdrift overcasts easterlyx easterlyx westerlyx easterlyx easterlyx sweltered overcasts easterlyx blustered hailstone drizzling northerly hailstone snowdrift easterlyx snowdrift sweltered drizzling drizzling southerly snowdrift snowdrift hailstone northerly blustered westerlyx easterlyx blustered drizzling blustered westerlyx blustered hailstone drizzling westerlyx overcasts overcasts sweltered sweltered snowdrift drizzling snowdrift northerly snowdrift drizzling overcasts easterlyx easterlyx northerly westerlyx westerlyx snowdrift sweltered blustered northerly snowdrift drizzling sweltered hailstone blustered sweltered blustered westerlyx easterlyx easterlyx hailstone northerly drizzling overcasts overcasts drizzling blustered easterlyx drizzling easterlyx sweltered snowdrift snowdrift overcasts snowdrift southerly snowdrift hailstone northerly blustered overcasts southerly southerly hailstone southerly drizzling southerly blustered sweltered overcasts blustered blustered overcasts sweltered easterlyx snowdrift drizzling drizzling westerlyx southerly southerly drizzling hailstone sweltered blustered westerlyx blustered southerly sweltered overcasts sweltered snowdrift northerly hailstone northerly drizzling easterlyx hailstone sweltered drizzling snowdrift drizzling blustered westerlyx hailstone easterlyx blustered southerly sweltered blustered sweltered easterlyx hailstone hailstone blustered overcasts northerly drizzling overcasts southerly overcasts westerlyx easterlyx sweltered easterlyx westerlyx sweltered drizzling northerly northerly overcasts southerly snowdrift southerly southerly drizzling hailstone westerlyx hailstone westerlyx overcasts sweltered easterlyx snowdrift blustered hailstone hailstone overcasts overcasts easterlyx overcasts blustered blustered hailstone easterlyx blustered overcasts easterlyx sweltered sweltered drizzling northerly drizzling blustered blustered hailstone snowdrift westerlyx westerlyx hailstone snowdrift easterlyx hailstone drizzling overcasts easterlyx easterlyx northerly blustered easterlyx sweltered easterlyx sweltered overcasts overcasts snowdrift southerly westerlyx overcasts overcasts drizzling overcasts blustered sweltered drizzling southerly northerly overcasts sweltered drizzling sweltered hailstone westerlyx southerly sweltered hailstone westerlyx sweltered snowdrift sweltered blustered drizzling easterlyx drizzling southerly easterlyx northerly blustered sweltered southerly easterlyx easterlyx sweltered"
+      ],
+      "expected": true
+    }
+  ]
+}

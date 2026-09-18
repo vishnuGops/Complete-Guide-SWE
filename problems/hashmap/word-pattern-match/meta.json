@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "word-pattern-match",
+  "slug": "word-pattern-match",
+  "title": "Same Shape, Different Words",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": ["two maps", "canonical key", "strings"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 9,
+  "mode": "function",
+  "entry": "sameShape",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["same-letters", "anagram-groups"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

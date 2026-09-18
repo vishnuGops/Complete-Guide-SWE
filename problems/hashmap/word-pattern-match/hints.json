@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Walk the letters and the words together. What has to be true the first time you meet a letter, and what has to be true every time after?",
+    "The first time, the letter claims its word. Every time after, it must be the same word. That is one map - and it is not enough.",
+    "The failing case is two letters claiming the same word. Keep a second map, from word back to letter, and check it too.",
+    "Check the counts first: a shape of four letters cannot describe a sentence of three words, and splitting on spaces tells you how many there are."
+  ]
+}

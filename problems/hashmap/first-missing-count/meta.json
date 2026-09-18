@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "first-missing-count",
+  "slug": "first-missing-count",
+  "title": "The Smallest Missing Count",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": ["hash set", "counting", "in-place"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 8,
+  "mode": "function",
+  "entry": "smallestMissing",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["sequence-run-length", "zero-gravity"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}
