@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "median-of-two-sorted",
+  "slug": "median-of-two-sorted",
+  "title": "Median Of Two Series",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["binary search", "sorted input", "invariant"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 9,
+  "mode": "function",
+  "entry": "medianOfTwo",
+  "expect": "return",
+  "comparator": {
+    "kind": "floatTolerance",
+    "eps": 1e-06
+  },
+  "related": ["window-median-stream", "first-and-last-seen"],
+  "targetComplexity": {
+    "time": "O(log(min(n, m)))",
+    "space": "O(1)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Turn the question round. Instead of asking what the best cost is, ask whether a *given* cost is achievable at all.",
+    "For a fixed cap, the greedy answer is forced: hand each job to the current worker while it still fits, and start a new worker the moment it does not. That uses the fewest workers possible for that cap.",
+    "So a cap works exactly when the greedy count is at most `k`. That test is monotone - if a cap works, every larger cap works - which is the setup for a binary search.",
+    "Search the caps between the largest single job (nothing smaller can ever work) and the total of all jobs (which always works with one worker)."
+  ]
+}

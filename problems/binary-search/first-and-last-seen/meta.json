@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "first-and-last-seen",
+  "slug": "first-and-last-seen",
+  "title": "First And Last Sighting",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["boundary binary search", "sorted input"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 4,
+  "mode": "function",
+  "entry": "firstAndLast",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["insert-position", "first-not-below"],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

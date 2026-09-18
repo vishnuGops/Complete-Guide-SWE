@@ -31,6 +31,12 @@ written:
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
 
+`median-of-two-sorted` was planned as a trap and is not one: merging two sorted
+series is `O(n + m)`, which finishes at any size whose `tests.json` is a
+reasonable weight, so no honest maximum-size case defeats the obvious approach.
+Its statement names the `O(log(min(n, m)))` target instead of claiming a timeout
+that would not happen (P6-2, D21).
+
 Ratings are a first estimate. Calibration against solving time is P6-7's job,
 and a rating that turns out wrong is a one-line change plus a version bump.
 
@@ -160,7 +166,7 @@ search on the answer, and rotated input.
 | 6   | `rotation-point`       | Where The Series Turns     | Medium | 5      | function | binary search, rotated array                           |                  |
 | 7   | `split-into-k-parts`   | Fairest Split Into K       | Hard   | 8      | function | binary search on the answer, feasibility check         | trap             |
 | 8   | `square-root-floor`    | Whole Square Root          | Easy   | 3      | function | binary search on the answer                            |                  |
-| 9   | `median-of-two-sorted` | Median Of Two Series       | Hard   | 9      | function | binary search, sorted input, invariant                 | trap             |
+| 9   | `median-of-two-sorted` | Median Of Two Series       | Hard   | 9      | function | binary search, sorted input, invariant                 |                  |
 
 ---
 

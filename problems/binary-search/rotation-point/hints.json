@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The row is two ascending runs, and every reading in the first run is larger than every reading in the second. Which run is a given position in?",
+    "Compare `readings[mid]` with the last reading in the range. If it is larger, `mid` is in the first run and the turn is strictly after it.",
+    "Otherwise `mid` is in the second run, which contains the smallest reading - and `mid` might be it, so keep it in the range.",
+    "Comparing against the *last* reading rather than the first is what makes the unrotated case fall out for free: there, every position is already in the second run."
+  ]
+}

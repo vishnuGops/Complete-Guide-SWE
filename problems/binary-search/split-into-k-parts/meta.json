@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "split-into-k-parts",
+  "slug": "split-into-k-parts",
+  "title": "Fairest Split Into K",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["binary search on the answer", "feasibility check", "greedy"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 7,
+  "mode": "function",
+  "entry": "fairestSplit",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["min-load-capacity", "square-root-floor"],
+  "targetComplexity": {
+    "time": "O(n log S)",
+    "space": "O(1)"
+  }
+}

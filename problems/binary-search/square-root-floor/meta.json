@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "square-root-floor",
+  "slug": "square-root-floor",
+  "title": "Whole Square Root",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["binary search on the answer"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 8,
+  "mode": "function",
+  "entry": "wholeRoot",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["min-load-capacity", "split-into-k-parts"],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

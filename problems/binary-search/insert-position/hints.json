@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The answer is a boundary: every position before it holds a reading below the target, every position from it on holds one that is not.",
+    "Binary search for that boundary rather than for the target itself. The question at each step is `readings[mid] < target`, which is always answerable.",
+    "Keep a half-open range `[low, high)` starting as `[0, n)`. When `readings[mid] < target`, the answer is above `mid`, so `low = mid + 1`; otherwise `high = mid`.",
+    "The loop ends when `low == high`, and that value is the answer - including `n`, which is why `high` starts at `n` and not `n - 1`."
+  ]
+}

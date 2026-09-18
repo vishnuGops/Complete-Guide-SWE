@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "peak-reading",
+  "slug": "peak-reading",
+  "title": "A Local Peak",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["binary search", "invariant"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 5,
+  "mode": "function",
+  "entry": "peakPosition",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["rotation-point", "rotated-lookup"],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

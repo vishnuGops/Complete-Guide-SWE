@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "insert-position",
+  "slug": "insert-position",
+  "title": "Where It Would Go",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["boundary binary search", "lower bound"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 3,
+  "mode": "function",
+  "entry": "insertPosition",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["first-not-below", "first-and-last-seen"],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

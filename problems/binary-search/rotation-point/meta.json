@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "rotation-point",
+  "slug": "rotation-point",
+  "title": "Where The Series Turns",
+  "version": 1,
+  "topic": "binary-search",
+  "patterns": ["binary search", "rotated array"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 6,
+  "mode": "function",
+  "entry": "rotationPoint",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["rotated-lookup", "peak-reading"],
+  "targetComplexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  }
+}

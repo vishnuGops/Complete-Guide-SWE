@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You are not searching a list - you are searching the answer itself. What is the range of possible answers, and what question can you ask about a candidate?",
+    "The answer lies between 0 and about 46341. For any candidate `r`, `r * r <= value` is true for every `r` up to the answer and false after it.",
+    "That is a boundary again: binary search the candidates for the last one whose square still fits.",
+    "When the range is `[low, high]` and you keep the candidate that fits, round the midpoint *up* - otherwise `low` can stop moving and the loop never ends."
+  ]
+}

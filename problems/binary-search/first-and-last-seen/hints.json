@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two answers, and each of them is a boundary. Which two predicates turn from false to true exactly there?",
+    "The first sighting is the first position where `readings[i] >= target`. The last sighting is one before the first position where `readings[i] > target`.",
+    "So run the same boundary search twice, changing only the comparison, and the run is everything between the two boundaries.",
+    "The target is absent exactly when the two boundaries are equal - an empty run - which is also how the first boundary landing at `n` is handled without a special case."
+  ]
+}

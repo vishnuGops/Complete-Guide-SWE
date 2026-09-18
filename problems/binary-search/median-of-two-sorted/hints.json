@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Forget the median for a moment. Suppose you cut each series into a left part and a right part so that the two left parts together hold exactly half the readings. What would make that cut the right one?",
+    "Every reading on the left would have to be no larger than every reading on the right. Because each series is sorted, that is only two comparisons: the last of each left part against the first of the other right part.",
+    "Choosing how many readings to take from the first series fixes how many come from the second, so there is only one number to search - and the two comparisons say which way to move.",
+    "Search over the shorter series, and use infinities for the ends so that taking none or all of it needs no special case."
+  ]
+}

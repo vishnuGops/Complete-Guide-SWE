@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Pick any position and compare it with its right-hand neighbour. What does each of the two outcomes tell you about where the peak is?",
+    "If `readings[mid] < readings[mid + 1]` you are still on the way up, so the peak is strictly to the right. Otherwise you are at the peak or past it, so the peak is at `mid` or to its left.",
+    "That is a boundary search: keep `[low, high]` with the peak always inside, and halve it using that one comparison.",
+    "There is no separate found-it check. When `low` meets `high` the range holds exactly one position, and the invariant says it is the peak."
+  ]
+}

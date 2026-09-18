@@ -1,0 +1,45 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"a perfect square","args":[16],"expected":4,"explanation":"4 times 4 is exactly 16."},
+    {
+      "name": "rounded down",
+      "args": [24],
+      "expected": 4,
+      "explanation": "5 times 5 is 25, which is more than 24."
+    },
+    {"name":"zero","args":[0],"expected":0,"explanation":"0 times 0 is 0."}
+  ],
+  "hidden": [
+    {"name":"one","args":[1],"expected":1},
+    {"name":"the first value that rounds down","args":[2],"expected":1},
+    {"name":"still one","args":[3],"expected":1},
+    {"name":"the first perfect square above one","args":[4],"expected":2},
+    {"name":"the stated maximum","args":[2147483647],"expected":46340},
+    {"name":"the largest perfect square in range","args":[2147395600],"expected":46340},
+    {"name":"one below the largest perfect square","args":[2147395599],"expected":46339},
+    {"name":"one above the largest perfect square","args":[2147395601],"expected":46340},
+    {"args":[533194281],"expected":23091},
+    {"args":[533194280],"expected":23090},
+    {"args":[533194282],"expected":23091},
+    {"args":[1730476801],"expected":41599},
+    {"args":[1730476800],"expected":41598},
+    {"args":[1730476802],"expected":41599},
+    {"args":[1683953296],"expected":41036},
+    {"args":[1683953295],"expected":41035},
+    {"args":[1683953297],"expected":41036},
+    {"args":[1827477001],"expected":42749},
+    {"args":[1827477000],"expected":42748},
+    {"args":[1827477002],"expected":42749},
+    {"args":[518154169],"expected":22763},
+    {"args":[518154168],"expected":22762},
+    {"args":[518154170],"expected":22763},
+    {"args":[455438281],"expected":21341},
+    {"args":[455438280],"expected":21340},
+    {"args":[455438282],"expected":21341},
+    {"args":[931029456],"expected":30512},
+    {"args":[190884485],"expected":13816},
+    {"args":[172430864],"expected":13131},
+    {"args":[690937931],"expected":26285}
+  ]
+}
