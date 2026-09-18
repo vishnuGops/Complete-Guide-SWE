@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You are asked for one value, not for the sorted row. How much of the ordering do you actually need?",
+    "Only the top `k` readings matter, and among those only the smallest. Everything below the top `k` can be discarded the moment it is out of the running.",
+    "Keep a min-heap of the `k` largest readings seen so far. A new reading beats the heap's smallest or it does not; when the heap is full, its root is the answer so far.",
+    "Sorting the whole row and indexing is `O(n log n)` and perfectly acceptable; the heap is `O(n log k)` and is the version that survives the row arriving as a stream."
+  ]
+}

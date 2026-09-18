@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "largest-joined-number",
+  "slug": "largest-joined-number",
+  "title": "Largest Number Made Of",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["custom sort", "tie breaking", "strings"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 7,
+  "mode": "function",
+  "entry": "largestJoined",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["frequency-order", "anagram-groups"],
+  "targetComplexity": {
+    "time": "O(n log n \u00b7 L)",
+    "space": "O(n \u00b7 L)"
+  }
+}

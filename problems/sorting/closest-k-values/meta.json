@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "closest-k-values",
+  "slug": "closest-k-values",
+  "title": "The K Closest Readings",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["top k", "heap", "two pointers"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 6,
+  "mode": "function",
+  "entry": "closestReadings",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["kth-largest-value", "first-not-below"],
+  "targetComplexity": {
+    "time": "O(log n + k)",
+    "space": "O(k)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The answer is an ordering, so the whole problem is: given two parts, which one should come first?",
+    "Comparing them as numbers is wrong - 3 against 30 has no obvious winner. Compare what they *produce*: the joined string one way against the joined string the other.",
+    "Order two parts `a` and `b` so that the string `a + b` is larger than `b + a`, comparing as text. Sorting on that rule and joining gives the answer.",
+    "That rule is a valid ordering - it is transitive, which is worth convincing yourself of - and the only case it does not cover is a row of zeroes, which must print as a single `0`."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "minimum-swaps-sorted",
+  "slug": "minimum-swaps-sorted",
+  "title": "Fewest Swaps To Sorted",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["sorted input", "invariant", "counting"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 9,
+  "mode": "function",
+  "entry": "fewestSwaps",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["sort-three-colours", "kth-largest-value"],
+  "targetComplexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  }
+}

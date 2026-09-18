@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose the answer contained two readings with a third reading between them that was left out. Could that happen?",
+    "It could not: anything between two chosen readings is at least as close to the target as the further of the two. So the answer is a contiguous run of length `k`.",
+    "Now there are only `n - k + 1` possible runs, each defined by its left end. Compare a run against the one starting one place later: which of the two boundary readings is further from the target?",
+    "That comparison is monotone, so binary search the left end over `0 .. n - k`, comparing `target - readings[mid]` against `readings[mid + k] - target`."
+  ]
+}
