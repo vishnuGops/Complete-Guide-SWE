@@ -236,8 +236,11 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
 
   // Solved in *any* language unlocks the editorial: the approach is the same
   // approach, and re-hiding it because the user has not also done it in Java
-  // would be pedantry rather than a gate.
-  const unlocked = statusRank(summary.status) >= statusRank('solved');
+  // would be pedantry rather than a gate. Or the user asked to see it anyway
+  // (P7-2), which is recorded and does not expire - a gate you can reopen by
+  // reloading is not a gate, it is a nag.
+  const unlocked =
+    statusRank(summary.status) >= statusRank('solved') || repos.events.wasEditorialRevealed(slug);
 
   const drafts: ProblemDetail['drafts'] = {};
   for (const draft of repos.drafts.listByProblem(slug)) drafts[draft.language] = draft;
@@ -267,6 +270,9 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
     revealedHints: Math.min(repos.events.highestHintRevealed(slug), pkg.hints.hints.length),
     editorial: unlocked ? pkg.editorial : null,
     editorialUnlocked: unlocked,
+    references: unlocked
+      ? { python: pkg.sources.referencePython, java: pkg.sources.referenceJava }
+      : null,
     starters: { python: pkg.sources.starterPython, java: pkg.sources.starterJava },
     drafts,
     progress: rows,

@@ -124,6 +124,8 @@ export const api = {
   submissions: (slug: string): Promise<SubmissionListResponse> =>
     request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
+  revealEditorial: (slug: string): Promise<ProblemDetail> =>
+    request(`/api/problems/${encodeURIComponent(slug)}/editorial`, { method: 'POST' }),
   revealHint: (slug: string, revealed: number): Promise<HintRevealResponse> =>
     request(`/api/problems/${encodeURIComponent(slug)}/hints`, {
       method: 'POST',

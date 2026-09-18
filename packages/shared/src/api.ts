@@ -219,6 +219,14 @@ export const problemDetailSchema = z.object({
    */
   editorial: z.string().nullable(),
   editorialUnlocked: z.boolean(),
+  /**
+   * The reference solutions, sent only once the editorial is unlocked (P7-2).
+   *
+   * Null while it is locked, and absent from the payload entirely rather than
+   * sent-and-hidden: a solution the client already holds is not withheld, it is
+   * one View Source away.
+   */
+  references: z.record(languageSchema, z.string()).nullable(),
   starters: z.record(languageSchema, z.string()),
   drafts: z.partialRecord(languageSchema, draftSchema),
   progress: z.array(problemProgressSchema),

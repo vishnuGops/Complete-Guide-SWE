@@ -1,15 +1,18 @@
-import { memo, type ReactNode } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import {
+  LANGUAGES,
   LANGUAGE_LABEL,
   TOPIC_LABEL,
   VERDICT_LABEL,
+  type Language,
   type ProblemDetail,
   type Submission,
 } from '@devpromax/shared';
-import { useSubmissions } from '../../api/hooks.js';
+import { useRevealEditorial, useSubmissions } from '../../api/hooks.js';
 import { Markdown } from '../../markdown/Markdown.js';
 import {
   Button,
+  ConfirmDialog,
   StickyTabsContent,
   Tabs,
   TabsContent,
@@ -17,6 +20,7 @@ import {
   TabsTrigger,
   cn,
 } from '../../ui/index.js';
+import { CodeDiff } from './CodeDiff.js';
 import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
 
 /**
@@ -85,7 +89,111 @@ function Hints({
   );
 }
 
-function Editorial({ problem }: { problem: ProblemDetail }) {
+/**
+ * The reference solution, and optionally the difference between it and the
+ * editor (ROADMAP P7-2).
+ *
+ * The language starts on whichever one the user is writing in - they came here
+ * to compare, and having to pick their own language first is a step for
+ * nothing - but both are always one click away, because reading the same
+ * approach in the other language is one of the better things this app can
+ * offer.
+ */
+function ReferenceSolution({
+  references,
+  language,
+  code,
+}: {
+  references: Record<Language, string>;
+  language: Language;
+  code: string;
+}) {
+  const [shown, setShown] = useState<Language>(language);
+  const [comparing, setComparing] = useState(false);
+  const reference = references[shown];
+
+  return (
+    /* Labelled, so it is a landmark: the language buttons in here read
+       identically to the ones in the workspace toolbar, and without a region
+       around them nothing on screen says which pair does which. */
+    <section aria-label="Reference solution" className="border-border mt-6 border-t pt-4">
+      <h2 className="text-sm font-semibold">Reference solution</h2>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {LANGUAGES.map((candidate) => (
+          <Button
+            key={candidate}
+            size="sm"
+            variant={candidate === shown ? 'secondary' : 'ghost'}
+            aria-pressed={candidate === shown}
+            onClick={() => {
+              setShown(candidate);
+            }}
+          >
+            {LANGUAGE_LABEL[candidate]}
+          </Button>
+        ))}
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto"
+          aria-pressed={comparing}
+          onClick={() => {
+            setComparing(!comparing);
+          }}
+        >
+          {comparing ? 'Show it whole' : 'Compare with my code'}
+        </Button>
+      </div>
+
+      {comparing ? (
+        shown === language ? (
+          <CodeDiff
+            className="mt-3"
+            before={reference}
+            after={code}
+            beforeLabel="The reference"
+            afterLabel="your code"
+          />
+        ) : (
+          <p className="text-fg-muted mt-3 text-sm">
+            You are writing {LANGUAGE_LABEL[language]}, so there is nothing to compare the{' '}
+            {LANGUAGE_LABEL[shown]} reference against. Switch the language above, or switch the
+            editor.
+          </p>
+        )
+      ) : (
+        /*
+         * Through the markdown renderer, so the reference is highlighted the
+         * same way a fenced block in the editorial above it is. Four backticks:
+         * three would end the fence early if the code ever contained a line of
+         * them, which Python and Java never will, but the cost of being right
+         * about it is one character.
+         */
+        <Markdown
+          className="mt-3"
+          content={`\`\`\`\`${shown}
+${reference}
+\`\`\`\``}
+        />
+      )}
+    </section>
+  );
+}
+
+function Editorial({
+  problem,
+  language,
+  code,
+}: {
+  problem: ProblemDetail;
+  language: Language;
+  code: string;
+}) {
+  const reveal = useRevealEditorial();
+  const [confirming, setConfirming] = useState(false);
+
   if (!problem.editorialUnlocked || problem.editorial === null) {
     return (
       <div className="p-4">
@@ -93,6 +201,41 @@ function Editorial({ problem }: { problem: ProblemDetail }) {
           The editorial unlocks once you have solved this problem. Until then the hints are the way
           in — they go from a nudge to the full approach.
         </p>
+
+        {/*
+          The lock opens from the inside (P7-2). This is the user's own practice
+          on their own machine, and a gate they cannot open is one they work
+          around by opening the repository - which teaches them nothing and
+          tells the progress dashboard nothing either. Opening it is recorded.
+        */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-3"
+          disabled={reveal.isPending}
+          onClick={() => {
+            setConfirming(true);
+          }}
+        >
+          Show it anyway
+        </Button>
+
+        {reveal.error && (
+          <p className="text-danger-fg mt-2 text-sm" role="alert">
+            {reveal.error.message}
+          </p>
+        )}
+
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title="Show the editorial before solving it?"
+          description="You will see the approach and both reference solutions. This is recorded against the problem and cannot be undone - your progress page will show that this one was opened rather than solved."
+          confirmLabel="Show it"
+          onConfirm={() => {
+            reveal.mutate(problem.summary.slug);
+          }}
+        />
       </div>
     );
   }
@@ -100,6 +243,11 @@ function Editorial({ problem }: { problem: ProblemDetail }) {
   return (
     <div className="p-4">
       <Markdown content={problem.editorial} assetSlug={problem.summary.slug} />
+      {/* Sent together with the editorial, but the two are separate fields and
+          the prose is worth showing on its own if ever they are not. */}
+      {problem.references !== null && (
+        <ReferenceSolution references={problem.references} language={language} code={code} />
+      )}
     </div>
   );
 }
@@ -187,6 +335,15 @@ export interface StatementPanelProps {
    */
   revealedHints: number;
   onRevealHint: (revealed: number) => void;
+  /**
+   * The editor's language and contents, for the editorial's diff (P7-2).
+   *
+   * `code` changes on every keystroke, which does cost this memo - but it costs
+   * it already: `coach` is rebuilt whenever `askCoach` is, and `askCoach`
+   * closes over the code it would send. So this adds a prop, not a re-render.
+   */
+  language: Language;
+  code: string;
   coach: ReactNode;
 }
 
@@ -196,6 +353,8 @@ function StatementPanelBody({
   onTab,
   revealedHints,
   onRevealHint,
+  language,
+  code,
   coach,
 }: StatementPanelProps) {
   const { summary } = problem;
@@ -264,7 +423,7 @@ function StatementPanelBody({
       </StickyTabsContent>
 
       <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Editorial problem={problem} />
+        <Editorial problem={problem} language={language} code={code} />
       </TabsContent>
 
       <TabsContent value="submissions" className="min-h-0 flex-1 overflow-y-auto pt-0">

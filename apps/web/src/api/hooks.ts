@@ -238,6 +238,25 @@ export function useRevealHint(): UseMutationResult<
 }
 
 /**
+ * "Show me the editorial anyway" (ROADMAP P7-2).
+ *
+ * The answer is the whole problem detail, unlocked - the editorial and the two
+ * reference solutions were not in the payload a moment ago, and now they are -
+ * so it is written straight into the cache. Progress is invalidated too,
+ * because the reveal is recorded as activity and the dashboard counts it.
+ */
+export function useRevealEditorial(): UseMutationResult<ProblemDetail, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.revealEditorial,
+    onSuccess: (detail, slug) => {
+      queryClient.setQueryData(keys.problem(slug), detail);
+      void queryClient.invalidateQueries({ queryKey: keys.progress });
+    },
+  });
+}
+
+/**
  * Run and Submit.
  *
  * Both invalidate progress, because both move a problem's status: Run marks it

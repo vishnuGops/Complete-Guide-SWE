@@ -156,6 +156,35 @@ describe('events', () => {
     });
   });
 
+  describe('wasEditorialRevealed (P7-2)', () => {
+    it('is false until the user asks to see it, and does not expire', () => {
+      expect(repos.events.wasEditorialRevealed('pair-sum-index')).toBe(false);
+
+      repos.events.record({ type: 'editorial_revealed', slug: 'pair-sum-index' });
+
+      expect(repos.events.wasEditorialRevealed('pair-sum-index')).toBe(true);
+      expect(repos.events.wasEditorialRevealed('other-problem')).toBe(false);
+    });
+
+    it('is not confused by other activity on the same problem', () => {
+      repos.events.record({ type: 'run', slug: 'pair-sum-index' });
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 4 },
+      });
+
+      expect(repos.events.wasEditorialRevealed('pair-sum-index')).toBe(false);
+    });
+
+    it('locks again when the log is cleared', () => {
+      repos.events.record({ type: 'editorial_revealed', slug: 'pair-sum-index' });
+      repos.events.clear();
+
+      expect(repos.events.wasEditorialRevealed('pair-sum-index')).toBe(false);
+    });
+  });
+
   it('clears the log', () => {
     repos.events.record({ type: 'run' });
     repos.events.clear();

@@ -852,6 +852,8 @@ export function Workspace() {
               onTab={setLeftTab}
               revealedHints={revealedHints}
               onRevealHint={onRevealHint}
+              language={language}
+              code={code}
               coach={coachPanel}
             />
           </div>

@@ -169,6 +169,19 @@ describe.each(Object.keys(THEMES) as (keyof typeof THEMES)[])('%s theme', (theme
     },
   );
 
+  it.each(['success', 'danger'] as const)(
+    'keeps code legible on a %s diff row (P7-2)',
+    (status) => {
+      // The diff tints whole rows of code. The text on them is plain `fg`, so
+      // the tint has to hold the text contrast floor, not the non-text one -
+      // a row you cannot read is worse than no row.
+      expect(
+        Number(contrast(colour('fg'), colour(`${status}-subtle`)).toFixed(2)),
+        `--fg on --${status}-subtle in ${theme}`,
+      ).toBeGreaterThanOrEqual(TEXT);
+    },
+  );
+
   it('separates panels from the page', () => {
     // Not a WCAG rule - a layout one. If a panel edge is invisible, the panel
     // is not a panel, and 1.5:1 is about where an edge stops reading.

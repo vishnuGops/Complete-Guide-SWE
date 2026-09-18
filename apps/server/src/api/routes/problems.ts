@@ -95,6 +95,29 @@ export function registerProblemRoutes(app: FastifyInstance, deps: ApiDeps): void
   });
 
   /**
+   * "Show me the editorial anyway" (ROADMAP P7-2).
+   *
+   * Unlocking early is the user's call to make - this is their own practice,
+   * and a lock they cannot open is a lock that gets worked around by opening
+   * the repository. What it is not is free: the reveal is recorded, it does not
+   * expire, and the progress dashboard (P7-5) can say how many problems were
+   * opened this way.
+   *
+   * No body, and idempotent: pressing it on a problem already solved records
+   * nothing, because the editorial was not locked.
+   */
+  app.post('/api/problems/:slug/editorial', async (request): Promise<ProblemDetail> => {
+    const { slug } = parseInput(slugParams, request.params, 'params');
+    if (!deps.catalogue.get(slug)) throw notFound(`No problem with slug "${slug}".`);
+
+    const before = problemDetail(slug, deps);
+    if (!before.editorialUnlocked) {
+      deps.repos.events.record({ type: 'editorial_revealed', slug });
+    }
+    return problemDetail(slug, deps);
+  });
+
+  /**
    * Images referenced by a statement or editorial.
    *
    * The file name comes from the URL, so it is user input by definition: it is

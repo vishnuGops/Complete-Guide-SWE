@@ -282,9 +282,74 @@ describe('GET /api/problems/:slug', () => {
     expect(after.editorial).toContain('Approach');
   });
 
+  it('sends the reference solutions only once the editorial is unlocked (P7-2)', async () => {
+    expect(
+      ((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).references,
+    ).toBeNull();
+
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    const after = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(after.references?.python).toContain('seen[v] = i');
+    expect(after.references?.java).toContain('HashMap');
+  });
+
   it('404s an unknown slug and 400s an impossible one', async () => {
     expect((await api('GET', '/api/problems/no-such-problem')).statusCode).toBe(404);
     expect((await api('GET', '/api/problems/NOT_A_SLUG')).statusCode).toBe(400);
+  });
+});
+
+describe('POST /api/problems/:slug/editorial', () => {
+  it('unlocks the editorial without solving, and records that it did', async () => {
+    const body = (await api('POST', `/api/problems/${EASY}/editorial`)).json() as ProblemDetail;
+
+    expect(body.editorialUnlocked).toBe(true);
+    expect(body.editorial).toContain('Approach');
+    expect(body.references?.python).toContain('class Solution');
+
+    const [event] = repos.events.list({ slug: EASY });
+    expect(event?.type).toBe('editorial_revealed');
+    // Revealing is not attempting. The status ratchet (D11) is untouched.
+    expect(repos.progress.listByProblem(EASY)).toEqual([]);
+  });
+
+  it('stays unlocked on the next read', async () => {
+    await api('POST', `/api/problems/${EASY}/editorial`);
+
+    const detail = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(detail.editorialUnlocked).toBe(true);
+  });
+
+  it('records nothing when the editorial was not locked to begin with', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    await api('POST', `/api/problems/${EASY}/editorial`);
+
+    expect(
+      repos.events.list({ slug: EASY }).filter((e) => e.type === 'editorial_revealed'),
+    ).toEqual([]);
+  });
+
+  it('records one reveal however many times it is pressed', async () => {
+    await api('POST', `/api/problems/${EASY}/editorial`);
+    await api('POST', `/api/problems/${EASY}/editorial`);
+
+    expect(
+      repos.events.list({ slug: EASY }).filter((e) => e.type === 'editorial_revealed'),
+    ).toHaveLength(1);
+  });
+
+  it('locks again when progress is reset', async () => {
+    await api('POST', `/api/problems/${EASY}/editorial`);
+    await api('POST', '/api/settings/reset-progress');
+
+    const detail = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(detail.editorialUnlocked).toBe(false);
+    expect(detail.references).toBeNull();
+  });
+
+  it('404s an unknown problem', async () => {
+    expect((await api('POST', '/api/problems/no-such-problem/editorial')).statusCode).toBe(404);
   });
 });
 

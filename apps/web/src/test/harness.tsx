@@ -207,6 +207,7 @@ export function aProblemDetail(overrides: Partial<ProblemDetail> = {}): ProblemD
     revealedHints: 0,
     editorial: null,
     editorialUnlocked: false,
+    references: null,
     starters: { python: 'class Solution:\n    pass\n', java: 'class Solution {}\n' },
     drafts: {},
     progress: [],

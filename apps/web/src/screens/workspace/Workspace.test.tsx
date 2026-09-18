@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes, useNavigate } from 'react-router-dom';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Language, ProblemDetail, RunResult } from '@devpromax/shared';
 import {
@@ -76,6 +76,23 @@ function serve(detail: ProblemDetail = aProblemDetail(), extra: FakeRoute[] = []
     { match: path(`/api/problems/${SLUG}`), body: () => current },
     { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: [] }) },
     {
+      // Also stateful: revealing unlocks the editorial and puts the reference
+      // solutions into the payload, and the answer is the whole new detail.
+      match: path(`/api/problems/${SLUG}/editorial`),
+      body: () => {
+        current = {
+          ...current,
+          editorialUnlocked: true,
+          editorial: current.editorial ?? '## Approach\n\nUse a hash map.',
+          references: {
+            python: 'def solve(nums):\n    return nums\n',
+            java: 'class Solution {}\n',
+          },
+        };
+        return current;
+      },
+    },
+    {
       // Stateful, like the real one: the count the detail answers with has to
       // move, or "the hint is still there after a reload" cannot be tested.
       match: path(`/api/problems/${SLUG}/hints`),
@@ -147,6 +164,108 @@ describe('the statement panel', () => {
 
     await userEvent.setup().click(await screen.findByRole('tab', { name: 'Editorial' }));
     expect(screen.getByRole('heading', { name: 'Approach' })).toBeInTheDocument();
+  });
+
+  it('opens the lock from the inside, once the user confirms (P7-2)', async () => {
+    const server = serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Editorial' }));
+    await user.click(screen.getByRole('button', { name: 'Show it anyway' }));
+
+    // Behind a confirmation, because it is recorded and cannot be undone.
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show it' }));
+
+    expect(await screen.findByRole('heading', { name: 'Approach' })).toBeInTheDocument();
+    expect(
+      server.requests.some(
+        (request) => request.method === 'POST' && request.url.pathname.endsWith('/editorial'),
+      ),
+    ).toBe(true);
+  });
+
+  it('records nothing when the confirmation is dismissed (P7-2)', async () => {
+    const server = serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Editorial' }));
+    await user.click(screen.getByRole('button', { name: 'Show it anyway' }));
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByText(/unlocks once you have solved/)).toBeInTheDocument();
+    expect(server.requests.some((request) => request.url.pathname.endsWith('/editorial'))).toBe(
+      false,
+    );
+  });
+
+  it('shows the reference solution in the language being written (P7-2)', async () => {
+    serve(
+      aProblemDetail({
+        editorial: '## Approach\n\nUse a hash map.',
+        editorialUnlocked: true,
+        references: { python: 'def reference_in_python():\n    pass\n', java: 'class InJava {}\n' },
+      }),
+    );
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Editorial' }));
+
+    // Scoped to the reference section: the workspace toolbar has its own pair
+    // of language buttons reading exactly the same.
+    const reference = within(screen.getByRole('region', { name: 'Reference solution' }));
+
+    // Python is the editor's language, so it is what is shown first. Matched on
+    // the identifier alone: the highlighter puts `class` in a span of its own,
+    // so a query for "class InJava" spans two elements and finds neither.
+    expect(screen.getByText(/reference_in_python/)).toBeInTheDocument();
+    expect(screen.queryByText(/InJava/)).not.toBeInTheDocument();
+
+    await user.click(reference.getByRole('button', { name: 'Java' }));
+    expect(screen.getByText(/InJava/)).toBeInTheDocument();
+  });
+
+  it('diffs the reference against what is in the editor (P7-2)', async () => {
+    serve(
+      aProblemDetail({
+        editorial: '## Approach\n\nUse a hash map.',
+        editorialUnlocked: true,
+        // The editor seeds from the starter, `class Solution:\n    pass\n`.
+        references: { python: 'class Solution:\n    return 1\n', java: 'class InJava {}\n' },
+      }),
+    );
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Editorial' }));
+    await user.click(screen.getByRole('button', { name: 'Compare with my code' }));
+
+    // One line differs; the line the two share is counted as neither.
+    expect(screen.getByText('1 added')).toBeInTheDocument();
+    expect(screen.getByText('1 removed')).toBeInTheDocument();
+    expect(screen.getByText('class Solution:')).toBeInTheDocument();
+  });
+
+  it('says so rather than diffing the wrong language (P7-2)', async () => {
+    serve(
+      aProblemDetail({
+        editorial: '## Approach\n\nUse a hash map.',
+        editorialUnlocked: true,
+        references: { python: 'p\n', java: 'j\n' },
+      }),
+    );
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Editorial' }));
+    const reference = within(screen.getByRole('region', { name: 'Reference solution' }));
+    await user.click(reference.getByRole('button', { name: 'Java' }));
+    await user.click(reference.getByRole('button', { name: 'Compare with my code' }));
+
+    expect(screen.getByText(/nothing to compare the Java reference against/)).toBeInTheDocument();
   });
 
   it('reveals hints one rung at a time', async () => {

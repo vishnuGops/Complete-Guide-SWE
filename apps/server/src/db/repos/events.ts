@@ -75,6 +75,11 @@ export interface EventRepo {
    * with no history and four hints still open.
    */
   highestHintRevealed(slug: string): number;
+  /**
+   * Whether the user asked to see this problem's editorial before solving it
+   * (P7-2). Derived from the log for the same reason the hint count is.
+   */
+  wasEditorialRevealed(slug: string): boolean;
   /** Returns how many rows went, which reset-all-progress reports back. */
   clear(): number;
 }
@@ -87,6 +92,9 @@ export function createEventRepo(db: Database): EventRepo {
   // MAX over the rungs rather than a count of the rows: a reveal recorded twice
   // - a double click, a retried request - must not open a fifth hint on a
   // four-rung ladder.
+  const editorialRevealedStmt = db.prepare(
+    "SELECT 1 FROM events WHERE type = 'editorial_revealed' AND slug = ? LIMIT 1",
+  );
   const highestHintStmt = db.prepare(
     `SELECT MAX(json_extract(payload, '$.revealed')) AS highest FROM events
       WHERE type = 'hint_revealed' AND slug = ?`,
@@ -142,6 +150,10 @@ export function createEventRepo(db: Database): EventRepo {
       const row = highestHintStmt.get(slug) as Row | undefined;
       const highest = row?.['highest'];
       return typeof highest === 'number' || typeof highest === 'bigint' ? Number(highest) : 0;
+    },
+
+    wasEditorialRevealed(slug) {
+      return editorialRevealedStmt.get(slug) !== undefined;
     },
 
     dailyCounts(since) {
