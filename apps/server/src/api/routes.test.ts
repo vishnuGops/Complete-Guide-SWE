@@ -288,6 +288,74 @@ describe('GET /api/problems/:slug', () => {
   });
 });
 
+describe('POST /api/problems/:slug/hints', () => {
+  async function reveal(slug: string, revealed: number) {
+    return api('POST', `/api/problems/${slug}/hints`, { revealed });
+  }
+
+  it('starts at zero and remembers what was revealed', async () => {
+    expect(
+      ((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).revealedHints,
+    ).toBe(0);
+
+    expect((await reveal(EASY, 1)).json()).toEqual({ revealed: 1 });
+    expect((await reveal(EASY, 2)).json()).toEqual({ revealed: 2 });
+
+    expect(
+      ((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).revealedHints,
+    ).toBe(2);
+  });
+
+  it('is idempotent, and a stale tab cannot take a hint back', async () => {
+    await reveal(EASY, 3);
+
+    // The same click sent twice, then an older tab that still thinks it is on
+    // rung 1. Neither moves the ladder.
+    expect((await reveal(EASY, 3)).json()).toEqual({ revealed: 3 });
+    expect((await reveal(EASY, 1)).json()).toEqual({ revealed: 3 });
+    expect(
+      repos.events.list({ slug: EASY }).filter((e) => e.type === 'hint_revealed'),
+    ).toHaveLength(1);
+  });
+
+  it('refuses a rung the ladder does not have', async () => {
+    // The fixture's ladder is four rungs; a fifth is a client that has drifted
+    // from the problem, not a hint.
+    const response = await reveal(EASY, 5);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().message).toContain('4 hint(s)');
+  });
+
+  it('rejects a body that is not a rung', async () => {
+    expect((await reveal(EASY, 0)).statusCode).toBe(400);
+    expect((await api('POST', `/api/problems/${EASY}/hints`, {})).statusCode).toBe(400);
+  });
+
+  it('404s an unknown problem', async () => {
+    expect((await reveal('no-such-problem', 1)).statusCode).toBe(404);
+  });
+
+  it('records the reveal as activity without touching progress', async () => {
+    await reveal(EASY, 1);
+
+    const [event] = repos.events.list({ slug: EASY });
+    expect(event?.type).toBe('hint_revealed');
+    expect(event?.payload).toEqual({ revealed: 1 });
+    // Reading a hint is not an attempt (D11).
+    expect(repos.progress.listByProblem(EASY)).toEqual([]);
+  });
+
+  it('forgets the reveals when progress is reset', async () => {
+    await reveal(EASY, 4);
+    await api('POST', '/api/settings/reset-progress');
+
+    expect(
+      ((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).revealedHints,
+    ).toBe(0);
+  });
+});
+
 describe('GET /api/problems/:slug/assets/*', () => {
   it('serves an asset with a locked-down content type', async () => {
     const response = await api('GET', `/api/problems/${EASY}/assets/diagram.svg`);

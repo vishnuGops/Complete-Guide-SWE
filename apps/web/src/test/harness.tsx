@@ -67,8 +67,22 @@ export interface Route {
 }
 
 export interface FakeServer {
-  /** Every request that arrived, so a test can assert on the query it sent. */
-  requests: { method: string; url: URL }[];
+  /**
+   * Every request that arrived, so a test can assert on what was sent.
+   *
+   * `body` is the JSON the client posted, parsed - which is what an assertion
+   * wants to compare against. It is undefined for a GET, and for a body that is
+   * not JSON.
+   */
+  requests: { method: string; url: URL; body?: unknown }[];
+}
+
+function parseBody(body: string): unknown {
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
 }
 
 /** Installs a `fetch` that answers the routes given, and 404s everything else. */
@@ -79,7 +93,11 @@ export function fakeServer(routes: Route[]): FakeServer {
     'fetch',
     vi.fn((input: string, init?: RequestInit) => {
       const url = new URL(input, 'http://127.0.0.1');
-      server.requests.push({ method: init?.method ?? 'GET', url });
+      server.requests.push({
+        method: init?.method ?? 'GET',
+        url,
+        ...(typeof init?.body === 'string' ? { body: parseBody(init.body) } : {}),
+      });
 
       const route = routes.find((candidate) => candidate.match(url));
       if (!route) {
@@ -186,6 +204,7 @@ export function aProblemDetail(overrides: Partial<ProblemDetail> = {}): ProblemD
     samples: [{ args: [[4, 9], 13], expected: [0, 1] }],
     hiddenCount: 12,
     hints: ['Think about what you have already seen.'],
+    revealedHints: 0,
     editorial: null,
     editorialUnlocked: false,
     starters: { python: 'class Solution:\n    pass\n', java: 'class Solution {}\n' },

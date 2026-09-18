@@ -65,6 +65,16 @@ export interface EventRepo {
   list(query?: ActivityQuery): ActivityRecord[];
   /** Counts per UTC day, newest first. */
   dailyCounts(since?: string): DailyCount[];
+  /**
+   * The highest hint rung revealed for a problem, which is how many are visible.
+   *
+   * Derived from the event log rather than stored beside it (P7-1). A
+   * `hint_reveals` table would hold exactly what these rows already say, and the
+   * two would then have to be kept in step - including through
+   * reset-all-progress, which clears events and would otherwise leave a user
+   * with no history and four hints still open.
+   */
+  highestHintRevealed(slug: string): number;
   /** Returns how many rows went, which reset-all-progress reports back. */
   clear(): number;
 }
@@ -74,6 +84,13 @@ export function createEventRepo(db: Database): EventRepo {
     'INSERT INTO events (type, slug, language, payload, created_at) VALUES (?, ?, ?, ?, ?)',
   );
   const clearStmt = db.prepare('DELETE FROM events');
+  // MAX over the rungs rather than a count of the rows: a reveal recorded twice
+  // - a double click, a retried request - must not open a fifth hint on a
+  // four-rung ladder.
+  const highestHintStmt = db.prepare(
+    `SELECT MAX(json_extract(payload, '$.revealed')) AS highest FROM events
+      WHERE type = 'hint_revealed' AND slug = ?`,
+  );
 
   return {
     record(event) {
@@ -119,6 +136,12 @@ export function createEventRepo(db: Database): EventRepo {
         query.limit !== undefined ? stmt.all(...params, query.limit) : stmt.all(...params)
       ) as Row[];
       return rows.map(toRecord);
+    },
+
+    highestHintRevealed(slug) {
+      const row = highestHintStmt.get(slug) as Row | undefined;
+      const highest = row?.['highest'];
+      return typeof highest === 'number' || typeof highest === 'bigint' ? Number(highest) : 0;
     },
 
     dailyCounts(since) {

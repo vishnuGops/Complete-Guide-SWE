@@ -9,6 +9,7 @@ import {
 import type {
   ConnectionTestResponse,
   DraftResponse,
+  HintRevealResponse,
   Language,
   ProblemDetail,
   ProblemListQuery,
@@ -204,6 +205,34 @@ export function useDeleteDraft(): UseMutationResult<
     // problem to learn one thing the response already said.
     onSuccess: (_result, { slug, language }) => {
       writeDraftThrough(queryClient, slug, language, null);
+    },
+  });
+}
+
+/**
+ * Revealing a hint (ROADMAP P7-1).
+ *
+ * Write-through for the same reason drafts are: the answer already says what the
+ * count became, and refetching the problem to learn it would replace the whole
+ * detail payload - editorial lock, drafts and all - to update one integer.
+ *
+ * The button has already moved when this runs, so the write-through is what
+ * makes a reload agree with the screen rather than what paints it. A failure
+ * leaves the cache alone: the hint stays visible for this sitting, because
+ * re-hiding text the user has read is worse than a count that is behind.
+ */
+export function useRevealHint(): UseMutationResult<
+  HintRevealResponse,
+  Error,
+  { slug: string; revealed: number }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug, revealed }) => api.revealHint(slug, revealed),
+    onSuccess: (result, { slug }) => {
+      queryClient.setQueryData<ProblemDetail>(keys.problem(slug), (previous) =>
+        previous ? { ...previous, revealedHints: result.revealed } : previous,
+      );
     },
   });
 }

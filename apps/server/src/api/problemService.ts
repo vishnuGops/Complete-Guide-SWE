@@ -261,6 +261,10 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
     samples: pkg.tests.samples,
     hiddenCount: pkg.hiddenCount,
     hints: pkg.hints.hints,
+    // Clamped to the ladder that exists today: a problem whose hints were cut
+    // from four to three in a later version must not claim a fourth is open
+    // (P7-1, and the drift P7-9 is about).
+    revealedHints: Math.min(repos.events.highestHintRevealed(slug), pkg.hints.hints.length),
     editorial: unlocked ? pkg.editorial : null,
     editorialUnlocked: unlocked,
     starters: { python: pkg.sources.starterPython, java: pkg.sources.starterJava },

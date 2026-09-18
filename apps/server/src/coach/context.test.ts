@@ -99,6 +99,28 @@ describe('buildContext', () => {
     expect(context).toContain('Walk once, keeping a map');
   });
 
+  it('marks the authored next hint secret, and places it above the request flags (P7-1)', () => {
+    const context = buildContext(
+      input({
+        revealedHints: ['Think about what you have already seen.'],
+        nextAuthoredHint: 'A map from value to index answers the question in one step.',
+      }),
+    );
+
+    expect(context).toMatch(/Author's next hint \(SECRET[^)]*\)/);
+    expect(context).toMatch(/never hand it over/i);
+    expect(context).toContain('A map from value to index answers the question in one step.');
+    // Read rungs, then the one ahead: the coach is told what not to repeat
+    // before it is told where to point.
+    expect(context.indexOf('Think about what you have already seen.')).toBeLessThan(
+      context.indexOf("Author's next hint"),
+    );
+  });
+
+  it('leaves the section out when there is no rung ahead (P7-1)', () => {
+    expect(buildContext(input())).not.toContain("Author's next hint");
+  });
+
   it('marks the editorial secret, because the coach must not quote it', () => {
     const context = buildContext(input());
     expect(context).toMatch(/Editorial approach \(SECRET[^)]*\)/);

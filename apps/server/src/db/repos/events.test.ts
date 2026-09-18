@@ -91,6 +91,71 @@ describe('events', () => {
     ).toThrow();
   });
 
+  describe('highestHintRevealed (P7-1)', () => {
+    it('is zero for a problem nobody has asked for a hint on', () => {
+      repos.events.record({ type: 'run', slug: 'pair-sum-index' });
+      expect(repos.events.highestHintRevealed('pair-sum-index')).toBe(0);
+    });
+
+    it('reports the highest rung, not how many times one was recorded', () => {
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 1 },
+      });
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 2 },
+      });
+      // The same rung twice - a double click, or a request that was retried.
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 2 },
+      });
+
+      expect(repos.events.highestHintRevealed('pair-sum-index')).toBe(2);
+    });
+
+    it('is not moved backwards by a later record of a lower rung', () => {
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 3 },
+      });
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 1 },
+      });
+
+      expect(repos.events.highestHintRevealed('pair-sum-index')).toBe(3);
+    });
+
+    it('counts each problem separately', () => {
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 4 },
+      });
+      expect(repos.events.highestHintRevealed('other-problem')).toBe(0);
+    });
+
+    it('goes back to zero when the log is cleared', () => {
+      // Reset-all-progress clears events, and this count is derived from them
+      // rather than stored beside them, so it resets with no extra code.
+      repos.events.record({
+        type: 'hint_revealed',
+        slug: 'pair-sum-index',
+        payload: { revealed: 2 },
+      });
+      repos.events.clear();
+
+      expect(repos.events.highestHintRevealed('pair-sum-index')).toBe(0);
+    });
+  });
+
   it('clears the log', () => {
     repos.events.record({ type: 'run' });
     repos.events.clear();

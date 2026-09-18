@@ -20,6 +20,7 @@ import {
   useDeleteDraft,
   useJudge,
   useProblem,
+  useRevealHint,
   useSaveDraft,
   useSettings,
   useUpdateSettings,
@@ -149,14 +150,22 @@ export function Workspace() {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [offerMastery, setOfferMastery] = useState(false);
   /**
-   * Hint rungs the user has revealed (P4-12, and what P7-1 will persist).
+   * Hint rungs the user has revealed (P4-12, persisted by P7-1).
    *
    * Owned here because the Hints panel is unmounted whenever another tab is
    * shown - so a glance at the Description used to re-hide every hint - and
    * because this is the number the coach has to be told: it must not repeat a
    * rung the user has already read, and it was sending 0 unconditionally.
+   *
+   * The server's count is the floor and this is the overlay on top of it, the
+   * same shape as `chosen` and the last-used language above: the button moves
+   * the moment it is clicked, and the write-through in `useRevealHint` catches
+   * the floor up a round trip later. Reading `problem.revealedHints` alone
+   * would make the hint appear only once the POST answered; holding only local
+   * state would re-hide it on reload.
    */
-  const [revealedHints, setRevealedHints] = useState(0);
+  const [revealedLocally, setRevealedLocally] = useState(0);
+  const revealedHints = Math.max(revealedLocally, problem?.revealedHints ?? 0);
 
   /*
    * Destructured, not held as an object (ROADMAP P4-13).
@@ -178,6 +187,7 @@ export function Workspace() {
   const submit = useJudge('submit');
   const saveDraft = useSaveDraft();
   const deleteDraft = useDeleteDraft();
+  const revealHint = useRevealHint();
   const updateSettings = useUpdateSettings();
   const busy = run.isPending || submit.isPending;
 
@@ -220,7 +230,10 @@ export function Workspace() {
     setTab('testcases');
     setLeftTab('description');
     setOfferMastery(false);
-    setRevealedHints(0);
+    // Only the overlay: `problem.revealedHints` is what the user has actually
+    // read, and it is per problem rather than per language - the ladder is the
+    // same ladder whichever language they are writing in.
+    setRevealedLocally(0);
   }
 
   /**
@@ -389,6 +402,24 @@ export function Workspace() {
       settings?.coach.model ?? null,
       SYSTEM_PROMPT_CHARS + code.length + (problem?.statement.length ?? 0),
     ),
+  );
+
+  /**
+   * Unlocking a hint (ROADMAP P7-1).
+   *
+   * Optimistic on purpose: the rung appears on the click, and the POST records
+   * it. If that request fails the hint stays open for this sitting and the
+   * server simply never heard - which costs the user nothing, where the
+   * alternative (waiting for the answer, or rolling back on failure) takes back
+   * text they have already read.
+   */
+  const reveal = revealHint.mutate;
+  const onRevealHint = useCallback(
+    (next: number) => {
+      setRevealedLocally(next);
+      reveal({ slug, revealed: next });
+    },
+    [reveal, slug],
   );
 
   /*
@@ -820,7 +851,7 @@ export function Workspace() {
               tab={leftTab}
               onTab={setLeftTab}
               revealedHints={revealedHints}
-              onRevealHint={setRevealedHints}
+              onRevealHint={onRevealHint}
               coach={coachPanel}
             />
           </div>

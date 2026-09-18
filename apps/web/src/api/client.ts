@@ -2,6 +2,7 @@ import type {
   ApiError as ApiErrorBody,
   ConnectionTestResponse,
   DraftResponse,
+  HintRevealResponse,
   Language,
   ProblemDetail,
   ProblemListQuery,
@@ -123,6 +124,11 @@ export const api = {
   submissions: (slug: string): Promise<SubmissionListResponse> =>
     request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
+  revealHint: (slug: string, revealed: number): Promise<HintRevealResponse> =>
+    request(`/api/problems/${encodeURIComponent(slug)}/hints`, {
+      method: 'POST',
+      body: JSON.stringify({ revealed }),
+    }),
 
   settings: (): Promise<SettingsView> => request('/api/settings'),
   updateSettings: (patch: SettingsUpdate): Promise<SettingsView> =>

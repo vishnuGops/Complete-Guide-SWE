@@ -45,6 +45,16 @@ export interface ContextInput {
   lastRun?: RunResult;
   /** Hint rungs the user has already read, in order. The coach must start above them. */
   revealedHints?: readonly string[];
+  /**
+   * The next rung of the authored ladder, which the user has *not* unlocked
+   * (P7-1).
+   *
+   * Sent because a coach that does not know where the problem's author was
+   * pointing will point somewhere else, and two ladders leaning on the same
+   * problem is worse help than either. Marked secret in the same breath as the
+   * editorial: it is a hint the user has not spent yet.
+   */
+  nextAuthoredHint?: string;
   /** Earlier coach turns on this problem, newest first (P5-5). */
   priorAttempts?: readonly AttemptMemory[];
   masteryCheck?: boolean;
@@ -244,6 +254,14 @@ export function buildContext(input: ContextInput): string {
       title: 'Hints the user has already read',
       body: input.revealedHints.map((hint, i) => `${i + 1}. ${hint}`).join('\n'),
       droppable: false,
+    });
+  }
+
+  if (input.nextAuthoredHint) {
+    sections.push({
+      title: "Author's next hint (SECRET — point the same way, never hand it over)",
+      body: input.nextAuthoredHint,
+      droppable: true,
     });
   }
 

@@ -75,6 +75,16 @@ function serve(detail: ProblemDetail = aProblemDetail(), extra: FakeRoute[] = []
     ...extra,
     { match: path(`/api/problems/${SLUG}`), body: () => current },
     { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: [] }) },
+    {
+      // Stateful, like the real one: the count the detail answers with has to
+      // move, or "the hint is still there after a reload" cannot be tested.
+      match: path(`/api/problems/${SLUG}/hints`),
+      body: (_url, init) => {
+        const { revealed } = JSON.parse(String(init?.body ?? '{}')) as { revealed: number };
+        current = { ...current, revealedHints: Math.max(current.revealedHints, revealed) };
+        return { revealed: current.revealedHints };
+      },
+    },
     { match: path('/api/settings'), body: () => someSettings() },
     { match: path('/api/run'), body: () => aRunResult() },
     {
@@ -148,6 +158,57 @@ describe('the statement panel', () => {
     expect(screen.queryByText('First nudge.')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Show the first hint' }));
+    expect(screen.getByText('First nudge.')).toBeInTheDocument();
+    expect(screen.queryByText('Second nudge.')).not.toBeInTheDocument();
+  });
+
+  it('shows the rungs the server says were already read (P7-1)', async () => {
+    serve(aProblemDetail({ hints: ['First nudge.', 'Second nudge.'], revealedHints: 1 }));
+    open();
+
+    await userEvent.setup().click(await screen.findByRole('tab', { name: 'Hints' }));
+
+    // Revealed in an earlier sitting, so it is open before anything is clicked.
+    expect(screen.getByText('First nudge.')).toBeInTheDocument();
+    expect(screen.queryByText('Second nudge.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show the next hint' })).toBeInTheDocument();
+  });
+
+  it('tells the server which rung was revealed (P7-1)', async () => {
+    const server = serve(aProblemDetail({ hints: ['First nudge.', 'Second nudge.'] }));
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+    await user.click(screen.getByRole('button', { name: 'Show the first hint' }));
+    await user.click(await screen.findByRole('button', { name: 'Show the next hint' }));
+
+    // The rung, not "one more": two clicks say 1 then 2, so a request that is
+    // sent twice cannot open a third hint.
+    const posted = server.requests.filter(
+      (request) => request.method === 'POST' && request.url.pathname.endsWith('/hints'),
+    );
+    expect(posted).toHaveLength(2);
+    expect(posted.map((request) => request.body)).toEqual([{ revealed: 1 }, { revealed: 2 }]);
+  });
+
+  it('keeps a revealed hint across a reload (P7-1)', async () => {
+    serve(aProblemDetail({ hints: ['First nudge.', 'Second nudge.'] }));
+    const user = userEvent.setup();
+
+    const first = open();
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+    await user.click(screen.getByRole('button', { name: 'Show the first hint' }));
+    expect(await screen.findByText('First nudge.')).toBeInTheDocument();
+
+    // A second mount with a fresh query client is a reload: nothing is cached,
+    // the detail is read again, and the only reason the hint comes back is that
+    // the server was told. P4-12 made the reveal survive a tab switch; this is
+    // what P7-1 adds on top.
+    first.unmount();
+    open();
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+
     expect(screen.getByText('First nudge.')).toBeInTheDocument();
     expect(screen.queryByText('Second nudge.')).not.toBeInTheDocument();
   });

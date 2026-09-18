@@ -17,7 +17,7 @@ describe('the system prompt', () => {
   const prompt = systemPrompt();
 
   it('is a real prompt, read from the versioned file', () => {
-    expect(PROMPT_VERSION).toBe('v2');
+    expect(PROMPT_VERSION).toBe('v3');
     expect(prompt.length).toBeGreaterThan(1_000);
     // Trimmed at load: trailing whitespace would change the cached bytes for
     // no reason, and the prefix has to be identical to be cacheable (D12).
@@ -51,8 +51,16 @@ describe('the system prompt', () => {
     expect(prompt).toMatch(/Set `mastered` to `true` only when \*\*every\*\* dimension is 4/);
   });
 
-  it('tells the coach the editorial is secret', () => {
-    expect(prompt).toMatch(/Never quote it, never mention that you have it/);
+  it('tells the coach the editorial and the authored hint are secret', () => {
+    expect(prompt).toMatch(/Never quote either, never mention that you have them/);
+  });
+
+  it('makes the authored hint ladder the canonical path (P7-1)', () => {
+    // The coach is given a rung the user has not unlocked. Two rules hold that
+    // together: point the same way it does, and never hand it over.
+    expect(prompt).toMatch(/hint ladder is the canonical path/);
+    expect(prompt).toMatch(/your nudge must point the same way/);
+    expect(prompt).toMatch(/handing it over verbatim spends it for them/);
   });
 
   it('asks for the one-line summary the panel shows collapsed', () => {

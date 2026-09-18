@@ -3,14 +3,16 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
+  hintRevealSchema,
   problemListQuerySchema,
   slugSchema,
   submissionListQuerySchema,
+  type HintRevealResponse,
   type ProblemDetail,
   type ProblemListResponse,
   type SubmissionListResponse,
 } from '@devpromax/shared';
-import { notFound, parseInput } from '../errors.js';
+import { badRequest, notFound, parseInput } from '../errors.js';
 import { listProblems, problemDetail } from '../problemService.js';
 import type { ApiDeps } from './types.js';
 
@@ -57,6 +59,39 @@ export function registerProblemRoutes(app: FastifyInstance, deps: ApiDeps): void
         limit: query.limit,
       }),
     };
+  });
+
+  /**
+   * Unlocking a rung of the hint ladder (ROADMAP P7-1).
+   *
+   * Recorded as an activity event and read back from one, so there is one
+   * record of it rather than two. It does not touch progress: reading a hint is
+   * not an attempt, the same reasoning D11 applies to saving a draft.
+   *
+   * Idempotent by construction. The body says which rung is now visible and the
+   * answer is the highest ever reached, so a click that is sent twice, or a
+   * stale tab that asks for rung 2 after another tab reached rung 3, leaves the
+   * ladder where it was.
+   */
+  app.post('/api/problems/:slug/hints', async (request): Promise<HintRevealResponse> => {
+    const { slug } = parseInput(slugParams, request.params, 'params');
+    const { revealed } = parseInput(hintRevealSchema, request.body, 'body');
+    const pkg = deps.catalogue.get(slug);
+    if (!pkg) throw notFound(`No problem with slug "${slug}".`);
+
+    const rungs = pkg.hints.hints.length;
+    if (revealed > rungs) {
+      throw badRequest(`Problem "${slug}" has ${rungs} hint(s); cannot reveal ${revealed}.`, [
+        { path: 'revealed', message: `Must be at most ${rungs}.` },
+      ]);
+    }
+
+    const highest = deps.repos.events.highestHintRevealed(slug);
+    if (revealed > highest) {
+      deps.repos.events.record({ type: 'hint_revealed', slug, payload: { revealed } });
+      return { revealed };
+    }
+    return { revealed: highest };
   });
 
   /**

@@ -199,15 +199,43 @@ describe('streamFeedback', () => {
     expect(requests[0]).toContain('User explicitly asked for the full solution: yes');
   });
 
-  it('sends only the hint rungs the user has actually read', async () => {
+  it('sends the rungs the user has read, plus the one rung ahead (P7-1)', async () => {
     const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
     await collect(streamFeedback(feedbackRequest({ revealedHints: 1 }), deps(fetch)));
 
-    // The fixture's ladder, first rung only. It changed with P6-0 (four rungs,
-    // no code in any of them), so this names the rung rather than quoting a
-    // sentence that happened to be there.
+    // Read: rung 1, as what not to repeat.
     expect(requests[0]).toContain('Look again at what you have already walked past.');
-    expect(requests[0]).not.toContain('A hash map from value to index');
+    // Unread: rung 2, as the direction to point in - marked secret, because it
+    // is a rung the user has not spent. This is what P7-1 changed; before it,
+    // the coach was given nothing about where the author was pointing and was
+    // free to send someone down a different route mid-problem.
+    expect(requests[0]).toContain("Author's next hint (SECRET");
+    expect(requests[0]).toContain('A hash map from value to index');
+    // And nothing beyond it. One rung ahead is direction; the rest is the
+    // answer, and the ladder would be pointless if the coach held all of it.
+    expect(requests[0]).not.toContain('Scan once, checking for the complement');
+    expect(requests[0]).not.toContain('Insert after checking');
+  });
+
+  it('takes the stored reveal count when the client is behind it (P7-1)', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    // Revealed in another tab, which this request's client has not seen.
+    repos.events.record({ type: 'hint_revealed', slug: SLUG, payload: { revealed: 2 } });
+
+    await collect(streamFeedback(feedbackRequest({ revealedHints: 0 }), deps(fetch)));
+
+    expect(requests[0]).toContain('Look again at what you have already walked past.');
+    expect(requests[0]).toContain('A hash map from value to index');
+    // Rung 3 is the one ahead now, so it is the direction rather than a rung
+    // the user is assumed to have read.
+    expect(requests[0]).toContain('Scan once, checking for the complement');
+  });
+
+  it('sends no next hint when the ladder is exhausted (P7-1)', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest({ revealedHints: 4 }), deps(fetch)));
+
+    expect(requests[0]).not.toContain("Author's next hint");
   });
 
   it('turns a refused key into an error event, not a crash', async () => {

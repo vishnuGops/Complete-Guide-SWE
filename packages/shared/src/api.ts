@@ -205,6 +205,14 @@ export const problemDetailSchema = z.object({
   /** The static ladder; the UI reveals one rung at a time (P7-1). */
   hints: z.array(z.string()),
   /**
+   * How many rungs this user has already read (P7-1).
+   *
+   * Sent with the problem rather than fetched separately, because the workspace
+   * needs it before the first paint: a hint the user unlocked yesterday that
+   * re-hides itself on reload is a hint they have to spend again.
+   */
+  revealedHints: z.int().min(0),
+  /**
    * Withheld until the problem is solved (P7-2 adds the explicit reveal). The
    * gate lives here rather than in the UI, because a locked editorial that was
    * already in the payload is not locked.
@@ -221,6 +229,28 @@ export const problemDetailSchema = z.object({
   related: z.array(relatedProblemSchema),
 });
 export type ProblemDetail = z.infer<typeof problemDetailSchema>;
+
+// ---------------------------------------------------------------------------
+// POST /api/problems/:slug/hints
+// ---------------------------------------------------------------------------
+
+/**
+ * Unlocking a rung of the hint ladder (ROADMAP P7-1).
+ *
+ * The body says which rung is now visible, not "one more": two clicks that race
+ * each other would otherwise increment twice for one hint. The server keeps the
+ * highest it has been told, so the same request sent twice is the same state.
+ */
+export const hintRevealSchema = z.object({
+  revealed: z.int().min(1),
+});
+export type HintReveal = z.infer<typeof hintRevealSchema>;
+
+export const hintRevealResponseSchema = z.object({
+  /** The count after the write, which is the highest ever reached. */
+  revealed: z.int().min(0),
+});
+export type HintRevealResponse = z.infer<typeof hintRevealResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // GET /api/problems/:slug/submissions

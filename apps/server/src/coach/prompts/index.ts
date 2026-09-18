@@ -19,12 +19,18 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
+ * `v3` (ROADMAP P7-1): the authored hint ladder is canonical. The coach is now
+ * given the next rung the problem's author wrote and told to point the same way
+ * in its own words - and never to hand it over, because it is a rung the user
+ * has not spent yet. That changes the advice on every problem whose editorial
+ * approach is not the only one that works, which is most of them.
+ *
  * `v2` (ROADMAP P5-10): the untrusted-input rule and the requirement that
  * every score below 4 be justified in the prose. Both change the advice, which
- * is what the bump rule in `docs/COACH_PROMPTS.md` asks for - `v1` stays on
- * disk so feedback recorded against it can still be traced to its wording.
+ * is what the bump rule in `docs/COACH_PROMPTS.md` asks for - old versions stay
+ * on disk so feedback recorded against them can still be traced to its wording.
  */
-export const PROMPT_VERSION = 'v2';
+export const PROMPT_VERSION = 'v3';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 

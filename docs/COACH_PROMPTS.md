@@ -12,7 +12,7 @@ Every coaching turn is three things, assembled in `apps/server/src/coach/`:
 
 | Part            | Built by                                    | Changes between requests? |
 | --------------- | ------------------------------------------- | ------------------------- |
-| System prompt   | `prompts/index.ts` reading `v1/system.md`   | Never                     |
+| System prompt   | `prompts/index.ts` reading `v3/system.md`   | Never                     |
 | User turn       | `context.ts` → `buildContext()`             | Every time                |
 | Response schema | `feedback.ts` → `coachFeedbackJsonSchema()` | Never                     |
 
@@ -20,9 +20,11 @@ The split is not cosmetic. The system prompt is the largest stable part of the r
 
 ## 2. Versioning
 
-`PROMPT_VERSION` (currently `v2`) names the directory the prompt is read from, and is recorded alongside stored feedback so an answer can always be traced to the wording that produced it.
+`PROMPT_VERSION` (currently `v3`) names the directory the prompt is read from, and is recorded alongside stored feedback so an answer can always be traced to the wording that produced it.
 
 **Bump the version when a change would change the advice.** Fixing a typo is not a bump; changing what a score of 3 means is. To bump: copy the current directory to the next one, edit, change `PROMPT_VERSION`, and update the assertions in `prompts/prompts.test.ts` that no longer hold. Old directories stay on disk, so feedback recorded against them can still be traced to the wording that produced it.
+
+`v3` (ROADMAP P7-1) made the problem's own hint ladder canonical. The coach is now given the next rung the author wrote - the one the user has _not_ unlocked - and told to point the same way in its own words, aimed at the code in front of it. Two problems this fixes: a coach that did not know where the author was pointing would happily start someone down a second, equally valid approach halfway through a problem, leaving the static ladder and the coach pulling in different directions; and a user who then revealed the next hint got advice that contradicted it. The rung is marked SECRET in the same breath as the editorial, with an extra sentence saying why - handing it over verbatim spends a hint the user has not spent.
 
 `v2` (ROADMAP P5-10) added two things, each of which changes the advice:
 
@@ -52,7 +54,9 @@ Two hard gates, both stated in the prompt as non-negotiable:
 1. **`solution` requires the problem to be already Solved _and_ an explicit request.** `buildContext` reports those as two separate facts (`solved`, `requestFullSolution`) rather than as one pre-computed conclusion, so the rule lives in the prompt and the context stays a report of what is true.
 2. **The prose may not route around the ladder.** A coach at `concept` that writes a full working method in `feedbackMarkdown` has given away the solution regardless of what `nextHintLevel` says, so the prompt forbids it directly.
 
-Revealed static hints (P7-1) are passed in so the coach starts above them instead of repeating what the user has already read.
+Alongside those five rungs sits the problem's _own_ four-rung ladder from `hints.json`, and P7-1 connected the two. The rungs the user has read are passed in so the coach starts above them rather than repeating what they have already been told, and the single rung ahead of them is passed in as the direction to point in. One rung ahead and no further: that is enough to keep the coach and the author pointing the same way, where the whole remaining ladder would just be the answer.
+
+Which rungs those are is the server's own count (`events.highestHintRevealed`), taken together with the count the client sent - each can be the fresher one. The client is a round trip ahead just after a click; the store is ahead when the coach is asked from a tab that has not reloaded since a reveal elsewhere.
 
 ## 5. What the coach is told
 
@@ -65,9 +69,10 @@ Revealed static hints (P7-1) are passed in so the coach starts above them instea
 | 3   | The user's code                                           | **Never, and never truncated** | The one input the whole answer is about.                                                   |
 | 4   | Latest judge result                                       | No                             | Including an explicit "they have not run this yet" — silence would be read as "it passes". |
 | 5   | Hints already read                                        | No                             | Prevents repetition.                                                                       |
-| 6   | Request flags                                             | No                             | The `solution` gate.                                                                       |
-| 7   | Editorial approach, marked SECRET                         | Yes                            | Steers the hints; the coach is told never to quote it or mention having it.                |
-| 8   | Prior coaching (P5-5)                                     | Yes                            | Lets the coach say "you fixed X, now Y" instead of repeating itself.                       |
+| 6   | The author's next hint, marked SECRET (P7-1)              | Yes                            | The direction the ladder points; never handed over, because it is an unspent rung.         |
+| 7   | Request flags                                             | No                             | The `solution` gate.                                                                       |
+| 8   | Editorial approach, marked SECRET                         | Yes                            | Steers the hints; the coach is told never to quote it or mention having it.                |
+| 9   | Prior coaching (P5-5)                                     | Yes                            | Lets the coach say "you fixed X, now Y" instead of repeating itself.                       |
 
 ### The budget
 
@@ -85,7 +90,7 @@ This is a design decision, not a preference. `docs/DESIGN.md` rules out decorati
 
 ## 7. Testing
 
-`prompts/prompts.test.ts` pins the rules other code depends on: every rubric dimension and hint rung is named, the `solution` gate mentions both conditions, mastery is tied to every dimension, and the editorial is marked secret. It cannot test whether the advice is _good_ — that needs a model, and CI has no keys (D17) — but it does catch an edit that silently drops a rule the app assumes is being obeyed.
+`prompts/prompts.test.ts` pins the rules other code depends on: every rubric dimension and hint rung is named, the `solution` gate mentions both conditions, mastery is tied to every dimension, and the editorial and the authored hint are both marked secret. It cannot test whether the advice is _good_ — that needs a model, and CI has no keys (D17) — but it does catch an edit that silently drops a rule the app assumes is being obeyed.
 
 `context.test.ts` covers the assembly and the drop order, including the case that matters most: a very long solution pushes the droppable sections out and still arrives with the code intact.
 

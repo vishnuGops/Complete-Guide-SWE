@@ -47,8 +47,9 @@ function Hints({
   // Revealed one rung at a time; a ladder that unrolls itself the moment the
   // tab is opened would not be a ladder. The count is owned by `Workspace`
   // (P4-12): this panel is unmounted whenever another tab is shown, so keeping
-  // it here meant looking at the Description un-revealed every hint. Persisting
-  // reveals across sessions is still P7-1's.
+  // it here meant looking at the Description un-revealed every hint. `Workspace`
+  // also seeds it from the server and records each reveal, so a rung stays open
+  // across a reload (P7-1).
   if (hints.length === 0) {
     return <p className="text-fg-muted p-4 text-sm">This problem has no hints.</p>;
   }

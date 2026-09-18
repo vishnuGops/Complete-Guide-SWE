@@ -213,13 +213,29 @@ export async function* streamFeedback(
     .listByProblem(request.slug)
     .some((row) => statusRank(row.status) >= statusRank('solved'));
 
+  /**
+   * How far up the authored ladder this user has read (P7-1).
+   *
+   * The stored count and the client's are both taken, because each can be the
+   * fresher one: the client is a round trip ahead just after a click, and the
+   * store is ahead when the coach is asked from a tab that has not reloaded
+   * since a reveal in another. Clamped to the ladder the problem actually has.
+   */
+  const revealed = Math.min(
+    Math.max(request.revealedHints, deps.repos.events.highestHintRevealed(request.slug)),
+    pkg.hints.hints.length,
+  );
+
   const context = buildContext({
     meta: pkg.meta,
     statement: pkg.statement,
     editorial: pkg.editorial,
     language: request.language,
     code: request.code,
-    revealedHints: pkg.hints.hints.slice(0, request.revealedHints),
+    revealedHints: pkg.hints.hints.slice(0, revealed),
+    ...(pkg.hints.hints[revealed] !== undefined
+      ? { nextAuthoredHint: pkg.hints.hints[revealed] }
+      : {}),
     priorAttempts: recallAttempts(deps.repos, request.slug, request.language, request.code),
     masteryCheck: request.masteryCheck,
     requestFullSolution: request.requestFullSolution,
