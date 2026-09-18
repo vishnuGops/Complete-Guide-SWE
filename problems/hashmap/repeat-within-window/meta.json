@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "repeat-within-window",
+  "slug": "repeat-within-window",
+  "title": "Repeat Within Reach",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": ["hash map", "sliding window"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 6,
+  "mode": "function",
+  "entry": "hasRepeatWithin",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["pair-difference-count", "longest-distinct-stretch"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(k)"
+  }
+}

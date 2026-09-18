@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What is it about a word that does not change when you rearrange it? Find that, and the question becomes whether two things are equal.",
+    "How many times each letter appears is the same for every rearrangement. That tally is a canonical key: two words match exactly when their tallies match.",
+    "Count the letters of the first word into a map, then subtract the letters of the second. The words match when every count lands back on zero.",
+    "Check the lengths first - different lengths can never match, and it saves the whole tally."
+  ]
+}

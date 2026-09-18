@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Write down the running total after each minute. What does it mean when the same running total appears twice?",
+    "It means everything between those two moments added up to zero. So the question is no longer about stretches - it is about how often each running total repeats.",
+    "Count the running totals in a map as you go. Each time you reach a total you have seen `c` times before, that is `c` new cancelling stretches ending here.",
+    "Seed the map with the total 0 seen once, standing for the moment before the first minute; otherwise stretches that start at minute 0 are missed."
+  ]
+}

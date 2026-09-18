@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You only care about the *most recent* time a reading was seen. Why is an older sighting never the better one?",
+    "Because if an older sighting is within reach then the newer one is too. So one position per distinct reading is all you need.",
+    "Walk the log once, keeping a map from reading to the position where you last saw it, and check the gap before you overwrite it.",
+    "The same thing falls out of a window: keep a set of the last k readings, and look the current one up in it before adding it."
+  ]
+}

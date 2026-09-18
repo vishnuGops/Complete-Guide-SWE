@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "zero-sum-stretch",
+  "slug": "zero-sum-stretch",
+  "title": "Stretch That Cancels Out",
+  "version": 1,
+  "topic": "hashmap",
+  "patterns": ["prefix sum", "hash map", "counting"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 7,
+  "mode": "function",
+  "entry": "cancellingStretches",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["balance-point", "pair-difference-count"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}
