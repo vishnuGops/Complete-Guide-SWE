@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Take the values one at a time. What are the choices for the first value, and what remains to be decided afterwards?",
+    "Either it is in the subset or it is not, and in both cases the same question is asked of the rest of the values.",
+    "So the recursion has two branches per value and reaches a complete subset when the values run out. Record a copy of what you have built there.",
+    "Keep one working list, appending before one branch and removing after it - that is the backtracking, and it keeps the memory O(n) rather than one list per subset."
+  ]
+}

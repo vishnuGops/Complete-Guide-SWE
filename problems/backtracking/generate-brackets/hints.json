@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Build the string one bracket at a time. What has to be true before you are allowed to write an opening bracket, and before a closing one?",
+    "An opening bracket needs two things: fewer than `n` opened so far, and fewer than `depth` still open. A closing one needs something open to close.",
+    "Those counters are the whole state - and checking them *before* recursing means every string you finish is valid, so nothing has to be filtered afterwards.",
+    "Generating every arrangement of n opening and n closing brackets and keeping the good ones works and does far more work: for n = 8 that is sixty-five thousand candidates for at most fourteen hundred answers."
+  ]
+}

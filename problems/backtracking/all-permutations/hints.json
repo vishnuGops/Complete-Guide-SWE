@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Build an ordering position by position. What are the choices for the first position, and what changes for the second?",
+    "Any unused value can go first, and then the same question is asked of the remaining ones - so the branching factor falls by one at each level.",
+    "Track which values are still unused, choose one, recurse, and then mark it unused again on the way back.",
+    "The other version swaps the chosen value into place instead of keeping a used-flags list, which needs no extra memory - and the undo is the same swap done again."
+  ]
+}

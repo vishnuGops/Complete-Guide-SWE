@@ -494,11 +494,21 @@ const ELEMENT_NAMES = /\[\s*i\s*\]|\[\s*j\s*\]|\bvalue\b|\bvalues\[|\btarget\b|\
 /**
  * The largest input any test actually carries, as a count.
  *
- * Lengths and call counts only - deliberately not numeric magnitude, which is a
- * different claim and the reason an earlier version of this check flagged every
- * problem with a `10^9` value range.
+ * Lengths and call counts, and - under one careful condition - the magnitude of
+ * a scalar argument. Magnitude is deliberately *not* counted in general: that is
+ * a different claim, and the reason an earlier version of this check flagged
+ * every problem with a `10^9` value range (P6-0).
+ *
+ * The condition is `bound`. Some problems carry their size in a plain integer
+ * rather than in an array - `combinations-of-k` takes `n` and `k` and builds its
+ * own data, `generate-brackets` takes a count of pairs - and for those this
+ * function saw nothing but scalars and reported 0, so the check fired on every
+ * one of them however large the input really was. Counting a scalar only when it
+ * is a non-negative integer no larger than the stated bound keeps that from
+ * re-opening the value-range hole: a `target` of `10^6` cannot satisfy a size
+ * bound of `10^4`, because it exceeds it (P6-5).
  */
-function largestInputSize(tests: readonly TestCase[]): number {
+function largestInputSize(tests: readonly TestCase[], bound: number | null = null): number {
   let largest = 0;
 
   const consider = (value: JsonValue): void => {
@@ -507,6 +517,14 @@ function largestInputSize(tests: readonly TestCase[]): number {
       for (const entry of value) consider(entry);
     } else if (typeof value === 'string') {
       largest = Math.max(largest, value.length);
+    } else if (
+      bound !== null &&
+      typeof value === 'number' &&
+      Number.isInteger(value) &&
+      value >= 0 &&
+      value <= bound
+    ) {
+      largest = Math.max(largest, value);
     }
   };
 
@@ -569,7 +587,7 @@ function checkStatedConstraints(pkg: ProblemPackage): ValidationIssue[] {
   const bound = statedSizeBound(pkg.statement);
   if (bound === null) return [];
 
-  const largest = largestInputSize(pkg.tests.hidden);
+  const largest = largestInputSize(pkg.tests.hidden, bound);
   if (largest >= bound / 2) return [];
 
   return [

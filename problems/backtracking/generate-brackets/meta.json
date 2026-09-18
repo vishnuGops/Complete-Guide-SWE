@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "generate-brackets",
+  "slug": "generate-brackets",
+  "title": "Every Balanced Fragment",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "matching pairs"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 10,
+  "mode": "function",
+  "entry": "balancedFragments",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["bracket-balance", "letter-arrangements"],
+  "targetComplexity": {
+    "time": "O(answers \u00b7 n)",
+    "space": "O(n)"
+  }
+}

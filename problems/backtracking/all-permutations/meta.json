@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "all-permutations",
+  "slug": "all-permutations",
+  "title": "Every Ordering",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["permutations", "backtracking"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 1,
+  "mode": "function",
+  "entry": "everyOrdering",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["all-subsets", "combinations-of-k"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 n!)",
+    "space": "O(n)"
+  }
+}

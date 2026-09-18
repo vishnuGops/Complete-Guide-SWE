@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "This is `all-subsets` with a size limit. What changes about the recursion?",
+    "Two things: it stops as soon as `k` numbers are chosen, and it never looks back - each choice starts from one past the last number taken, which is what stops [1,2] and [2,1] both appearing.",
+    "So the recursion carries the next number it is allowed to consider, and a loop over the numbers from there upwards.",
+    "Prune: if the numbers left are fewer than the ones still needed, stop. That is what turns a walk over every subset into a walk over only the useful ones."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "all-subsets",
+  "slug": "all-subsets",
+  "title": "Every Subset",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["subsets", "backtracking"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 0,
+  "mode": "function",
+  "entry": "everySubset",
+  "expect": "return",
+  "comparator": "unorderedListOfLists",
+  "related": ["combinations-of-k", "all-permutations"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 2^n)",
+    "space": "O(n)"
+  }
+}

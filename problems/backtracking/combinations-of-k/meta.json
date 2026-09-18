@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "combinations-of-k",
+  "slug": "combinations-of-k",
+  "title": "Every Choice Of K",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["combinations", "backtracking"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "chooseK",
+  "expect": "return",
+  "comparator": "unorderedListOfLists",
+  "related": ["all-subsets", "all-permutations"],
+  "targetComplexity": {
+    "time": "O(k \u00b7 C(n, k))",
+    "space": "O(k)"
+  }
+}

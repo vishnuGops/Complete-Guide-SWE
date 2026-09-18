@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "letter-arrangements",
+  "slug": "letter-arrangements",
+  "title": "Letters From A Keypad",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["combinations", "backtracking", "strings"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 5,
+  "mode": "function",
+  "entry": "keypadWords",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["all-permutations", "generate-brackets"],
+  "targetComplexity": {
+    "time": "O(4^n \u00b7 n)",
+    "space": "O(n)"
+  }
+}

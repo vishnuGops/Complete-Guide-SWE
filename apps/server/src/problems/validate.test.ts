@@ -687,6 +687,67 @@ describe('seed-catalogue rules (P6-0)', () => {
     );
   });
 
+  /**
+   * Some problems carry their size in a scalar (P6-5).
+   *
+   * `combinations-of-k` takes `n` and `k` and builds its own data; the hidden
+   * tests hold no array at all, so measuring only lengths reported 0 and the
+   * check fired however large `n` was.
+   */
+  it('counts a scalar argument towards a size bound that names one', () => {
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replace('- `2 <= nums.length <= 3`', '- `1 <= n <= 14`'),
+        'tests.json': json({
+          samples: [{ name: 'a', args: [14, 3], expected: [0, 2] }],
+          hidden: Array.from({ length: 10 }, (_, i) => ({ args: [14, i], expected: [0, 2] })),
+        }),
+      },
+    });
+
+    expect(issuesFor(root).some((i) => i.message.includes('the statement allows up to'))).toBe(
+      false,
+    );
+  });
+
+  it('still warns when the scalar the bound names stays small', () => {
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replace('- `2 <= nums.length <= 3`', '- `1 <= n <= 14`'),
+        'tests.json': json({
+          samples: [{ name: 'a', args: [2, 1], expected: [0, 2] }],
+          hidden: Array.from({ length: 10 }, (_, i) => ({ args: [2, i % 2], expected: [0, 2] })),
+        }),
+      },
+    });
+
+    const issue = issuesFor(root).find((i) => i.message.includes('the statement allows up to'));
+    expect(issue?.severity).toBe('warning');
+  });
+
+  it('does not let an out-of-range scalar satisfy a size bound', () => {
+    // A `target` of a million says nothing about how much input there is, and
+    // must not silence a size bound of ten thousand.
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replace(
+          '- `2 <= nums.length <= 3`',
+          '- `1 <= n <= 10000`',
+        ),
+        'tests.json': json({
+          samples: [{ name: 'a', args: [2, 1000000], expected: [0, 2] }],
+          hidden: Array.from({ length: 10 }, (_, i) => ({
+            args: [2, 1000000 + i],
+            expected: [0, 2],
+          })),
+        }),
+      },
+    });
+
+    const issue = issuesFor(root).find((i) => i.message.includes('the statement allows up to'));
+    expect(issue?.severity).toBe('warning');
+  });
+
   it('rejects code in a hint, structurally', () => {
     for (const hint of [
       'Use `sorted(counts, key=lambda v: -counts[v])`.',

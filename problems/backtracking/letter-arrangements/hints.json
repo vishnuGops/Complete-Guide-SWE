@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Build a string one position at a time. What are the choices at position `i`?",
+    "The letters on `digits[i]` - and the choice at one position never affects the choices at another, which is what makes this simpler than most backtracking.",
+    "Recurse with the position and the letters chosen so far; when the position runs past the end, record the string.",
+    "The empty input is a special case worth deciding before writing the recursion: it produces no strings at all, not one empty one."
+  ]
+}
