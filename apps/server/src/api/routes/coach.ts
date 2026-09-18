@@ -27,12 +27,12 @@ import type { ApiDeps } from './types.js';
 export function registerCoachRoutes(app: FastifyInstance, deps: ApiDeps): void {
   app.post('/api/coach/feedback', async (request, reply) => {
     const body = parseInput(coachFeedbackRequestSchema, request.body, 'body');
-    return pipe(reply, streamFeedback(body, deps));
+    return pipe(reply, (signal) => streamFeedback(body, deps, signal));
   });
 
   app.post('/api/coach/chat', async (request, reply) => {
     const body = parseInput(coachChatRequestSchema, request.body, 'body');
-    return pipe(reply, streamChat(body, deps));
+    return pipe(reply, (signal) => streamChat(body, deps, signal));
   });
 }
 
@@ -43,9 +43,37 @@ export function registerCoachRoutes(app: FastifyInstance, deps: ApiDeps): void {
  * would send its own headers and body around ours. From that point this function
  * owns the socket, including ending it - which is why every exit path below goes
  * through `raw.end()`.
+ *
+ * **The socket closing cancels the turn** (ROADMAP P5-9). Stop, a second AI Help
+ * click and navigating away all end the request from the browser's side, and
+ * until this listened for that, all three left the vendor request running: the
+ * full turn was generated, billed and stored for a page nobody was looking at.
+ * The generator is built here rather than passed in so its signal exists before
+ * it starts.
+ *
+ * The listener is on the *response*, not the request. A POST whose body has
+ * been read is already complete, and `request.raw` emits `close` for that -
+ * before this handler runs, so a listener added here would never hear it and a
+ * listener added earlier would fire on every request. `reply.raw`'s `close` is
+ * the connection going away, which is the thing being detected.
  */
-async function pipe(reply: FastifyReply, events: AsyncGenerator<CoachStreamEvent>): Promise<void> {
+async function pipe(
+  reply: FastifyReply,
+  start: (signal: AbortSignal) => AsyncGenerator<CoachStreamEvent>,
+): Promise<void> {
   const { raw } = reply;
+  const controller = new AbortController();
+  const events = start(controller.signal);
+
+  let finished = false;
+  const onClose = (): void => {
+    if (finished) return;
+    controller.abort();
+    // `return()` runs the generator's own `finally` blocks, which is what makes
+    // a cancelled turn record its cost and skip persisting a half answer.
+    void events.return(undefined);
+  };
+  raw.on('close', onClose);
 
   try {
     // A generator that throws before its first value - an unknown slug, a
@@ -88,6 +116,8 @@ async function pipe(reply: FastifyReply, events: AsyncGenerator<CoachStreamEvent
       retryable: true,
     });
   } finally {
+    finished = true;
+    raw.off('close', onClose);
     if (raw.headersSent) raw.end();
   }
 }

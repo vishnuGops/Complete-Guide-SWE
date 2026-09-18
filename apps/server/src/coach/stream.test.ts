@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MASTERY_THRESHOLD, type CoachFeedback } from '@devpromax/shared';
+import { MASTERY_THRESHOLD, type CoachFeedback, type TokenUsage } from '@devpromax/shared';
 import { createAnthropicProvider } from './anthropic.js';
 import { createGeminiProvider } from './gemini.js';
 import { coachFeedbackJsonSchema, parseFeedback, streamCoachFeedback } from './feedback.js';
@@ -384,5 +384,142 @@ describe('parseFeedback', () => {
     const parsed = parseFeedback(`\n  ${JSON.stringify(withoutNextStep)}  \n`);
     expect(parsed.nextStep).toBeUndefined();
     expect(parsed.summary).toBe(ANSWER.summary);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// What a turn costs, and what stops one (ROADMAP P5-9)
+// ---------------------------------------------------------------------------
+
+describe('usage reporting', () => {
+  /** One Anthropic stream with whatever usage the test needs on `message_start`. */
+  function withUsage(usage: Record<string, number>, stopReason = 'end_turn'): Response {
+    const frames = [
+      `event: message_start\ndata: ${JSON.stringify({
+        type: 'message_start',
+        message: {
+          id: 'msg_1',
+          type: 'message',
+          role: 'assistant',
+          model: 'claude-opus-5',
+          content: [],
+          stop_reason: null,
+          stop_sequence: null,
+          usage: { output_tokens: 0, ...usage },
+        },
+      })}\n\n`,
+      'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+      `event: content_block_delta\ndata: ${JSON.stringify({
+        type: 'content_block_delta',
+        index: 0,
+        delta: { type: 'text_delta', text: ANSWER_JSON },
+      })}\n\n`,
+      'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+      `event: message_delta\ndata: ${JSON.stringify({
+        type: 'message_delta',
+        delta: { stop_reason: stopReason, stop_sequence: null },
+        usage: { output_tokens: 40 },
+      })}\n\n`,
+      'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+    ].join('');
+
+    return new Response(frames, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+    });
+  }
+
+  it('reports the cache tokens, which is where the system prompt is billed', async () => {
+    const { fetch } = stub(() =>
+      withUsage({
+        input_tokens: 500,
+        cache_creation_input_tokens: 4000,
+        cache_read_input_tokens: 1000,
+      }),
+    );
+
+    const seen: TokenUsage[] = [];
+    for await (const _ of createAnthropicProvider({ fetch }).stream({
+      ...options(),
+      onUsage: (usage) => seen.push(usage),
+    }));
+
+    // Before P5-9 only `input_tokens` was reported, so the turn that writes the
+    // whole cached system prompt - the first of every session - was recorded as
+    // the cheapest one.
+    expect(seen).toEqual([
+      { inputTokens: 500, outputTokens: 40, cacheWriteTokens: 4000, cacheReadTokens: 1000 },
+    ]);
+  });
+
+  it('reports usage even when the stream is abandoned halfway', async () => {
+    const { fetch } = stub(() => withUsage({ input_tokens: 700 }));
+
+    const seen: TokenUsage[] = [];
+    const stream = createAnthropicProvider({ fetch }).stream({
+      ...options(),
+      onUsage: (usage) => seen.push(usage),
+    });
+
+    // One chunk, then walk away - the shape of Stop, and of a timeout.
+    const iterator = stream[Symbol.asyncIterator]();
+    await iterator.next();
+    await iterator.return?.(undefined);
+
+    // The tokens were spent whether or not anyone read the answer; reporting
+    // only on success recorded a failed turn as free (P5-9).
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.inputTokens).toBe(700);
+  });
+
+  it('refuses to call a truncated answer retryable', async () => {
+    const { fetch } = stub(() => withUsage({ input_tokens: 10 }, 'max_tokens'));
+    const error = await rejection(drain(createAnthropicProvider({ fetch })));
+
+    // The old behaviour: "cut off, try again", and the retry truncated at the
+    // same place for the same money.
+    expect(error.message).toMatch(/ceiling/i);
+    expect(error.retryable).toBe(false);
+  });
+
+  it('asks for a medium effort and room for the thinking', async () => {
+    const { fetch, calls } = stub(() => anthropicSse([ANSWER_JSON]));
+    await drain(createAnthropicProvider({ fetch }));
+
+    const body = calls[0]?.body as {
+      max_tokens: number;
+      output_config: { effort: string };
+    };
+
+    // `max_tokens` covers thinking as well as the answer, so a budget tight
+    // enough to hold only the JSON truncated it whenever the model thought
+    // hard (P5-9).
+    expect(body.max_tokens).toBeGreaterThanOrEqual(16_000);
+    expect(body.output_config.effort).toBe('medium');
+  });
+});
+
+describe('Gemini history', () => {
+  it('merges consecutive same-role turns, which Gemini would reject', async () => {
+    const { fetch, calls } = stub(() => geminiSse([ANSWER_JSON]));
+
+    for await (const _ of createGeminiProvider({ fetch }).stream({
+      ...options(),
+      messages: [
+        { role: 'user', content: 'first question' },
+        // What a failed turn leaves behind: a question with no answer, then
+        // the next question. Gemini answers 400 to that for the rest of the
+        // conversation (P5-9).
+        { role: 'user', content: 'second question' },
+        { role: 'coach', content: 'an answer' },
+      ],
+    }));
+
+    const body = calls[0]?.body as { contents: { role: string; parts: { text: string }[] }[] };
+
+    expect(body.contents).toEqual([
+      { role: 'user', parts: [{ text: 'first question' }, { text: 'second question' }] },
+      { role: 'model', parts: [{ text: 'an answer' }] },
+    ]);
   });
 });

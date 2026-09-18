@@ -271,7 +271,7 @@ export function Workspace() {
     ),
   );
 
-  const askCoach = (options: { masteryCheck?: boolean } = {}) => {
+  const askCoach = (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
     setLeftTab('coach');
     setOfferMastery(false);
     coach.ask({ slug, language, code, ...options });
@@ -624,6 +624,9 @@ export function Workspace() {
                   }
                   onAsk={() => {
                     askCoach();
+                  }}
+                  onNewConversation={() => {
+                    askCoach({ newConversation: true });
                   }}
                   onFollowUp={coach.followUp}
                   onStop={coach.stop}

@@ -49,6 +49,13 @@ export interface AskOptions {
   revealedHints?: number;
   masteryCheck?: boolean;
   requestFullSolution?: boolean;
+  /**
+   * Start a fresh conversation instead of continuing the last one (P5-9).
+   *
+   * What the user does after the spend cap trips, and the only way to reset the
+   * prompt window (D20) without changing problem.
+   */
+  newConversation?: boolean;
 }
 
 export function useCoach(slug: string, language: Language) {
@@ -208,6 +215,10 @@ export function useCoach(slug: string, language: Language) {
         streaming: '',
         error: null,
         skipped: null,
+        // A new conversation is a new transcript: keeping the old turns on
+        // screen would imply the coach still remembers them, and after this
+        // request it does not.
+        ...(options.newConversation === true ? { turns: [], sessionId: null } : {}),
       }));
       void consume(
         '/api/coach/feedback',
@@ -218,6 +229,7 @@ export function useCoach(slug: string, language: Language) {
           revealedHints: options.revealedHints ?? 0,
           masteryCheck: options.masteryCheck ?? false,
           requestFullSolution: options.requestFullSolution ?? false,
+          newConversation: options.newConversation ?? false,
         },
         signal,
       );

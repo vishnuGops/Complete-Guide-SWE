@@ -25,17 +25,32 @@ import {
 export const ANTHROPIC_DEFAULT_MODEL = COACH_DEFAULT_MODEL.anthropic;
 
 /**
- * Generous because the cap is a safety net, not a budget.
+ * Room for the thinking *and* the answer (ROADMAP P5-9).
  *
- * Feedback runs to a few thousand tokens; the spend cap in P5-6 is what actually
- * limits cost. A tight `max_tokens` here would truncate the JSON mid-string and
- * turn a long answer into a parse failure, which is a much worse outcome than a
- * long answer.
+ * `max_tokens` bounds everything the model generates, adaptive thinking
+ * included, so 8192 was a budget in which a thorough think left no room to
+ * write the JSON it had planned. The document then arrived truncated, was
+ * reported as "cut off, retryable", and the retry did the same thing again at
+ * full price - the worst possible shape for a cost bug: it charges twice for
+ * nothing and tells the user to try a third time.
+ *
+ * Paired with `effort: 'medium'`. Scoring five rubric dimensions is reasoning,
+ * but it is not research; medium is the level at which the answer stops
+ * improving for this task, and it is a third of the thinking tokens of the
+ * default.
  */
-const MAX_TOKENS = 8192;
+const MAX_TOKENS = 32_000;
+const EFFORT = 'medium' as const;
 
-/** A coaching turn is short. Past this, something is wrong rather than slow. */
-const STREAM_TIMEOUT_MS = 120_000;
+/**
+ * A ceiling, not an expectation.
+ *
+ * Long enough that a slow think cannot be mistaken for a hang, which is the
+ * reason it moved: at two minutes a request that would have answered was killed
+ * and billed. The user's own Stop button is the fast path out (P5-9), and it
+ * now actually cancels the vendor request.
+ */
+const STREAM_TIMEOUT_MS = 300_000;
 
 function createClient(apiKey: string, options: ProviderOptions): Anthropic {
   return new Anthropic({
@@ -56,6 +71,9 @@ function createClient(apiKey: string, options: ProviderOptions): Anthropic {
  * `describeStatus`).
  */
 function toCoachError(error: unknown): CoachProviderError {
+  // Already ours, already worded for a person: the truncation message below
+  // passes through here and must not be flattened into "failed unexpectedly".
+  if (error instanceof CoachProviderError) return error;
   if (error instanceof Anthropic.APIUserAbortError) {
     return new CoachProviderError('The request was cancelled.');
   }
@@ -126,10 +144,12 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
      *   - **`output_config.format`.** The rubric card and the status engine read
      *     fields off this object (D13); asking for JSON in prose and hoping
      *     would put a parse failure between the user and their feedback.
-     *   - **Adaptive thinking.** Scoring five rubric dimensions against real code
-     *     is reasoning, and it is the part users notice being wrong. `display` is
-     *     left at its default, so the thinking is never streamed to the panel -
-     *     the user asked for feedback, not for a transcript of deliberation.
+     *   - **Adaptive thinking at medium effort.** Scoring five rubric dimensions
+     *     against real code is reasoning, and it is the part users notice being
+     *     wrong. `display` is left at its default, so the thinking is never
+     *     streamed to the panel - the user asked for feedback, not for a
+     *     transcript of deliberation - and `max_tokens` has to cover it, which
+     *     is what P5-9 fixed.
      */
     async *stream({ apiKey, model, system, messages, schema, signal, onUsage }: StreamOptions) {
       const client = createClient(apiKey, options);
@@ -145,32 +165,66 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
               role: turn.role === 'coach' ? ('assistant' as const) : ('user' as const),
               content: turn.content,
             })),
-            ...(schema ? { output_config: { format: { type: 'json_schema', schema } } } : {}),
+            output_config: {
+              effort: EFFORT,
+              ...(schema ? { format: { type: 'json_schema' as const, schema } } : {}),
+            },
           },
           { signal, timeout: STREAM_TIMEOUT_MS },
         );
 
-        // Anthropic splits usage across two events: the input count arrives
+        // Anthropic splits usage across two events: the input counts arrive
         // with `message_start`, the final output count with `message_delta`.
         let inputTokens = 0;
         let outputTokens = 0;
+        let cacheWriteTokens = 0;
+        let cacheReadTokens = 0;
+        let stopReason: string | null = null;
 
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            yield event.delta.text;
-            continue;
+        try {
+          for await (const event of stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              yield event.delta.text;
+              continue;
+            }
+            if (event.type === 'message_start') {
+              const usage = event.message.usage;
+              inputTokens = usage.input_tokens;
+              outputTokens = usage.output_tokens;
+              // Where the cached system prompt is billed (P5-9). Absent on a
+              // vendor or model that does not report them, hence `?? 0`.
+              cacheWriteTokens = usage.cache_creation_input_tokens ?? 0;
+              cacheReadTokens = usage.cache_read_input_tokens ?? 0;
+              continue;
+            }
+            if (event.type === 'message_delta') {
+              outputTokens = event.usage.output_tokens;
+              stopReason = event.delta.stop_reason ?? stopReason;
+            }
           }
-          if (event.type === 'message_start') {
-            inputTokens = event.message.usage.input_tokens;
-            outputTokens = event.message.usage.output_tokens;
-            continue;
-          }
-          if (event.type === 'message_delta') {
-            outputTokens = event.usage.output_tokens;
+        } finally {
+          // In a `finally`, because a turn that timed out or was cancelled
+          // halfway still consumed everything the vendor counted up to that
+          // point (P5-9). Reporting only on success recorded those as free,
+          // which is the one direction a spend cap must never be wrong in.
+          if (inputTokens > 0 || outputTokens > 0 || cacheWriteTokens > 0) {
+            onUsage?.({
+              inputTokens,
+              outputTokens,
+              ...(cacheWriteTokens > 0 ? { cacheWriteTokens } : {}),
+              ...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+            });
           }
         }
 
-        if (inputTokens > 0 || outputTokens > 0) onUsage?.({ inputTokens, outputTokens });
+        // A document that stopped at the ceiling is not a retryable glitch: the
+        // same request produces the same truncation, and the caller's "cut off,
+        // try again" would spend the whole turn a second time to find that out.
+        if (stopReason === 'max_tokens') {
+          throw new CoachProviderError(
+            `The coach's answer hit the ${String(MAX_TOKENS)}-token ceiling before it finished. Ask about less code at once, or raise it.`,
+          );
+        }
       } catch (error) {
         throw toCoachError(error);
       }

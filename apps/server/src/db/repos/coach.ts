@@ -28,6 +28,12 @@ export interface CoachMessage {
   createdAt: string;
 }
 
+/** What a conversation has spent, and how many turns nobody could price (P5-9). */
+export interface SessionSpend {
+  reportedUsd: number;
+  unreportedTurns: number;
+}
+
 export interface NewCoachMessage {
   role: CoachRole;
   content: string;
@@ -70,8 +76,24 @@ export interface CoachRepo {
   listMessages(sessionId: string): CoachMessage[];
   /** Feedback turns for a problem, newest first - the input to P5-5's attempt memory. */
   recentFeedback(slug: string, language: Language, limit: number): CoachMessage[];
-  /** What this conversation has cost so far, for the spend cap (P5-6). */
-  sessionSpendUsd(sessionId: string): number;
+  /**
+   * What this conversation has cost so far, for the spend cap (P5-6, P5-9).
+   *
+   * Two numbers rather than one, because a turn can end without the vendor ever
+   * reporting what it used - a timeout, a cancelled request - and its row
+   * carries a NULL cost. Summing those as zero made the cap ignore exactly the
+   * turns that went wrong, so the caller prices them itself (`unreportedTurns`)
+   * at the dearest rate known for the provider.
+   */
+  sessionSpend(sessionId: string): SessionSpend;
+  /**
+   * Attaches a cost to a message that was written before the cost was known.
+   *
+   * The turn a user cancels is the case: its answer is never persisted, but the
+   * tokens it spent are real and the cap has to see them, so the cost lands on
+   * the context row the turn started with (P5-9).
+   */
+  setMessageCost(id: string, costUsd: number): boolean;
   deleteSession(id: string): boolean;
   /** Drops every conversation; messages go with them by cascade. */
   clearSessions(): number;
@@ -109,8 +131,25 @@ export function createCoachRepo(db: Database): CoachRepo {
      LIMIT ?`,
   );
   const sessionSpend = db.prepare(
-    'SELECT COALESCE(SUM(cost_usd), 0) AS total FROM coach_messages WHERE session_id = ?',
+    `SELECT COALESCE(SUM(cost_usd), 0) AS total,
+            SUM(CASE WHEN cost_usd IS NULL AND role = 'coach' THEN 1 ELSE 0 END) AS unpriced
+     FROM coach_messages WHERE session_id = ?`,
   );
+  /*
+   * The turn that never got a reply (ROADMAP P5-9).
+   *
+   * A turn cancelled or failed after the vendor was contacted leaves its
+   * context row with no coach row after it, and the cost - if the vendor said
+   * anything before it stopped - on that context row. When it said nothing, the
+   * row is unpriced and the caller charges it at the dearest known rate, the
+   * same as an unpriced answer. Only the *last* row can be in this state, which
+   * is what keeps this a cheap lookup rather than a self-join.
+   */
+  const danglingTurn = db.prepare(
+    `SELECT role, cost_usd FROM coach_messages
+     WHERE session_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+  );
+  const setMessageCost = db.prepare('UPDATE coach_messages SET cost_usd = ? WHERE id = ?');
   const deleteSession = db.prepare('DELETE FROM coach_sessions WHERE id = ?');
   const clearSessions = db.prepare('DELETE FROM coach_sessions');
 
@@ -190,10 +229,22 @@ export function createCoachRepo(db: Database): CoachRepo {
       return (recentFeedback.all(slug, language, limit) as Row[]).map(toMessage);
     },
 
-    sessionSpendUsd(sessionId) {
+    sessionSpend(sessionId) {
       const row = sessionSpend.get(sessionId) as Row | undefined;
       const total = row?.['total'];
-      return typeof total === 'number' ? total : 0;
+      const unpriced = row?.['unpriced'];
+
+      const last = danglingTurn.get(sessionId) as Row | undefined;
+      const dangling = last !== undefined && last['role'] === 'user' && last['cost_usd'] === null;
+
+      return {
+        reportedUsd: typeof total === 'number' ? total : 0,
+        unreportedTurns: (typeof unpriced === 'number' ? unpriced : 0) + (dangling ? 1 : 0),
+      };
+    },
+
+    setMessageCost(id, costUsd) {
+      return setMessageCost.run(costUsd, id).changes > 0;
     },
 
     deleteSession(id) {

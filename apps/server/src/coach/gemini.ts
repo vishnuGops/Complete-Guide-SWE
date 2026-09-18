@@ -6,6 +6,7 @@ import {
   judgeModel,
   TEST_CONNECTION_TIMEOUT_MS,
   type CoachProvider,
+  type CoachTurn,
   type JsonSchema,
   type ProviderOptions,
   type StreamOptions,
@@ -108,10 +109,7 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
             },
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: system }] },
-              contents: messages.map((turn) => ({
-                role: turn.role === 'coach' ? 'model' : 'user',
-                parts: [{ text: turn.content }],
-              })),
+              contents: toGeminiContents(messages),
               generationConfig: {
                 ...(schema
                   ? {
@@ -149,17 +147,21 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
 
       // Gemini repeats `usageMetadata` on every chunk, each a running total,
       // so the last one seen is the one that counts.
-      let usage: { inputTokens: number; outputTokens: number } | null = null;
+      let usage: TokenUsage | null = null;
 
-      for await (const chunk of sseJsonObjects(response.body)) {
-        const text = extractText(chunk);
-        if (text !== '') yield text;
+      try {
+        for await (const chunk of sseJsonObjects(response.body)) {
+          const text = extractText(chunk);
+          if (text !== '') yield text;
 
-        const reported = extractUsage(chunk);
-        if (reported) usage = reported;
+          const reported = extractUsage(chunk);
+          if (reported) usage = reported;
+        }
+      } finally {
+        // Reported even when the loop ended badly: a turn cancelled or timed
+        // out halfway still used what it used (ROADMAP P5-9).
+        if (usage) onUsage?.(usage);
       }
-
-      if (usage) onUsage?.(usage);
     },
   };
 }
@@ -240,4 +242,35 @@ function extractText(chunk: Record<string, unknown>): string {
     }
   }
   return text;
+}
+
+/**
+ * Gemini's `contents`, with consecutive same-role turns merged (ROADMAP P5-9).
+ *
+ * Gemini requires the roles to alternate and answers 400 when they do not.
+ * That is reachable from ordinary use: a chat turn whose vendor request failed
+ * leaves the user's question in the conversation with no reply after it, so the
+ * next question makes two `user` turns in a row - and from then on every
+ * request in that conversation is rejected, which looks like the key breaking
+ * rather than one turn having failed an hour ago.
+ *
+ * Merged here rather than papered over in the caller because it is this
+ * vendor's rule: Anthropic accepts the same history unchanged.
+ */
+export function toGeminiContents(
+  messages: readonly CoachTurn[],
+): { role: string; parts: { text: string }[] }[] {
+  const contents: { role: string; parts: { text: string }[] }[] = [];
+
+  for (const turn of messages) {
+    const role = turn.role === 'coach' ? 'model' : 'user';
+    const last = contents.at(-1);
+    if (last?.role === role) {
+      last.parts.push({ text: turn.content });
+      continue;
+    }
+    contents.push({ role, parts: [{ text: turn.content }] });
+  }
+
+  return contents;
 }

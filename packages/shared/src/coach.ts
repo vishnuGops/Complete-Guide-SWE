@@ -105,6 +105,15 @@ export const coachFeedbackRequestSchema = z.object({
   masteryCheck: z.boolean().default(false),
   /** True when the user explicitly asked to see the full solution. */
   requestFullSolution: z.boolean().default(false),
+  /**
+   * Start a fresh conversation rather than continuing the latest one (P5-9).
+   *
+   * This is the route out of `spend_cap_reached`, which has always told the
+   * user to start a new one while nothing let them. It also resets the prompt
+   * window (D20), so a conversation that has wandered can be abandoned without
+   * abandoning the problem.
+   */
+  newConversation: z.boolean().default(false),
 });
 export type CoachFeedbackRequest = z.infer<typeof coachFeedbackRequestSchema>;
 

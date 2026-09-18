@@ -93,6 +93,7 @@ const feedbackRequest = (overrides: Record<string, unknown> = {}) => ({
   revealedHints: 0,
   masteryCheck: false,
   requestFullSolution: false,
+  newConversation: false,
   ...overrides,
 });
 
@@ -258,7 +259,9 @@ describe('streamChat', () => {
 
     expect(events.at(-1)).toEqual({ type: 'reply', content: 'Because the map is never read.' });
     // A schema here would make a one-line answer arrive quoted and escaped.
-    expect(JSON.parse(requests[0]!)).not.toHaveProperty('output_config');
+    // `output_config` itself carries the effort level (P5-9); what a prose turn
+    // must not carry is a response format.
+    expect(JSON.parse(requests[0]!)).not.toHaveProperty('output_config.format');
   });
 
   it('sends the conversation so far, so a follow-up has something to follow', async () => {
@@ -475,7 +478,7 @@ describe('the spend cap (P5-6)', () => {
     // A million input tokens on the default model (claude-opus-5) is $5 by the
     // shared price table - not the unknown-model rate, because a null model in
     // settings resolves to a specific default rather than to "unknown".
-    expect(repos.coach.sessionSpendUsd(session.id)).toBeCloseTo(5);
+    expect(repos.coach.sessionSpend(session.id).reportedUsd).toBeCloseTo(5);
   });
 
   it('lets a turn through while the conversation is under the cap', async () => {
@@ -518,5 +521,269 @@ describe('the spend cap (P5-6)', () => {
     const session = repos.coach.latestSession(SLUG, 'python')!;
     const coachTurn = repos.coach.listMessages(session.id).find((m) => m.feedback !== null);
     expect(coachTurn?.costUsd).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The money path (ROADMAP P5-9)
+// ---------------------------------------------------------------------------
+
+/** A prose reply with a usage report, for the chat cost tests. */
+function proseWithUsage(inputTokens: number): string {
+  return [
+    `event: message_start\ndata: ${JSON.stringify({
+      type: 'message_start',
+      message: {
+        id: 'm',
+        type: 'message',
+        role: 'assistant',
+        model: 'claude-opus-5',
+        content: [],
+        stop_reason: null,
+        stop_sequence: null,
+        usage: { input_tokens: inputTokens, output_tokens: 0 },
+      },
+    })}\n\n`,
+    'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+    `event: content_block_delta\ndata: ${JSON.stringify({
+      type: 'content_block_delta',
+      index: 0,
+      delta: { type: 'text_delta', text: 'Because the map is never read.' },
+    })}\n\n`,
+    'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+    'event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n',
+    'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+  ].join('');
+}
+
+/** Input tokens reported, then a stream that never ends on its own. */
+function hangingFetch(inputTokens = 1_000_000): FetchLike {
+  return (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requests.push(typeof init?.body === 'string' ? init.body : '');
+    const signal = init?.signal ?? null;
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `event: message_start\ndata: ${JSON.stringify({
+              type: 'message_start',
+              message: {
+                id: 'm',
+                type: 'message',
+                role: 'assistant',
+                model: 'claude-opus-5',
+                content: [],
+                stop_reason: null,
+                stop_sequence: null,
+                usage: { input_tokens: inputTokens, output_tokens: 0 },
+              },
+            })}\n\n`,
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+          ),
+        );
+        controller.enqueue(
+          encoder.encode(
+            `event: content_block_delta\ndata: ${JSON.stringify({
+              type: 'content_block_delta',
+              index: 0,
+              delta: { type: 'text_delta', text: '{"feedbackMarkdown":"half' },
+            })}\n\n`,
+          ),
+        );
+        // Deliberately no terminator: the only way out of this turn is the
+        // signal, which is the situation the audit found nothing produced.
+        signal?.addEventListener('abort', () => {
+          controller.error(new DOMException('aborted', 'AbortError'));
+        });
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+    });
+  }) as FetchLike;
+}
+
+describe('cancellation', () => {
+  /** Drives a turn until the first markdown arrives, then cancels it. */
+  async function askAndCancel(): Promise<CoachStreamEvent[]> {
+    const controller = new AbortController();
+    const events = streamFeedback(feedbackRequest(), deps(hangingFetch()), controller.signal);
+    const seen: CoachStreamEvent[] = [];
+
+    for await (const event of events) {
+      seen.push(event);
+      if (event.type === 'markdown') {
+        // What the route does when the browser disconnects.
+        controller.abort();
+        await events.return(undefined);
+        break;
+      }
+    }
+
+    return seen;
+  }
+
+  it('stops on the signal without reporting an error', async () => {
+    const seen = await askAndCancel();
+
+    expect(seen.some((e) => e.type === 'start')).toBe(true);
+    expect(seen.some((e) => e.type === 'markdown')).toBe(true);
+    // Nothing went wrong: the user cancelled, and there is nobody left to read
+    // an error frame anyway.
+    expect(seen.some((e) => e.type === 'error')).toBe(false);
+  });
+
+  it('records what the cancelled turn spent, and stores no answer', async () => {
+    await askAndCancel();
+
+    const session = repos.coach.latestSession(SLUG, 'python')!;
+    const messages = repos.coach.listMessages(session.id);
+
+    // One row - the context the turn opened with - now carrying the cost the
+    // vendor reported before it was cut off. Recording nothing would have made
+    // Stop a free way to spend money.
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.role).toBe('user');
+    expect(messages[0]?.costUsd).toBeCloseTo(5);
+    expect(messages.some((m) => m.feedback !== null)).toBe(false);
+  });
+
+  it('counts a turn nobody could price against the cap', async () => {
+    // Nothing reported at all: the row is unpriced, and the cap charges it at
+    // the dearest rate known for the provider rather than at zero.
+    const controller = new AbortController();
+    const events = streamFeedback(feedbackRequest(), deps(hangingFetch(0)), controller.signal);
+    for await (const event of events) {
+      if (event.type === 'markdown') {
+        controller.abort();
+        await events.return(undefined);
+        break;
+      }
+    }
+
+    const session = repos.coach.latestSession(SLUG, 'python')!;
+    expect(repos.coach.sessionSpend(session.id)).toEqual({
+      reportedUsd: 0,
+      unreportedTurns: 1,
+    });
+  });
+});
+
+describe('streamChat, under the same cap as feedback', () => {
+  async function seedConversation(): Promise<string> {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    return repos.coach.latestSession(SLUG, 'python')!.id;
+  }
+
+  it('refuses a follow-up once the conversation has reached the cap', async () => {
+    const sessionId = await seedConversation();
+    // Priced by hand: what is under test is the check in chat, not how the
+    // figure got there.
+    const feedbackTurn = repos.coach.listMessages(sessionId).find((m) => m.feedback !== null)!;
+    repos.coach.setMessageCost(feedbackTurn.id, 9);
+    repos.settings.update({ coach: { spendCapUsd: 1 } });
+
+    const before = requests.length;
+    const events = await collect(
+      streamChat({ sessionId, message: 'Why?' }, deps(providerFetch('{}'))),
+    );
+
+    expect(events[0]).toMatchObject({ type: 'skipped', reason: 'spend_cap_reached' });
+    // The bug this closes: follow-ups were the way around a tripped cap.
+    expect(requests).toHaveLength(before);
+  });
+
+  it('records what a follow-up cost', async () => {
+    const sessionId = await seedConversation();
+    await collect(
+      streamChat({ sessionId, message: 'Why?' }, deps(providerFetch(proseWithUsage(1_000_000)))),
+    );
+
+    const reply = repos.coach.listMessages(sessionId).at(-1);
+    expect(reply?.role).toBe('coach');
+    expect(reply?.costUsd).toBeCloseTo(5);
+  });
+
+  it('leaves a failed follow-up as a question with no answer claimed', async () => {
+    const sessionId = await seedConversation();
+    await collect(streamChat({ sessionId, message: 'Why?' }, deps(providerFetch('{}', 500))));
+
+    const messages = repos.coach.listMessages(sessionId);
+    expect(messages.filter((m) => m.content === 'Why?')).toHaveLength(1);
+    expect(messages.at(-1)?.role).toBe('user');
+  });
+
+  it('sends the latest feedback context and the turns after it, not every context', async () => {
+    const sessionId = await seedConversation();
+    // A second review in the same conversation; its context becomes the start
+    // of the window (D20).
+    await collect(
+      streamFeedback(
+        feedbackRequest({ code: `${ATTEMPT}\n        # second attempt\n` }),
+        deps(providerFetch(anthropicStream(JSON.stringify(ANSWER)))),
+      ),
+    );
+
+    requests.length = 0;
+    await collect(
+      streamChat({ sessionId, message: 'And now?' }, deps(providerFetch(proseWithUsage(10)))),
+    );
+
+    const body = JSON.parse(requests[0]!) as { messages: { content: string }[] };
+    // Every feedback context opens with the Problem section, so counting that
+    // counts contexts - one per review before the window, one after it.
+    const contexts = body.messages.filter((m) => m.content.includes('Title: '));
+    const withSecond = body.messages.filter((m) => m.content.includes('# second attempt'));
+
+    // Exactly one context, the latest, not one per review. This is what stopped
+    // the eighth follow-up costing eight times the first.
+    expect(contexts).toHaveLength(1);
+    expect(withSecond).toHaveLength(1);
+    expect(body.messages.at(-1)?.content).toBe('And now?');
+  });
+});
+
+/** A full feedback answer with a usage report, at module scope (P5-9). */
+function feedbackWithUsage(inputTokens: number): string {
+  const stream = anthropicStream(JSON.stringify(ANSWER));
+  return stream.replace(
+    '"usage":{"input_tokens":1,"output_tokens":1}',
+    `"usage":{"input_tokens":${String(inputTokens)},"output_tokens":0}`,
+  );
+}
+
+describe('new conversation', () => {
+  it('starts a second session rather than continuing the first', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    const first = repos.coach.latestSession(SLUG, 'python')!;
+
+    await collect(streamFeedback(feedbackRequest({ newConversation: true }), deps(fetch)));
+    const second = repos.coach.latestSession(SLUG, 'python')!;
+
+    expect(second.id).not.toBe(first.id);
+  });
+
+  it('is the way out of a tripped spend cap', async () => {
+    const fetch = providerFetch(feedbackWithUsage(1_000_000));
+    repos.settings.update({ coach: { spendCapUsd: 1 } });
+
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    const refused = await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    expect(refused[0]).toMatchObject({ type: 'skipped', reason: 'spend_cap_reached' });
+
+    const fresh = await collect(
+      streamFeedback(feedbackRequest({ newConversation: true }), deps(fetch)),
+    );
+    expect(fresh.some((e) => e.type === 'done')).toBe(true);
   });
 });

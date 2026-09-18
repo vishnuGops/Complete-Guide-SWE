@@ -94,15 +94,29 @@ Implements ROADMAP **P5-6**. The numbers live in `packages/shared/src/cost.ts` s
 
 Three properties are deliberate:
 
-- **The price table will go stale, and fails safe.** An unknown model is charged at the _dearest_ rate known for its provider, so a price we do not have trips the cap early rather than late. Caching is not modelled either, and that also only makes the real bill smaller than the estimate.
+- **The price table will go stale, and fails safe.** An unknown model is charged at the _dearest_ rate known for its provider, so a price we do not have trips the cap early rather than late.
+- **Cache traffic is priced, because a cache write costs _more_ than plain input** (1.25x, against 0.1x for a read). P5-6 left it out on the reasoning that caching only lowers a bill; that is true from the second turn onward and wrong for the first, which writes the whole system prompt into the cache. The largest part of a session's opening turn was being counted as free (P5-9).
 - **A model of `null` is not unknown.** It resolves through `COACH_DEFAULT_MODEL` to the specific model the provider will actually use. Charging the default configuration — the one most users never change — at the unknown-model rate would overstate every estimate they ever see.
-- **A vendor that reports nothing is recorded as `NULL`, not `0`.** The cap reads that as unknown, not as free.
+- **A vendor that reports nothing is recorded as `NULL`, not `0`**, and the cap charges such a turn at the dearest known rate over a full-sized prompt (`unreportedTurnCostUsd`). Summing `NULL` as zero made the cap ignore exactly the turns that went wrong, so a conversation that kept failing expensively never reached it (P5-9).
+- **Chat is under the same cap and the same accounting as feedback.** It was under neither, so a tripped cap could be walked around by phrasing the next question as a follow-up (P5-9).
 
 ### What "session" means
 
 The cap is **per conversation** — one `coach_sessions` row, which is one problem in one language. That is the unit a runaway actually happens in: someone going round and round on a problem they are stuck on. It does **not** bound an evening spread across twenty problems.
 
 It is also checked _before_ a turn, against what has already been spent, because a turn's cost is not knowable until it is made. So the cap is a floor the next turn may cross, not a ceiling it cannot: with a $1 cap the spend stops somewhere in the first dollar and a bit, never at twenty.
+
+The way out is **New conversation** in the Coach panel (`newConversation` on the feedback request), which is what the refusal has always told the user to do. Until P5-9 nothing let them.
+
+### What one conversation sends (D20)
+
+A conversation, for prompt purposes, is **the latest feedback context plus every turn after it**. A feedback context is large — statement, editorial, code, judge output, prior attempts — so replaying every one of them meant the eighth follow-up carried eight statements and eight code snapshots, none of it cacheable, in an exchange the user experiences as a chat. Earlier reviews are not lost: the attempt memory (P5-5) summarises them inside the current context, with a diff of what changed.
+
+`windowHistory` finds the last coach turn carrying a rubric and starts one row before it. A new AI Help click writes a new context and so opens a new window by definition.
+
+### A turn nobody finished
+
+Stop, a second AI Help click and navigating away all close the connection, and the route turns that into an `AbortController` that cancels the vendor request (P5-9). What the vendor reported before it stopped is recorded against the context row the turn opened with, and no half answer is stored: the cost is real, the advice is not.
 
 ### Without a key
 

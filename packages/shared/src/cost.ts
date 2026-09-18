@@ -40,6 +40,18 @@ export function estimateTokensFromChars(chars: number): number {
 export const tokenUsageSchema = z.object({
   inputTokens: z.int().min(0),
   outputTokens: z.int().min(0),
+  /**
+   * Tokens written to the provider's prompt cache, billed above the input rate
+   * (ROADMAP P5-9).
+   *
+   * This is where the entire system prompt is charged on the first turn of a
+   * session: `cache_control` covers it, so it arrives as a cache *write* and not
+   * as input, and a cost function that only looked at `inputTokens` reported the
+   * largest part of the turn as free.
+   */
+  cacheWriteTokens: z.int().min(0).optional(),
+  /** Tokens served from that cache on later turns, billed well below input. */
+  cacheReadTokens: z.int().min(0).optional(),
 });
 export type TokenUsage = z.infer<typeof tokenUsageSchema>;
 
@@ -59,8 +71,12 @@ export interface ModelPrice {
  * trip *early* rather than late. For a ceiling whose whole job is to stop a
  * surprise bill, erring toward stopping is the only safe direction.
  *
- * Cache reads and writes are not modelled. Caching only ever makes the real
- * bill smaller than this estimate, which is the same safe direction.
+ * Cache reads and writes are modelled as multiples of the input rate (see
+ * `CACHE_WRITE_MULTIPLIER`), because the first correction to the older claim
+ * here - that caching only ever makes the bill smaller - is that a cache
+ * *write* costs more than plain input. A session's first turn writes the whole
+ * system prompt into the cache and is dearer than an uncached one; every turn
+ * after it is much cheaper. Only the second half of that was being counted.
  */
 export const MODEL_PRICES: Record<CoachProvider, Record<string, ModelPrice>> = {
   anthropic: {
@@ -110,9 +126,22 @@ export function priceFor(provider: CoachProvider, model: string | null): ModelPr
   return MODEL_PRICES[provider][resolved] ?? fallbackPrice(provider);
 }
 
+/**
+ * Cache write and read rates, as multiples of the input rate.
+ *
+ * Both vendors price cache traffic this way rather than per model, so one pair
+ * of multipliers covers the table above and does not go stale when a model is
+ * added to it.
+ */
+export const CACHE_WRITE_MULTIPLIER = 1.25;
+export const CACHE_READ_MULTIPLIER = 0.1;
+
 export function costUsd(usage: TokenUsage, price: ModelPrice): number {
+  const inputRate = price.inputPerMTok / 1_000_000;
   return (
-    (usage.inputTokens * price.inputPerMTok) / 1_000_000 +
+    usage.inputTokens * inputRate +
+    (usage.cacheWriteTokens ?? 0) * inputRate * CACHE_WRITE_MULTIPLIER +
+    (usage.cacheReadTokens ?? 0) * inputRate * CACHE_READ_MULTIPLIER +
     (usage.outputTokens * price.outputPerMTok) / 1_000_000
   );
 }
@@ -150,4 +179,26 @@ export function formatUsd(amount: number): string {
   if (amount <= 0) return '$0.00';
   if (amount < 0.01) return '<$0.01';
   return `$${amount.toFixed(2)}`;
+}
+
+/**
+ * What a turn whose cost the vendor never reported is charged at (ROADMAP P5-9).
+ *
+ * A turn can end without a usage report: a mid-stream timeout, a dropped
+ * connection, a vendor that simply did not say. Its row carries a NULL cost,
+ * and summing those as zero made the spend cap ignore exactly the turns that
+ * went wrong - so a session could fail expensively, over and over, for free.
+ *
+ * Charged instead at the dearest model known for the provider, over a prompt
+ * the size of a full context window's worth of coaching. That is deliberately
+ * pessimistic: the cap's whole job is to stop a surprise bill, and the two ways
+ * to be wrong are "stop slightly early" and "do not stop".
+ */
+export const UNREPORTED_TURN_TOKENS: TokenUsage = {
+  inputTokens: 30_000,
+  outputTokens: ESTIMATED_OUTPUT_TOKENS,
+};
+
+export function unreportedTurnCostUsd(provider: CoachProvider): number {
+  return costUsd(UNREPORTED_TURN_TOKENS, fallbackPrice(provider));
 }

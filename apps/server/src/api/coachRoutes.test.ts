@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import {
   COACH_API_KEY_ENV,
@@ -222,5 +222,98 @@ describe('POST /api/coach/chat', () => {
     });
 
     expect(response.statusCode).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A browser that walks away (ROADMAP P5-9)
+// ---------------------------------------------------------------------------
+
+describe('a disconnected client', () => {
+  /**
+   * The one test here that needs a real socket.
+   *
+   * `app.inject` has no connection to close, and closing the connection is the
+   * whole subject: Stop, a second AI Help click and navigating away all end the
+   * request from the browser's side, and until P5-9 none of them reached the
+   * vendor - the turn was generated, billed and stored for a page nobody was
+   * looking at any more.
+   */
+  it('aborts the provider request', async () => {
+    const signals: AbortSignal[] = [];
+
+    /** Answers, then hangs until its signal fires. */
+    const hanging: FetchLike = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const signal = init?.signal ?? null;
+      if (signal) signals.push(signal);
+      const encoder = new TextEncoder();
+
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              'event: message_start\ndata: {"type":"message_start","message":{"id":"m","type":"message","role":"assistant","model":"claude-opus-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":1}}}\n\n',
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `event: content_block_delta\ndata: ${JSON.stringify({
+                type: 'content_block_delta',
+                index: 0,
+                delta: { type: 'text_delta', text: '{"feedbackMarkdown":"half' },
+              })}\n\n`,
+            ),
+          );
+          signal?.addEventListener('abort', () => {
+            controller.error(new DOMException('aborted', 'AbortError'));
+          });
+        },
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      });
+    }) as FetchLike;
+
+    const listening = await buildServer({
+      logger: silentLogger,
+      repositories: repos,
+      problemsRoot: root,
+      env: { [COACH_API_KEY_ENV]: 'test-key' },
+      provider: { fetch: hanging },
+    });
+
+    try {
+      const address = await listening.listen({ port: 0, host: '127.0.0.1' });
+      const controller = new AbortController();
+
+      const response = await fetch(`${address}/api/coach/feedback`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          [serverConfig.clientHeader]: 'devpromax-web',
+        },
+        body: JSON.stringify(body()),
+        signal: controller.signal,
+      });
+
+      // Read one frame, so the turn is genuinely under way, then hang up.
+      const reader = response.body!.getReader();
+      await reader.read();
+      controller.abort();
+
+      // The route hears `close` and aborts the vendor request it owns.
+      await vi.waitFor(() => {
+        expect(signals.some((signal) => signal.aborted)).toBe(true);
+      });
+    } finally {
+      await listening.close();
+    }
   });
 });

@@ -6,6 +6,7 @@ import {
   meetsMastery,
   priceFor,
   statusRank,
+  unreportedTurnCostUsd,
   type CoachChatRequest,
   type CoachFeedback,
   type CoachFeedbackRequest,
@@ -26,7 +27,7 @@ import {
   type CoachTurn,
   type ProviderOptions,
 } from '../coach/index.js';
-import type { Repositories } from '../db/index.js';
+import type { CoachMessage, Repositories } from '../db/index.js';
 import type { Catalogue } from './catalogue.js';
 import { notFound } from './errors.js';
 import { resolveApiKey } from './settingsService.js';
@@ -125,7 +126,41 @@ function recallAttempts(
  */
 function overSpendCap(sessionId: string, capUsd: number | null, deps: CoachServiceDeps): boolean {
   if (capUsd === null) return false;
-  return deps.repos.coach.sessionSpendUsd(sessionId) >= capUsd;
+
+  const provider = deps.repos.settings.get().coach.provider;
+  const spend = deps.repos.coach.sessionSpend(sessionId);
+  // A turn nobody could price is charged at the dearest rate known for the
+  // provider rather than at zero (P5-9). Counting it as free let a conversation
+  // that kept timing out keep going: every failure was expensive and none of it
+  // reached the cap.
+  const total = spend.reportedUsd + spend.unreportedTurns * unreportedTurnCostUsd(provider);
+  return total >= capUsd;
+}
+
+/**
+ * The part of a conversation worth sending again (ROADMAP P5-9, D20).
+ *
+ * A feedback turn's user message is a whole context: the statement, the
+ * editorial, the code, the judge output, prior attempts - up to the context
+ * budget. Replaying the lot meant the eighth follow-up carried eight
+ * statements and eight code snapshots, none of it cacheable, and the bill grew
+ * quadratically in a conversation the user experiences as a chat.
+ *
+ * So a conversation, for prompt purposes, is **the latest feedback context plus
+ * everything after it**. That is what the follow-ups are about; the reviews
+ * before it are already summarised in the attempt memory the context carries
+ * (P5-5). A new AI Help click starts a new window by definition, because it
+ * writes a new context.
+ */
+export function windowHistory(messages: readonly CoachMessage[]): CoachTurn[] {
+  // The last coach turn that carried a rubric is the end of the latest feedback
+  // exchange; the context it answered is the row before it.
+  const lastFeedback = messages.findLastIndex(
+    (message) => message.role === 'coach' && message.feedback !== null,
+  );
+  const from = lastFeedback <= 0 ? 0 : lastFeedback - 1;
+
+  return messages.slice(from).map((message) => ({ role: message.role, content: message.content }));
 }
 
 /**
@@ -139,6 +174,7 @@ function overSpendCap(sessionId: string, capUsd: number | null, deps: CoachServi
 export async function* streamFeedback(
   request: CoachFeedbackRequest,
   deps: CoachServiceDeps,
+  signal?: AbortSignal,
 ): AsyncGenerator<CoachStreamEvent> {
   const pkg = deps.catalogue.get(request.slug);
   if (!pkg) throw notFound(`No problem with slug "${request.slug}".`);
@@ -160,8 +196,12 @@ export async function* streamFeedback(
   }
 
   // The conversation is found before the cap is checked, because the cap is a
-  // property of the conversation: a fresh one starts from zero.
-  const existing = deps.repos.coach.latestSession(request.slug, request.language);
+  // property of the conversation: a fresh one starts from zero. Asking for a
+  // new one is how the user acts on `spend_cap_reached`, which is what the skip
+  // message has always told them to do (P5-9).
+  const existing = request.newConversation
+    ? null
+    : deps.repos.coach.latestSession(request.slug, request.language);
   if (existing && overSpendCap(existing.id, settings.coach.spendCapUsd, deps)) {
     yield skip('spend_cap_reached');
     return;
@@ -191,11 +231,15 @@ export async function* streamFeedback(
   const session = existing ?? deps.repos.coach.createSession(request.slug, request.language);
   yield { type: 'start', sessionId: session.id };
 
-  deps.repos.coach.addMessage(session.id, { role: 'user', content: context });
+  const contextMessage = deps.repos.coach.addMessage(session.id, {
+    role: 'user',
+    content: context,
+  });
 
   const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
 
   let spent: number | null = null;
+  let answered = false;
 
   try {
     for await (const chunk of streamCoachFeedback(provider, {
@@ -203,6 +247,7 @@ export async function* streamFeedback(
       model: settings.coach.model,
       system: systemPrompt(),
       messages: [{ role: 'user', content: context }],
+      ...(signal ? { signal } : {}),
       onUsage: (usage: TokenUsage) => {
         spent = costUsd(usage, priceFor(settings.coach.provider, settings.coach.model));
       },
@@ -225,11 +270,28 @@ export async function* streamFeedback(
         ...(spent === null ? {} : { costUsd: spent }),
       });
       applyMastery(chunk.feedback, request, deps);
+      answered = true;
       yield { type: 'done', feedback: chunk.feedback };
     }
   } catch (error) {
-    yield toErrorEvent(error);
+    // A cancelled turn is not an error to report: the user closed the panel or
+    // pressed Stop, and there is nobody left to read a frame (P5-9).
+    if (!isAbort(error, signal)) yield toErrorEvent(error);
+  } finally {
+    // The tokens a cancelled or failed turn spent are real, and the cap has to
+    // see them. There is no answer to attach them to, so they land on the
+    // context row the turn opened with - which is also what makes that row
+    // "a turn that never got a reply" for `sessionSpend`.
+    if (!answered && spent !== null) {
+      deps.repos.coach.setMessageCost(contextMessage.id, spent);
+    }
   }
+}
+
+/** A cancellation, as opposed to something going wrong. */
+function isAbort(error: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted === true) return true;
+  return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
 }
 
 /**
@@ -281,6 +343,7 @@ function applyMastery(
 export async function* streamChat(
   request: CoachChatRequest,
   deps: CoachServiceDeps,
+  signal?: AbortSignal,
 ): AsyncGenerator<CoachStreamEvent> {
   const session = deps.repos.coach.getSession(request.sessionId);
   if (!session) throw notFound('That coaching conversation no longer exists.');
@@ -292,16 +355,23 @@ export async function* streamChat(
     return;
   }
 
-  const history: CoachTurn[] = deps.repos.coach
-    .listMessages(session.id)
-    .map((message) => ({ role: message.role, content: message.content }));
+  // The same cap as feedback, for the same reason (P5-9). Without it a tripped
+  // cap was a suggestion: the answers kept coming as long as the questions were
+  // phrased as follow-ups, and nothing recorded what they cost.
+  if (overSpendCap(session.id, settings.coach.spendCapUsd, deps)) {
+    yield skip('spend_cap_reached');
+    return;
+  }
 
-  deps.repos.coach.addMessage(session.id, { role: 'user', content: request.message });
+  const history = windowHistory(deps.repos.coach.listMessages(session.id));
+
   yield { type: 'start', sessionId: session.id };
 
   const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
 
   let reply = '';
+  let spent: number | null = null;
+
   try {
     for await (const chunk of provider.stream({
       apiKey: resolved.key,
@@ -311,15 +381,34 @@ export async function* streamChat(
       // parseable would make a one-sentence answer arrive quoted and escaped,
       // and the panel would render the escapes.
       messages: [...history, { role: 'user', content: request.message }],
+      ...(signal ? { signal } : {}),
+      onUsage: (usage: TokenUsage) => {
+        spent = costUsd(usage, priceFor(settings.coach.provider, settings.coach.model));
+      },
     })) {
       reply += chunk;
       yield { type: 'markdown', delta: chunk };
     }
   } catch (error) {
-    yield toErrorEvent(error);
+    // The question is stored with whatever it spent and no reply, so the cap
+    // sees the money and the history does not gain a `user, user` pair that
+    // Gemini would reject on every later turn (P5-9).
+    deps.repos.coach.addMessage(session.id, {
+      role: 'user',
+      content: request.message,
+      ...(spent === null ? {} : { costUsd: spent }),
+    });
+    if (!isAbort(error, signal)) yield toErrorEvent(error);
     return;
   }
 
-  deps.repos.coach.addMessage(session.id, { role: 'coach', content: reply });
+  // Persisted as a pair, after the fact: a question with no answer after it is
+  // not a turn anyone can continue from.
+  deps.repos.coach.addMessage(session.id, { role: 'user', content: request.message });
+  deps.repos.coach.addMessage(session.id, {
+    role: 'coach',
+    content: reply,
+    ...(spent === null ? {} : { costUsd: spent }),
+  });
   yield { type: 'reply', content: reply };
 }

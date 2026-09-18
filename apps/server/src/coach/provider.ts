@@ -179,8 +179,12 @@ export function describeStatus(id: CoachProviderId, status: number): string {
 
 export function describeNetworkError(id: CoachProviderId, error: unknown): string {
   const vendor = COACH_PROVIDER_LABEL[id];
-  if (error instanceof Error && error.name === 'AbortError') {
-    return `${vendor} did not answer within ${TEST_CONNECTION_TIMEOUT_MS / 1000} seconds.`;
+  // `AbortSignal.timeout` rejects with a `TimeoutError`, not an `AbortError`
+  // (ROADMAP P5-9): a request that ran out of time was being reported as "check
+  // that this machine is online", which sends the user to look at their wifi
+  // while the vendor is merely slow.
+  if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
+    return `${vendor} did not answer in time.`;
   }
   return `Could not reach ${vendor}. Check that this machine is online.`;
 }

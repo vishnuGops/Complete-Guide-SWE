@@ -7,6 +7,8 @@ import {
   formatUsd,
   MODEL_PRICES,
   priceFor,
+  UNREPORTED_TURN_TOKENS,
+  unreportedTurnCostUsd,
 } from './cost.js';
 
 /**
@@ -92,5 +94,46 @@ describe('formatUsd', () => {
   it('shows real money as money', () => {
     expect(formatUsd(0.42)).toBe('$0.42');
     expect(formatUsd(3)).toBe('$3.00');
+  });
+});
+
+describe('cache tokens', () => {
+  const price = { inputPerMTok: 10, outputPerMTok: 0 };
+
+  it('charges a cache write above the input rate', () => {
+    // The correction P5-9 made: the first turn of a session writes the whole
+    // system prompt into the cache, and a write costs *more* than plain input.
+    // Counting only `inputTokens` reported the dearest turn as the cheapest.
+    const write = costUsd({ inputTokens: 0, outputTokens: 0, cacheWriteTokens: 1_000_000 }, price);
+    const plain = costUsd({ inputTokens: 1_000_000, outputTokens: 0 }, price);
+
+    expect(write).toBeCloseTo(12.5);
+    expect(write).toBeGreaterThan(plain);
+  });
+
+  it('charges a cache read far below it', () => {
+    const read = costUsd({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 1_000_000 }, price);
+    expect(read).toBeCloseTo(1);
+  });
+
+  it('is unchanged for usage that reports no cache traffic', () => {
+    expect(costUsd({ inputTokens: 1_000_000, outputTokens: 0 }, price)).toBeCloseTo(10);
+  });
+});
+
+describe('unreportedTurnCostUsd', () => {
+  it('prices a turn nobody could price at the dearest known rate', () => {
+    const anthropic = unreportedTurnCostUsd('anthropic');
+    const dearest = costUsd(UNREPORTED_TURN_TOKENS, fallbackPrice('anthropic'));
+
+    expect(anthropic).toBeCloseTo(dearest);
+    // The direction that matters: charging such a turn at zero let a
+    // conversation that kept failing expensively never reach its cap.
+    expect(anthropic).toBeGreaterThan(0);
+  });
+
+  it('is at least as dear as a turn on the default model', () => {
+    const onDefault = costUsd(UNREPORTED_TURN_TOKENS, priceFor('anthropic', null));
+    expect(unreportedTurnCostUsd('anthropic')).toBeGreaterThanOrEqual(onDefault);
   });
 });

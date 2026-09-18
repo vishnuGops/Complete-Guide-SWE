@@ -133,6 +133,15 @@ export interface CoachPanelProps {
   fallback?: { headline: string; points: string[] } | null;
   /** Runs a fresh review of whatever is in the editor now. */
   onAsk: () => void;
+  /**
+   * Abandons this conversation and reviews again in a new one (P5-9).
+   *
+   * Two things need it: the spend cap, whose message has always said to start a
+   * fresh one, and the prompt window (D20) - a long conversation carries its
+   * whole feedback context into every follow-up, and at some point starting
+   * over is both cheaper and better advice.
+   */
+  onNewConversation: () => void;
   onFollowUp: (message: string) => void;
   onStop: () => void;
   /** Opens Settings; the no-key state is the only thing that needs it. */
@@ -143,6 +152,7 @@ export function CoachPanel({
   state,
   fallback,
   onAsk,
+  onNewConversation,
   onFollowUp,
   onStop,
   onOpenSettings,
@@ -180,7 +190,14 @@ export function CoachPanel({
           )}
         </div>
       ) : state.phase === 'skipped' && state.skipped ? (
-        <p className="text-fg-muted text-sm">{state.skipped.message}</p>
+        <div>
+          <p className="text-fg-muted text-sm">{state.skipped.message}</p>
+          {state.skipped.reason === 'spend_cap_reached' && (
+            <Button className="mt-3" size="sm" variant="secondary" onClick={onNewConversation}>
+              Start a new conversation
+            </Button>
+          )}
+        </div>
       ) : null}
 
       {empty && state.phase === 'idle' && (
@@ -240,9 +257,14 @@ export function CoachPanel({
           </Button>
         ) : (
           !empty && (
-            <Button size="sm" variant="secondary" onClick={onAsk}>
-              Review again
-            </Button>
+            <>
+              <Button size="sm" variant="secondary" onClick={onAsk}>
+                Review again
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onNewConversation}>
+                New conversation
+              </Button>
+            </>
           )
         )}
         {!streaming && empty && state.phase !== 'idle' && (
