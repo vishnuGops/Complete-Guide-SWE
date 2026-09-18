@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps } from 'react';
+import { memo, useEffect, useState, type ComponentProps } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
@@ -132,7 +132,7 @@ const COMPONENTS = { a: anchor, img: image };
 /** The one URL prefix coach content may load an image from. */
 const ASSETS_PREFIX = '/api/problems/';
 
-export function Markdown({ content, assetSlug, trust = 'repo', className }: MarkdownProps) {
+function MarkdownContent({ content, assetSlug, trust = 'repo', className }: MarkdownProps) {
   const math = useMathPlugins(content);
 
   const remarkPlugins = math ? [...REMARK_PLUGINS, math.remark] : REMARK_PLUGINS;
@@ -171,3 +171,14 @@ export function Markdown({ content, assetSlug, trust = 'repo', className }: Mark
     </div>
   );
 }
+
+/**
+ * Memoised on its props (ROADMAP P4-13).
+ *
+ * Every keystroke in the editor re-renders the workspace, and parsing markdown
+ * is remark, rehype, the sanitiser and the highlighter - so the statement, the
+ * hints, the editorial and every coach turn were re-parsed on each character
+ * typed. None of those change while someone types code, and the props are
+ * strings: a shallow comparison is exactly the right test.
+ */
+export const Markdown = memo(MarkdownContent);

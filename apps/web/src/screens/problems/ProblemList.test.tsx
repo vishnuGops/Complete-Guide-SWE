@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useNavigate } from 'react-router-dom';
 import type { ProblemListResponse } from '@devpromax/shared';
 import { aList, aProblem, fakeServer, path, renderApp } from '../../test/harness.js';
 import { ProblemList } from './ProblemList.js';
@@ -256,3 +257,68 @@ describe('empty states', () => {
     expect(await screen.findByText(/The catalogue is empty/)).toBeInTheDocument();
   });
 });
+
+/**
+ * The search box and the URL (ROADMAP P4-13).
+ *
+ * The box was seeded once, at mount, so Back and Forward through `?q=` moved
+ * the list and left the text sitting there - the filter and the box saying two
+ * different things.
+ */
+describe('the search box follows the URL', () => {
+  it('shows the query the URL arrived with', async () => {
+    serve();
+    renderApp(<ProblemList />, { route: '/?q=window' });
+
+    expect(await screen.findByRole('searchbox', { name: /search/i })).toHaveValue('window');
+  });
+
+  it('re-seeds when the URL changes under it', async () => {
+    serve();
+    const user = userEvent.setup();
+    renderApp(
+      <>
+        <BackAndForward />
+        <ProblemList />
+      </>,
+      { route: '/?q=window' },
+    );
+
+    const box = await screen.findByRole('searchbox', { name: /search/i });
+    expect(box).toHaveValue('window');
+
+    // A second entry in the history, then back to the first.
+    await user.click(screen.getByRole('button', { name: 'go to prefix' }));
+    await waitFor(() => {
+      expect(box).toHaveValue('prefix');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'go back' }));
+    await waitFor(() => {
+      expect(box).toHaveValue('window');
+    });
+  });
+});
+
+/** Two buttons that move the URL, for the test above. */
+function BackAndForward() {
+  const navigate = useNavigate();
+  return (
+    <>
+      <button
+        onClick={() => {
+          void navigate('/?q=prefix');
+        }}
+      >
+        go to prefix
+      </button>
+      <button
+        onClick={() => {
+          void navigate(-1);
+        }}
+      >
+        go back
+      </button>
+    </>
+  );
+}

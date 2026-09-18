@@ -70,7 +70,7 @@ const PAGES = [
  * loading leaves nothing to race - the page arrives already in the theme under
  * audit, and `data-theme` proves it before a single rule is evaluated.
  */
-async function useTheme(page: Page, theme: (typeof THEMES)[number], url: string): Promise<void> {
+async function applyTheme(page: Page, theme: (typeof THEMES)[number], url: string): Promise<void> {
   const response = await page.request.put('/api/settings', {
     headers: { 'X-DevProMax-Client': 'devpromax-web' },
     data: { theme },
@@ -101,7 +101,7 @@ function audit(page: Page): AxeBuilder {
 for (const theme of THEMES) {
   for (const target of PAGES) {
     test(`${target.name} has no serious a11y violations in ${theme}`, async ({ page }) => {
-      await useTheme(page, theme, target.url);
+      await applyTheme(page, theme, target.url);
       await expect(page.getByRole('heading', { name: target.ready })).toBeVisible();
 
       const { violations } = await audit(page).analyze();
@@ -132,7 +132,7 @@ for (const theme of THEMES) {
    * hidden because Description's markdown happened to supply the missing `h2`.
    */
   test(`the coach panel has no serious a11y violations in ${theme}`, async ({ page }) => {
-    await useTheme(page, theme, '/problems/pair-sum-index');
+    await applyTheme(page, theme, '/problems/pair-sum-index');
     await expect(page.getByRole('heading', { name: 'Pair Sum Index' })).toBeVisible();
 
     await page.getByRole('tab', { name: 'Coach' }).click();
@@ -202,3 +202,130 @@ function detail(node: { any?: { id: string; data?: unknown }[] }): string {
   if (data?.contrastRatio === undefined) return '';
   return ` - ${String(data.contrastRatio)}:1, ${String(data.fgColor)} on ${String(data.bgColor)}, ${String(data.fontSize)}`;
 }
+
+/**
+ * The screens that only exist after something happened (ROADMAP P4-13).
+ *
+ * Everything above audits an idle screen. The surfaces most likely to be wrong
+ * are the ones drawn in response to a run: a verdict banner, a test list beside
+ * a two-column diff, a compile-error list with line numbers - and a modal,
+ * which is the one thing on the page that takes the keyboard away from
+ * everything behind it.
+ *
+ * One theme each rather than both: what these add is *new markup*, and markup
+ * does not change with the palette. The colours of everything they contain are
+ * already covered by the idle passes above.
+ */
+test.describe('after a run', () => {
+  // These three actually run code, through a real interpreter, while the rest
+  // of the suite is doing the same on other workers. The default 30s is a
+  // budget for an idle page, not for a judge queue.
+  test.setTimeout(180_000);
+
+  /*
+   * A problem each, and no leftovers.
+   *
+   * Drafts are per problem and outlive a run, so two tests that paste into the
+   * same editor - or one that ran an hour ago - decide what the next one
+   * compiles. The Wrong Answer case was reported as a Compile Error exactly
+   * once for that reason, which is the sort of failure that wastes an evening.
+   */
+  const WRONG = { slug: 'first-not-below', title: 'First Reading Not Below' };
+  const BROKEN = { slug: 'rotated-lookup', title: 'Lookup In A Rotated Series' };
+
+  /**
+   * Opens a problem on Python, with no draft behind it.
+   *
+   * The language is a *setting*, shared by every test and every earlier run, so
+   * "open a problem and paste Python" compiled as Java the moment another spec
+   * had chosen Java - and the wrong-answer case came back as a compile error
+   * full of `class, interface, enum, or record expected`.
+   */
+  async function openOnPython(page: Page, problem: { slug: string; title: string }): Promise<void> {
+    await clearDrafts(page, problem.slug);
+    await applyTheme(page, 'light', `/problems/${problem.slug}`);
+    await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
+  }
+
+  /** Removes both drafts, so the editor opens on the starter. */
+  async function clearDrafts(page: Page, slug: string): Promise<void> {
+    for (const language of ['python', 'java'] as const) {
+      const response = await page.request.delete(`/api/drafts/${slug}/${language}`, {
+        headers: { 'X-DevProMax-Client': 'devpromax-web' },
+      });
+      expect(response.ok()).toBe(true);
+    }
+  }
+
+  /** Replaces the editor's contents, as `m0.spec.ts` does. */
+  async function setEditorContents(page: Page, code: string): Promise<void> {
+    await expect(page.locator('[data-testid="editor"] .monaco-editor')).toBeVisible();
+    await page.locator('[data-testid="editor"] .view-lines').click();
+    await page.evaluate((text) => navigator.clipboard.writeText(text), code);
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('ControlOrMeta+v');
+  }
+
+  async function auditNow(page: Page, what: string): Promise<void> {
+    const { violations } = await audit(page).analyze();
+    const serious = violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    );
+    expect(
+      serious.map((violation) => `${violation.impact ?? 'unknown'} ${violation.id}`),
+      describe(violations, what),
+    ).toEqual([]);
+  }
+
+  test('the results panel, with a failing test and its diff', async ({ page }) => {
+    await openOnPython(page, WRONG);
+
+    // Deliberately wrong, so the diff, the "first difference" line and the
+    // failing-test markers are all on screen.
+    await setEditorContents(
+      page,
+      [
+        'from typing import List',
+        '',
+        '',
+        'class Solution:',
+        '    def firstNotBelow(self, values: List[int], threshold: int) -> int:',
+        '        return -1',
+        '',
+      ].join('\n'),
+    );
+
+    await page.getByRole('button', { name: 'Run' }).click();
+    await expect(page.getByTestId('verdict')).toHaveText('Wrong Answer', { timeout: 120_000 });
+
+    await auditNow(page, 'the results panel after a failing run');
+    await clearDrafts(page, WRONG.slug);
+  });
+
+  test('the compile-error list', async ({ page }) => {
+    await openOnPython(page, BROKEN);
+
+    await setEditorContents(page, 'class Solution:\n    def findRotated(self values, target)\n');
+
+    await page.getByRole('button', { name: 'Run' }).click();
+    await expect(page.getByTestId('verdict')).toHaveText('Compile Error', { timeout: 120_000 });
+
+    await auditNow(page, 'the compile-error list');
+  });
+
+  test('the reset confirmation, which owns the keyboard while it is open', async ({ page }) => {
+    await openOnPython(page, WRONG);
+
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+
+    await auditNow(page, 'the reset confirmation');
+
+    // Left closed, because the next test in this worker inherits the page's
+    // server-side state but not its DOM - and a dialog left open is a trap for
+    // whoever debugs this file next.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+  });
+});

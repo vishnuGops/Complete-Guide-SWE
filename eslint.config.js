@@ -49,6 +49,18 @@ export default tseslint.config(
     extends: [reactHooks.configs.flat.recommended],
     rules: {
       ...jsxA11y.flatConfigs.recommended.rules,
+      /*
+       * A scrollable region has to be focusable (ROADMAP P4-13).
+       *
+       * axe's `scrollable-region-focusable` is a `serious` finding, and the fix
+       * is `tabindex="0"` on the scrolling element - which this rule forbids by
+       * default because the element is not interactive. Both are right: the
+       * element is not a control, and a keyboard user still has to be able to
+       * scroll it. Allowing the two grouping roles is how the two rules agree,
+       * and it is narrow enough that a `div` with a stray tabIndex is still
+       * caught.
+       */
+      'jsx-a11y/no-noninteractive-tabindex': ['error', { roles: ['group', 'region', 'tabpanel'] }],
     },
   },
   {

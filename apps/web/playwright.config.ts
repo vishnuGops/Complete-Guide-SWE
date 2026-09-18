@@ -18,7 +18,31 @@ export default defineConfig({
     // The editor is filled by pasting rather than typing (see e2e/m0.spec.ts).
     permissions: ['clipboard-read', 'clipboard-write'],
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /a11y\.spec\.ts/,
+    },
+    /*
+     * The audit gets its own project, one worker wide (ROADMAP P4-13).
+     *
+     * The theme is a *server* setting, shared by every window: one worker
+     * clicking Dark repaints another worker's page while axe is walking it, and
+     * the finding that comes back is one theme's text measured against the
+     * other theme's background. `test.describe.configure({ mode: 'default' })`
+     * inside the file does not prevent that - it orders the tests within a
+     * worker and says nothing about how many workers there are - so the
+     * serialisation has to live here.
+     */
+    {
+      name: 'a11y',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /a11y\.spec\.ts/,
+      workers: 1,
+      fullyParallel: false,
+    },
+  ],
   webServer: {
     command: 'npm run dev',
     cwd: '../..',

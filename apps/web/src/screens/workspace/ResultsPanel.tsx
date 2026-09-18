@@ -68,7 +68,13 @@ function SideBySide({
 
   const column = (label: string, lines: readonly string[], truncated: boolean) => (
     <div className="min-w-0 flex-1">
-      <h4 className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</h4>
+      {/*
+        A paragraph, not an `h4` (ROADMAP P4-13). "Expected" and "Actual" label
+        the two columns beside them; they are not a level of the document, and
+        an `h4` under the workspace's `h1` was a two-level jump that a screen
+        reader reads as missing structure.
+      */}
+      <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</p>
       {multiline ? (
         <div className="border-border bg-surface-sunken overflow-x-auto rounded-md border">
           {lines.map((line, index) => (
@@ -105,7 +111,13 @@ function SideBySide({
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <h4 className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</h4>
+      {/*
+        A paragraph, not an `h4` (ROADMAP P4-13). "Expected" and "Actual" label
+        the two columns beside them; they are not a level of the document, and
+        an `h4` under the workspace's `h1` was a two-level jump that a screen
+        reader reads as missing structure.
+      */}
+      <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</p>
       {children}
     </div>
   );
@@ -141,10 +153,38 @@ function MutatedArgsView({ test }: { test: TestResult }) {
  * `pop()` returned the wrong thing" rather than as two long arrays that differ
  * somewhere (D4, `operations` mode).
  */
+/**
+ * How many call rows to draw (ROADMAP P4-13).
+ *
+ * Values are capped at 6 KB for display (`diff.ts`), but the call table was
+ * not - so a design problem with two thousand operations drew two thousand
+ * rows, which is slow to lay out and useless to read. The first mismatch is
+ * what matters, and it is always near the top of what is shown because the
+ * table is in call order.
+ */
+const MAX_OP_ROWS = 60;
+
 function OperationsView({ test }: { test: TestResult }) {
-  const ops = test.input?.ops ?? [];
+  const allOps = test.input?.ops ?? [];
   const expected = Array.isArray(test.expected) ? test.expected : [];
   const actual = Array.isArray(test.actual) ? test.actual : [];
+
+  const mismatchAt = allOps.findIndex(
+    (_op, index) =>
+      JSON.stringify(expected[index] ?? null) !== JSON.stringify(actual[index] ?? null),
+  );
+
+  /*
+   * A window that always contains the first mismatch.
+   *
+   * Showing the first sixty rows would hide the only interesting one when the
+   * sequence is long and the failure is late, so the window starts a few calls
+   * before it.
+   */
+  const start =
+    mismatchAt > MAX_OP_ROWS - 10 ? Math.min(mismatchAt - 10, allOps.length - MAX_OP_ROWS) : 0;
+  const ops = allOps.slice(start, start + MAX_OP_ROWS);
+  const hidden = allOps.length - ops.length;
 
   return (
     <Field label="Calls">
@@ -159,7 +199,8 @@ function OperationsView({ test }: { test: TestResult }) {
             </tr>
           </thead>
           <tbody>
-            {ops.map((op, index) => {
+            {ops.map((op, offset) => {
+              const index = start + offset;
               const mismatch =
                 JSON.stringify(expected[index] ?? null) !== JSON.stringify(actual[index] ?? null);
               return (
@@ -182,6 +223,11 @@ function OperationsView({ test }: { test: TestResult }) {
           </tbody>
         </table>
       </div>
+      {hidden > 0 && (
+        <p className="text-fg-subtle mt-1 text-2xs">
+          {`Showing calls ${String(start + 1)}–${String(start + ops.length)} of ${String(allOps.length)}.`}
+        </p>
+      )}
     </Field>
   );
 }
@@ -437,7 +483,20 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
             ))}
           </ul>
 
-          <div className="min-w-0 flex-1 overflow-y-auto">
+          {/*
+            Focusable, because it scrolls (ROADMAP P4-13).
+            A pane whose only content is text - a diff, a traceback - cannot be
+            scrolled from the keyboard unless it can hold focus, so someone who
+            does not use a mouse could read the first screenful of a failure and
+            no more. Found by the axe pass this task added, which is the first
+            one that audits the panel after a run.
+          */}
+          <div
+            className="focus-ring-inset min-w-0 flex-1 overflow-y-auto"
+            tabIndex={0}
+            role="group"
+            aria-label="Selected test"
+          >
             {current ? (
               <TestDetail test={current} />
             ) : (

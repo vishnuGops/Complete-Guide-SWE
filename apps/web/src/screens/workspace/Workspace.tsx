@@ -158,7 +158,20 @@ export function Workspace() {
    */
   const [revealedHints, setRevealedHints] = useState(0);
 
-  const coach = useCoach(slug, language);
+  /*
+   * Destructured, not held as an object (ROADMAP P4-13).
+   *
+   * `useCoach` returns a fresh wrapper every render while the functions inside
+   * it are stable, so a callback closing over the wrapper would change
+   * identity on every keystroke and defeat the memoised panel below.
+   */
+  const {
+    state: coachState,
+    ask: coachAsk,
+    followUp: coachFollowUp,
+    stop: coachStop,
+  } = useCoach(slug, language);
+
   const navigate = useNavigate();
 
   const run = useJudge('run');
@@ -378,11 +391,22 @@ export function Workspace() {
     ),
   );
 
-  const askCoach = (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
-    setLeftTab('coach');
-    setOfferMastery(false);
-    coach.ask({ slug, language, code, revealedHints, ...options });
-  };
+  /*
+   * Stable identity, because the Coach panel is memoised (ROADMAP P4-13).
+   *
+   * `code` is in the dependency list, so this *does* change as the user types -
+   * which is unavoidable: the coach reviews the code that is there when asked.
+   * What it buys is that the panel re-renders only when something it shows
+   * changes, rather than on every keystroke through a freshly built element.
+   */
+  const askCoach = useCallback(
+    (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
+      setLeftTab('coach');
+      setOfferMastery(false);
+      coachAsk({ slug, language, code, revealedHints, ...options });
+    },
+    [coachAsk, slug, language, code, revealedHints],
+  );
 
   useShortcut(
     'run',
@@ -407,6 +431,53 @@ export function Workspace() {
       askCoach();
     },
     ready,
+  );
+
+  const askNewConversation = useCallback(() => {
+    askCoach({ newConversation: true });
+  }, [askCoach]);
+
+  const openSettings = useCallback(() => {
+    void navigate('/settings');
+  }, [navigate]);
+
+  /*
+   * Built with `useMemo`, not inline (ROADMAP P4-13).
+   *
+   * Inline, this element was recreated on every render - so the memoised
+   * `StatementPanel` saw a new `coach` prop on every keystroke and re-rendered
+   * anyway, taking the statement's markdown with it.
+   */
+  const coachPanel = useMemo(
+    () => (
+      <CoachPanel
+        state={coachState}
+        fallback={
+          result
+            ? {
+                headline: judgeHeadline(result),
+                points: judgeSummary(result, problem?.timeoutMs[language] ?? 0),
+              }
+            : null
+        }
+        onAsk={askCoach}
+        onNewConversation={askNewConversation}
+        onFollowUp={coachFollowUp}
+        onStop={coachStop}
+        onOpenSettings={openSettings}
+      />
+    ),
+    [
+      coachState,
+      result,
+      problem,
+      language,
+      askCoach,
+      askNewConversation,
+      coachFollowUp,
+      coachStop,
+      openSettings,
+    ],
   );
 
   if (isPending) return <WorkspaceSkeleton />;
@@ -492,8 +563,12 @@ export function Workspace() {
           <TabsTrigger value="testcases">
             Testcases
             {customIssues.length > 0 && (
-              <span className="text-danger-fg ml-1 text-2xs" aria-label="has errors">
-                !
+              /* `sr-only` text rather than an `aria-label` on a bare span,
+                 which is ignored - the tab's name then actually says there is
+                 a problem (P4-13). */
+              <span className="text-danger-fg ml-1 text-2xs">
+                <span aria-hidden>!</span>
+                <span className="sr-only">has errors</span>
               </span>
             )}
           </TabsTrigger>
@@ -694,7 +769,7 @@ export function Workspace() {
           >
             <Button
               variant="ghost"
-              disabled={coach.state.phase === 'streaming'}
+              disabled={coachState.phase === 'streaming'}
               onClick={() => {
                 askCoach();
               }}
@@ -746,30 +821,7 @@ export function Workspace() {
               onTab={setLeftTab}
               revealedHints={revealedHints}
               onRevealHint={setRevealedHints}
-              coach={
-                <CoachPanel
-                  state={coach.state}
-                  fallback={
-                    result
-                      ? {
-                          headline: judgeHeadline(result),
-                          points: judgeSummary(result, problem.timeoutMs[language]),
-                        }
-                      : null
-                  }
-                  onAsk={() => {
-                    askCoach();
-                  }}
-                  onNewConversation={() => {
-                    askCoach({ newConversation: true });
-                  }}
-                  onFollowUp={coach.followUp}
-                  onStop={coach.stop}
-                  onOpenSettings={() => {
-                    void navigate('/settings');
-                  }}
-                />
-              }
+              coach={coachPanel}
             />
           </div>
         }

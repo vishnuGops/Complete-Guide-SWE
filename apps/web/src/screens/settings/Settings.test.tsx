@@ -213,3 +213,59 @@ describe('Settings, coach section', () => {
     expect(await screen.findByRole('button', { name: 'Test connection' })).toBeDisabled();
   });
 });
+
+/**
+ * Number fields (ROADMAP P4-13).
+ *
+ * The version these replace wrote straight into a controlled input and only
+ * accepted in-range values, so typing "1" on the way to "12" snapped back -
+ * 1 being below the minimum - and every accepted keystroke was its own PUT.
+ */
+describe('Settings, number fields', () => {
+  it('lets a number be typed through an out-of-range prefix', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    const fontSize = await screen.findByLabelText('Editor font size');
+    await userEvent.clear(fontSize);
+    // "1" is below the minimum of 10; the old field refused it and put 14 back.
+    await userEvent.type(fontSize, '1');
+    expect(fontSize).toHaveValue('1');
+    await userEvent.type(fontSize, '2');
+    expect(fontSize).toHaveValue('12');
+
+    // And nothing was written on the way: one field, one PUT, on commit.
+    expect(writes).toEqual([]);
+    await userEvent.tab();
+    await waitFor(() => {
+      expect(writes).toEqual([{ editor: { fontSize: 12 } }]);
+    });
+  });
+
+  it('puts the stored value back when what was typed cannot be saved', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    const tabSize = await screen.findByLabelText('Editor tab size');
+    await userEvent.clear(tabSize);
+    await userEvent.type(tabSize, '99');
+    await userEvent.tab();
+
+    // 99 is outside 2..8, so it is not sent and the field stops lying about it.
+    expect(writes).toEqual([]);
+    expect(tabSize).toHaveValue('4');
+  });
+
+  it('commits on Enter as well as on blur', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    const concurrency = await screen.findByLabelText('Concurrent runs');
+    await userEvent.clear(concurrency);
+    await userEvent.type(concurrency, '4{Enter}');
+
+    await waitFor(() => {
+      expect(writes).toEqual([{ judge: { concurrency: 4 } }]);
+    });
+  });
+});

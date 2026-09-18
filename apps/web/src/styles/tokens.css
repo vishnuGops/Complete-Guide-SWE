@@ -149,6 +149,15 @@
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
   --color-overlay: var(--overlay);
+  /*
+   * What a modal dims the page with (ROADMAP P4-13).
+   *
+   * A token rather than `bg-black/40` at the call site, which is a raw colour
+   * and checklist item 1 in docs/DESIGN.md. It is also not the same value in
+   * both themes: a light page needs a darker scrim to read as dimmed, and a
+   * near-black one needs less.
+   */
+  --color-overlay-scrim: var(--overlay-scrim);
 
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
@@ -187,6 +196,7 @@
   --surface-raised: var(--color-neutral-0);
   --surface-sunken: var(--color-neutral-50);
   --overlay: var(--color-neutral-0);
+  --overlay-scrim: oklch(0% 0 0 / 40%);
 
   --fg: var(--color-neutral-900);
   --fg-muted: var(--color-neutral-700);
@@ -234,6 +244,8 @@
     --surface-raised: var(--color-neutral-900);
     --surface-sunken: var(--color-neutral-1000);
     --overlay: var(--color-neutral-850);
+    /* Lighter than the light theme's: the page behind it is already dark. */
+    --overlay-scrim: oklch(0% 0 0 / 60%);
 
     --fg: var(--color-neutral-100);
     --fg-muted: var(--color-neutral-400);
@@ -272,6 +284,7 @@
   --surface-raised: var(--color-neutral-900);
   --surface-sunken: var(--color-neutral-1000);
   --overlay: var(--color-neutral-850);
+  --overlay-scrim: oklch(0% 0 0 / 60%);
 
   --fg: var(--color-neutral-100);
   --fg-muted: var(--color-neutral-400);

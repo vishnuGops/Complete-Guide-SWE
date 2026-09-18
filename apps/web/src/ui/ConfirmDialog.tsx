@@ -37,7 +37,8 @@ export function ConfirmDialog({
   return (
     <RadixAlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixAlertDialog.Portal>
-        <RadixAlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        {/* The scrim is a token, not a raw colour (docs/DESIGN.md item 1). */}
+        <RadixAlertDialog.Overlay className="bg-overlay-scrim fixed inset-0 z-50" />
         <RadixAlertDialog.Content
           className={[
             'bg-surface-raised border-border shadow-overlay fixed top-1/2 left-1/2 z-50',

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import {
   LANGUAGE_LABEL,
   TOPIC_LABEL,
@@ -189,7 +189,7 @@ export interface StatementPanelProps {
   coach: ReactNode;
 }
 
-export function StatementPanel({
+function StatementPanelBody({
   problem,
   tab,
   onTab,
@@ -272,3 +272,15 @@ export function StatementPanel({
     </Tabs>
   );
 }
+
+/**
+ * Memoised (ROADMAP P4-13).
+
+ * Every keystroke in the editor re-renders the workspace, and this subtree is
+ * the statement, the hints, the editorial, the submissions list and the coach
+ * panel - none of which change while someone types code. Its props are the
+ * problem, the selected tab, the revealed-hint count and one element, so a
+ * shallow comparison is the right test as long as the caller does not rebuild
+ * that element on every render (see `coachPanel` in `Workspace.tsx`).
+ */
+export const StatementPanel = memo(StatementPanelBody);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   PROBLEM_SORT_KEYS,
@@ -133,12 +133,34 @@ export function ProblemList() {
    * real one.
    */
   const [search, setSearch] = useState(filters.q);
-  const typed = useRef(false);
+  /**
+   * Whether the box is holding something the URL has not been told about yet.
+   *
+   * State rather than a ref, because the re-seed below reads it during render
+   * (P4-13) - and a ref read during render is the thing React tells you not to
+   * do, for the good reason that it does not cause the re-render you wanted.
+   */
+  const [typing, setTyping] = useState(false);
+
+  /*
+   * Re-seeded when the URL changes under us (ROADMAP P4-13).
+   *
+   * The box was seeded once, at mount, so Back and Forward through `?q=` moved
+   * the *list* and left the text sitting there - the filter and the box saying
+   * different things, which is the sort of thing a user works around by
+   * reloading. Only while nothing is pending: a re-seed mid-debounce would
+   * fight the typist.
+   */
+  const [seededFrom, setSeededFrom] = useState(filters.q);
+  if (filters.q !== seededFrom) {
+    setSeededFrom(filters.q);
+    if (!typing) setSearch(filters.q);
+  }
 
   useEffect(() => {
-    if (!typed.current) return;
+    if (!typing) return;
     const timer = setTimeout(() => {
-      typed.current = false;
+      setTyping(false);
       setParams(
         (previous) => {
           const next = new URLSearchParams(previous);
@@ -152,13 +174,13 @@ export function ProblemList() {
     return () => {
       clearTimeout(timer);
     };
-  }, [search, setParams]);
+  }, [search, typing, setParams]);
 
   const { data, isPending, isFetching, error, refetch } = useProblems(filters);
 
   const apply = (next: ProblemFilters) => {
     setSearch(next.q);
-    typed.current = false;
+    setTyping(false);
     setParams(new URLSearchParams(searchFromFilters(next)));
   };
 
@@ -202,7 +224,7 @@ export function ProblemList() {
             placeholder="Search titles and patterns"
             className="max-w-64"
             onChange={(event) => {
-              typed.current = true;
+              setTyping(true);
               setSearch(event.target.value);
             }}
           />

@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import {
   useMutation,
   useQuery,
@@ -80,6 +81,17 @@ export function useSettings() {
 
 export function useUpdateSettings(): UseMutationResult<SettingsView, Error, SettingsUpdate> {
   const queryClient = useQueryClient();
+  /**
+   * Which write is the latest (ROADMAP P4-13).
+   *
+   * Two settings writes in quick succession - a theme click followed by
+   * another, or a font size and a tab size - can resolve out of order, and the
+   * older answer then repaints the older value. A counter is enough: each
+   * mutation takes a ticket, and an answer whose ticket is not the newest is
+   * dropped rather than written into the cache.
+   */
+  const latest = useRef(0);
+
   return useMutation({
     mutationFn: api.updateSettings,
     /**
@@ -93,10 +105,15 @@ export function useUpdateSettings(): UseMutationResult<SettingsView, Error, Sett
      */
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: keys.settings });
+      latest.current += 1;
+      return { ticket: latest.current };
     },
     // The server merges the patch and answers with the whole view, so there is
     // nothing to refetch - writing the answer into the cache is the update.
-    onSuccess: (view) => {
+    onSuccess: (view, _patch, context) => {
+      // An answer to a question a later write has already superseded is not an
+      // update; it is the older value arriving second (P4-13).
+      if (context?.ticket !== latest.current) return;
       queryClient.setQueryData(keys.settings, view);
     },
   });

@@ -48,6 +48,15 @@ export function Row({
   );
 }
 
+/**
+ * A number, committed on blur or Enter (ROADMAP P4-13).
+ *
+ * The version this replaces wrote straight into a controlled input and only
+ * accepted in-range values, which had two consequences: typing "1" on the way
+ * to "12" snapped back to the old value, because 1 is below the minimum; and
+ * every accepted keystroke was its own PUT. Local text state fixes both - the
+ * value is interpreted once, when the user has stopped typing it.
+ */
 export function NumberField({
   value,
   min,
@@ -64,6 +73,30 @@ export function NumberField({
   onCommit: (value: number) => void;
 }) {
   const id = useId();
+  const serverText = String(value);
+  const [text, setText] = useState(serverText);
+  const [lastServerText, setLastServerText] = useState(serverText);
+
+  // Follow the server when it changes under us, without overwriting what is
+  // being typed right now.
+  if (serverText !== lastServerText) {
+    setLastServerText(serverText);
+    setText(serverText);
+  }
+
+  const parsed = Number(text);
+  const invalid = text.trim() === '' || !Number.isFinite(parsed) || parsed < min || parsed > max;
+
+  function commit(): void {
+    if (invalid) {
+      // Nothing to send, and the field goes back to what is stored rather than
+      // sitting there holding a number the server rejected.
+      setText(serverText);
+      return;
+    }
+    if (parsed !== value) onCommit(parsed);
+  }
+
   return (
     <>
       <label htmlFor={id} className="sr-only">
@@ -71,19 +104,27 @@ export function NumberField({
       </label>
       <Input
         id={id}
-        type="number"
+        type="text"
+        inputMode="decimal"
         className="tnum w-20 text-right"
-        value={value}
-        min={min}
-        max={max}
+        value={text}
+        invalid={invalid}
         step={step}
+        aria-describedby={`${id}-range`}
         onChange={(event) => {
-          const next = Number(event.target.value);
-          // An out-of-range value is what a half-typed number looks like; the
-          // schema would reject it and the field would appear to eat keystrokes.
-          if (Number.isFinite(next) && next >= min && next <= max) onCommit(next);
+          setText(event.target.value);
+        }}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+          }
         }}
       />
+      <span id={`${id}-range`} className="sr-only">
+        {`Between ${String(min)} and ${String(max)}.`}
+      </span>
     </>
   );
 }

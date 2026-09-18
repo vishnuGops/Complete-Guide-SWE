@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import {
   MAX_RUBRIC_SCORE,
   RUBRIC_DIMENSIONS,
@@ -44,7 +44,13 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
       <span className="text-fg-muted w-32 shrink-0 text-xs">{label}</span>
-      <span className="flex gap-0.5" aria-label={`${score} out of ${MAX_RUBRIC_SCORE}`}>
+      {/*
+        `role="img"` with the label, because `aria-label` on a bare `span` is
+        ignored: the attribute only names an element that has a role to name
+        (ROADMAP P4-13). Without it the five bars were five nothings, and the
+        score they carry was unreadable to a screen reader.
+      */}
+      <span className="flex gap-0.5" role="img" aria-label={`${score} out of ${MAX_RUBRIC_SCORE}`}>
         {Array.from({ length: MAX_RUBRIC_SCORE }, (_, i) => (
           <span
             key={i}
@@ -148,7 +154,7 @@ export interface CoachPanelProps {
   onOpenSettings: () => void;
 }
 
-export function CoachPanel({
+function CoachPanelPanel({
   state,
   fallback,
   onAsk,
@@ -338,3 +344,11 @@ export function CoachPanel({
     </div>
   );
 }
+
+/**
+ * Memoised (ROADMAP P4-13).
+
+ * It renders markdown, which is remark plus rehype plus the highlighter, and
+ * nothing it shows changes while the user types in the editor.
+ */
+export const CoachPanel = memo(CoachPanelPanel);

@@ -145,6 +145,9 @@ test.describe('AI Help', () => {
   });
 
   test('takes a key from Settings, and says honestly that a fake one fails', async ({ page }) => {
+    // Two round trips to the stand-in vendor on a machine that is also running
+    // judges for other workers; the default 30s budget is for an idle page.
+    test.setTimeout(120_000);
     await clearStoredKey(page);
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'AI coach' })).toBeVisible();
@@ -178,13 +181,36 @@ test.describe('AI Help', () => {
     // And the coach no longer sends this user to Settings: with a key present
     // the pre-check passes and the request is attempted, so what comes back is
     // a provider error rather than the key prompt.
+    //
+    // Its own code, and its own language. Both are shared state - the language
+    // is a *setting* every other spec can change, and a draft outlives the run
+    // that wrote it - so relying on what an earlier test left behind meant this
+    // one sometimes opened an untouched Java starter and was refused locally,
+    // for want of a solution body, before any of that was tested.
     await page.goto(`/problems/${TYPING_PROBLEM.slug}`);
     await expect(page.getByRole('heading', { name: TYPING_PROBLEM.title })).toBeVisible();
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
+
+    await page.locator('[data-testid="editor"] .view-lines').click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type(
+      ['class Solution:', '    def countPairs(self, weights, limit):', '        total = 0'].join(
+        '\n',
+      ),
+      { delay: 10 },
+    );
+    await expect(page.locator('[data-testid="editor"]')).toContainText('total = 0');
+
     await page.getByRole('tab', { name: 'Coach' }).click();
     await page.getByRole('button', { name: 'AI Help' }).click();
 
     await expect(page.getByRole('button', { name: /Open Settings/i })).toHaveCount(0);
-    await expect(coachPanel(page).getByRole('alert')).toBeVisible();
+    // The turn goes out to the stand-in vendor and comes back refused. Given a
+    // longer leash than the default: under the full suite this shares a machine
+    // with several judge runs.
+    await expect
+      .poll(async () => (await coachPanel(page).textContent()) ?? '', { timeout: 30_000 })
+      .toMatch(/rejected|endpoint|could not|went wrong/i);
 
     await clearStoredKey(page);
   });
