@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "partition-around",
+  "slug": "partition-around",
+  "title": "Split The Chain Around",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["dummy head", "stable partition"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 7,
+  "mode": "function",
+  "entry": "partitionAround",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["even-odd-partition", "merge-two-chains"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

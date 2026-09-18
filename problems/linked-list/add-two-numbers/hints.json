@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The digits are stored least significant first. What does that mean for the order you would add them in by hand?",
+    "It is already the right order: you add the ones column first, exactly as on paper, so a single walk over both chains does it.",
+    "Carry a single number between columns. At each step the column total is `a + b + carry`; the digit is the remainder on division by 10 and the new carry is the quotient.",
+    "Keep going while either chain has links left *or* the carry is non-zero - that last clause is what produces the extra digit in 99 + 1."
+  ]
+}

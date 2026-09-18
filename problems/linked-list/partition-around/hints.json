@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You are producing two runs, in order, and then joining them. What is the least bookkeeping that lets you build both at once?",
+    "Two chains built side by side as you walk: one for the links below the pivot, one for the rest. Order is preserved automatically because you append in the order you meet them.",
+    "Each of the two needs a tail to append to and has no head yet - which is exactly what a dummy link is for. Two dummies, two tails.",
+    "When the walk ends, join the two: point the lower tail at the upper chain's first real link, and terminate the upper tail - or the old links still point into the middle of the chain and you have a loop."
+  ]
+}

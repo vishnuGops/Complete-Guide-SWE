@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A chain can only be walked forwards, so comparing the ends needs one of them to be walkable in the other direction. What could you do to half of it?",
+    "Reverse it. Find the middle with a two-speed walk, reverse the second half in place, and walk the two halves towards each other.",
+    "The two halves have unequal length when the chain is odd. Stopping as soon as the reversed half runs out compares exactly the pairs that matter and ignores the middle link.",
+    "Reversing the input is a side effect the caller did not ask for; reverse the second half back before returning, and the chain is as you found it."
+  ]
+}

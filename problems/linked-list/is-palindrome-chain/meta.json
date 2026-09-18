@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "is-palindrome-chain",
+  "slug": "is-palindrome-chain",
+  "title": "Reads The Same Both Ways",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["fast and slow pointers", "linked list reversal"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 10,
+  "mode": "function",
+  "entry": "readsSameBothWays",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["middle-link", "reverse-chain"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

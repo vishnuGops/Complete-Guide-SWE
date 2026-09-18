@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "add-two-numbers",
+  "slug": "add-two-numbers",
+  "title": "Add Two Digit Chains",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["one pass", "dummy head"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 8,
+  "mode": "function",
+  "entry": "addChains",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-two-chains", "partition-around"],
+  "targetComplexity": {
+    "time": "O(n + m)",
+    "space": "O(max(n, m))"
+  }
+}
