@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The spread happens everywhere at once, not one cell at a time. What kind of search explores everything at a given distance before going further?",
+    "A breadth-first search - but started from *every* spoiled cell at the same time, not from one of them.",
+    "Put every initially spoiled cell in the queue before the first minute. Then each round of the queue is one minute.",
+    "Process the queue one whole level at a time: take the number of cells currently in it, expand exactly those, and add a minute."
+  ]
+}

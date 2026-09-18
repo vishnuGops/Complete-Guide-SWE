@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Deciding 'is this region enclosed' one region at a time means finding the region first and then asking. Is there a question that is easier to answer?",
+    "Turn it round: which open cells are *not* enclosed? Exactly those reachable from an open cell on the edge.",
+    "So flood-fill inwards from every open edge cell, marking what you reach. Everything open and unmarked is enclosed.",
+    "Use a third value as the mark while you work, then sweep once at the end: unmarked open cells become walls, marked ones become open again."
+  ]
+}

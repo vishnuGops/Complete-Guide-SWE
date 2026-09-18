@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Blanking while you search rewrites the thing you are searching. What has to happen before any writing starts?",
+    "Every original zero has to be found first. The simplest fix is two sets - the rows to blank and the columns to blank - filled in one pass and applied in a second.",
+    "That is O(rows + columns) space. To do better, store those two sets *inside the grid itself*: use the first row to mark which columns to blank, and the first column for the rows.",
+    "The cell where they meet, `grid[0][0]`, would have to mean two things at once. Record whether the first column needs blanking in a single separate flag, and let `grid[0][0]` speak only for the first row."
+  ]
+}

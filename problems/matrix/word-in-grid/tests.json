@@ -1,0 +1,119 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "a path around three cells",
+      "args": [[["a","b"],["c","d"]],"abdc"],
+      "expected": true,
+      "explanation": "a to b to d to c, each step sharing an edge."
+    },
+    {
+      "name": "a cell would have to be reused",
+      "args": [[["a","b"],["c","d"]],"abad"],
+      "expected": false,
+      "explanation": "There is only one `a`, and the path may not revisit it."
+    },
+    {
+      "name": "one cell, one letter",
+      "args": [[["a"]],"a"],
+      "expected": true,
+      "explanation": "The path is a single cell."
+    }
+  ],
+  "hidden": [
+    {"name":"one cell, the wrong letter","args":[[["a"]],"b"],"expected":false},
+    {"name":"the word is longer than the board","args":[[["a"]],"aa"],"expected":false},
+    {"name":"every cell the same letter","args":[[["a","a"],["a","a"]],"aaaa"],"expected":true},
+    {"name":"a single row","args":[[["a","b","c"]],"abc"],"expected":true},
+    {"name":"a single column, backwards","args":[[["a"],["b"],["c"]],"cba"],"expected":true},
+    {"args":[[["a","d","a"],["d","c","c"]],"adaccd"],"expected":true},
+    {"args":[[["a","d","a"],["d","c","c"]],"bbdaa"],"expected":false},
+    {"args":[[["c","a","c"],["b","d","c"],["a","c","c"]],"dcccab"],"expected":true},
+    {"args":[[["c","a","c"],["b","d","c"],["a","c","c"]],"abbbda"],"expected":false},
+    {
+      "args": [[["b","b","b","d"],["b","b","b","a"],["a","a","b","b"],["a","d","c","c"]],"bb"],
+      "expected": true
+    },
+    {
+      "args": [[["b","b","b","d"],["b","b","b","a"],["a","a","b","b"],["a","d","c","c"]],"aba"],
+      "expected": false
+    },
+    {
+      "args": [
+        [
+          ["a","a","c","b","d","c"],
+          ["d","b","d","d","a","d"],
+          ["b","d","a","b","a","d"],
+          ["d","c","d","d","a","d"],
+          ["c","d","b","b","c","a"],
+          ["a","a","a","b","c","d"]
+        ],
+        "cdbdc"
+      ],
+      "expected": true
+    },
+    {
+      "args": [
+        [
+          ["a","a","c","b","d","c"],
+          ["d","b","d","d","a","d"],
+          ["b","d","a","b","a","d"],
+          ["d","c","d","d","a","d"],
+          ["c","d","b","b","c","a"],
+          ["a","a","a","b","c","d"]
+        ],
+        "cddbdcb"
+      ],
+      "expected": false
+    },
+    {"args":[[["c","c","d","b","c","a"]],"ca"],"expected":true},
+    {"args":[[["c","c","d","b","c","a"]],"bbbcdc"],"expected":false},
+    {"args":[[["a"],["b"],["b"],["b"],["a"],["a"]],"abbba"],"expected":true},
+    {"args":[[["a"],["b"],["b"],["b"],["a"],["a"]],"ccad"],"expected":false},
+    {
+      "name": "the stated maxima, where an unpruned search explores every path",
+      "args": [
+        [
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"]
+        ],
+        "aaaaaaaaaaaaaab"
+      ],
+      "expected": false
+    },
+    {
+      "name": "the stated maxima, findable",
+      "args": [
+        [
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"],
+          ["a","a","a","a","a","a"]
+        ],
+        "aaaaaaaaaaaaaaa"
+      ],
+      "expected": true
+    },
+    {
+      "name": "the rare letter is at the start of the word",
+      "args": [
+        [
+          ["a","a","a","a","a","b"],
+          ["a","a","a","a","a","b"],
+          ["a","a","a","a","a","b"],
+          ["a","a","a","a","a","b"],
+          ["a","a","a","a","a","b"],
+          ["a","a","a","a","a","b"]
+        ],
+        "baaaaaaaaaaaaaa"
+      ],
+      "expected": true
+    }
+  ]
+}

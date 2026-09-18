@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "shortest-grid-path",
+  "slug": "shortest-grid-path",
+  "title": "Fewest Steps Across",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["grid traversal", "breadth-first search"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 5,
+  "mode": "function",
+  "entry": "fewestSteps",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-islands", "rotting-spread"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(rows \u00b7 columns)"
+  }
+}

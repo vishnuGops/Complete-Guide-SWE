@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "surrounded-regions",
+  "slug": "surrounded-regions",
+  "title": "Regions With No Way Out",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["grid traversal", "flood fill", "mutated argument"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 7,
+  "mode": "function",
+  "entry": "fillEnclosed",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["count-islands", "largest-island-after"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(rows \u00b7 columns)"
+  }
+}

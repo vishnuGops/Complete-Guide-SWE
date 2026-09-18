@@ -31,6 +31,12 @@ written:
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
 
+Two flagged traps are **space** traps, not time traps: `zero-the-cross` and
+`shift-right-in-place` beat the obvious approach on memory, and no input size
+demonstrates that. Their statements name the space target and make no claim
+about a timeout, and their maximum-size cases exist to cover the constraint
+rather than to defeat anything (P6-0, P6-3, D21).
+
 `median-of-two-sorted` was planned as a trap and is not one: merging two sorted
 series is `O(n + m)`, which finishes at any size whose `tests.json` is a
 reasonable weight, so no honest maximum-size case defeats the obvious approach.

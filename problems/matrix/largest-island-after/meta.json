@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "largest-island-after",
+  "slug": "largest-island-after",
+  "title": "Largest Island If You Fill",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["grid traversal", "union find", "flood fill"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 9,
+  "mode": "function",
+  "entry": "largestAfterFilling",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-islands", "surrounded-regions"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(rows \u00b7 columns)"
+  }
+}

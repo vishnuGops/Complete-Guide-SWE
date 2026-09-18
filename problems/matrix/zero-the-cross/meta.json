@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "zero-the-cross",
+  "slug": "zero-the-cross",
+  "title": "Blank The Row And Column",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["matrix", "in-place", "mutated argument"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "blankTheCross",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["rotate-grid", "zero-gravity"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(1)"
+  }
+}

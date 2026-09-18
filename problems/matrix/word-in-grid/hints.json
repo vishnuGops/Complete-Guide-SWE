@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Try starting from every cell whose letter matches the first character. From there, what are the choices at each step?",
+    "The four neighbours, minus the one you came from and anything already on the path. Marking a cell as used while you are standing on it, and unmarking it as you leave, is backtracking.",
+    "Mark by overwriting the cell with a character that can never match, and restore it on the way out - that needs no extra grid.",
+    "Two cheap checks before searching at all: the board must contain at least as many of each letter as the word needs, and if the word's last letter is rarer than its first, search for the word reversed."
+  ]
+}

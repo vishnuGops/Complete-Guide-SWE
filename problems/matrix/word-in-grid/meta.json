@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "word-in-grid",
+  "slug": "word-in-grid",
+  "title": "Find The Word",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["grid traversal", "backtracking", "pruning"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 8,
+  "mode": "function",
+  "entry": "findWord",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-islands", "surrounded-regions"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns \u00b7 3^len(word))",
+    "space": "O(len(word))"
+  }
+}

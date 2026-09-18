@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Every step costs the same. What does that tell you about the order in which to explore?",
+    "Explore in rings of equal distance: every cell one step away, then every cell two steps away, and so on. The first time you reach the finish, you are on a shortest route.",
+    "That ordering is a queue - a breadth-first search. Push the start, then repeatedly pop a cell and push its unvisited open neighbours.",
+    "Mark a cell as visited when you push it, not when you pop it, or the same cell enters the queue once per neighbour."
+  ]
+}

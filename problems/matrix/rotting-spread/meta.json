@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "rotting-spread",
+  "slug": "rotting-spread",
+  "title": "How Long Until All Spoil",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["grid traversal", "breadth-first search"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 6,
+  "mode": "function",
+  "entry": "minutesUntilSpoiled",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["shortest-grid-path", "count-islands"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(rows \u00b7 columns)"
+  }
+}

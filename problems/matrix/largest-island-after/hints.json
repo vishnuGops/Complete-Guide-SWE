@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Filling a water cell joins whichever islands touch it. What would you need to know about a water cell to compute the result instantly?",
+    "The sizes of the distinct islands around it - distinct being the important word, since two of its neighbours can belong to the same island.",
+    "So label every island once, recording each label's size. Then each water cell is answered by looking at its four neighbours' labels.",
+    "Collect the neighbours' labels into a set before adding up their sizes, or an island touching the cell twice is counted twice. And remember the case where there is no water at all."
+  ]
+}

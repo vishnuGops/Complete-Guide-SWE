@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Start from any land cell you have not seen. What is the set of cells that belong to the same island as it?",
+    "Everything reachable from it by steps up, down, left and right across land. Finding that set is a flood fill.",
+    "Scan the map. Each time you meet an unvisited land cell, add one to the count and flood-fill its whole island so you never start from it again.",
+    "Sinking the island as you fill it - writing water over the land you have visited - saves keeping a separate visited grid."
+  ]
+}
