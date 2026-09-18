@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Language, ProblemDetail, RunResult } from '@devpromax/shared';
+import type { Language, ProblemDetail, RunResult, Submission } from '@devpromax/shared';
 import {
   aProblemDetail,
   fakeServer,
@@ -69,12 +69,16 @@ function aRunResult(overrides: Partial<RunResult> = {}): RunResult {
  * allowed to learn about it by refetching. A route that answered with the same
  * not-started detail forever would let a header that flipped itself pass.
  */
-function serve(detail: ProblemDetail = aProblemDetail(), extra: FakeRoute[] = []) {
+function serve(
+  detail: ProblemDetail = aProblemDetail(),
+  extra: FakeRoute[] = [],
+  submissions: Submission[] = [],
+) {
   let current = detail;
   return fakeServer([
     ...extra,
     { match: path(`/api/problems/${SLUG}`), body: () => current },
-    { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: [] }) },
+    { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: submissions }) },
     {
       // Also stateful: revealing unlocks the editorial and puts the reference
       // solutions into the payload, and the answer is the whole new detail.
@@ -330,6 +334,117 @@ describe('the statement panel', () => {
 
     expect(screen.getByText('First nudge.')).toBeInTheDocument();
     expect(screen.queryByText('Second nudge.')).not.toBeInTheDocument();
+  });
+});
+
+describe('the submissions tab (P7-3)', () => {
+  const PY_CODE = 'class Solution:\n    return 1\n';
+
+  function aSubmission(overrides: Partial<Submission> = {}): Submission {
+    return {
+      id: '11111111-1111-4111-8111-111111111111',
+      slug: SLUG,
+      language: 'python',
+      code: PY_CODE,
+      verdict: 'WA',
+      passed: 1,
+      total: 3,
+      timeMs: 12.4,
+      problemVersion: 1,
+      createdAt: '2026-09-17T10:00:00.000Z',
+      ...overrides,
+    };
+  }
+
+  /**
+   * Scoped to the list: the bottom panel's collapse toggle also carries
+   * `aria-expanded`, so a bare query for an expanded button finds two.
+   */
+  async function openSubmissions(submissions: Submission[]) {
+    serve(aProblemDetail(), [], submissions);
+    open();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: /Submissions/ }));
+    return {
+      user,
+      list: within(await screen.findByRole('list', { name: /Submissions for this problem/ })),
+    };
+  }
+
+  it('opens a row to show what was submitted', async () => {
+    const { user, list } = await openSubmissions([aSubmission()]);
+
+    const row = list.getByRole('button', { expanded: false });
+    await user.click(row);
+
+    expect(list.getByRole('button', { expanded: true })).toBeInTheDocument();
+    expect(list.getByText('v1')).toBeInTheDocument();
+    expect(screen.getByText(/12 ms/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restore into the editor' })).toBeInTheDocument();
+  });
+
+  it('closes it again when the same row is clicked', async () => {
+    const { user, list } = await openSubmissions([aSubmission()]);
+
+    await user.click(list.getByRole('button', { expanded: false }));
+    await user.click(list.getByRole('button', { expanded: true }));
+
+    expect(
+      screen.queryByRole('button', { name: 'Restore into the editor' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('diffs the attempt against the editor', async () => {
+    // The editor holds the starter, `class Solution:\n    pass\n`.
+    const { user, list } = await openSubmissions([aSubmission()]);
+
+    await user.click(list.getByRole('button', { expanded: false }));
+    await user.click(screen.getByRole('button', { name: 'Compare with my code' }));
+
+    expect(screen.getByText('1 added')).toBeInTheDocument();
+    expect(screen.getByText('1 removed')).toBeInTheDocument();
+  });
+
+  it('restores it into the editor, behind a confirmation', async () => {
+    const { user, list } = await openSubmissions([aSubmission()]);
+
+    await user.click(list.getByRole('button', { expanded: false }));
+    await user.click(screen.getByRole('button', { name: 'Restore into the editor' }));
+
+    // There is work in the editor to lose - the starter counts as work the
+    // moment it is not what is being restored.
+    await user.click(await screen.findByRole('button', { name: 'Restore' }));
+
+    expect(await screen.findByLabelText('Code')).toHaveValue(PY_CODE);
+  });
+
+  it('brings the language with it when the attempt is in the other one', async () => {
+    const { user, list } = await openSubmissions([
+      aSubmission({ language: 'java', code: 'class Solution { int f() { return 1; } }' }),
+    ]);
+
+    await user.click(list.getByRole('button', { expanded: false }));
+    // The button says what it is about to do, because switching the editor's
+    // language is not what "restore" sounds like.
+    await user.click(screen.getByRole('button', { name: 'Restore, and switch to Java' }));
+    await user.click(await screen.findByRole('button', { name: 'Restore' }));
+
+    expect(await screen.findByLabelText('Code')).toHaveValue(
+      'class Solution { int f() { return 1; } }',
+    );
+    // And the tab does not bounce back to the description on the way (P7-3).
+    expect(screen.getByRole('tab', { name: /Submissions/, selected: true })).toBeInTheDocument();
+  });
+
+  it('will not pretend to diff two different languages', async () => {
+    const { user, list } = await openSubmissions([
+      aSubmission({ language: 'java', code: 'class S {}' }),
+    ]);
+
+    await user.click(list.getByRole('button', { expanded: false }));
+    await user.click(screen.getByRole('button', { name: 'Compare with my code' }));
+
+    expect(screen.getByText(/nothing line-for-line to compare/)).toBeInTheDocument();
   });
 });
 

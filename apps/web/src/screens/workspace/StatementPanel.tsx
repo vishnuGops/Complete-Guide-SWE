@@ -252,36 +252,164 @@ function Editorial({
   );
 }
 
-function SubmissionRow({ submission }: { submission: Submission }) {
+function when(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function SubmissionRow({
+  submission,
+  selected,
+  onSelect,
+}: {
+  submission: Submission;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <tr className="border-border border-b">
-      <td className="px-3 py-1.5">
-        <span className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={cn('size-1.5 shrink-0 rounded-full', VERDICT_MARK[submission.verdict])}
-          />
-          <span className={cn('text-xs font-medium', VERDICT_TONE[submission.verdict])}>
-            {VERDICT_LABEL[submission.verdict]}
-          </span>
+    /*
+      One button per row, not a link inside one cell: the row is what the eye
+      reads as the thing, and a click target smaller than it is a target people
+      miss. A disclosure rather than a dialog, so what opens sits beside the
+      editor it is about.
+    */
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-expanded={selected}
+      className={cn(
+        'focus-ring hover:bg-surface-sunken flex w-full items-center gap-3 px-3 py-1.5 text-left',
+        selected && 'bg-surface-sunken',
+      )}
+    >
+      <span className="flex min-w-24 items-center gap-2">
+        <span
+          aria-hidden
+          className={cn('size-1.5 shrink-0 rounded-full', VERDICT_MARK[submission.verdict])}
+        />
+        <span className={cn('text-xs font-medium', VERDICT_TONE[submission.verdict])}>
+          {VERDICT_LABEL[submission.verdict]}
         </span>
-      </td>
-      <td className="text-fg-muted px-3 py-1.5 text-xs">{LANGUAGE_LABEL[submission.language]}</td>
-      <td className="text-fg-muted tnum px-3 py-1.5 text-xs">
+      </span>
+      <span className="text-fg-muted text-xs">{LANGUAGE_LABEL[submission.language]}</span>
+      <span className="text-fg-muted tnum text-xs">
         {submission.passed}/{submission.total}
-      </td>
-      <td className="text-fg-subtle tnum px-3 py-1.5 text-xs">
-        {new Date(submission.createdAt).toLocaleString(undefined, {
-          dateStyle: 'short',
-          timeStyle: 'short',
-        })}
-      </td>
-    </tr>
+      </span>
+      <span className="text-fg-subtle tnum text-xs" title="Problem version at submit time">
+        v{submission.problemVersion}
+      </span>
+      <span className="text-fg-subtle tnum ml-auto text-xs">{when(submission.createdAt)}</span>
+    </button>
   );
 }
 
-function Submissions({ slug }: { slug: string }) {
+/**
+ * One submission, opened (ROADMAP P7-3).
+ *
+ * Under the row rather than in a dialog: the point of opening one is to put it
+ * next to what is in the editor, and a modal covers the editor.
+ */
+function OpenSubmission({
+  submission,
+  code,
+  language,
+  onRestore,
+}: {
+  submission: Submission;
+  code: string;
+  language: Language;
+  onRestore: (submission: Submission) => void;
+}) {
+  const [comparing, setComparing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const differs = submission.language !== language;
+
+  return (
+    <div className="border-border border-b px-3 py-3">
+      <p className="text-fg-muted text-xs">
+        {LANGUAGE_LABEL[submission.language]} · {submission.passed} of {submission.total} tests ·{' '}
+        <span className="tnum">{Math.round(submission.timeMs)} ms</span> · problem version{' '}
+        <span className="tnum">{submission.problemVersion}</span> · {when(submission.createdAt)}
+      </p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-pressed={comparing}
+          onClick={() => {
+            setComparing(!comparing);
+          }}
+        >
+          {comparing ? 'Show it whole' : 'Compare with my code'}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            // Only when there is something to lose. Restoring over the untouched
+            // starter, or over the very code being restored, is not a decision
+            // worth a dialog.
+            if (code === submission.code || code.trim() === '') onRestore(submission);
+            else setConfirming(true);
+          }}
+        >
+          {differs
+            ? `Restore, and switch to ${LANGUAGE_LABEL[submission.language]}`
+            : 'Restore into the editor'}
+        </Button>
+      </div>
+
+      {comparing ? (
+        differs ? (
+          <p className="text-fg-muted mt-3 text-sm">
+            This attempt is in {LANGUAGE_LABEL[submission.language]} and the editor is in{' '}
+            {LANGUAGE_LABEL[language]}, so there is nothing line-for-line to compare.
+          </p>
+        ) : (
+          <CodeDiff
+            className="mt-3"
+            before={submission.code}
+            after={code}
+            beforeLabel="This attempt"
+            afterLabel="what is in the editor"
+          />
+        )
+      ) : (
+        <Markdown
+          className="mt-3"
+          content={`\`\`\`\`${submission.language}
+${submission.code}
+\`\`\`\``}
+        />
+      )}
+
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title="Replace what is in the editor?"
+        description={`The editor will be replaced with this ${LANGUAGE_LABEL[submission.language]} attempt from ${when(submission.createdAt)}. What is there now is autosaved as a draft and will be overwritten.`}
+        confirmLabel="Restore"
+        onConfirm={() => {
+          onRestore(submission);
+        }}
+      />
+    </div>
+  );
+}
+
+function Submissions({
+  slug,
+  code,
+  language,
+  onRestore,
+}: {
+  slug: string;
+  code: string;
+  language: Language;
+  onRestore: (submission: Submission) => void;
+}) {
   const { data, isPending, error } = useSubmissions(slug);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   if (isPending) return <p className="text-fg-muted p-4 text-sm">Loading submissions…</p>;
   if (error) {
@@ -300,21 +428,27 @@ function Submissions({ slug }: { slug: string }) {
   }
 
   return (
-    <table className="w-full text-left text-sm">
-      <thead>
-        <tr className="border-border text-fg-muted border-b text-2xs">
-          <th className="px-3 py-1.5 font-medium">Verdict</th>
-          <th className="px-3 py-1.5 font-medium">Language</th>
-          <th className="px-3 py-1.5 font-medium">Tests</th>
-          <th className="px-3 py-1.5 font-medium">When</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.items.map((submission) => (
-          <SubmissionRow key={submission.id} submission={submission} />
-        ))}
-      </tbody>
-    </table>
+    <ul aria-label="Submissions for this problem, newest first" className="text-sm">
+      {data.items.map((submission) => (
+        <li key={submission.id} className="border-border border-b">
+          <SubmissionRow
+            submission={submission}
+            selected={submission.id === openId}
+            onSelect={() => {
+              setOpenId(submission.id === openId ? null : submission.id);
+            }}
+          />
+          {submission.id === openId && (
+            <OpenSubmission
+              submission={submission}
+              code={code}
+              language={language}
+              onRestore={onRestore}
+            />
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -344,6 +478,8 @@ export interface StatementPanelProps {
    */
   language: Language;
   code: string;
+  /** Puts an old submission back in the editor (P7-3). */
+  onRestore: (submission: Submission) => void;
   coach: ReactNode;
 }
 
@@ -355,6 +491,7 @@ function StatementPanelBody({
   onRevealHint,
   language,
   code,
+  onRestore,
   coach,
 }: StatementPanelProps) {
   const { summary } = problem;
@@ -427,7 +564,7 @@ function StatementPanelBody({
       </TabsContent>
 
       <TabsContent value="submissions" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Submissions slug={summary.slug} />
+        <Submissions slug={summary.slug} code={code} language={language} onRestore={onRestore} />
       </TabsContent>
     </Tabs>
   );

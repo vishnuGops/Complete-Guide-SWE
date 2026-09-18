@@ -14,6 +14,7 @@ import {
   type Language,
   type ProgressStatus,
   type RunResult,
+  type Submission,
 } from '@devpromax/shared';
 import { api } from '../../api/client.js';
 import {
@@ -216,9 +217,20 @@ export function Workspace() {
    * top of it is how that becomes lost.
    */
   const [buffers, setBuffers] = useState<Record<string, string>>({});
+  /**
+   * Code a restored submission is bringing with it (ROADMAP P7-3).
+   *
+   * Restoring an attempt written in the other language has to change the
+   * language *and* the code, and the switch below would otherwise re-seed the
+   * editor from that language's draft a render later - throwing the restore
+   * away. Held as state rather than passed through, because the switch happens
+   * during the next render and not in the handler.
+   */
+  const [restoring, setRestoring] = useState<{ source: string; code: string } | null>(null);
   if (problem && loadedFrom !== source) {
     const saved = problem.drafts[language]?.code ?? problem.starters[language];
-    const starting = buffers[source] ?? saved;
+    const restored = restoring?.source === source ? restoring.code : null;
+    const starting = restored ?? buffers[source] ?? saved;
     // Recorded on the way out, not on every keystroke: one entry per switch,
     // and the outgoing code is exactly what `code` still holds here.
     setBuffers({ ...buffers, [loadedFrom]: code });
@@ -228,7 +240,13 @@ export function Workspace() {
     setResult(null);
     setCustomInputs([]);
     setTab('testcases');
-    setLeftTab('description');
+    if (restored === null) {
+      // A restore came *from* the Submissions tab, and sending the user back to
+      // the Description to tell them it worked is a strange way to say so.
+      setLeftTab('description');
+    } else {
+      setRestoring(null);
+    }
     setOfferMastery(false);
     // Only the overlay: `problem.revealedHints` is what the user has actually
     // read, and it is per problem rather than per language - the ladder is the
@@ -420,6 +438,26 @@ export function Workspace() {
       reveal({ slug, revealed: next });
     },
     [reveal, slug],
+  );
+
+  /**
+   * Putting an old submission back in the editor (ROADMAP P7-3).
+   *
+   * It goes in as a draft like anything else typed there - the autosave picks
+   * it up, and Submit is still what records an attempt. An attempt written in
+   * the other language brings the language with it, because restoring Java into
+   * a Python editor would be restoring a syntax error.
+   */
+  const restoreSubmission = useCallback(
+    (submission: Submission) => {
+      if (submission.language === language) {
+        setCode(submission.code);
+        return;
+      }
+      setRestoring({ source: `${slug}:${submission.language}`, code: submission.code });
+      setChosen(submission.language);
+    },
+    [language, slug],
   );
 
   /*
@@ -854,6 +892,7 @@ export function Workspace() {
               onRevealHint={onRevealHint}
               language={language}
               code={code}
+              onRestore={restoreSubmission}
               coach={coachPanel}
             />
           </div>
