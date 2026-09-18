@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The grid is sorted, and reading it row by row gives one ascending sequence. What does that let you pretend the grid is?",
+    "A single sorted list of `rows * columns` values - so a single binary search over the positions `0 .. rows*columns - 1` answers it.",
+    "Convert a position `p` to a cell with `row = p / columns` and `column = p % columns`, using integer division.",
+    "If the rows were only individually sorted, with no relation between them, this would not work - and the answer would be the staircase walk from a corner instead."
+  ]
+}

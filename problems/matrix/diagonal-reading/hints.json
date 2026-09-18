@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two cells are on the same diagonal exactly when `row + column` is equal. How many different values can that sum take?",
+    "From 0 up to `rows + columns - 2`, so the outer loop is over the sum and the inner loop is over the cells with that sum.",
+    "For a given sum `s`, the row runs over the values that keep both coordinates inside the grid: `row` from `max(0, s - columns + 1)` to `min(s, rows - 1)`.",
+    "Deriving those two bounds is the whole problem: `column = s - row` must be between 0 and `columns - 1`, and `row` between 0 and `rows - 1`."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "spiral-reading",
+  "slug": "spiral-reading",
+  "title": "Read It In A Spiral",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["matrix", "spiral order"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 0,
+  "mode": "function",
+  "entry": "readSpiral",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["diagonal-reading", "rotate-grid"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(1)"
+  }
+}

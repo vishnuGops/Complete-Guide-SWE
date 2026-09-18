@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "search-sorted-grid",
+  "slug": "search-sorted-grid",
+  "title": "Find It In A Sorted Grid",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["matrix", "binary search", "invariant"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 3,
+  "mode": "function",
+  "entry": "gridContains",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["insert-position", "first-not-below"],
+  "targetComplexity": {
+    "time": "O(log(rows \u00b7 columns))",
+    "space": "O(1)"
+  }
+}

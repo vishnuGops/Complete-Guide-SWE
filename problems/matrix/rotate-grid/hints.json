@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Write down where a single cell `(row, column)` has to end up after the turn. Is there a pair of simpler operations that together do the same thing?",
+    "A clockwise quarter turn is a reflection in the main diagonal followed by a reflection left-to-right. Each of those is easy to do in place.",
+    "Transposing swaps `grid[r][c]` with `grid[c][r]` - and only for `c > r`, or every swap is undone by its twin.",
+    "Reversing each row afterwards is the left-to-right reflection, and it is a two-pointer walk per row."
+  ]
+}

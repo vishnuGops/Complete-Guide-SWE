@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "rotate-grid",
+  "slug": "rotate-grid",
+  "title": "Turn The Grid",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["matrix", "rotation", "in-place", "mutated argument"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 1,
+  "mode": "function",
+  "entry": "turnGrid",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["spiral-reading", "shift-right-in-place"],
+  "targetComplexity": {
+    "time": "O(n^2)",
+    "space": "O(1)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "diagonal-reading",
+  "slug": "diagonal-reading",
+  "title": "Read The Diagonals",
+  "version": 1,
+  "topic": "matrix",
+  "patterns": ["matrix"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 10,
+  "mode": "function",
+  "entry": "readDiagonals",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["spiral-reading", "rotate-grid"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(1)"
+  }
+}

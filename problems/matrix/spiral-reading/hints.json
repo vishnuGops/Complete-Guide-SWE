@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Think of the grid as a series of rings, each one read in four straight runs. What tells you where a ring starts and ends?",
+    "Four boundaries - top, bottom, left, right - that close in by one after each run.",
+    "Read the top row, then move `top` down; read the right column, then move `right` in; and so on. Stop when the boundaries cross.",
+    "Before the bottom row and the left column, check that a row or column is still left - a ring that is one cell thick has already been read by the first two runs."
+  ]
+}
