@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "the-lonely-number",
+  "slug": "the-lonely-number",
+  "title": "The One That Appears Once",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["xor trick", "one pass"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 0,
+  "mode": "function",
+  "entry": "theLonelyOne",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["missing-from-range", "count-the-ones"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

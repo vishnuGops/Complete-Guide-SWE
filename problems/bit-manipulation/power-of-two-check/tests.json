@@ -1,0 +1,43 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"a power of two","args":[16],"expected":true,"explanation":"2 to the fourth."},
+    {"name":"one","args":[1],"expected":true,"explanation":"2 to the zeroth."},
+    {"name":"zero","args":[0],"expected":false,"explanation":"Zero is not a power of two."}
+  ],
+  "hidden": [
+    {
+      "name": "the most negative value, whose only bit is the sign",
+      "args": [-2147483648],
+      "expected": false
+    },
+    {"name":"minus one","args":[-1],"expected":false},
+    {"name":"a negative power of two","args":[-16],"expected":false},
+    {"name":"the largest value","args":[2147483647],"expected":false},
+    {"args":[2],"expected":true},
+    {"args":[3],"expected":false},
+    {"args":[4],"expected":true},
+    {"args":[5],"expected":false},
+    {"args":[8],"expected":true},
+    {"args":[7],"expected":false},
+    {"args":[9],"expected":false},
+    {"args":[32],"expected":true},
+    {"args":[31],"expected":false},
+    {"args":[33],"expected":false},
+    {"args":[1024],"expected":true},
+    {"args":[1023],"expected":false},
+    {"args":[1025],"expected":false},
+    {"args":[1048576],"expected":true},
+    {"args":[1048575],"expected":false},
+    {"args":[1048577],"expected":false},
+    {"args":[1073741824],"expected":true},
+    {"args":[1073741823],"expected":false},
+    {"args":[1073741825],"expected":false},
+    {"args":[-840904095],"expected":false},
+    {"args":[284823014],"expected":false},
+    {"args":[-1080007723],"expected":false},
+    {"args":[-156857539],"expected":false},
+    {"args":[863803702],"expected":false},
+    {"args":[-93941853],"expected":false}
+  ]
+}

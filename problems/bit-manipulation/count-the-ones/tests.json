@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"eleven","args":[11],"expected":3,"explanation":"1011 has three ones."},
+    {"name":"zero","args":[0],"expected":0,"explanation":"No bits are set."},
+    {"name":"the largest value","args":[2147483647],"expected":31,"explanation":"Thirty-one ones."}
+  ],
+  "hidden": [
+    {"name":"one","args":[1],"expected":1},
+    {"name":"one below the largest","args":[2147483646],"expected":30},
+    {"args":[2],"expected":1},
+    {"args":[4],"expected":1},
+    {"args":[3],"expected":2},
+    {"args":[16],"expected":1},
+    {"args":[15],"expected":4},
+    {"args":[256],"expected":1},
+    {"args":[255],"expected":8},
+    {"args":[65536],"expected":1},
+    {"args":[65535],"expected":16},
+    {"args":[1073741824],"expected":1},
+    {"args":[1073741823],"expected":30},
+    {"args":[635876301],"expected":18},
+    {"args":[978506804],"expected":14},
+    {"args":[810576693],"expected":13},
+    {"args":[67030607],"expected":19},
+    {"args":[1119062627],"expected":14},
+    {"args":[874495858],"expected":19},
+    {"args":[719812839],"expected":19},
+    {"args":[204758584],"expected":13},
+    {"name":"alternating bits from the bottom","args":[1431655765],"expected":16},
+    {"name":"the same, one lower","args":[1431655764],"expected":15}
+  ]
+}

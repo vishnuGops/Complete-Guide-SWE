@@ -62,6 +62,17 @@ including the gaps between them. The gap-counting version's answer grows as
 2^depth and a tree of 2000 nodes can be 2000 deep, so the answer would not fit
 the wire's integer bound of 2^53 (D22). Rating lowered to 5 with the change.
 
+`single-among-triples` and `two-lonely-numbers` lose their trap flags for the
+same reason as the space traps below: their obvious answer is a frequency map,
+which is linear in time and fails only the `O(1)` space requirement. No input
+size defeats it, so the statements ask for the space bound and claim no timeout
+(P6-5, D21).
+
+`subsets-by-mask` needs no checker. Enumerating the subsets by counting masks
+gives one definite order, so the statement asks for that order and the answer is
+unique - which is also what makes it a different problem from `all-subsets`
+rather than the same one with a different technique.
+
 Two flagged traps are **space** traps, not time traps: `zero-the-cross` and
 `shift-right-in-place` beat the obvious approach on memory, and no input size
 demonstrates that. Their statements name the space target and make no claim
@@ -414,10 +425,10 @@ Patterns to cover: XOR as cancellation, counting bits, masks as sets.
 | 1   | `count-the-ones`       | How Many Bits Are Set     | Easy   | 2      | function | bit counting                     |         |
 | 2   | `bits-up-to-n`         | Set Bits Up To N          | Easy   | 3      | function | bit counting, one-dimensional dp |         |
 | 3   | `missing-from-range`   | The Missing Number        | Easy   | 3      | function | xor trick, counting              |         |
-| 4   | `single-among-triples` | The One Among Triples     | Medium | 6      | function | xor trick, bit counting          | trap    |
-| 5   | `two-lonely-numbers`   | The Two That Appear Once  | Medium | 7      | function | xor trick, bit masking           | trap    |
+| 4   | `single-among-triples` | The One Among Triples     | Medium | 6      | function | xor trick, bit counting          |         |
+| 5   | `two-lonely-numbers`   | The Two That Appear Once  | Medium | 7      | function | xor trick, bit masking           |         |
 | 6   | `power-of-two-check`   | Is It A Power Of Two      | Easy   | 2      | function | power of two, bit masking        |         |
-| 7   | `subsets-by-mask`      | Subsets Without Recursion | Medium | 5      | function | bit masking, subsets             | checker |
+| 7   | `subsets-by-mask`      | Subsets Without Recursion | Medium | 5      | function | bit masking, subsets             |         |
 | 8   | `add-without-plus`     | Add Without Adding        | Medium | 6      | function | bit masking, xor trick           |         |
 
 ---

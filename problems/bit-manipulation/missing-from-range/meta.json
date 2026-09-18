@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "missing-from-range",
+  "slug": "missing-from-range",
+  "title": "The Missing Number",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["xor trick", "counting"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 3,
+  "mode": "function",
+  "entry": "missingNumber",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["the-lonely-number", "first-missing-count"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

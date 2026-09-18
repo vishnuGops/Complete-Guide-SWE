@@ -1,0 +1,43 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"one and two","args":[1,2],"expected":3,"explanation":"Carry from bit 0 into bit 1."},
+    {
+      "name": "a negative and a positive",
+      "args": [-2,3],
+      "expected": 1,
+      "explanation": "Two's complement makes this ordinary addition."
+    },
+    {"name":"both zero","args":[0,0],"expected":0,"explanation":"No bits to carry."}
+  ],
+  "hidden": [
+    {"name":"both negative","args":[-5,-7],"expected":-12},
+    {"name":"opposites","args":[1,-1],"expected":0},
+    {"name":"a run of ones, carried all the way","args":[1023,1],"expected":1024},
+    {"name":"the extremes of the stated range","args":[1000000000,-1000000000],"expected":0},
+    {"name":"two large positives","args":[1000000000,999999999],"expected":1999999999},
+    {"name":"two large negatives","args":[-1000000000,-1000000000],"expected":-2000000000},
+    {"args":[0,3],"expected":3},
+    {"args":[5,-4],"expected":1},
+    {"args":[-10,1],"expected":-9},
+    {"args":[-6,-3],"expected":-9},
+    {"args":[154,789],"expected":943},
+    {"args":[836,-513],"expected":323},
+    {"args":[-778,229],"expected":-549},
+    {"args":[-323,-437],"expected":-760},
+    {"args":[52105,741884],"expected":793989},
+    {"args":[799756,-48554],"expected":751202},
+    {"args":[-972569,71224],"expected":-901345},
+    {"args":[-884769,-354499],"expected":-1239268},
+    {"args":[92790107,244789247],"expected":337579354},
+    {"args":[919189609,-98653021],"expected":820536588},
+    {"args":[-258810560,463456618],"expected":204646058},
+    {"args":[-682645577,-139023229],"expected":-821668806},
+    {"args":[-632627947,-907655031],"expected":-1540282978},
+    {"args":[-442170349,216290423],"expected":-225879926},
+    {"args":[548702613,940471758],"expected":1489174371},
+    {"args":[-249111697,683646182],"expected":434534485},
+    {"args":[912645356,-911413867],"expected":1231489},
+    {"args":[196016733,-586636885],"expected":-390620152}
+  ]
+}

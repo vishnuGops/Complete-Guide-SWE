@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What does a power of two look like in binary?",
+    "Exactly one bit set. So the question is whether the value has precisely one `1` bit.",
+    "`value & (value - 1)` clears the lowest set bit - so if the value had only one, the result is zero.",
+    "That test also says zero is a power of two, which it is not, so the sign and zero have to be excluded separately."
+  ]
+}

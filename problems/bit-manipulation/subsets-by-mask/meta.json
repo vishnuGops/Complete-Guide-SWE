@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "subsets-by-mask",
+  "slug": "subsets-by-mask",
+  "title": "Subsets Without Recursion",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["bit masking", "subsets"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 7,
+  "mode": "function",
+  "entry": "subsetsInOrder",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["all-subsets", "travel-all-cities"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 2^n)",
+    "space": "O(1)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "bits-up-to-n",
+  "slug": "bits-up-to-n",
+  "title": "Set Bits Up To N",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["bit counting", "one-dimensional dp"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 2,
+  "mode": "function",
+  "entry": "bitsUpTo",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-the-ones", "stair-ways"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

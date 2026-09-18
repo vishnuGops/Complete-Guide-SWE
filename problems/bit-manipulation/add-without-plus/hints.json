@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Add two single bits by hand. What is the result bit, and what is carried?",
+    "The result bit is the exclusive-or of the two; the carry is their `and`, and it belongs one place to the left.",
+    "So `first ^ second` is the sum ignoring every carry, and `(first & second) << 1` is every carry. Add those two together - which is the same problem again.",
+    "Repeat until there is nothing left to carry. It terminates because each round pushes the carries one place further left, and there are only so many places."
+  ]
+}

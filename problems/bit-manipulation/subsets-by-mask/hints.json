@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A subset is a yes-or-no choice per value. What else is a sequence of yes-or-no choices?",
+    "The bits of a number. There are 2^n numbers of n bits, and each one names a different subset.",
+    "So the outer loop counts from 0 to 2^n - 1, and the inner loop reads the bits of the counter.",
+    "Bit `i` of `m` is set when `m >> i & 1` is 1, or equivalently when `m & (1 << i)` is not zero."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Counting each number's bits separately works and costs a loop per number. The answers are related to each other - how?",
+    "Removing the lowest set bit of `i` gives a smaller number whose answer you have already computed, and whose count is one less.",
+    "Clearing the lowest set bit of a number always makes it smaller, so its answer is already known - and the count differs by exactly one.",
+    "Halving works too: the bits of a number are the bits of that number shifted right by one, plus whatever its lowest bit was."
+  ]
+}

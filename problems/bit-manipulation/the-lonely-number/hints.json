@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You need an operation that makes a pair of equal values vanish and leaves a single value alone. Which one does that?",
+    "Exclusive-or: `x ^ x` is 0 and `x ^ 0` is `x`.",
+    "It is also commutative and associative, so the order of the row does not matter - exclusive-or everything together and the pairs cancel.",
+    "A hash set of what has been seen also works and uses O(n) space, which the constraint rules out."
+  ]
+}

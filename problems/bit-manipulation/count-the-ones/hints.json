@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The straightforward loop shifts right once per bit and looks at the lowest one - thirty-one steps whatever the value.",
+    "There is a trick that takes one step per bit that is *set*: `value & (value - 1)` clears exactly the lowest one.",
+    "Subtracting one turns the lowest set bit into a zero and everything below it into ones; the `and` then wipes all of them out.",
+    "So loop while the value is not zero, clearing the lowest set bit each time, and count the rounds."
+  ]
+}

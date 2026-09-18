@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Exclusive-or the whole row. The pairs cancel, so what is left is the exclusive-or of the two lonely values - which is not either of them.",
+    "That result is not useless, though: every bit set in it is a bit where the two lonely values *differ*.",
+    "Pick any one of those bits. Every value in the row either has it or does not, and the two lonely values are on opposite sides of that split.",
+    "So xor the row twice more, once per side - and within each side, one lonely value survives while every pair cancels, because both members of a pair fall on the same side."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "power-of-two-check",
+  "slug": "power-of-two-check",
+  "title": "Is It A Power Of Two",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["power of two", "bit masking"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 6,
+  "mode": "function",
+  "entry": "isPowerOfTwo",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-the-ones", "bits-up-to-n"],
+  "targetComplexity": {
+    "time": "O(1)",
+    "space": "O(1)"
+  }
+}

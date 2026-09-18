@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Exclusive-or cancels pairs, and here the values come in threes. Think about one bit position at a time instead.",
+    "Across the whole row, each bit position is set a multiple of three times, plus one more if the lonely value has that bit.",
+    "So counting how often each of the thirty-two bit positions is set, and taking the remainder on division by three, rebuilds the lonely value.",
+    "The compact version replaces the thirty-two counters with two integers - 'seen once' and 'seen twice' - which together count to three in every bit position at the same time."
+  ]
+}

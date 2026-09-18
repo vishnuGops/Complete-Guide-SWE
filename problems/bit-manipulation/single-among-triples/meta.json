@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "single-among-triples",
+  "slug": "single-among-triples",
+  "title": "The One Among Triples",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["xor trick", "bit counting"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 4,
+  "mode": "function",
+  "entry": "theOddOneOut",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["the-lonely-number", "two-lonely-numbers"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

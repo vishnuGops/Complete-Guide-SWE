@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "add-without-plus",
+  "slug": "add-without-plus",
+  "title": "Add Without Adding",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["bit masking", "xor trick"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 8,
+  "mode": "function",
+  "entry": "addThem",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["the-lonely-number", "count-the-ones"],
+  "targetComplexity": {
+    "time": "O(1)",
+    "space": "O(1)"
+  }
+}

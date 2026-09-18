@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "two-lonely-numbers",
+  "slug": "two-lonely-numbers",
+  "title": "The Two That Appear Once",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["xor trick", "bit masking"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 5,
+  "mode": "function",
+  "entry": "theTwoLonelyOnes",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["the-lonely-number", "single-among-triples"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

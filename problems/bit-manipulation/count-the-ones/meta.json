@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "count-the-ones",
+  "slug": "count-the-ones",
+  "title": "How Many Bits Are Set",
+  "version": 1,
+  "topic": "bit-manipulation",
+  "patterns": ["bit counting"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 1,
+  "mode": "function",
+  "entry": "countOnes",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["bits-up-to-n", "power-of-two-check"],
+  "targetComplexity": {
+    "time": "O(bits set)",
+    "space": "O(1)"
+  }
+}

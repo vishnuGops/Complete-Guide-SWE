@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You have two collections: the numbers that are there, and the numbers that should be there. What operation makes everything they share cancel out?",
+    "Exclusive-or - so xor the row together, xor `0` through `n` together, and xor those two results.",
+    "Everything present appears in both and cancels; the missing number appears only in the second and survives.",
+    "Adding rather than xoring also works - the expected total minus the actual - and the difference between the two is worth thinking about."
+  ]
+}
