@@ -373,3 +373,59 @@ describe('mastery (P5-4, D11)', () => {
     expect(after?.attempts).toBe(1);
   });
 });
+
+describe('attempt memory (P5-5)', () => {
+  /** Two turns, with the code changed in between. */
+  async function twoTurns(second: string) {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    await collect(streamFeedback(feedbackRequest({ code: second }), deps(fetch)));
+    return requests[1]!;
+  }
+
+  it('tells the coach what changed since its last feedback', async () => {
+    const revised = ATTEMPT.replace('        return [0, 1]', '        return [1, 0]');
+    const sent = await twoTurns(revised);
+
+    expect(sent).toContain('Changed since that feedback');
+    expect(sent).toContain('return [0, 1]');
+    expect(sent).toContain('return [1, 0]');
+  });
+
+  it('says so when the user asked again without changing anything', async () => {
+    // The most useful thing the delta produces: someone asking twice on the
+    // same code is stuck, and the coach should try a different angle.
+    const sent = await twoTurns(ATTEMPT);
+
+    expect(sent).toContain('has not changed');
+    expect(sent).toContain('different angle');
+  });
+
+  it('stores the code the feedback was about', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    const session = repos.coach.latestSession(SLUG, 'python');
+    const messages = repos.coach.listMessages(session!.id);
+    const coachTurn = messages.find((m) => m.feedback !== null);
+
+    expect(coachTurn?.code).toBe(ATTEMPT);
+  });
+
+  it('still remembers a turn recorded before the code column existed', async () => {
+    // Rows written by P5-3 have no code. The feedback is still worth carrying,
+    // so the delta is the part that goes missing, not the whole attempt.
+    const session = repos.coach.createSession(SLUG, 'python');
+    repos.coach.addMessage(session.id, {
+      role: 'coach',
+      content: 'older feedback',
+      feedback: { ...ANSWER, summary: 'OLDER-SUMMARY' },
+    });
+
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    expect(requests[0]).toContain('OLDER-SUMMARY');
+    expect(requests[0]).not.toContain('Changed since that feedback');
+  });
+});

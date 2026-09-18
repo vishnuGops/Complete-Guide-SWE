@@ -20,6 +20,7 @@ export {
   type ContextInput,
 } from './context.js';
 export { PROMPT_VERSION, systemPrompt } from './prompts/index.js';
+export { describeDelta, diffCode, type CodeDelta } from './codeDelta.js';
 export {
   hasMeaningfulBody,
   isUnchangedStarter,

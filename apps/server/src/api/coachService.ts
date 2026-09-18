@@ -14,6 +14,8 @@ import {
   buildContext,
   CoachProviderError,
   createCoachProvider,
+  describeDelta,
+  diffCode,
   precheck,
   streamCoachFeedback,
   systemPrompt,
@@ -72,13 +74,36 @@ function toErrorEvent(error: unknown): CoachStreamEvent {
   };
 }
 
-/** Earlier feedback on this problem, newest first, for the prompt's memory section. */
-function recallAttempts(repos: Repositories, slug: string, language: Language): AttemptMemory[] {
-  return repos.coach
-    .recentFeedback(slug, language, MEMORY_DEPTH)
-    .flatMap((message) =>
-      message.feedback ? [{ at: message.createdAt, feedback: message.feedback }] : [],
-    );
+/**
+ * Earlier feedback on this problem, newest first, for the prompt's memory
+ * section (ROADMAP P5-5).
+ *
+ * Each remembered turn carries a diff against the code in front of the coach
+ * now, which is what lets it say "you fixed X, now Y" rather than reviewing
+ * from scratch. Each diff is bounded, so three remembered turns cannot crowd
+ * out the code they are about.
+ */
+function recallAttempts(
+  repos: Repositories,
+  slug: string,
+  language: Language,
+  currentCode: string,
+): AttemptMemory[] {
+  return repos.coach.recentFeedback(slug, language, MEMORY_DEPTH).flatMap((message) => {
+    if (!message.feedback) return [];
+    return [
+      {
+        at: message.createdAt,
+        feedback: message.feedback,
+        // Absent on turns recorded before P5-5's column existed. The memory is
+        // still worth having without it, so that is a missing detail rather
+        // than a reason to drop the attempt.
+        ...(message.code === null
+          ? {}
+          : { delta: describeDelta(diffCode(message.code, currentCode)) }),
+      },
+    ];
+  });
 }
 
 /**
@@ -125,7 +150,7 @@ export async function* streamFeedback(
     language: request.language,
     code: request.code,
     revealedHints: pkg.hints.hints.slice(0, request.revealedHints),
-    priorAttempts: recallAttempts(deps.repos, request.slug, request.language),
+    priorAttempts: recallAttempts(deps.repos, request.slug, request.language, request.code),
     masteryCheck: request.masteryCheck,
     requestFullSolution: request.requestFullSolution,
     solved,
@@ -160,6 +185,8 @@ export async function* streamFeedback(
         role: 'coach',
         content: chunk.feedback.feedbackMarkdown,
         feedback: chunk.feedback,
+        // The code this feedback is about, so the next turn can diff against it.
+        code: request.code,
       });
       applyMastery(chunk.feedback, request, deps);
       yield { type: 'done', feedback: chunk.feedback };

@@ -21,6 +21,8 @@ export interface CoachMessage {
   content: string;
   /** Present only on the structured feedback turns, not on plain chat. */
   feedback: CoachFeedback | null;
+  /** The code that was in the editor when this turn was asked for (P5-5). */
+  code: string | null;
   createdAt: string;
 }
 
@@ -28,6 +30,7 @@ export interface NewCoachMessage {
   role: CoachRole;
   content: string;
   feedback?: CoachFeedback;
+  code?: string;
 }
 
 function toSession(row: Row): CoachSession {
@@ -48,6 +51,7 @@ function toMessage(row: Row): CoachMessage {
     role: text(row, 'role') as CoachRole,
     content: text(row, 'content'),
     feedback: raw === null ? null : coachFeedbackSchema.parse(JSON.parse(raw)),
+    code: nullableText(row, 'code'),
     createdAt: text(row, 'created_at'),
   };
 }
@@ -67,7 +71,7 @@ export interface CoachRepo {
   clearSessions(): number;
 }
 
-const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, created_at';
+const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, code, created_at';
 const SESSION_COLUMNS = 'id, slug, language, created_at, updated_at';
 
 export function createCoachRepo(db: Database): CoachRepo {
@@ -84,14 +88,14 @@ export function createCoachRepo(db: Database): CoachRepo {
     `SELECT ${SESSION_COLUMNS} FROM coach_sessions WHERE slug = ? ORDER BY created_at DESC`,
   );
   const insertMessage = db.prepare(
-    `INSERT INTO coach_messages (${MESSAGE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO coach_messages (${MESSAGE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`,
   );
   const touchSession = db.prepare('UPDATE coach_sessions SET updated_at = ? WHERE id = ?');
   const listMessages = db.prepare(
     `SELECT ${MESSAGE_COLUMNS} FROM coach_messages WHERE session_id = ? ORDER BY created_at, rowid`,
   );
   const recentFeedback = db.prepare(
-    `SELECT m.id, m.session_id, m.role, m.content, m.feedback, m.created_at
+    `SELECT m.id, m.session_id, m.role, m.content, m.feedback, m.code, m.created_at
      FROM coach_messages m
      JOIN coach_sessions s ON s.id = m.session_id
      WHERE s.slug = ? AND s.language = ? AND m.feedback IS NOT NULL
@@ -144,7 +148,15 @@ export function createCoachRepo(db: Database): CoachRepo {
       // conversation" cannot be answered differently depending on which of the
       // two writes a reader happened to catch.
       transaction(db, () => {
-        insertMessage.run(id, sessionId, message.role, message.content, feedback, createdAt);
+        insertMessage.run(
+          id,
+          sessionId,
+          message.role,
+          message.content,
+          feedback,
+          message.code ?? null,
+          createdAt,
+        );
         touchSession.run(createdAt, sessionId);
       });
 
@@ -154,6 +166,7 @@ export function createCoachRepo(db: Database): CoachRepo {
         role: message.role,
         content: message.content,
         feedback: message.feedback ?? null,
+        code: message.code ?? null,
         createdAt,
       };
     },

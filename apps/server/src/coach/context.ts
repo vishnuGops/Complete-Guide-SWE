@@ -30,6 +30,8 @@ export interface AttemptMemory {
   /** ISO timestamp of the earlier feedback. */
   at: string;
   feedback: CoachFeedback;
+  /** What the user changed between that turn and this one (P5-5). */
+  delta?: string;
 }
 
 export interface ContextInput {
@@ -167,6 +169,11 @@ function renderPriorAttempts(attempts: readonly AttemptMemory[]): string {
     );
     if (attempt.feedback.nextStep !== undefined) {
       lines.push(`  asked them to: ${attempt.feedback.nextStep}`);
+    }
+    if (attempt.delta !== undefined) {
+      // Indented to sit under its attempt, so three remembered turns read as
+      // three blocks rather than one run-on list of changed lines.
+      lines.push(...attempt.delta.split('\n').map((line) => `  ${line}`));
     }
   }
 

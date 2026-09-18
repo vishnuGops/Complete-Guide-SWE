@@ -1,0 +1,15 @@
+-- Progressive attempt memory (ROADMAP P5-5).
+--
+-- P5-3 already carried past feedback into the prompt, which lets the coach avoid
+-- repeating a point. It cannot tell the coach what *changed*, and that is the
+-- half that makes "you fixed the complement lookup, now handle the empty case"
+-- possible instead of a second review written as if it were the first.
+--
+-- The code is stored on the coach turn rather than derived from the submissions
+-- table, because the two answer different questions. A submission is code the
+-- user chose to have judged; this is the code that was on screen when they asked
+-- for help, which is usually neither the last submission nor the next one.
+--
+-- NULL on every row written before this migration, and on chat turns, which
+-- carry a question rather than a revision.
+ALTER TABLE coach_messages ADD COLUMN code TEXT;
