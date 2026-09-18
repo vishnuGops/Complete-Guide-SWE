@@ -37,6 +37,21 @@ export interface CodeEditorHandle {
 export interface CodeEditorProps {
   value: string;
   language: Language;
+  /**
+   * A model identity, one per problem and language (ROADMAP P4-11/P4-12).
+   *
+   * Monaco keeps one model per path, and `@monaco-editor/react` swaps models
+   * rather than rewriting one when this changes. Without it, switching language
+   * re-languages a single shared model and the change event that follows
+   * reports the *old* content back through `onChange` - which, intermittently,
+   * overwrote the draft the workspace had just loaded with the one it had just
+   * left. Found by the P4-11 end-to-end test, which failed about one run in
+   * three.
+   *
+   * It also gives each language its own undo history, which is what a user
+   * flipping between two solutions expects anyway.
+   */
+  path: string;
   onChange: (value: string) => void;
   prefs: EditorPrefs;
   /** Resolved, never `system`: Monaco needs an actual theme name. */
@@ -59,6 +74,7 @@ interface VimMode {
 export default function CodeEditor({
   value,
   language,
+  path,
   onChange,
   prefs,
   theme,
@@ -136,6 +152,7 @@ export default function CodeEditor({
       <div className="min-h-0 flex-1">
         <Editor
           value={value}
+          path={path}
           language={MONACO_LANGUAGE[language]}
           height="100%"
           theme={theme === 'dark' ? 'vs-dark' : 'vs'}

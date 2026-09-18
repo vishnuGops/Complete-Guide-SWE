@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   LANGUAGE_LABEL,
   TOPIC_LABEL,
@@ -8,7 +8,15 @@ import {
 } from '@devpromax/shared';
 import { useSubmissions } from '../../api/hooks.js';
 import { Markdown } from '../../markdown/Markdown.js';
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, cn } from '../../ui/index.js';
+import {
+  Button,
+  StickyTabsContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  cn,
+} from '../../ui/index.js';
 import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
 
 /**
@@ -27,12 +35,20 @@ import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
  * tab that cannot save what you type into it is worse than no tab.
  */
 
-function Hints({ hints }: { hints: readonly string[] }) {
-  // Revealed one rung at a time, and only in this session. Recording reveals so
-  // the coach can see which rungs are spent is P7-1's; a ladder that unrolls
-  // itself the moment the tab is opened would not be a ladder.
-  const [revealed, setRevealed] = useState(0);
-
+function Hints({
+  hints,
+  revealed,
+  onReveal,
+}: {
+  hints: readonly string[];
+  revealed: number;
+  onReveal: (revealed: number) => void;
+}) {
+  // Revealed one rung at a time; a ladder that unrolls itself the moment the
+  // tab is opened would not be a ladder. The count is owned by `Workspace`
+  // (P4-12): this panel is unmounted whenever another tab is shown, so keeping
+  // it here meant looking at the Description un-revealed every hint. Persisting
+  // reveals across sessions is still P7-1's.
   if (hints.length === 0) {
     return <p className="text-fg-muted p-4 text-sm">This problem has no hints.</p>;
   }
@@ -52,7 +68,7 @@ function Hints({ hints }: { hints: readonly string[] }) {
         <div>
           <Button
             onClick={() => {
-              setRevealed(revealed + 1);
+              onReveal(revealed + 1);
             }}
           >
             {revealed === 0 ? 'Show the first hint' : 'Show the next hint'}
@@ -161,10 +177,26 @@ export interface StatementPanelProps {
    */
   tab: string;
   onTab: (tab: string) => void;
+  /**
+   * Hint rungs revealed so far, owned by the workspace (P4-12).
+   *
+   * Here rather than in the Hints panel because Radix unmounts an inactive
+   * panel - so a glance at the Description used to hide every hint again - and
+   * because the count is what the coach has to be told (P7-1).
+   */
+  revealedHints: number;
+  onRevealHint: (revealed: number) => void;
   coach: ReactNode;
 }
 
-export function StatementPanel({ problem, tab, onTab, coach }: StatementPanelProps) {
+export function StatementPanel({
+  problem,
+  tab,
+  onTab,
+  revealedHints,
+  onRevealHint,
+  coach,
+}: StatementPanelProps) {
   const { summary } = problem;
 
   return (
@@ -219,12 +251,16 @@ export function StatementPanel({ problem, tab, onTab, coach }: StatementPanelPro
       </TabsContent>
 
       <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Hints hints={problem.hints} />
+        <Hints hints={problem.hints} revealed={revealedHints} onReveal={onRevealHint} />
       </TabsContent>
 
-      <TabsContent value="coach" className="min-h-0 flex-1 overflow-y-auto pt-0">
+      {/*
+        Kept mounted: it holds a half-typed question and a streaming answer, and
+        both used to be thrown away by a glance at the Description (P4-12).
+      */}
+      <StickyTabsContent value="coach" className="min-h-0 flex-1 overflow-y-auto pt-0">
         {coach}
-      </TabsContent>
+      </StickyTabsContent>
 
       <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
         <Editorial problem={problem} />

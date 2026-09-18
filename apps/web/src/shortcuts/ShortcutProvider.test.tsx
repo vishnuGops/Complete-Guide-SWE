@@ -119,3 +119,70 @@ describe('ShortcutProvider', () => {
     expect(onRun).not.toHaveBeenCalled();
   });
 });
+
+describe('a dialog owns the keyboard', () => {
+  /** The same key, but pressed on an element inside a modal. */
+  function pressRunInside(target: Element): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', {
+      code: 'Enter',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it('does not run the code a confirmation is asking about deleting', () => {
+    // The concrete case (ROADMAP P4-12): reset-to-starter's dialog is open,
+    // `Ctrl+Enter` reaches the window listener, and the judge runs the code
+    // behind the dialog.
+    const onRun = vi.fn();
+    render(
+      <ShortcutProvider>
+        <Binder onRun={onRun} />
+        <div role="dialog">
+          <button>Reset</button>
+        </div>
+      </ShortcutProvider>,
+    );
+
+    const inside = document.querySelector('[role="dialog"] button')!;
+    const event = pressRunInside(inside);
+
+    expect(onRun).not.toHaveBeenCalled();
+    // And the key is left alone rather than swallowed: the dialog may want it.
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('treats an alertdialog the same way', () => {
+    const onRun = vi.fn();
+    render(
+      <ShortcutProvider>
+        <Binder onRun={onRun} />
+        <div role="alertdialog">
+          <input aria-label="inside" />
+        </div>
+      </ShortcutProvider>,
+    );
+
+    pressRunInside(document.querySelector('[role="alertdialog"] input')!);
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it('still fires for a key pressed outside an open dialog', () => {
+    // Checked on the target, not on "is a dialog open anywhere", so a popover
+    // somewhere on screen does not disable the whole keyboard.
+    const onRun = vi.fn();
+    render(
+      <ShortcutProvider>
+        <Binder onRun={onRun} />
+        <div role="dialog" />
+        <button>in the page</button>
+      </ShortcutProvider>,
+    );
+
+    pressRunInside(document.querySelector('button')!);
+    expect(onRun).toHaveBeenCalledOnce();
+  });
+});

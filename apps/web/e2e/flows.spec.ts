@@ -214,8 +214,19 @@ test.describe('the golden path', () => {
  * minutes of typing, and the next autosave wrote that starter over the real
  * draft. Only a round trip through two switches and a reload can tell.
  *
- * Its own problem, so it cannot disturb the golden path, and it never submits -
- * this test writes drafts and nothing else.
+ * Two things about the setup, both learned the hard way:
+ *
+ *   - **The language is not Python by default.** `lastLanguage` is a *setting*,
+ *     shared by every test and every earlier run, so this starts by choosing
+ *     Python explicitly. Without that, an earlier test's choice decided which
+ *     language these drafts were written to, and the assertions then held or
+ *     failed depending on the order the suite happened to run in.
+ *   - **Every step waits for the save it expects**, not for the editor to look
+ *     right. Monaco shows pasted text before React has it, so waiting on the
+ *     PUT that carries the text is the only proof that the app, and not just
+ *     the DOM, is holding it.
+ *
+ * Its own problem, so it cannot disturb the golden path, and it never submits.
  */
 test.describe('drafts', () => {
   const PROBLEM = { slug: 'sequence-run-length', title: 'Longest Consecutive Run' };
@@ -223,37 +234,101 @@ test.describe('drafts', () => {
   const PYTHON_MARK = '# python draft P4-11';
   const JAVA_MARK = '// java draft P4-11';
 
-  test('survive switching language twice and reloading', async ({ page }) => {
+  const CLIENT = { 'X-DevProMax-Client': 'devpromax-web' };
+
+  /** Resolves when a draft PUT for this language carries `text`. */
+  function draftSaved(page: Page, language: 'python' | 'java', text: string) {
+    return page.waitForResponse((response) => {
+      const request = response.request();
+      if (request.method() !== 'PUT') return false;
+      if (!response.url().endsWith(`/api/drafts/${PROBLEM.slug}/${language}`)) return false;
+      return (request.postData() ?? '').includes(text);
+    });
+  }
+
+  async function clearDrafts(page: Page): Promise<void> {
+    for (const language of ['python', 'java'] as const) {
+      const response = await page.request.delete(`/api/drafts/${PROBLEM.slug}/${language}`, {
+        headers: CLIENT,
+      });
+      expect(response.ok(), 'the draft delete that resets this problem').toBe(true);
+    }
+  }
+
+  /** Opens the problem on a known language with no drafts behind it. */
+  async function openOnPython(page: Page): Promise<void> {
+    await clearDrafts(page);
     await page.goto(`/problems/${PROBLEM.slug}`);
     await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await expect(page.locator('[data-testid="editor"]')).toContainText('def longestRun');
+  }
 
-    // Python first.
-    await setEditorContents(page, `${PYTHON_MARK}\nclass Solution:\n    pass\n`);
+  test('survive switching language twice and reloading', async ({ page }) => {
+    await openOnPython(page);
+    const editor = page.locator('[data-testid="editor"]');
+
+    // Python first, and not a step further until the server has it.
+    const pythonSaved = draftSaved(page, 'python', PYTHON_MARK);
+    await setEditorContents(
+      page,
+      `${PYTHON_MARK}
+class Solution:
+    pass
+`,
+    );
+    await expect(editor).toContainText(PYTHON_MARK);
+    await pythonSaved;
+
     await page.getByRole('button', { name: 'Java' }).click();
+    const javaSaved = draftSaved(page, 'java', JAVA_MARK);
+    await setEditorContents(
+      page,
+      `${JAVA_MARK}
+class Solution {}
+`,
+    );
+    await expect(editor).toContainText(JAVA_MARK);
+    await javaSaved;
 
-    // Java second, typed immediately after the switch - so the Python flush and
-    // this edit are both in flight within the debounce window.
-    await setEditorContents(page, `${JAVA_MARK}\nclass Solution {}\n`);
-    await page.getByRole('button', { name: 'Python' }).click();
-
-    await expect(page.locator('[data-testid="editor"]')).toContainText(PYTHON_MARK);
+    // Back to Python. This is the assertion the write-through exists for: the
+    // editor is re-seeded from the cached problem, and the cache had never been
+    // told about either save.
+    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await expect(editor).toContainText(PYTHON_MARK);
 
     // And after a reload, which is the only way to prove the server has them
     // rather than the page.
     await page.reload();
     await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
-    await expect(page.locator('[data-testid="editor"]')).toContainText(PYTHON_MARK);
+    await expect(editor).toContainText(PYTHON_MARK);
 
     await page.getByRole('button', { name: 'Java' }).click();
-    await expect(page.locator('[data-testid="editor"]')).toContainText(JAVA_MARK);
+    await expect(editor).toContainText(JAVA_MARK);
 
-    // Left as the reference solutions, so a later run of this suite starts from
-    // something sane rather than from these two stubs.
-    await page.request.delete(`/api/drafts/${PROBLEM.slug}/java`, {
-      headers: { 'X-DevProMax-Client': 'devpromax-web' },
-    });
-    await page.request.delete(`/api/drafts/${PROBLEM.slug}/python`, {
-      headers: { 'X-DevProMax-Client': 'devpromax-web' },
-    });
+    await clearDrafts(page);
+  });
+
+  test('a draft typed a moment before leaving is still written', async ({ page }) => {
+    // The debounce used to be cleared without being flushed, so the last
+    // 800 ms of typing died with the language click. Typed rather than pasted:
+    // a keystroke reaches React on its own, where a paste goes through Monaco's
+    // clipboard path and lands when it lands.
+    await openOnPython(page);
+
+    const flushed = '# flushed';
+    const saved = draftSaved(page, 'python', flushed);
+
+    await page.locator('[data-testid="editor"] .view-lines').click();
+    await page.keyboard.type(
+      `${flushed}
+`,
+      { delay: 30 },
+    );
+    // Immediately - well inside the 800 ms debounce.
+    await page.getByRole('button', { name: 'Java' }).click();
+
+    await saved;
+    await clearDrafts(page);
   });
 });

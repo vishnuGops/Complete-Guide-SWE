@@ -31,10 +31,12 @@ import { useShortcut } from '../../shortcuts/ShortcutProvider.js';
 import {
   Button,
   ConfirmDialog,
+  ErrorBoundary,
   ErrorState,
   Loading,
   Skeleton,
   StatusMark,
+  StickyTabsContent,
   Tabs,
   TabsContent,
   TabsList,
@@ -146,6 +148,15 @@ export function Workspace() {
   const [leftTab, setLeftTab] = useState('description');
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [offerMastery, setOfferMastery] = useState(false);
+  /**
+   * Hint rungs the user has revealed (P4-12, and what P7-1 will persist).
+   *
+   * Owned here because the Hints panel is unmounted whenever another tab is
+   * shown - so a glance at the Description used to re-hide every hint - and
+   * because this is the number the coach has to be told: it must not repeat a
+   * rung the user has already read, and it was sending 0 unconditionally.
+   */
+  const [revealedHints, setRevealedHints] = useState(0);
 
   const coach = useCoach(slug, language);
   const navigate = useNavigate();
@@ -196,6 +207,7 @@ export function Workspace() {
     setTab('testcases');
     setLeftTab('description');
     setOfferMastery(false);
+    setRevealedHints(0);
   }
 
   /**
@@ -369,7 +381,7 @@ export function Workspace() {
   const askCoach = (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
     setLeftTab('coach');
     setOfferMastery(false);
-    coach.ask({ slug, language, code, ...options });
+    coach.ask({ slug, language, code, revealedHints, ...options });
   };
 
   useShortcut(
@@ -432,17 +444,28 @@ export function Workspace() {
 
   const editor = (
     <div className="min-h-0 w-full" data-testid="editor">
-      <Suspense fallback={<p className="text-fg-muted p-4 text-sm">Loading the editor…</p>}>
-        <CodeEditor
-          ref={editorRef}
-          value={code}
-          language={language}
-          onChange={setCode}
-          prefs={settings?.editor ?? DEFAULT_EDITOR_PREFS}
-          theme={theme}
-          markers={result?.compileErrors ?? []}
-        />
-      </Suspense>
+      {/*
+        The editor is a lazy chunk, and the chunk can be gone (P4-12): after the
+        dev server restarts, the hashed file this page is holding a reference to
+        no longer exists, the import rejects, and Suspense has nothing to show
+        for a rejection - the whole workspace went white. The boundary offers
+        the reload that actually fixes it.
+      */}
+      <ErrorBoundary title="The editor could not load.">
+        <Suspense fallback={<p className="text-fg-muted p-4 text-sm">Loading the editor…</p>}>
+          <CodeEditor
+            ref={editorRef}
+            value={code}
+            // One Monaco model per problem and language; see CodeEditorProps.
+            path={`${slug}.${language}`}
+            language={language}
+            onChange={setCode}
+            prefs={settings?.editor ?? DEFAULT_EDITOR_PREFS}
+            theme={theme}
+            markers={result?.compileErrors ?? []}
+          />
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 
@@ -510,7 +533,12 @@ export function Workspace() {
             )}
           </TabsContent>
 
-          <TabsContent
+          {/*
+            Kept mounted (P4-12): the results panel owns which test is selected,
+            and flipping to Testcases and back used to send the user back to the
+            first failure - losing the one they were reading.
+          */}
+          <StickyTabsContent
             value="results"
             className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0"
           >
@@ -565,7 +593,7 @@ export function Workspace() {
                 Run to check your code against the samples, or Submit to run every test.
               </p>
             )}
-          </TabsContent>
+          </StickyTabsContent>
         </>
       )}
     </Tabs>
@@ -716,6 +744,8 @@ export function Workspace() {
               problem={problem}
               tab={leftTab}
               onTab={setLeftTab}
+              revealedHints={revealedHints}
+              onRevealHint={setRevealedHints}
               coach={
                 <CoachPanel
                   state={coach.state}

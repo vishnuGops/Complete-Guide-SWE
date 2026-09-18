@@ -112,9 +112,24 @@ export function useCoach(slug: string, language: Language) {
     );
   }, []);
 
-  /** Drives one request to completion, folding each event into state. */
+  /**
+   * Drives one request to completion, folding each event into state.
+   *
+   * `controller` rather than a bare signal, so this turn can tell whether it is
+   * still the current one (ROADMAP P4-12). The bug: the `finally` below reset
+   * `phase` unconditionally, so starting a second turn while the first was
+   * streaming - `Ctrl+Shift+H` and Try again are both live during a stream -
+   * had the *old* turn's abort rejection mark the app idle while the new turn's
+   * text kept arriving. Stop then did nothing, because as far as the panel was
+   * concerned nothing was running.
+   */
   const consume = useCallback(
-    async (path: '/api/coach/feedback' | '/api/coach/chat', body: unknown, signal: AbortSignal) => {
+    async (
+      path: '/api/coach/feedback' | '/api/coach/chat',
+      body: unknown,
+      controller: AbortController,
+    ) => {
+      const { signal } = controller;
       let streamed = '';
 
       try {
@@ -190,25 +205,28 @@ export function useCoach(slug: string, language: Language) {
           },
         }));
       } finally {
-        // Only clear the shared handle if this turn still owns it; a newer turn
-        // may already have replaced it.
-        setState((prev) => (prev.phase === 'streaming' ? { ...prev, phase: 'idle' } : prev));
+        // Only this turn's own ending may end the streaming state. A newer turn
+        // has already replaced the handle, and its stream is still arriving.
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setState((prev) => (prev.phase === 'streaming' ? { ...prev, phase: 'idle' } : prev));
+        }
       }
     },
     [],
   );
 
-  const begin = useCallback((): AbortSignal => {
+  const begin = useCallback((): AbortController => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    return controller.signal;
+    return controller;
   }, []);
 
   /** The AI Help button, and `Ctrl+Shift+H`. */
   const ask = useCallback(
     (options: AskOptions) => {
-      const signal = begin();
+      const controller = begin();
       setState((prev) => ({
         ...prev,
         phase: 'streaming',
@@ -231,7 +249,7 @@ export function useCoach(slug: string, language: Language) {
           requestFullSolution: options.requestFullSolution ?? false,
           newConversation: options.newConversation ?? false,
         },
-        signal,
+        controller,
       );
     },
     [begin, consume],
@@ -243,7 +261,7 @@ export function useCoach(slug: string, language: Language) {
       const sessionId = state.sessionId;
       if (sessionId === null) return;
 
-      const signal = begin();
+      const controller = begin();
       setState((prev) => ({
         ...prev,
         phase: 'streaming',
@@ -252,7 +270,7 @@ export function useCoach(slug: string, language: Language) {
         skipped: null,
         turns: [...prev.turns, { role: 'user', content: message }],
       }));
-      void consume('/api/coach/chat', { sessionId, message }, signal);
+      void consume('/api/coach/chat', { sessionId, message }, controller);
     },
     [begin, consume, state.sessionId],
   );

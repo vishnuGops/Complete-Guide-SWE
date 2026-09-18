@@ -610,3 +610,179 @@ describe('the no-key fallback (P5-6)', () => {
     expect(screen.queryByText(/What the judge can tell you/i)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Turn ownership and panel state (ROADMAP P4-12).
+ *
+ * Both defects here are the same shape: something that belongs to *this* turn
+ * or *this* panel was being reset by something else.
+ */
+describe('a second turn while the first is streaming', () => {
+  /**
+   * An SSE body that honours the abort signal, which the shared `sse` helper
+   * deliberately does not.
+   *
+   * It has to: the defect under test *is* the first turn's abort rejection
+   * running the shared `finally`. A fixture that ignored the signal would leave
+   * the first turn parked forever and the test would pass either way - which is
+   * how it passed against the unfixed code on the first attempt.
+   */
+  function abortableSse(deltas: string[], init: RequestInit | undefined): Response {
+    const encoder = new TextEncoder();
+    const signal = init?.signal ?? null;
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(START)}
+
+`),
+        );
+        for (const delta of deltas) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'markdown', delta })}
+
+`),
+          );
+        }
+        // Left open: the turn ends when it is aborted or when the test does.
+        signal?.addEventListener('abort', () => {
+          controller.error(new DOMException('aborted', 'AbortError'));
+        });
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+    });
+  }
+
+  it('stays streaming, and Stop still stops it', async () => {
+    // The old behaviour: the first turn's abort rejection ran the shared
+    // `finally`, marked the app idle, and the second turn's text kept arriving
+    // with no Stop button anywhere.
+    let turns = 0;
+    server = fakeServer([
+      { match: path(`/api/problems/${SLUG}`), body: () => aProblemDetail() },
+      { match: path('/api/settings'), body: () => someSettings() },
+      { match: path(`/api/drafts/${SLUG}/python`), body: () => ({ draft: null }) },
+      { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: [] }) },
+      {
+        match: path('/api/coach/feedback'),
+        body: (_url, init) => {
+          turns += 1;
+          return abortableSse([turns === 1 ? 'First answer.' : 'Second answer.'], init);
+        },
+      },
+    ]);
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText('First answer.');
+
+    // Straight into another one. The toolbar button is disabled mid-stream,
+    // but the shortcut is not - which is precisely how this was reachable.
+    await user.keyboard('{Control>}{Shift>}H{/Shift}{/Control}');
+
+    expect(await screen.findByText('Second answer.')).toBeInTheDocument();
+    // The first turn's abort must not have ended the second turn's stream.
+    expect(turns).toBe(2);
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
+  });
+});
+
+describe('what survives looking at another tab', () => {
+  it('keeps a half-typed follow-up question', async () => {
+    server = fakeServer(baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])));
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText(ANSWER.summary);
+
+    const question = screen.getByLabelText('Ask the coach a follow-up question');
+    await user.type(question, 'why is that O(n log n)');
+
+    // Radix unmounts an inactive panel, so this used to throw the question away.
+    await user.click(screen.getByRole('tab', { name: 'Description' }));
+    await user.click(screen.getByRole('tab', { name: 'Coach' }));
+
+    expect(screen.getByLabelText('Ask the coach a follow-up question')).toHaveValue(
+      'why is that O(n log n)',
+    );
+  });
+
+  it('keeps the answer that is still arriving', async () => {
+    server = fakeServer(
+      baseRoutes(() =>
+        sse(
+          [
+            START,
+            { type: 'markdown', delta: 'Still writing.' },
+            { type: 'done', feedback: ANSWER },
+          ],
+          {
+            hold: true,
+          },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText('Still writing.');
+
+    await user.click(screen.getByRole('tab', { name: 'Description' }));
+    await user.click(screen.getByRole('tab', { name: 'Coach' }));
+
+    expect(screen.getByText('Still writing.')).toBeInTheDocument();
+    release?.();
+  });
+
+  it('keeps revealed hints revealed', async () => {
+    server = fakeServer(baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])));
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+    await user.click(screen.getByRole('button', { name: 'Show the first hint' }));
+    expect(screen.getByText('Think about what you have already seen.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Description' }));
+    await user.click(screen.getByRole('tab', { name: 'Hints' }));
+
+    // The count lives in the workspace now, so the ladder does not roll back up
+    // when the panel is unmounted.
+    expect(screen.getByText('Think about what you have already seen.')).toBeInTheDocument();
+  });
+
+  it('tells the coach how many hints have been spent', async () => {
+    server = fakeServer(baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])));
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+    await user.click(screen.getByRole('button', { name: 'Show the first hint' }));
+
+    await user.click(screen.getByRole('tab', { name: 'Description' }));
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText(ANSWER.summary);
+
+    // It must not repeat a rung the user has read; `revealedHints` was 0 on
+    // every request until the count was lifted (P4-12, for P7-1).
+    const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === '/api/coach/feedback');
+    const body = JSON.parse(String((call?.[1] as RequestInit).body)) as { revealedHints: number };
+    expect(body.revealedHints).toBe(1);
+  });
+});

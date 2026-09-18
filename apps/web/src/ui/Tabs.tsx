@@ -47,3 +47,31 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof Radix
 export function TabsContent({ className, ...props }: ComponentProps<typeof RadixTabs.Content>) {
   return <RadixTabs.Content className={cn('focus-ring-inset pt-3', className)} {...props} />;
 }
+
+/**
+ * A panel that keeps its state while another tab is shown (ROADMAP P4-12).
+ *
+ * Radix unmounts an inactive panel, which is the right default - a panel that
+ * costs nothing when hidden - and wrong for a panel holding something the user
+ * typed. Looking at the Description threw away a half-written coach question
+ * and the results panel's selected test.
+ *
+ * `forceMount` keeps it mounted; Radix then marks the inactive one `hidden`,
+ * which Tailwind's preflight turns into `display: none`, so it is out of the
+ * layout and out of the accessibility tree. `hidden` is not enough on its own
+ * for a flex child, hence the explicit `data-[state=inactive]:hidden` - a
+ * `flex-1` on an element whose `display` was overridden by a utility class
+ * would still take space.
+ */
+export function StickyTabsContent({
+  className,
+  ...props
+}: ComponentProps<typeof RadixTabs.Content>) {
+  return (
+    <RadixTabs.Content
+      forceMount
+      className={cn('focus-ring-inset pt-3 data-[state=inactive]:hidden', className)}
+      {...props}
+    />
+  );
+}

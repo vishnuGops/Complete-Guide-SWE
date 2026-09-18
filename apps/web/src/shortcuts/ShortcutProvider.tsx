@@ -17,9 +17,28 @@ import { matchShortcut, type ShortcutId } from './shortcuts.js';
  *   - **Unclaimed shortcuts stay unclaimed.** `Ctrl+J` opens the browser's
  *     downloads; we only take it when something is actually listening, so the
  *     list page does not silently break a browser binding it has no use for.
+ *   - **A dialog owns the keyboard while it is open.** See `insideDialog`.
  */
 
 type Handler = () => void;
+
+/**
+ * Whether the event came from inside a modal (ROADMAP P4-12).
+ *
+ * The two cases that made this necessary, both reachable in a few seconds:
+ * `Ctrl+Enter` with the reset-to-starter confirmation open ran the code the
+ * dialog was asking about deleting, and the same keys in the coach's follow-up
+ * box ran the judge instead of sending the question. A modal is modal: while
+ * one is open it owns the keyboard, and the app's own bindings wait.
+ *
+ * Checked on the event target rather than by asking whether a dialog exists
+ * anywhere, so a shortcut pressed in the editor still works while a
+ * non-modal popover is open somewhere on screen.
+ */
+function insideDialog(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.closest('[role="dialog"], [role="alertdialog"]') !== null;
+}
 
 interface Registry {
   register: (id: ShortcutId, handler: Handler) => () => void;
@@ -56,6 +75,7 @@ export function ShortcutProvider({ children }: { children: ReactNode }) {
       if (event.repeat) return;
       const shortcut = matchShortcut(event);
       if (!shortcut) return;
+      if (insideDialog(event.target)) return;
 
       const stack = stacks.current.get(shortcut.id);
       const handler = stack?.at(-1);

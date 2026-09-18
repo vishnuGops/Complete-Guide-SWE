@@ -302,6 +302,24 @@ export function CoachPanel({
             onChange={(event) => {
               setQuestion(event.target.value);
             }}
+            /*
+              The field claims `Ctrl+Enter` for sending (P4-12).
+
+              The registry listens in the capture phase on the window, so
+              without this the keys the user has just been told mean "run"
+              would run the judge from inside a text box - and the question they
+              typed would sit there unsent. `stopPropagation` in capture on the
+              input itself is what gets in front of the registry.
+            */
+            onKeyDownCapture={(event) => {
+              if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+              event.stopPropagation();
+              event.preventDefault();
+              const trimmed = question.trim();
+              if (trimmed === '' || streaming) return;
+              onFollowUp(trimmed);
+              setQuestion('');
+            }}
             placeholder="Why is that O(n²)?"
             className="flex-1"
             disabled={streaming}

@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { solvedCount } from '@devpromax/shared';
 import { useProgress } from '../api/hooks.js';
-import { cn } from '../ui/index.js';
+import { ErrorBoundary, cn } from '../ui/index.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { useAppTheme } from './useAppTheme.js';
 
@@ -97,7 +97,18 @@ export function AppShell() {
       </header>
 
       <main className="min-h-0 flex-1 max-[1023px]:hidden">
-        <Outlet />
+        {/*
+          A screen that throws must not take the app with it (P4-12). Inside the
+          shell rather than around it, so the top bar - and with it the way out
+          to another screen - survives.
+
+          Keyed on nothing: remounting on every navigation would also reset it,
+          but React Router replaces the outlet's children anyway, and a boundary
+          that cleared itself on render would flash the broken screen again.
+        */}
+        <ErrorBoundary title="This screen stopped working.">
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {/*
