@@ -8,7 +8,7 @@
   "patterns": ["frequency map", "custom sort", "tie breaking"],
   "tier": "Medium",
   "rating": 4,
-  "order": 1,
+  "order": 0,
   "mode": "function",
   "entry": "byFrequency",
   "expect": "return",

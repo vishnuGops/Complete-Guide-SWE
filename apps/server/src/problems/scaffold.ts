@@ -110,7 +110,17 @@ function metaJson(o: Resolved): string {
       title: o.title,
       version: 1,
       topic: o.topic,
-      patterns: ['TODO: the pattern this teaches'],
+      /*
+       * A real pattern, not a `TODO` (ROADMAP P6-1).
+       *
+       * `patterns` is a closed enum now, so a placeholder here makes the whole
+       * file unparseable - and an unparseable `meta.json` hides every other
+       * thing the validator would have said about the scaffold, including the
+       * TODOs that are the point. `one pass` is the most common true answer
+       * and the CLI prints a reminder to replace it; `targetComplexity` below
+       * still carries a TODO, so a scaffold is still refused.
+       */
+      patterns: ['one pass'],
       tier: o.tier,
       rating: o.rating,
       order: o.order,

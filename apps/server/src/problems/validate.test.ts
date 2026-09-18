@@ -789,3 +789,52 @@ describe('seed-catalogue rules (P6-0)', () => {
     expectError(root, /tests call "peek", which starter\.py and starter\.java does not declare/);
   });
 });
+
+describe('the learning path (P6-1)', () => {
+  it('rejects two problems sharing an order within a topic', () => {
+    // `order` is the path (D8), and a tie is broken by slug - alphabetically,
+    // which is to say by accident.
+    const root = catalogue();
+    writeProblem(root, {
+      topic: 'arrays',
+      slug: 'another-array-problem',
+      files: {
+        'meta.json': json({
+          ...VALID_META,
+          id: 'another-array-problem',
+          slug: 'another-array-problem',
+          title: 'Another Array Problem',
+        }),
+      },
+    });
+
+    const issue = expectError(root, /order 0 in arrays is also used by/);
+    expect(issue.jsonPath).toBe('order');
+  });
+
+  it('accepts the same order in two different topics', () => {
+    const root = catalogue();
+    writeProblem(root, {
+      topic: 'hashmap',
+      slug: 'a-hashmap-problem',
+      files: {
+        'meta.json': json({
+          ...VALID_META,
+          id: 'a-hashmap-problem',
+          slug: 'a-hashmap-problem',
+          topic: 'hashmap',
+          title: 'A HashMap Problem',
+        }),
+      },
+    });
+
+    expect(errors(root).some((issue) => issue.message.includes('is also used by'))).toBe(false);
+  });
+
+  it('rejects a pattern outside the vocabulary', () => {
+    const root = catalogue({
+      files: { 'meta.json': json({ ...VALID_META, patterns: ['hash-map'] }) },
+    });
+    expectError(root, /Invalid option/);
+  });
+});

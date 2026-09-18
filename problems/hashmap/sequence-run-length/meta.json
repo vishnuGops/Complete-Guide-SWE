@@ -5,7 +5,7 @@
   "title": "Longest Consecutive Run",
   "version": 2,
   "topic": "hashmap",
-  "patterns": ["hash set", "membership", "amortised scan"],
+  "patterns": ["hash set", "amortised scan"],
   "tier": "Medium",
   "rating": 5,
   "order": 4,

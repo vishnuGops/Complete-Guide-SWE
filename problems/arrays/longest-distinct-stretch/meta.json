@@ -8,7 +8,7 @@
   "patterns": ["sliding window", "frequency map", "two pointers"],
   "tier": "Medium",
   "rating": 5,
-  "order": 5,
+  "order": 8,
   "mode": "function",
   "entry": "longestStretch",
   "expect": "return",

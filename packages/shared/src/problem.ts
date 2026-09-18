@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { jsonValueSchema, type JsonValue } from './json.js';
 import { languageSchema, type Language } from './language.js';
 import { ratingSchema, tierForRating, tierSchema, topicSchema } from './curriculum.js';
+import { patternSchema } from './patterns.js';
 
 export const slugSchema = z
   .string()
@@ -175,7 +176,14 @@ const problemMetaBase = z.strictObject({
   version: z.int().min(1),
   topic: topicSchema,
   /** e.g. ["two pointers", "sliding window"] - free text, used for search. */
-  patterns: z.array(z.string().min(2)).min(1),
+  /**
+   * What this problem teaches, from the closed list in `patterns.ts` (P6-1).
+   *
+   * An enum rather than free text: twenty problems were enough to produce
+   * "hash map", "hash set" and "frequency map" for one idea, and the list page
+   * filters on these while the dashboard groups weak spots by them.
+   */
+  patterns: z.array(patternSchema).min(1).max(5),
   tier: tierSchema,
   rating: ratingSchema,
   /** Position within the topic's learning path. */

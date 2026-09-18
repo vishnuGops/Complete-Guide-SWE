@@ -5,7 +5,7 @@
   "title": "Days Until Warmer",
   "version": 2,
   "topic": "stack",
-  "patterns": ["monotonic stack", "next greater element", "single pass"],
+  "patterns": ["monotonic stack", "next greater element", "one pass"],
   "tier": "Medium",
   "rating": 5,
   "order": 2,

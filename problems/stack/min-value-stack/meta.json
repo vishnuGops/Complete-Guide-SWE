@@ -8,7 +8,7 @@
   "patterns": ["design", "auxiliary stack", "amortised O(1)"],
   "tier": "Medium",
   "rating": 4,
-  "order": 0,
+  "order": 1,
   "mode": "operations",
   "entry": "MinValueStack",
   "expect": "return",

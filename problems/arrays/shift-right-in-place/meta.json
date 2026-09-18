@@ -8,7 +8,7 @@
   "patterns": ["in-place", "reversal", "cyclic shift"],
   "tier": "Medium",
   "rating": 4,
-  "order": 1,
+  "order": 6,
   "mode": "function",
   "entry": "shiftRight",
   "expect": "mutatedArgs",

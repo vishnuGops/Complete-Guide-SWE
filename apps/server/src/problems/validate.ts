@@ -817,6 +817,8 @@ function checkCatalogue(results: readonly ProblemValidation[]): ValidationIssue[
   const byId = new Map<string, string[]>();
   const bySlug = new Map<string, string[]>();
   const knownSlugs = new Set<string>();
+  /** `topic:order`, which has to name one problem (ROADMAP P6-1). */
+  const byOrder = new Map<string, string[]>();
 
   for (const result of results) {
     if (!result.pkg) continue;
@@ -824,6 +826,29 @@ function checkCatalogue(results: readonly ProblemValidation[]): ValidationIssue[
     byId.set(meta.id, [...(byId.get(meta.id) ?? []), location.relDir]);
     bySlug.set(meta.slug, [...(bySlug.get(meta.slug) ?? []), location.relDir]);
     knownSlugs.add(meta.slug);
+
+    const key = `${meta.topic}:${String(meta.order)}`;
+    byOrder.set(key, [...(byOrder.get(key) ?? []), location.relDir]);
+  }
+
+  /*
+   * `order` is the learning path (D8), and a tie in it is decided by slug -
+   * which is to say alphabetically, which is to say by accident. With twenty
+   * problems that is a curiosity; with two hundred it is the difference
+   * between a path and a list.
+   */
+  for (const [key, dirs] of byOrder) {
+    if (dirs.length > 1) {
+      const [topic, order] = key.split(':');
+      issues.push(
+        error(
+          `${dirs[0]}/meta.json`,
+          `order ${String(order)} in ${String(topic)} is also used by ${dirs.slice(1).join(', ')}; ` +
+            'ties are broken by slug, which is not an order anyone chose',
+          'order',
+        ),
+      );
+    }
   }
 
   for (const [id, dirs] of byId) {

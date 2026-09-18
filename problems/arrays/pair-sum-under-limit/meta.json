@@ -8,7 +8,7 @@
   "patterns": ["two pointers", "sorted input", "counting"],
   "tier": "Medium",
   "rating": 4,
-  "order": 6,
+  "order": 7,
   "mode": "function",
   "entry": "countPairs",
   "expect": "return",

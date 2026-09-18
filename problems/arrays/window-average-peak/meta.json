@@ -5,7 +5,7 @@
   "title": "Peak Window Start",
   "version": 1,
   "topic": "arrays",
-  "patterns": ["sliding window", "fixed window", "running sum"],
+  "patterns": ["sliding window", "fixed window", "running total"],
   "tier": "Easy",
   "rating": 3,
   "order": 3,

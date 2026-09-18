@@ -117,6 +117,10 @@ function main(): void {
     [
       '',
       'Then, in order:',
+      // Named explicitly because it is the one field the scaffold fills with a
+      // plausible *wrong* answer rather than a TODO - `patterns` is a closed
+      // enum, and a placeholder there would make meta.json unparseable (P6-1).
+      '  0. Set `patterns` in meta.json from docs/CURRICULUM.md; the scaffold guesses "one pass".',
       '  1. Write the statement, samples and both references (docs/AUTHORING.md).',
       `  2. npm run problems:gen ${slug}          # hidden tests, reference as oracle`,
       `  3. npm run problems:validate ${slug}     # the merge gate`,

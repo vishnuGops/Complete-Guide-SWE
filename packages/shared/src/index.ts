@@ -6,6 +6,7 @@
 export * from './json.js';
 export * from './language.js';
 export * from './curriculum.js';
+export * from './patterns.js';
 export * from './problem.js';
 export * from './judge.js';
 export * from './customTests.js';
