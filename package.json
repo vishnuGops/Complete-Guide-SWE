@@ -16,7 +16,7 @@
     "dev:web": "npm run dev -w @devpromax/web",
     "dev:server": "npm run dev -w @devpromax/server",
     "build": "npm run build -w @devpromax/shared && npm run build -w @devpromax/server && npm run build -w @devpromax/web",
-    "start": "npm run build && node apps/server/dist/index.js",
+    "start": "npm run build && node apps/server/dist/start.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --exclude \"**/*.integration.test.ts\"",

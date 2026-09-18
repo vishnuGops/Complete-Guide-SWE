@@ -29,6 +29,25 @@ export interface SpawnResult {
 }
 
 /**
+ * Every judge child currently running (ROADMAP P3-6).
+ *
+ * Needed for one thing: Ctrl+C. Node kills the process, not its grandchildren,
+ * so a `java` holding a workspace open survived the server that started it -
+ * and on Windows kept the directory undeletable until someone found it in the
+ * task list. The set is small by construction (the queue is two wide by
+ * default) and entries remove themselves when the child exits.
+ */
+const live = new Set<ChildProcess>();
+
+/** Kills every judge child and everything they started. */
+export function killLiveChildren(): number {
+  const count = live.size;
+  for (const child of live) killTree(child);
+  live.clear();
+  return count;
+}
+
+/**
  * Kills a process and everything it started.
  *
  * A solution that spawns children - deliberately or through a library - would
@@ -103,6 +122,8 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       windowsHide: true,
     });
 
+    live.add(child);
+
     let stdout = '';
     let stderr = '';
     let outputTruncated = false;
@@ -139,6 +160,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
     const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
       if (settled) return;
       settled = true;
+      live.delete(child);
       clearTimeout(watchdog);
       resolve({
         code,
@@ -154,6 +176,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
     child.on('error', (err) => {
       if (settled) return;
       settled = true;
+      live.delete(child);
       clearTimeout(watchdog);
       reject(err);
     });

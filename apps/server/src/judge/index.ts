@@ -34,6 +34,7 @@ import { RunQueue } from './queue.js';
 import { createWorkspace, type Workspace } from './workspace.js';
 
 export { RunQueue } from './queue.js';
+export { killLiveChildren } from './process.js';
 export { sweepStaleWorkspaces } from './workspace.js';
 
 const EXECUTORS: Record<Language, Executor> = {

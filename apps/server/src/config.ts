@@ -27,11 +27,30 @@ export const paths = {
   data: path.join(repoRoot, 'data'),
   db: dbFile,
   judgeWorkspaces: path.join(repoRoot, 'data', 'judge'),
+  /** The built web app, served by the same process in production (D24, P3-6). */
+  webDist: path.join(repoRoot, 'apps', 'web', 'dist'),
 } as const;
+
+/**
+ * The port, checked rather than coerced (ROADMAP P3-6).
+ *
+ * `Number('5174x')` is `NaN`, and Fastify's own error for a `NaN` port is not
+ * something anyone can act on. A typo in an environment variable should say so
+ * in the first line of output.
+ */
+export function parsePort(value: string | undefined, fallback = 5174): number {
+  if (value === undefined || value.trim() === '') return fallback;
+
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`DEVPROMAX_PORT must be a whole number between 1 and 65535; got "${value}".`);
+  }
+  return port;
+}
 
 export const serverConfig = {
   host: '127.0.0.1',
-  port: Number(process.env.DEVPROMAX_PORT ?? 5174),
+  port: parsePort(process.env.DEVPROMAX_PORT),
   /** Every /api request must carry this header (see ROADMAP D15). */
   clientHeader: 'x-devpromax-client',
 } as const;

@@ -78,6 +78,29 @@ export function parseInput<T extends z.ZodType>(
  */
 export function applyErrorHandling(app: FastifyInstance): void {
   app.setNotFoundHandler(async (request, reply) => {
+    /*
+     * The router's own paths, when this process is also serving the app
+     * (ROADMAP P3-6, D24).
+     *
+     * `/problems/two-sum` is a route in the browser and a file that does not
+     * exist on disk, so a reload has to be answered with the page. Everything
+     * under `/api` keeps its real 404 - a mistyped endpoint answering with an
+     * HTML page is the kind of thing that costs an afternoon - and so does
+     * anything that is not a GET.
+     *
+     * Decided here rather than in `web.ts` because Fastify allows one
+     * not-found handler per instance, and this is it.
+     */
+    const server = request.server as FastifyInstance & { devpromaxWeb?: boolean };
+    if (
+      server.devpromaxWeb === true &&
+      request.method === 'GET' &&
+      !request.url.startsWith('/api')
+    ) {
+      await reply.type('text/html').header('cache-control', 'no-cache').sendFile('index.html');
+      return;
+    }
+
     await reply.code(404).send({
       error: 'NotFound',
       message: `No route for ${request.method} ${request.url}.`,

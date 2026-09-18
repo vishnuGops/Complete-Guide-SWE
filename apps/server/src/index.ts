@@ -10,7 +10,8 @@ import { applyRuntimeSettings } from './api/settingsService.js';
 import { serverConfig } from './config.js';
 import { createDatabase, type Repositories } from './db/index.js';
 import { logger } from './logger.js';
-import { sweepStaleWorkspaces } from './judge/index.js';
+import { killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
+import { hasWebBuild, registerWeb } from './api/web.js';
 
 export interface BuildOptions {
   /** Tests pass an in-memory database; production opens `data/devpromax.db`. */
@@ -26,6 +27,17 @@ export interface BuildOptions {
   provider?: ProviderOptions;
   /** Tests pass `silentLogger`; production uses the configured pino instance. */
   logger?: FastifyBaseLogger;
+  /**
+   * Serve `apps/web/dist` from this process (ROADMAP P3-6, D24).
+   *
+   * Opt-in, and only `main()` opts in. The alternative - on by default,
+   * skipped when the directory is missing - would give a developer who has run
+   * `npm run build` once a different 404 handler from one who has not, and an
+   * API test suite whose behaviour depends on that is worse than no default.
+   */
+  serveWeb?: boolean;
+  /** Overridden by the test that proves the SPA fallback. */
+  webRoot?: string;
 }
 
 export async function buildServer(options: BuildOptions = {}) {
@@ -87,25 +99,105 @@ export async function buildServer(options: BuildOptions = {}) {
   // not be a health check anything else could use.
   app.get('/health', async () => ({ ok: true }));
 
+  // Last, so nothing it registers can shadow a route above it (P3-6, D24).
+  // Absent in development, where Vite serves the UI, and in tests.
+  if (options.serveWeb === true || options.webRoot !== undefined) {
+    await registerWeb(app, options.webRoot !== undefined ? { root: options.webRoot } : {});
+  }
+
   return app;
 }
 
-async function main() {
+/**
+ * Stops the server the way Ctrl+C should (ROADMAP P3-6).
+ *
+ * Three things have to happen, and only the first used to:
+ *
+ *   1. Stop accepting requests, which `app.close()` does.
+ *   2. Run the `onClose` hook, which closes the database. Without it SQLite is
+ *      left to the operating system - usually fine, and "usually" is not a word
+ *      that belongs near a file holding months of practice history.
+ *   3. Kill judge children. Node kills this process, not the `java` it started,
+ *      and an orphan holds its workspace open - on Windows, undeletably.
+ *
+ * `once` per signal, and a second signal exits immediately: someone pressing
+ * Ctrl+C twice means it now.
+ */
+function installShutdown(app: Awaited<ReturnType<typeof buildServer>>): void {
+  let closing = false;
+
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => {
+      if (closing) {
+        process.exit(130);
+      }
+      closing = true;
+
+      const killed = killLiveChildren();
+      if (killed > 0) logger.info({ killed }, 'stopped judge processes');
+
+      void app
+        .close()
+        .then(() => {
+          process.exit(0);
+        })
+        .catch((error: unknown) => {
+          logger.error({ err: error }, 'shutdown failed');
+          process.exit(1);
+        });
+    });
+  }
+}
+
+/**
+ * Starts the server for real (ROADMAP P3-6).
+ *
+ * Exported because `start.ts` - the production entry point - has to call it:
+ * the `isEntrypoint` check below compares `process.argv[1]` against *this*
+ * module, and under `node dist/start.js` it is false. That was the whole of the
+ * first version of this fix, which built the app, started nothing, and exited 0.
+ */
+export async function start() {
   // Clear workspaces left behind by a process that died before disposing of its
   // own. Only touches directories older than an hour, so it cannot race a run.
   const swept = await sweepStaleWorkspaces();
   if (swept > 0) logger.info({ swept }, 'removed stale judge workspaces');
 
-  const app = await buildServer();
-  // 127.0.0.1, never 0.0.0.0: this server runs user code (see api/hardening.ts).
-  await app.listen({ host: serverConfig.host, port: serverConfig.port });
+  const app = await buildServer({ serveWeb: true });
+  installShutdown(app);
+
+  try {
+    // 127.0.0.1, never 0.0.0.0: this server runs user code (see api/hardening.ts).
+    await app.listen({ host: serverConfig.host, port: serverConfig.port });
+  } catch (error) {
+    // The one startup failure that is the user's to fix, and Fastify's own
+    // message for it names a syscall rather than the thing to do (P3-6).
+    if (error instanceof Error && 'code' in error && error.code === 'EADDRINUSE') {
+      throw new Error(
+        `Port ${String(serverConfig.port)} is already in use. Another DevProMax may be running; ` +
+          'stop it, or set DEVPROMAX_PORT to a free port.',
+      );
+    }
+    throw error;
+  }
+
+  // The one line a person needs. `logger` would print JSON in production, and
+  // the address is not a log entry - it is the answer to "where do I go".
+  const url = `http://${serverConfig.host}:${String(serverConfig.port)}`;
+  const lines = hasWebBuild()
+    ? [`DevProMax is running at ${url}`]
+    : [
+        `DevProMax API is running at ${url}`,
+        'No web build found - run `npm run build` to serve the app from here.',
+      ];
+  process.stdout.write(['', ...lines, '', ''].join('\n'));
 }
 
 const isEntrypoint =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isEntrypoint) {
-  main().catch((err: unknown) => {
+  start().catch((err: unknown) => {
     logger.error(err, 'server failed to start');
     process.exitCode = 1;
   });
