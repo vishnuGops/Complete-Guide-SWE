@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "queue-from-stacks",
+  "slug": "queue-from-stacks",
+  "title": "A Queue Made Of Stacks",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["design", "queue", "amortised O(1)"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 5,
+  "mode": "operations",
+  "entry": "StackQueue",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["min-value-stack", "browser-history"],
+  "targetComplexity": {
+    "time": "amortised O(1) per operation",
+    "space": "O(n)"
+  }
+}

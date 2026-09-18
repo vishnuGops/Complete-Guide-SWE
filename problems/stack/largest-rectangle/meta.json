@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "largest-rectangle",
+  "slug": "largest-rectangle",
+  "title": "Widest Solid Block",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["monotonic stack", "invariant"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 8,
+  "mode": "function",
+  "entry": "widestBlock",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["next-greater-cycle", "trap-the-rain"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

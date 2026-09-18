@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Ask the question per column rather than per puddle: how deep is the water standing on top of column `i`?",
+    "It is the smaller of the tallest column to its left and the tallest to its right, minus its own height - and never less than zero.",
+    "Those two running maxima can each be computed in one pass, which gives an O(n) answer using O(n) space. Then ask what you would need to drop the arrays.",
+    "Walk inwards from both ends. Whichever side is currently shorter is the side whose maximum is the binding one, so that column's water is known now - and you can advance that side."
+  ]
+}

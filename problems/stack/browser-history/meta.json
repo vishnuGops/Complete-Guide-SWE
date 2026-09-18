@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "browser-history",
+  "slug": "browser-history",
+  "title": "Back, Forward, Visit",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["design", "stack"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 11,
+  "mode": "operations",
+  "entry": "BrowserHistory",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["queue-from-stacks", "min-value-stack"],
+  "targetComplexity": {
+    "time": "O(1) amortised per operation",
+    "space": "O(n)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "When you reach a `]`, which part of the answer does the count apply to, and where did that part begin?",
+    "It applies to everything built since the matching `[`. So at each `[` you need to set the current text aside and start a fresh one.",
+    "Two stacks: one of the counts waiting to be applied, one of the partial texts waiting to be resumed. A `[` pushes both; a `]` pops both and joins.",
+    "A count can have more than one digit, so accumulate it as `count * 10 + digit` until the `[` arrives."
+  ]
+}

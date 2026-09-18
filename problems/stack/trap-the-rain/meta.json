@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "trap-the-rain",
+  "slug": "trap-the-rain",
+  "title": "Water Held Between",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["monotonic stack", "two pointers"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 9,
+  "mode": "function",
+  "entry": "waterHeld",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["largest-rectangle", "running-maximum"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

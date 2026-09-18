@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "decode-repeated",
+  "slug": "decode-repeated",
+  "title": "Expand The Shorthand",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["stack", "strings"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 6,
+  "mode": "function",
+  "entry": "expand",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "simplify-path",
+    "bracket-balance"
+  ],
+  "targetComplexity": {
+    "time": "O(length of the answer)",
+    "space": "O(length of the answer)"
+  }
+}

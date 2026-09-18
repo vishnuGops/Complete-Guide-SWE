@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two stacks is the classic answer: one for the pages behind the current one, one for the pages ahead. What does each operation do to them?",
+    "`back` moves pages from the behind stack to the ahead stack; `forward` does the reverse; `visit` pushes onto behind and empties ahead.",
+    "There is a simpler model: one list of pages and a cursor into it. `back` and `forward` move the cursor, clamped to the ends.",
+    "With the list model, `visit` truncates everything after the cursor and appends - which is exactly the 'throw away the forward history' rule, written once."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Instead of asking about rectangles, ask about columns: for each column, what is the widest rectangle whose height is exactly that column's height?",
+    "It reaches left until a shorter column stops it, and right until a shorter column stops it. Every rectangle is the answer for at least one column, so the largest of these is the answer.",
+    "Walking left to right, the columns whose left-hand boundary is still unknown form an increasing stack - a shorter column arriving is what settles them.",
+    "When a column is popped, its right boundary is where you are now, and its left boundary is one past whatever is below it on the stack. Add a zero-height column at the end so everything gets settled."
+  ]
+}

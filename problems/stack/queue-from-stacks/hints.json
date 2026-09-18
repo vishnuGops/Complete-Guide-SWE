@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A stack reverses what you put into it. What does reversing something twice do?",
+    "Returns it to its original order - so two stacks, with values poured from one into the other, gives you the front of the queue on top.",
+    "Keep an incoming stack that `push` writes to, and an outgoing stack that `pop` and `peek` read from. When the outgoing stack is empty, pour the whole incoming stack into it.",
+    "Pour only when the outgoing stack is empty, never otherwise - pouring early interleaves values that arrived at different times and breaks the order."
+  ]
+}
