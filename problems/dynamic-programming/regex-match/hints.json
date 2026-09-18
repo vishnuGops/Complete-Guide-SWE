@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Define one boolean per pair of prefixes: does the first `i` letters of the text match the first `j` characters of the pattern?",
+    "When the pattern's next character is an ordinary letter or a `.`, it must consume exactly one letter of text, so the answer comes from one cell diagonally back.",
+    "A `*` is the hard case, and it has exactly two readings: the thing before it appears zero times, or it appears once more.",
+    "Zero times means skipping two pattern characters. Once more means consuming one text letter and keeping the same pattern position - which is what lets it repeat."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "travel-all-cities",
+  "slug": "travel-all-cities",
+  "title": "Shortest Round Trip",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["bitmask dp", "memoisation"],
+  "tier": "Hard",
+  "rating": 10,
+  "order": 16,
+  "mode": "function",
+  "entry": "shortestTrip",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["cheapest-route", "burst-the-balloons"],
+  "targetComplexity": {
+    "time": "O(2^n \u00b7 n^2)",
+    "space": "O(2^n \u00b7 n)"
+  }
+}

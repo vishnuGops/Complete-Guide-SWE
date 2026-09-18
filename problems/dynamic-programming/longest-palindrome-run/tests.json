@@ -1,0 +1,79 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "a tie broken by position",
+      "args": ["babad"],
+      "expected": "bab",
+      "explanation": "`aba` is equally long and starts later."
+    },
+    {
+      "name": "an even palindrome",
+      "args": ["cbbd"],
+      "expected": "bb",
+      "explanation": "Palindromes need not have a middle letter."
+    },
+    {
+      "name": "nothing longer than a letter",
+      "args": ["abc"],
+      "expected": "a",
+      "explanation": "Every single letter is a palindrome; the first wins."
+    }
+  ],
+  "hidden": [
+    {"name":"one letter","args":["a"],"expected":"a"},
+    {"name":"two different letters","args":["ab"],"expected":"a"},
+    {"name":"two equal letters","args":["aa"],"expected":"aa"},
+    {"name":"two palindromes of equal length","args":["abacdfgdcaba"],"expected":"aba"},
+    {"name":"every substring is a palindrome","args":["aaaa"],"expected":"aaaa"},
+    {"args":["babaab"],"expected":"baab"},
+    {"args":["bababa"],"expected":"babab"},
+    {"args":["abcaaaccaacc"],"expected":"aaccaa"},
+    {"args":["caacababcabc"],"expected":"caac"},
+    {"args":["ddbabcbacbabcabcadcdacaddbaddc"],"expected":"cbacbabcabc"},
+    {"args":["baddcbabbccaddbcdbdbcdbaccbcca"],"expected":"accbcca"},
+    {
+      "args": ["rmavxwllsyzujugdxkpcrddsusuwiflgxaloqpgxpnqarlekacvuotwztkswbggdhmzblfagjszekxwj"],
+      "expected": "uju"
+    },
+    {
+      "args": ["zsclxzebinbuthsvyysdlltisfwmlxqmcnxjyqjqyoynmbiwfwsvkvswfwibmnyoyqjqyjxksnzyafqk"],
+      "expected": "xjyqjqyoynmbiwfwsvkvswfwibmnyoyqjqyjx"
+    },
+    {
+      "name": "five hundred equal letters",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "expected": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "five hundred over two letters",
+      "args": [
+        "bbaabbbbbbbbbbbbbbabbabaaabaababababababbaabbaabbaabbaabaabababbababbabbbbbbbaabbbbaaaababaaabbababbabaaaabaaaaabbabaababbaabbbabbabbbaabbbbbbaabaabbbaababbaaabaaaabaaaabbabbbaabaaaaaabbabbaabaababbbbbaaabbaabbaababbabababababbbbbaabbabbabbaababbbbabbbbbababababaaaababbbabbbbabbbabaaabbbabbbaaaabababbbbabbbaabbaaaaaabbabbabbbbababbbbabbaabbababbabbbbbaabbabaaaaababbabbbababbaaabaabaaaaabaabbbaabbababbbaaabababbbaaabbabbabaaaaabbbabbbbbabbabaaabaabbabbaaababaaababbbaabaabaaabbaabbababbbbaaaaabbba"
+      ],
+      "expected": "aaababbbabbbbabbbabaaa"
+    },
+    {
+      "name": "the stated maximum, all equal",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "expected": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "the stated maximum over the full alphabet",
+      "args": [
+        "wccfcfglxqlqblfbqmxlmmjlghgfvqgpgcnzrnwicowtabdzvcbdsonkqvjejgpomiwrvdkfdgfkefifpbitdjelkomtdzrmtbgxydbhuistguzdlwdyacypinnlewunelxntwfaphbpzalibnxilqwabsnwybpxxqyfcnxrujbfxaaachvkeennflbncvvsrhjvdatrinrxdxrvnupaoiftsvtkkwuwdqsrcamtzdaaagnzbisztmvlamyhqjlgoiqbsfxquywumvjlzxhuafffydajaeblgvoebnrwpitugwmyjuwxwlyuhtmjrcdnezlnxlibeshdaozlovllshyirseeyziiwrugdewsggpewwixtgpkxvtwalxnalejvxtycaravwvoptibmrkisdggbswevjdyuekiutfflowgfyyniwofgahyhwilyyyodhwtutjzotxyblbgzjrpfmdmbxvnamuludilaoeatjjwcczhtcgtexxseoaqbdsnfpbzhnuefpmwcelcdxozbfrcdxdhckzbwxioyvxnsrnnacfmjnxufkymdebxliabydtaausrbvazwfwxdntoowdmadshferyocwptauskvypltrefxdnwgahcvwzrngxbpwywasgseeacrcuwadnfyoxncqmymnlvcurwyespzpfavbmlewseiuozthkeezeteyapwslzvfejdiueswtluuebxgcbkgaruxvgdygqkwxubgybsurqkdpigntryjzncprvjsymupzdgxdlzctyvsucicbhxcaehfcqfjessoawdpdbrpzeazwhsvpvctqgsodhjewzewpqsaznslaxaebthhrkptkdixdpoyraeamdbbjamzqupgfilfionbppmovrkosbsbkvdopqixosrywvzgmaxffvgkgfviflgidgqnsiseztrlwldlelwnizgbrztpdcosohphimhqypngudsypduocgoxpsayg"
+      ],
+      "expected": "rxdxr"
+    },
+    {
+      "name": "the stated maximum with a long palindrome inside",
+      "args": [
+        "babcebadaabdbbecddacbccaaabdadcabdaaedbcbebeedadeaadabadacbbeebddcddbcebdeeeebdacbbaeadebcaececccbdbddcedeaebcbbbdebaecbedeeaddadeaceccbaecacbacaadbdcbdadacdbbaaedacaddaddbddccbecadabeedeabebccebcceeebbaaaeddccbaaeecdbcadeacbacddeadeadacbebbaeddbeeeddcaedeebbbcbcaabdeebbbcedeebcecbedabbadedeccdcbbddbbbdddbdabedceeecbbeadabccdecddeacebcddcbecaeddcedccbadaebbceeecdebadbdddbbbddbbcdccededabbadebcecbeedecbbbeedbaacbcbbbeedeacddeeebddeabbebcadaedaeddcabcaedacbdceeaabccddeaaabbeeeccbeccbebaedeebadacebccddbddaddacadeaabbdcadadbcdbdaacabcaccbdcaedebcebdedebabedeeecdbeccebecadadbabbecededabaadddaaedddaecdbaacbeeedbdacdadcdeeeeaaccbeddaacdeeaacdbedacdcdbeeeaeeecadecdadbbeebedbdacccbebdedceddadbcadeedeaaaaadddedebabcabbddcadbbbdbedcecbbaacbcdeabdadcceeabdbaeabdcdadcdecbeaebbecabceaedaddadceebedbbbdcabaadabdeecdcbdecabbbaaaedbaaacadeeecdbceaaedaccbabdbbbeddebaaceecdbaabcedddcaabaeeadecbedbcdecdaaedbecdccbdcbdeebeebaecccebadcaacddbadbeaddebbcadbcebacededadbbccabebbeaaecdddeabedaecbaedccdcadabccbcbd"
+      ],
+      "expected": "cacbacaadbdcbdadacdbbaaedacaddaddbddccbecadabeedeabebccebcceeebbaaaeddccbaaeecdbcadeacbacddeadeadacbebbaeddbeeeddcaedeebbbcbcaabdeebbbcedeebcecbedabbadedeccdcbbddbbbdddbdabedceeecbbeadabccdecddeacebcddcbecaeddcedccbadaebbceeecdebadbdddbbbddbbcdccededabbadebcecbeedecbbbeedbaacbcbbbeedeacddeeebddeabbebcadaedaeddcabcaedacbdceeaabccddeaaabbeeeccbeccbebaedeebadacebccddbddaddacadeaabbdcadadbcdbdaacabcac"
+    }
+  ]
+}

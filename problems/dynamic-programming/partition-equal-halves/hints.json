@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "If the two groups are equal, what does each of them total?",
+    "Half of everything - so the question is only whether *some* subset reaches that half, and the other group is then forced.",
+    "An odd total cannot be halved, which settles those cases before any work is done.",
+    "Now it is: which totals are reachable using some of the values? A boolean per total, filled one value at a time."
+  ]
+}

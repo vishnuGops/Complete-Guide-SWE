@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Trying to decide which balloon to burst *first* does not split the problem, because bursting it joins the two sides together. Try the other end of the order.",
+    "Ask instead which balloon is burst **last** within a range. When it goes, its neighbours are exactly the balloons just outside the range - which are still there.",
+    "So the two sides become independent: everything left of it, and everything right of it, each burst entirely before it.",
+    "That gives a recurrence over open ranges: `best(left, right)` with the balloons at `left` and `right` untouched, and a choice of which balloon between them goes last."
+  ]
+}

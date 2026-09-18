@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "bounded-knapsack",
+  "slug": "bounded-knapsack",
+  "title": "What Fits In The Bag",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["knapsack", "two-dimensional dp"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 11,
+  "mode": "function",
+  "entry": "bestLoad",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["partition-equal-halves", "coin-ways"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 capacity)",
+    "space": "O(capacity)"
+  }
+}

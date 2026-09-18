@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Part-way through the trip, what do you actually need to know to finish it well?",
+    "Which cities have been visited, and which one you are standing in. The order you visited them in does not matter at all.",
+    "'Which cities' is a set of at most twelve things - which fits in the bits of a single integer.",
+    "So the table is indexed by (set visited, city standing in), and there are 2^n times n of those rather than (n-1)! orders."
+  ]
+}

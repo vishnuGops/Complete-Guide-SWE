@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Checking every substring costs O(n) per check and there are O(n^2) of them. What information would make each check constant?",
+    "Whether the substring one shorter on each side is a palindrome - because a run reads the same both ways exactly when its ends match and its inside does too.",
+    "That is a table over pairs of endpoints, filled by increasing length so the inside is known before the outside.",
+    "The other route needs no table at all: every palindrome has a centre, and there are 2n - 1 of them - between letters as well as on them. Expand from each."
+  ]
+}

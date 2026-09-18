@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Consider the items one at a time. For a given remaining capacity, what are the two choices?",
+    "Take the item, if it fits, and solve the rest with less capacity; or skip it and solve the rest with the same capacity. Take the better.",
+    "That is a table over (items considered, capacity used), filled one item at a time - and each row needs only the row above it.",
+    "Rolled into one row, the inner loop must run downwards over the capacities, or an item gets taken more than once."
+  ]
+}

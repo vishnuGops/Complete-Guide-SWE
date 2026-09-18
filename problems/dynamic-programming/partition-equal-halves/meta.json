@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "partition-equal-halves",
+  "slug": "partition-equal-halves",
+  "title": "Split Into Equal Halves",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["knapsack", "one-dimensional dp"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 10,
+  "mode": "function",
+  "entry": "canSplitEvenly",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["bounded-knapsack", "coin-ways"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 total)",
+    "space": "O(total)"
+  }
+}

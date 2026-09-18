@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "a star matching nothing",
+      "args": ["aab","c*a*b"],
+      "expected": true,
+      "explanation": "`c*` matches zero `c`s."
+    },
+    {
+      "name": "any run of anything",
+      "args": ["ab",".*"],
+      "expected": true,
+      "explanation": "`.` matches any letter and `*` repeats it."
+    },
+    {
+      "name": "the whole text must match",
+      "args": ["aa","a"],
+      "expected": false,
+      "explanation": "The pattern covers only the first letter."
+    }
+  ],
+  "hidden": [
+    {"name":"an empty text and a star","args":["","a*"],"expected":true},
+    {"name":"an empty text and a letter","args":["","a"],"expected":false},
+    {"name":"one letter","args":["a","a"],"expected":true},
+    {"name":"a dot","args":["a","."],"expected":true},
+    {"name":"a pattern that almost matches","args":["mississippi","mis*is*p*."],"expected":false},
+    {"name":"a star and then the same letter","args":["aaa","a*a"],"expected":true},
+    {"name":"an empty text and three stars","args":["","a*b*c*"],"expected":true},
+    {"args":["a","a.*"],"expected":true},
+    {"args":["bbb","a.*"],"expected":false},
+    {"args":["bb","b*b"],"expected":true},
+    {"args":["aabbbaabbb","b*b"],"expected":false},
+    {"args":["bbbaaa","a*b*a*a*"],"expected":true},
+    {"args":["","a*b*a*a*"],"expected":true},
+    {"args":["bbbbbb","b*bbb*"],"expected":true},
+    {"args":["","b*bbb*"],"expected":false},
+    {"args":["ccccaacab","c*caa..*"],"expected":true},
+    {"args":["a","c*caa..*"],"expected":false},
+    {"args":["ccaac","ccaa.*c"],"expected":true},
+    {"args":["ac","ccaa.*c"],"expected":false},
+    {"args":["aaccaac","a.*cc*a*a*c*c"],"expected":true},
+    {"args":["c","a.*cc*a*a*c*c"],"expected":false},
+    {"args":["bca",".cc*c*.*a*c*b*"],"expected":true},
+    {"args":["abcacbacb",".cc*c*.*a*c*b*"],"expected":false},
+    {
+      "name": "twenty a's against ten stars",
+      "args": ["aaaaaaaaaaaaaaaaaaaa","a*a*a*a*a*a*a*a*a*a*"],
+      "expected": true
+    },
+    {
+      "name": "the same, with a letter that cannot match",
+      "args": ["aaaaaaaaaaaaaaaaaaab","a*a*a*a*a*a*a*a*a*a*"],
+      "expected": false
+    },
+    {
+      "name": "twenty a's against ten dotted stars",
+      "args": ["aaaaaaaaaaaaaaaaaaaa",".*.*.*.*.*.*.*.*.*.*"],
+      "expected": true
+    },
+    {
+      "name": "the stated maxima",
+      "args": ["abcabcabcabcabcabcab","a*b*c*a*b*c*.*.*.*.*"],
+      "expected": true
+    }
+  ]
+}

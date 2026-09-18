@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "longest-palindrome-run",
+  "slug": "longest-palindrome-run",
+  "title": "Longest Palindrome Inside",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["two-dimensional dp", "strings"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 12,
+  "mode": "function",
+  "entry": "longestPalindrome",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["split-into-palindromes", "shared-subsequence"],
+  "targetComplexity": {
+    "time": "O(n^2)",
+    "space": "O(1)"
+  }
+}

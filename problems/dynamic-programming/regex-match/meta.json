@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "regex-match",
+  "slug": "regex-match",
+  "title": "Does The Pattern Match",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["two-dimensional dp", "strings", "state machine"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 17,
+  "mode": "function",
+  "entry": "matches",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["edit-steps", "word-break-possible"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 m)",
+    "space": "O(m)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "burst-the-balloons",
+  "slug": "burst-the-balloons",
+  "title": "Best Order To Burst",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["two-dimensional dp", "memoisation"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 15,
+  "mode": "function",
+  "entry": "bestBurst",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["edit-steps", "shared-subsequence"],
+  "targetComplexity": {
+    "time": "O(n^3)",
+    "space": "O(n^2)"
+  }
+}
