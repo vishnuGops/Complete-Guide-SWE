@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "This is `count-islands` with links instead of neighbouring cells. What was the shape of that answer?",
+    "Scan for a person not yet visited, count one group, then visit everybody reachable from them so they are never counted again.",
+    "Reaching them needs the links organised by person - the edge list has to become a list of neighbours per person first.",
+    "Union find is the other answer: start with `n` groups and join two whenever a link says they belong together; the number of joins that actually merged something is how many groups were lost."
+  ]
+}

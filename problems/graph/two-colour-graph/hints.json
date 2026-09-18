@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Pick anybody and put them in room A. Where must everybody they dislike go, and what about everybody *those* people dislike?",
+    "The rooms alternate outwards from whoever you start with, so the whole group's assignment is forced once one person is placed.",
+    "Walk the group assigning the opposite room to each neighbour, and check every pair as you go: a pair already in the same room means no split exists.",
+    "Do that for every group separately - people nobody has mentioned, and separate clusters, each get their own free choice of starting room."
+  ]
+}

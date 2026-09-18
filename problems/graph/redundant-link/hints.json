@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Install the links one at a time, in order. What is true of a link at the moment it closes a loop?",
+    "Its two ends are already joined to each other by the links installed before it.",
+    "So you need a structure that answers 'are these two already joined' and can record a join - which is union find.",
+    "Every link before the answer joins two separate groups; the answer is the first link that does not."
+  ]
+}

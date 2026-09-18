@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "accounts-merge",
+  "slug": "accounts-merge",
+  "title": "One Person, Many Addresses",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["union find", "grouping"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 9,
+  "mode": "function",
+  "entry": "mergeAccounts",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["graph-union-find", "anagram-groups"],
+  "targetComplexity": {
+    "time": "O(total addresses \u00b7 log)",
+    "space": "O(total addresses)"
+  }
+}

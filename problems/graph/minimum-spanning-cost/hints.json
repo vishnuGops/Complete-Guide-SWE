@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Sort the cables by price and consider them cheapest first. What should you do with each one?",
+    "Buy it if it joins two machines that are not already connected; skip it if they are, because it would only close a loop.",
+    "Deciding 'already connected' as the cables arrive is exactly what union find is for - and it is the same check as in `redundant-link`.",
+    "Stop once `n - 1` cables have been bought. If the offers run out first, some machine was never reachable and the answer is -1."
+  ]
+}

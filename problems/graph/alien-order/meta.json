@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "alien-order",
+  "slug": "alien-order",
+  "title": "The Order Of A New Alphabet",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["topological sort", "strings"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 11,
+  "mode": "function",
+  "entry": "alphabetOrder",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["course-order", "detect-cycle-directed"],
+  "targetComplexity": {
+    "time": "O(total letters)",
+    "space": "O(1)"
+  }
+}

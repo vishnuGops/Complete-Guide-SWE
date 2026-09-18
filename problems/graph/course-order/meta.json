@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "course-order",
+  "slug": "course-order",
+  "title": "An Order That Works",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["topological sort", "depth-first search"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 2,
+  "mode": "function",
+  "entry": "courseOrder",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["detect-cycle-directed", "alien-order"],
+  "targetComplexity": {
+    "time": "O(n log n + edges)",
+    "space": "O(n + edges)"
+  }
+}

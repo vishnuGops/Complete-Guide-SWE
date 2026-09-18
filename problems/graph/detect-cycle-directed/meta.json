@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "detect-cycle-directed",
+  "slug": "detect-cycle-directed",
+  "title": "Does It Loop Back",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["depth-first search", "invariant"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 3,
+  "mode": "function",
+  "entry": "hasCycle",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["course-order", "count-components"],
+  "targetComplexity": {
+    "time": "O(n + edges)",
+    "space": "O(n + edges)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "minimum-spanning-cost",
+  "slug": "minimum-spanning-cost",
+  "title": "Cheapest Way To Connect",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["union find", "sorted input", "greedy"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 12,
+  "mode": "function",
+  "entry": "connectAll",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["redundant-link", "graph-union-find"],
+  "targetComplexity": {
+    "time": "O(links log links)",
+    "space": "O(n)"
+  }
+}

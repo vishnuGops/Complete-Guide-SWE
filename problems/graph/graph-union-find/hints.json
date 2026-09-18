@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Each machine needs to know which group it is in. Storing the group's number directly makes `joined` instant - what does it make `link`?",
+    "Slow: joining two groups would have to rewrite every member of one of them. So store a *pointer towards* the group's representative instead, and follow it.",
+    "Then `link` is one pointer change - attach one group's representative to the other's - and `joined` is two walks up to the representatives.",
+    "Two one-line tricks keep those walks short: attach the smaller group under the larger, and after every walk point everything you passed straight at the representative."
+  ]
+}

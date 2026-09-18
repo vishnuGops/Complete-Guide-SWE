@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Every step costs one, so which search finds the shortest ladder, and what are a word's neighbours?",
+    "Breadth-first search, where a word's neighbours are the words in the list differing from it in exactly one position.",
+    "Finding those by comparing against every word in the list is what makes it slow. Instead, for each position, blank it out: `hot` gives `*ot`, `h*t` and `ho*`.",
+    "Two words are neighbours exactly when they share a blanked-out form, so group the list by those forms once and every look-up afterwards is a map read."
+  ]
+}

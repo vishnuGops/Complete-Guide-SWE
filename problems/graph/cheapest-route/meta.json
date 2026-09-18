@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "cheapest-route",
+  "slug": "cheapest-route",
+  "title": "Cheapest Route",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["shortest path", "heap"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 6,
+  "mode": "function",
+  "entry": "cheapestRoute",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["network-delay", "path-exists"],
+  "targetComplexity": {
+    "time": "O(edges log n)",
+    "space": "O(n + edges)"
+  }
+}

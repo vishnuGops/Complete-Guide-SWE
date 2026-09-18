@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "When does a given machine hear the message? Phrase that as a question you already know how to answer.",
+    "At the earliest total delay along any route from the source - which is the cheapest-route question, with delay in place of toll.",
+    "One run of the same algorithm settles every machine, not just one. Do not stop early; let it finish.",
+    "The answer is then the largest of the settled times - and `-1` if any machine was never settled at all."
+  ]
+}

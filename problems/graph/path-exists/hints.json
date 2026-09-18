@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Turn the list of roads into a list of neighbours per place first - the edge list cannot answer 'where can I go from here'.",
+    "Then walk outwards from the start, marking places as you reach them, and stop the moment you reach the finish.",
+    "Either a stack or a queue works, because the question is only whether the finish is reachable and not how far away it is.",
+    "Mark a place when you push it, not when you pop it, or a place with many roads enters the walk once per road."
+  ]
+}

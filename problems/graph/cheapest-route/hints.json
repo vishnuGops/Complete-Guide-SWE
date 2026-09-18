@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose you knew the cheapest cost to every place you have settled on so far. Among all the places you have *not* settled, which one's cost do you now know for certain?",
+    "The cheapest one reachable in one road from what you have settled - because every toll is positive, so any other route to it would have to pass through something dearer.",
+    "So: settle places in increasing order of cost. A min-heap keyed on cost-so-far gives you the next one to settle.",
+    "A place can enter the heap several times by different routes. Ignore it when it comes out already settled, rather than trying to find and update its old entry."
+  ]
+}

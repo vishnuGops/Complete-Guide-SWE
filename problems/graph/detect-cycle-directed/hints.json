@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Walking forwards and stopping when you reach somewhere you have already been finds Example 2 and calls it a loop. What is the difference between those two situations?",
+    "A loop means arriving somewhere that is still *on the route you are currently walking* - not merely somewhere visited earlier and finished with.",
+    "So a place needs three states, not two: never visited, on the current route, and finished. Meeting one that is on the current route is the loop.",
+    "Mark a place as on-the-route when you enter it and as finished when you leave it, after all its roads have been followed."
+  ]
+}

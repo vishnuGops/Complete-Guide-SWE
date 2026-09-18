@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "graph-union-find",
+  "slug": "graph-union-find",
+  "title": "Connections, As They Come",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["design", "union find", "amortised O(1)"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 13,
+  "mode": "operations",
+  "entry": "Connections",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["redundant-link", "count-components"],
+  "targetComplexity": {
+    "time": "amortised O(\u03b1(n)) per operation",
+    "space": "O(n)"
+  }
+}

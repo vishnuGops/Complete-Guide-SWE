@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What exactly joins two accounts? Say it as a rule about a graph.",
+    "An edge between two accounts whenever they share an address - and the people are the connected groups. But building those edges directly means comparing every pair of accounts.",
+    "Instead, walk the accounts once keeping a map from address to the first account that used it; whenever an address is seen again, join the two accounts.",
+    "Union find does the joining. Afterwards, collect each group's addresses into a set, sort them, and put the name in front."
+  ]
+}

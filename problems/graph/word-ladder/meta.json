@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "word-ladder",
+  "slug": "word-ladder",
+  "title": "One Letter At A Time",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["breadth-first search", "hash set"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 10,
+  "mode": "function",
+  "entry": "ladderLength",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["path-exists", "shortest-grid-path"],
+  "targetComplexity": {
+    "time": "O(words \u00b7 length^2)",
+    "space": "O(words \u00b7 length)"
+  }
+}

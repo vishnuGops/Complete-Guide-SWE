@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "count-components",
+  "slug": "count-components",
+  "title": "How Many Separate Groups",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["depth-first search", "union find"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 0,
+  "mode": "function",
+  "entry": "countGroups",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["path-exists", "count-islands"],
+  "targetComplexity": {
+    "time": "O(n + edges)",
+    "space": "O(n + edges)"
+  }
+}

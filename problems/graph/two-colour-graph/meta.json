@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "two-colour-graph",
+  "slug": "two-colour-graph",
+  "title": "Two Colours, No Clashes",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["bipartite check", "breadth-first search"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 5,
+  "mode": "function",
+  "entry": "twoColourable",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-components", "path-exists"],
+  "targetComplexity": {
+    "time": "O(n + edges)",
+    "space": "O(n + edges)"
+  }
+}

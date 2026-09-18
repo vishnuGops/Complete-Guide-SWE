@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What does one neighbouring pair of words in the dictionary actually tell you?",
+    "Compare them letter by letter: the first position where they differ says that the first word's letter comes before the second's. Everything after that position says nothing.",
+    "Collect those facts as edges and the answer is a topological order of the letters that appear - which is `course-order` over at most 26 vertices.",
+    "Two special cases: a pair whose words are identical up to the shorter one's length is a contradiction if the longer comes first, and the order must be the smallest in our alphabet, which means a min-heap."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Which courses can be taken first? What happens to the rules once one of them is taken?",
+    "A course is available when nothing still has to come before it - when its count of unmet prerequisites is zero. Taking it reduces that count for everything it unlocks.",
+    "Keep the available courses in a structure, take one, and push whatever its removal makes available. Repeat until nothing is left.",
+    "Because the answer must be the smallest by course number, that structure is a min-heap rather than a queue: always take the lowest-numbered available course."
+  ]
+}

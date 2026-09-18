@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "network-delay",
+  "slug": "network-delay",
+  "title": "When The Last One Hears",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["shortest path", "heap"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 7,
+  "mode": "function",
+  "entry": "whenAllHear",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["cheapest-route", "rotting-spread"],
+  "targetComplexity": {
+    "time": "O(links log n)",
+    "space": "O(n + links)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "path-exists",
+  "slug": "path-exists",
+  "title": "Can You Get There",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["breadth-first search", "depth-first search"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 1,
+  "mode": "function",
+  "entry": "canReach",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-components", "shortest-grid-path"],
+  "targetComplexity": {
+    "time": "O(n + edges)",
+    "space": "O(n + edges)"
+  }
+}

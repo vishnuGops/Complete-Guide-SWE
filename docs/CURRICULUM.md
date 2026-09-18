@@ -326,10 +326,15 @@ which is where `operations` mode earns its place a second time.
 | 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       |       |
 | 11  | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
 
-### Graph (`graph`) — 14 problems
+### Graph (`graph`) — 14 problems, 13 writable
 
 Patterns to cover: both searches, cycle detection, topological order, union
 find, weighted shortest paths, and bipartiteness.
+
+`clone-the-graph` cannot be written yet, for the same reason as the two
+linked-list cycle problems: a graph crosses the wire as an edge list plus a
+vertex count, so a copy is indistinguishable from the original and "return a
+copy" has no observable answer. Blocked on ROADMAP **P2-15**.
 
 | #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                                 | Flags |
 | --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | ---------------------------------------- | ----- |
@@ -337,7 +342,7 @@ find, weighted shortest paths, and bipartiteness.
 | 1   | `path-exists`           | Can You Get There           | Easy   | 3      | function   | breadth-first search, depth-first search |       |
 | 2   | `course-order`          | An Order That Works         | Medium | 6      | function   | topological sort, depth-first search     | trap  |
 | 3   | `detect-cycle-directed` | Does It Loop Back           | Medium | 6      | function   | depth-first search, invariant            |       |
-| 4   | `clone-the-graph`       | Copy The Whole Graph        | Medium | 6      | function   | breadth-first search, hash map           |       |
+| 4   | `clone-the-graph`       | Copy The Whole Graph        | Medium | 6      | function   | breadth-first search, hash map           | blocked by P2-15 |
 | 5   | `two-colour-graph`      | Two Colours, No Clashes     | Medium | 5      | function   | bipartite check, breadth-first search    |       |
 | 6   | `cheapest-route`        | Cheapest Route              | Medium | 7      | function   | shortest path, heap                      | trap  |
 | 7   | `network-delay`         | When The Last One Hears     | Medium | 7      | function   | shortest path, heap                      | trap  |

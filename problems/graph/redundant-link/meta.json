@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "redundant-link",
+  "slug": "redundant-link",
+  "title": "The Link That Closes A Loop",
+  "version": 1,
+  "topic": "graph",
+  "patterns": ["union find"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 8,
+  "mode": "function",
+  "entry": "closingLink",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["count-components", "graph-union-find"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 \u03b1(n))",
+    "space": "O(n)"
+  }
+}
