@@ -3,6 +3,8 @@ import {
   COACH_API_KEY_ENV,
   COACH_DEFAULT_MODEL,
   COACH_PROVIDERS,
+  hasKnownPricing,
+  needsBaseUrl,
   type CoachProvider,
   type SettingsUpdate,
   type SettingsView,
@@ -30,9 +32,12 @@ import { Row, Section, OptionalNumberField, TextField } from './fields.js';
 const PROVIDER_LABEL: Record<CoachProvider, string> = {
   anthropic: 'Anthropic',
   gemini: 'Gemini',
+  // Shorter than the shared label, which spells out "OpenAI-compatible
+  // endpoint": this one sits in a row of buttons (P9-4).
+  'openai-compatible': 'Local / custom',
 };
 
-/** Two providers, both named. Same reasoning as `ThemeToggle`: labels, not glyphs. */
+/** Three providers, all named. Same reasoning as `ThemeToggle`: labels, not glyphs. */
 function ProviderChoice({
   value,
   onChange,
@@ -194,9 +199,35 @@ export function CoachSection({
         />
       </Row>
 
+      {needsBaseUrl(coach.provider) && (
+        /*
+         * Only for the endpoint that has no fixed address (ROADMAP P9-4). For
+         * the two vendors the address is a fact about them and a field for it
+         * would be a way to break a working configuration.
+         */
+        <Row
+          label="Endpoint"
+          hint="Any server that speaks OpenAI's chat API: Ollama, LM Studio, llama.cpp, vLLM, or a gateway. Empty uses Ollama's default."
+        >
+          <TextField
+            label="Endpoint base URL"
+            value={coach.baseUrl ?? ''}
+            mono
+            placeholder="http://127.0.0.1:11434/v1"
+            onCommit={(baseUrl) => {
+              onChange({ coach: { baseUrl: baseUrl.trim() === '' ? null : baseUrl.trim() } });
+            }}
+          />
+        </Row>
+      )}
+
       <Row
         label="Model"
-        hint={`Empty uses ${COACH_DEFAULT_MODEL[coach.provider]}. Pricing for unknown models is estimated at the dearest rate known for the provider.`}
+        hint={
+          hasKnownPricing(coach.provider)
+            ? `Empty uses ${COACH_DEFAULT_MODEL[coach.provider]}. Pricing for unknown models is estimated at the dearest rate known for the provider.`
+            : `Empty uses ${COACH_DEFAULT_MODEL[coach.provider]}. Whatever the endpoint has; the connection test says whether it has heard of this one.`
+        }
       >
         <TextField
           label="Coach model"
@@ -220,14 +251,19 @@ export function CoachSection({
 
       <Row
         label="Spend cap per conversation"
-        hint="In US dollars, estimated from the token counts. Empty means no cap."
+        hint={
+          hasKnownPricing(coach.provider)
+            ? 'In US dollars, estimated from the token counts. Empty means no cap.'
+            : 'Not applied to a custom endpoint: what a turn costs there is between you and whoever runs it, and a made-up rate would be worse than none. A model on this machine costs nothing.'
+        }
       >
         <OptionalNumberField
           label="Spend cap in US dollars"
           value={coach.spendCapUsd}
           min={0}
           step={0.5}
-          placeholder="none"
+          placeholder={hasKnownPricing(coach.provider) ? 'none' : 'not applicable'}
+          disabled={!hasKnownPricing(coach.provider)}
           onCommit={(spendCapUsd) => {
             onChange({ coach: { spendCapUsd } });
           }}

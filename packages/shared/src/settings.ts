@@ -34,6 +34,15 @@ export const coachSettingsSchema = z.object({
   apiKey: z.string().nullable().default(null),
   /** Session spend ceiling in USD; null disables the cap (P5-6). */
   spendCapUsd: z.number().min(0).nullable().default(null),
+  /**
+   * Where an OpenAI-compatible endpoint lives (ROADMAP P9-4).
+   *
+   * A setting rather than an environment variable, because for that provider
+   * the address *is* the configuration - it is how "the coach" becomes "the
+   * model on this laptop". Ignored by the other two, whose address is a fact
+   * about the vendor. Null falls back to Ollama's default port.
+   */
+  baseUrl: z.string().url().nullable().default(null),
 });
 export type CoachSettings = z.infer<typeof coachSettingsSchema>;
 

@@ -86,14 +86,25 @@ export type HintsFile = z.infer<typeof hintsFileSchema>;
 // Requests
 // ---------------------------------------------------------------------------
 
-export const COACH_PROVIDERS = ['anthropic', 'gemini'] as const;
+export const COACH_PROVIDERS = ['anthropic', 'gemini', 'openai-compatible'] as const;
 export const coachProviderSchema = z.enum(COACH_PROVIDERS);
 export type CoachProvider = z.infer<typeof coachProviderSchema>;
 
 export const COACH_PROVIDER_LABEL: Record<CoachProvider, string> = {
   anthropic: 'Anthropic',
   gemini: 'Google Gemini',
+  /*
+   * Named for the API rather than for a vendor (ROADMAP P9-4), because the
+   * point of it is the endpoints that are not vendors: Ollama, LM Studio,
+   * llama.cpp, vLLM and whatever sits in front of them.
+   */
+  'openai-compatible': 'OpenAI-compatible endpoint',
 };
+
+/** The one provider whose address is a setting rather than a fact (P9-4). */
+export function needsBaseUrl(provider: CoachProvider): boolean {
+  return provider === 'openai-compatible';
+}
 
 export const coachFeedbackRequestSchema = z.object({
   slug: slugSchema,

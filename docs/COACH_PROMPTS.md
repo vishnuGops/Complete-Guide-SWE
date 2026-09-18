@@ -10,11 +10,17 @@ The wording itself lives in `apps/server/src/coach/prompts/<version>/system.md`.
 
 Every coaching turn is three things, assembled in `apps/server/src/coach/`:
 
-| Part            | Built by                                    | Changes between requests? |
-| --------------- | ------------------------------------------- | ------------------------- |
-| System prompt   | `prompts/index.ts` reading `v4/system.md`   | Never                     |
-| User turn       | `context.ts` → `buildContext()`             | Every time                |
-| Response schema | `feedback.ts` → `coachFeedbackJsonSchema()` | Never                     |
+| Part          | Built by                                  | Changes between requests? |
+| ------------- | ----------------------------------------- | ------------------------- |
+| System prompt | `prompts/index.ts` reading `v4/system.md` | Never                     |
+
+The split matters differently per provider (P9-4). Anthropic takes the system
+prompt as its own parameter and caches it; Gemini has `systemInstruction`; the
+OpenAI chat API has no such field, so it goes in as `messages[0]` - once, first,
+and still built separately on our side of the seam, because the reason to keep
+it apart is that rebuilding it is what breaks caching.
+| User turn | `context.ts` → `buildContext()` | Every time |
+| Response schema | `feedback.ts` → `coachFeedbackJsonSchema()` | Never |
 
 The split is not cosmetic. The system prompt is the largest stable part of the request, so it is what `cache_control` is pointed at on the Anthropic side (D12), and caching is a prefix match — anything volatile mixed into it would cost a cache miss on every AI Help click. That is why `CoachProvider.stream()` takes `system` and `messages` as separate parameters rather than one list.
 

@@ -306,6 +306,17 @@ The coach is given one hint rung the user has _not_ opened (P7-1), marked secret
 in its context beside the editorial, so that its nudge points where the problem's
 author was pointing; it is told never to hand it over.
 
+**A third provider speaks a protocol rather than to a vendor** (P9-4).
+`openai-compatible` covers Ollama, LM Studio, llama.cpp, vLLM and anything in
+front of them, which is what makes coaching possible with no request leaving the
+machine. Two things are different about it and both are consequences of the
+endpoint being the user's own: its address is a _setting_ rather than a constant,
+and its cost is unknowable - `MODEL_PRICES` for it is empty on purpose, the spend
+cap does not apply, and Settings says so instead of showing a confident `$0.00`.
+Structured output is negotiated rather than assumed: `json_schema` first, and one
+retry in `json_object` when the server says it cannot, because the answer is
+re-validated against the zod schema here either way.
+
 **The coach API key is write-only across this boundary.** `GET /api/settings`
 returns a `SettingsView`, which has no `apiKey` field at all: the UI sees
 `apiKeyMasked` (last four characters) and `apiKeySource` (`none` / `settings` /

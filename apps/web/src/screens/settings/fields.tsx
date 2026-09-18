@@ -145,6 +145,7 @@ export function OptionalNumberField({
   label,
   placeholder,
   className = 'w-24',
+  disabled = false,
   onCommit,
 }: {
   value: number | null;
@@ -154,6 +155,8 @@ export function OptionalNumberField({
   label: string;
   placeholder?: string;
   className?: string;
+  /** For a setting that cannot mean anything in the current configuration. */
+  disabled?: boolean;
   onCommit: (value: number | null) => void;
 }) {
   const id = useId();
@@ -194,6 +197,7 @@ export function OptionalNumberField({
         value={text}
         invalid={invalid}
         placeholder={placeholder}
+        disabled={disabled}
         step={step}
         onChange={(event) => {
           setText(event.target.value);

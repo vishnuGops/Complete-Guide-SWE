@@ -29,6 +29,10 @@ const LIVE = process.env['COACH_LIVE_TESTS'] === '1';
 const KEY_ENV: Record<CoachProvider, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
   gemini: 'GEMINI_API_KEY',
+  // There is no vendor behind this one, so there is no key to have (P9-4); the
+  // endpoint is whatever `DEVPROMAX_COACH_BASE_URL` points at, and the local
+  // servers it is for want no key at all.
+  'openai-compatible': 'OPENAI_COMPATIBLE_API_KEY',
 };
 
 /** A real attempt with two real defects, so a 4 across the board is a red flag. */

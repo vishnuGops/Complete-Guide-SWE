@@ -185,6 +185,7 @@ export function someSettings(overrides: Partial<SettingsView> = {}): SettingsVie
       provider: 'anthropic',
       model: null,
       spendCapUsd: null,
+      baseUrl: null,
       apiKeyMasked: null,
       apiKeySource: 'none',
     },

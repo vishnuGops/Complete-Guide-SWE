@@ -1,11 +1,16 @@
 import type { CoachProvider as CoachProviderId } from '@devpromax/shared';
 import { createAnthropicProvider } from './anthropic.js';
 import { createGeminiProvider } from './gemini.js';
+import { createOpenAiCompatibleProvider } from './openaiCompatible.js';
 import type { CoachProvider, ProviderOptions } from './provider.js';
 
 export * from './provider.js';
 export { ANTHROPIC_DEFAULT_MODEL, createAnthropicProvider } from './anthropic.js';
 export { GEMINI_DEFAULT_MODEL, createGeminiProvider } from './gemini.js';
+export {
+  OPENAI_COMPATIBLE_DEFAULT_MODEL,
+  createOpenAiCompatibleProvider,
+} from './openaiCompatible.js';
 export {
   coachFeedbackJsonSchema,
   parseFeedback,
@@ -49,5 +54,7 @@ export function createCoachProvider(
   const resolved: ProviderOptions =
     options.baseUrl === undefined && fromEnv ? { ...options, baseUrl: fromEnv } : options;
 
-  return id === 'anthropic' ? createAnthropicProvider(resolved) : createGeminiProvider(resolved);
+  if (id === 'anthropic') return createAnthropicProvider(resolved);
+  if (id === 'gemini') return createGeminiProvider(resolved);
+  return createOpenAiCompatibleProvider(resolved);
 }

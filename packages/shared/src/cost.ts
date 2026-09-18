@@ -94,7 +94,23 @@ export const MODEL_PRICES: Record<CoachProvider, Record<string, ModelPrice>> = {
     'gemini-2.5-pro': { inputPerMTok: 1.25, outputPerMTok: 10 },
     'gemini-2.5-flash': { inputPerMTok: 0.3, outputPerMTok: 2.5 },
   },
+  /*
+   * Deliberately empty (ROADMAP P9-4).
+   *
+   * The endpoint is the user's own: a model running on their laptop costs
+   * nothing, and a hosted gateway costs whatever its owner charges. Any number
+   * here would be a guess presented as a fact, and the two guesses are wrong in
+   * opposite directions. So a turn through this provider is priced at zero, the
+   * spend cap has nothing to police, and Settings says so rather than showing a
+   * confident `$0.00` next to AI Help.
+   */
+  'openai-compatible': {},
 };
+
+/** Whether a provider's rates are knowable at all (P9-4). */
+export function hasKnownPricing(provider: CoachProvider): boolean {
+  return Object.keys(MODEL_PRICES[provider]).length > 0;
+}
 
 /**
  * The model each provider falls back to when the user has not chosen one.
@@ -107,11 +123,18 @@ export const MODEL_PRICES: Record<CoachProvider, Record<string, ModelPrice>> = {
 export const COACH_DEFAULT_MODEL: Record<CoachProvider, string> = {
   anthropic: 'claude-opus-5',
   gemini: 'gemini-2.5-pro',
+  // Ollama's naming, because it is the endpoint most people have running. A
+  // user with something else types its name; the connection test then says
+  // whether the endpoint has heard of it.
+  'openai-compatible': 'qwen2.5-coder:14b',
 };
 
 /** The dearest entry we know for a provider; what a genuinely unknown model costs. */
 export function fallbackPrice(provider: CoachProvider): ModelPrice {
   const known = Object.values(MODEL_PRICES[provider]);
+  // An empty table is not "we have not looked it up", it is "it cannot be
+  // known" - see `openai-compatible` above.
+  if (known.length === 0) return { inputPerMTok: 0, outputPerMTok: 0 };
   return known.reduce(
     (dearest, price) =>
       price.inputPerMTok + price.outputPerMTok > dearest.inputPerMTok + dearest.outputPerMTok

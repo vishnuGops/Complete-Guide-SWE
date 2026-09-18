@@ -124,7 +124,15 @@ export async function testConnection(deps: SettingsServiceDeps): Promise<Connect
     );
   }
 
-  const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
+  /*
+   * The stored base URL wins over nothing and loses to an injected one
+   * (ROADMAP P9-4). For `openai-compatible` it is the whole configuration; for
+   * the other two it is unset and the vendor's own address applies.
+   */
+  const provider = createCoachProvider(settings.coach.provider, {
+    ...(settings.coach.baseUrl ? { baseUrl: settings.coach.baseUrl } : {}),
+    ...(deps.provider ?? {}),
+  });
   const result = await provider.testConnection({
     apiKey: resolved.key,
     model: settings.coach.model,

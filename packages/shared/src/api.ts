@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ratingSchema, tierSchema, topicSchema } from './curriculum.js';
+import { coachProviderSchema } from './coach.js';
 import { languageSchema } from './language.js';
 import { MAX_CODE_BYTES } from './judge.js';
 import {
@@ -566,7 +567,8 @@ export type RunBody = z.infer<typeof runBodySchema>;
 /** What `POST /api/settings/test-connection` reports back. */
 export const connectionTestResponseSchema = z.object({
   ok: z.boolean(),
-  provider: z.enum(['anthropic', 'gemini']),
+  // The enum, not a copy of it: a third provider (P9-4) must not need an edit here.
+  provider: coachProviderSchema,
   /** The model that was checked, when one is configured. */
   model: z.string().nullable(),
   message: z.string(),

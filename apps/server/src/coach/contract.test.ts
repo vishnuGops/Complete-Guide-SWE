@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CoachProvider as CoachProviderId, TokenUsage } from '@devpromax/shared';
 import { createAnthropicProvider } from './anthropic.js';
 import { createGeminiProvider } from './gemini.js';
+import { createOpenAiCompatibleProvider } from './openaiCompatible.js';
 import { coachFeedbackJsonSchema } from './feedback.js';
 import {
   CoachProviderError,
@@ -98,12 +99,40 @@ function geminiSse(text: string, usage: TokenUsage | null): Response {
   });
 }
 
+const openaiCompatible: Fixture = {
+  ok: (text) => openAiSse(text, null),
+  withUsage: (text, usage) => openAiSse(text, usage),
+  status: (code) => new Response('{}', { status: code }),
+};
+
+function openAiSse(text: string, usage: TokenUsage | null): Response {
+  const frames = [`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`];
+  if (usage) {
+    // Reported once, on a final chunk with no content - which is what
+    // `stream_options: { include_usage: true }` produces.
+    frames.push(
+      `data: ${JSON.stringify({
+        choices: [],
+        usage: { prompt_tokens: usage.inputTokens, completion_tokens: usage.outputTokens },
+      })}\n\n`,
+    );
+  }
+  frames.push('data: [DONE]\n\n');
+
+  return new Response(frames.join(''), {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+}
+
 interface Vendor {
   id: CoachProviderId;
   label: RegExp;
   create: (options: ProviderOptions) => CoachProvider;
   fixture: Fixture;
   keyHeader: string;
+  /** Whether the API has a slot for the system prompt outside the turns. */
+  separateSystemField: boolean;
 }
 
 const VENDORS: Vendor[] = [
@@ -113,6 +142,7 @@ const VENDORS: Vendor[] = [
     create: createAnthropicProvider,
     fixture: anthropic,
     keyHeader: 'x-api-key',
+    separateSystemField: true,
   },
   {
     id: 'gemini',
@@ -120,6 +150,18 @@ const VENDORS: Vendor[] = [
     create: createGeminiProvider,
     fixture: gemini,
     keyHeader: 'x-goog-api-key',
+    separateSystemField: true,
+  },
+  {
+    // Third since P9-4, and the reason this file is parametrised: everything
+    // above `coach/` is entitled to assume all three behave identically.
+    id: 'openai-compatible',
+    label: /OpenAI-compatible endpoint/,
+    create: createOpenAiCompatibleProvider,
+    fixture: openaiCompatible,
+    keyHeader: 'authorization',
+    // The OpenAI chat API has none: the system prompt is `messages[0]`.
+    separateSystemField: false,
   },
 ];
 
@@ -203,13 +245,28 @@ for (const vendor of VENDORS) {
       const { provider, calls } = make(() => vendor.fixture.ok('x'));
       await drain(provider);
 
-      expect(calls[0]?.headers[vendor.keyHeader]).toBe(API_KEY);
+      // `toContain` rather than `toBe`: the OpenAI-compatible API spells it
+      // `Bearer <key>` (P9-4). What the contract is about is that the secret
+      // travels in a header - a URL carrying one ends up in logs and error
+      // messages (CLAUDE.md > Secrets).
+      expect(calls[0]?.headers[vendor.keyHeader]).toContain(API_KEY);
       expect(calls[0]?.url).not.toContain(API_KEY);
     });
 
-    it('keeps the system prompt out of the conversation turns', async () => {
-      // Both vendors have to carry the cacheable half separately, or the
-      // caching D12 relies on cannot work for either of them.
+    it('sends both halves of the prompt, the cacheable one where the vendor keeps it', async () => {
+      /*
+       * The seam above this file always separates them (`StreamOptions.system`
+       * against `messages`), because the system half must stay byte-identical
+       * to be cacheable and building it alongside the volatile turns invites it
+       * being rebuilt. What the *wire* does with that separation is the
+       * vendor's business, and the third provider differs (P9-4):
+       *
+       *   - Anthropic has a `system` parameter, and sets `cache_control` on it.
+       *   - Gemini has `systemInstruction`.
+       *   - The OpenAI chat API has no such field at all. The system prompt is
+       *     the first element of `messages`, by definition - so asserting it is
+       *     absent from the turns would be asserting the API is something else.
+       */
       const { provider, calls } = make(() => vendor.fixture.ok('x'));
       await drain(provider);
 
@@ -218,10 +275,18 @@ for (const vendor of VENDORS) {
       expect(asText).toContain('SYSTEM-PROMPT-TEXT');
       expect(asText).toContain('USER-TURN-TEXT');
 
-      // The system prompt must not also appear inside the turns.
       const turns = JSON.stringify(body['messages'] ?? body['contents']);
       expect(turns).toContain('USER-TURN-TEXT');
-      expect(turns).not.toContain('SYSTEM-PROMPT-TEXT');
+      if (vendor.separateSystemField) {
+        expect(turns).not.toContain('SYSTEM-PROMPT-TEXT');
+      } else {
+        // First, and once: a system message repeated among the turns would
+        // cost tokens on every request and confuse the model about which one
+        // is in force.
+        const messages = body['messages'] as { role: string; content: string }[];
+        expect(messages[0]?.role).toBe('system');
+        expect(messages.filter((m) => m.role === 'system')).toHaveLength(1);
+      }
     });
 
     it('reports the usage the vendor declared', async () => {
