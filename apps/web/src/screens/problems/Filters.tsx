@@ -152,7 +152,16 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
             variant="ghost"
             onClick={() => {
               // Sort is not a filter and is deliberately left alone.
-              set({ topic: [], tier: [], status: [], q: '', language: undefined });
+              // Every filter, the bookmark one included (P7-7). A Clear that
+              // leaves one on is a Clear the user has to do twice.
+              set({
+                topic: [],
+                tier: [],
+                status: [],
+                q: '',
+                language: undefined,
+                bookmarked: false,
+              });
             }}
           >
             Clear all

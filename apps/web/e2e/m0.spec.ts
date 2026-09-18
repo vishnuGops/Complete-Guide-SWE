@@ -1,6 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { problemFile, setEditorContents } from './helpers.js';
 
 /**
  * The M0 exit criterion, as a test (ROADMAP P4-1).
@@ -11,8 +10,6 @@ import { expect, test, type Page } from '@playwright/test';
  * thing it takes a shortcut on is typing, because pasting a reference solution
  * keystroke by keystroke tests Monaco's auto-indent rather than DevProMax.
  */
-
-const REPO_ROOT = path.resolve(process.cwd(), '..', '..');
 
 const PILOTS = [
   { topic: 'arrays', slug: 'pair-sum-index', title: 'Pair Sum Index' },
@@ -26,25 +23,7 @@ const LANGUAGES = [
 ] as const;
 
 function reference(topic: string, slug: string, file: string): string {
-  return fs.readFileSync(path.join(REPO_ROOT, 'problems', topic, slug, file), 'utf8');
-}
-
-/**
- * Replaces the editor's contents, the way a person would: select all, paste.
- *
- * Two details are load-bearing. The click has to land on the editor's own text
- * surface - Monaco 0.56 takes input through an `EditContext` element, so
- * focusing the hidden textarea that older guides target does nothing at all.
- * And the text arrives through the clipboard rather than as keystrokes, because
- * typing a Python reference line by line tests Monaco's auto-indent rather than
- * DevProMax.
- */
-async function setEditorContents(page: Page, code: string): Promise<void> {
-  await expect(page.locator('[data-testid="editor"] .monaco-editor')).toBeVisible();
-  await page.locator('[data-testid="editor"] .view-lines').click();
-  await page.evaluate((text) => navigator.clipboard.writeText(text), code);
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.press('ControlOrMeta+v');
+  return problemFile(topic, slug, file);
 }
 
 test.describe('M0: solve the pilot problems from the browser', () => {

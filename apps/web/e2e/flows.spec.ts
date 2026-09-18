@@ -1,6 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { problemFile, setEditorContents } from './helpers.js';
 
 /**
  * The golden path (ROADMAP P4-9).
@@ -25,8 +24,6 @@ import { expect, test, type Page } from '@playwright/test';
  * test that passes once and then never again.
  */
 
-const REPO_ROOT = path.resolve(process.cwd(), '..', '..');
-
 /**
  * A problem each, and neither of them a pilot.
  *
@@ -43,10 +40,7 @@ const PROBLEMS = {
 } as const;
 
 function reference(problem: { topic: string; slug: string }, file: string): string {
-  return fs.readFileSync(
-    path.join(REPO_ROOT, 'problems', problem.topic, problem.slug, file),
-    'utf8',
-  );
+  return problemFile(problem.topic, problem.slug, file);
 }
 
 /**
@@ -62,15 +56,6 @@ function reference(problem: { topic: string; slug: string }, file: string): stri
 async function submissionCount(page: Page): Promise<number> {
   const label = await page.getByRole('tab', { name: /Submissions/ }).textContent();
   return Number(/\d+/.exec(label ?? '')?.[0] ?? 0);
-}
-
-/** Replaces the editor's contents by pasting, for the reasons m0.spec.ts gives. */
-async function setEditorContents(page: Page, code: string): Promise<void> {
-  await expect(page.locator('[data-testid="editor"] .monaco-editor')).toBeVisible();
-  await page.locator('[data-testid="editor"] .view-lines').click();
-  await page.evaluate((text) => navigator.clipboard.writeText(text), code);
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.press('ControlOrMeta+v');
 }
 
 test.describe('the golden path', () => {

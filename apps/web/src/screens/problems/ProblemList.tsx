@@ -294,6 +294,7 @@ export function ProblemList() {
                       status: [],
                       q: '',
                       language: undefined,
+                      bookmarked: false,
                     });
                   }}
                 >
