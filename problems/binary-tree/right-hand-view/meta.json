@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "right-hand-view",
+  "slug": "right-hand-view",
+  "title": "Seen From The Right",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "breadth-first search"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 4,
+  "mode": "function",
+  "entry": "rightHandView",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["level-order-reading", "widest-level"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(width)"
+  }
+}

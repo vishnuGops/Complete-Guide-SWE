@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Is there an order in which you can visit a search tree's nodes that produces its values sorted?",
+    "Left subtree, then the node, then the right subtree - the in-order walk. A search tree walked that way is sorted.",
+    "So the answer is the `k`-th node the walk visits, and the walk can stop as soon as it has counted `k`.",
+    "Stopping early is why the iterative walk is worth writing: it costs O(depth + k) rather than O(n), and for small `k` on a large tree that is most of the work saved."
+  ]
+}

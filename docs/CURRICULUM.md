@@ -31,6 +31,16 @@ written:
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
 
+`is-search-tree` loses its trap flag: what it traps is *correctness* - a check
+that compares each node only with its two children accepts a tree that is not a
+search tree - and no input size defeats the obvious approach, which is already
+linear. Its second sample is the trap, and the statement says so (P6-4, D21).
+
+`widest-level` measures the most nodes on a level rather than the width
+including the gaps between them. The gap-counting version's answer grows as
+2^depth and a tree of 2000 nodes can be 2000 deep, so the answer would not fit
+the wire's integer bound of 2^53 (D22). Rating lowered to 5 with the change.
+
 Two flagged traps are **space** traps, not time traps: `zero-the-cross` and
 `shift-right-in-place` beat the obvious approach on memory, and no input size
 demonstrates that. Their statements name the space target and make no claim
@@ -267,12 +277,12 @@ invariants, construction from traversals, and serialisation.
 | 4   | `right-hand-view`        | Seen From The Right           | Medium | 5      | function   | tree traversal, breadth-first search             | node       |
 | 5   | `path-sum-exists`        | Is There A Path That Sums     | Easy   | 3      | function   | tree traversal, depth-first search               | node       |
 | 6   | `all-paths-summing`      | Every Path That Sums          | Medium | 5      | function   | tree traversal, depth-first search, backtracking | node       |
-| 7   | `is-search-tree`         | Is It A Search Tree           | Medium | 5      | function   | binary search tree, invariant                    | node, trap |
+| 7   | `is-search-tree`         | Is It A Search Tree           | Medium | 5      | function   | binary search tree, invariant                    | node       |
 | 8   | `kth-smallest-in-bst`    | The K-th Smallest In A BST    | Medium | 5      | function   | binary search tree, tree traversal               | node       |
 | 9   | `lowest-shared-ancestor` | Their Nearest Shared Ancestor | Medium | 6      | function   | lowest common ancestor, depth-first search       | node       |
 | 10  | `build-from-traversals`  | Rebuild From Two Readings     | Medium | 7      | function   | tree construction, hash map                      | node, trap |
 | 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | operations | serialisation, tree traversal                    | node       |
-| 12  | `widest-level`           | The Widest Level              | Medium | 6      | function   | breadth-first search, tree traversal             | node       |
+| 12  | `widest-level`           | The Widest Level              | Medium | 5      | function   | breadth-first search, tree traversal             | node       |
 | 13  | `flatten-to-chain`       | Flatten Into A Chain          | Medium | 6      | function   | tree traversal, in-place, mutated argument       | node       |
 | 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function   | tree traversal, depth-first search, invariant    | node, trap |
 | 15  | `count-good-nodes`       | Nodes Nothing Blocks          | Medium | 4      | function   | tree traversal, depth-first search               | node       |

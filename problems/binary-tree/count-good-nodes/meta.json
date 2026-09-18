@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "count-good-nodes",
+  "slug": "count-good-nodes",
+  "title": "Nodes Nothing Blocks",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 15,
+  "mode": "function",
+  "entry": "countGoodNodes",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["path-sum-exists", "running-maximum"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(depth)"
+  }
+}

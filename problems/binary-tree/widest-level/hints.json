@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You already know how to visit a tree one level at a time. What do you need to record as you go?",
+    "The size of each level, and its number. The queue's size before a round is exactly the level's width.",
+    "Keep the best seen so far and replace it only when a level is *strictly* wider - that is what sends a tie to the higher level.",
+    "The empty tree never enters the loop, so the answer has to start at [0, 0] rather than being computed."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "widest-level",
+  "slug": "widest-level",
+  "title": "The Widest Level",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["breadth-first search", "tree traversal"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 12,
+  "mode": "function",
+  "entry": "widestLevel",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["level-order-reading", "right-hand-view"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(width)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "kth-smallest-in-bst",
+  "slug": "kth-smallest-in-bst",
+  "title": "The K-th Smallest In A BST",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["binary search tree", "tree traversal"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 8,
+  "mode": "function",
+  "entry": "kthSmallest",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["is-search-tree", "kth-largest-value"],
+  "targetComplexity": {
+    "time": "O(depth + k)",
+    "space": "O(depth)"
+  }
+}

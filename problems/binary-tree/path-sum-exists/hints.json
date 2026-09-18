@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Carry the total so far downwards rather than building the path and adding it up at the end.",
+    "At each node, subtract its value from what is still needed and hand the remainder to its children.",
+    "The answer at a leaf is whether the remainder is exactly the leaf's value. Anywhere else, it is the answer for either child.",
+    "A node with one child is not a leaf, and the missing side must not be allowed to answer - that is where the wrong answer usually comes from."
+  ]
+}

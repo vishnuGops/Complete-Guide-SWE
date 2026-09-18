@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "level-order-reading",
+  "slug": "level-order-reading",
+  "title": "Level By Level",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "breadth-first search"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 3,
+  "mode": "function",
+  "entry": "levelOrder",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["tree-depth", "right-hand-view"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(width)"
+  }
+}

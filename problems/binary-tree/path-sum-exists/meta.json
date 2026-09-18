@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "path-sum-exists",
+  "slug": "path-sum-exists",
+  "title": "Is There A Path That Sums",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 5,
+  "mode": "function",
+  "entry": "hasPathSum",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["tree-depth", "count-good-nodes"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(depth)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A queue visits nodes in exactly this order already. What is missing from a plain queue walk?",
+    "The boundaries. A plain walk gives you one flat list; you need to know where each level ends.",
+    "Take the queue's size *before* the round starts: that is exactly how many nodes are on the current level.",
+    "Expand those and no more, collecting their values into one list, then start the next round with whatever they added."
+  ]
+}

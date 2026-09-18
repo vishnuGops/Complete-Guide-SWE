@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You need one value per level, and it is the last one in left-to-right order. What do you already know that produces levels in that order?",
+    "The level-by-level queue walk. Take the last value of each level instead of the whole level.",
+    "A depth-first walk works too, if you visit the right child *before* the left one: then the first node you ever reach at a given depth is the rightmost.",
+    "With that ordering, record a value only when the depth you have reached is deeper than anything recorded so far."
+  ]
+}

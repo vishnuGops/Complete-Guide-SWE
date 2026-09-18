@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Walk both trees together rather than one after the other. At a pair of positions, what are the possible cases?",
+    "Both missing - agreed so far. One missing and one not - different shapes, so false. Both present - the values must match and both pairs of children must match too.",
+    "That is three lines, and the shape check falls out of the 'one missing' case rather than needing its own pass.",
+    "Comparing two traversals as lists is not enough unless the nulls are written down: `[1, 2]` and `[1, null, 2]` have the same non-null preorder."
+  ]
+}

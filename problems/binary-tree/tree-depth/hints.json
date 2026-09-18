@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose you already knew the depth of the left subtree and of the right subtree. What would the whole tree's depth be?",
+    "One more than the larger of the two. That is the whole recurrence, and the empty tree is the base case at 0.",
+    "Written iteratively, the same answer is the number of levels: walk the tree level by level with a queue and count the levels.",
+    "Depth counts nodes, so a single node is 1 and an empty tree is 0 - not 0 and -1."
+  ]
+}

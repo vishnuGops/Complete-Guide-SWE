@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What would you need to know when you arrive at a node, to decide whether it is unblocked, without looking back up the path?",
+    "The largest value seen on the way down. A node is unblocked exactly when its value is not smaller than that.",
+    "Carry that maximum downwards, updating it at each node, and count as you go. It is a running maximum along every path at once.",
+    "Equal does not block, so the comparison is `value >= best so far`, and the root is unblocked because nothing precedes it."
+  ]
+}

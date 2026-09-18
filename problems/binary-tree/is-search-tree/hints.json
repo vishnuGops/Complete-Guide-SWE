@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What, exactly, does a node's position in the tree tell you about the values it is allowed to hold?",
+    "It constrains it from both sides: going left caps the values below, going right raises their floor. Every node has a range.",
+    "Carry that range down. The root's range is unbounded; a left child inherits the parent's lower bound and the parent's value as its new upper bound, and a right child the mirror image.",
+    "The other answer: an in-order walk of a search tree produces its values in ascending order, so check that the walk never goes down."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "tree-depth",
+  "slug": "tree-depth",
+  "title": "How Deep It Goes",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 0,
+  "mode": "function",
+  "entry": "depthOf",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["same-shape-trees", "level-order-reading"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(depth)"
+  }
+}

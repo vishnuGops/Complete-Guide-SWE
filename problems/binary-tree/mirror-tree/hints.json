@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "This is not a question about one tree - it is a question about two. Which two?",
+    "The left subtree and the right subtree, asked whether each is the mirror of the other.",
+    "Two nodes mirror each other when their values match, the first's *left* mirrors the second's *right*, and the first's *right* mirrors the second's *left*.",
+    "The crossing over is the whole difference from comparing two trees for equality - left with right, not left with left."
+  ]
+}

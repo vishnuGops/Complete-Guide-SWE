@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "is-search-tree",
+  "slug": "is-search-tree",
+  "title": "Is It A Search Tree",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["binary search tree", "invariant"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 7,
+  "mode": "function",
+  "entry": "isSearchTree",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["kth-smallest-in-bst", "same-shape-trees"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(depth)"
+  }
+}

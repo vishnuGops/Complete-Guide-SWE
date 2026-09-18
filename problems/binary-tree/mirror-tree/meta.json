@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "mirror-tree",
+  "slug": "mirror-tree",
+  "title": "Its Own Reflection",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 2,
+  "mode": "function",
+  "entry": "isMirror",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["same-shape-trees", "tree-depth"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(depth)"
+  }
+}
