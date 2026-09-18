@@ -1,0 +1,9 @@
+# The Python minor version the checked-in hidden tests were generated with.
+#
+# `random.Random`'s sequence methods are not stable across minor versions, so a
+# regeneration on a different one produces different (still valid) tests and
+# `problems:gen --check` would report a difference that means nothing.
+#
+# `npm run problems:gen --check` refuses to run on any other minor, and CI's
+# generator lane pins this one (ROADMAP P2-14).
+3.14

@@ -168,9 +168,11 @@ export function listProblems(
   deps: ProblemServiceDeps,
 ): ProblemListResponse {
   const grouped = progressBySlug(deps.repos);
+  // Metadata only (ROADMAP P2-14): a title, a tier and a topic do not need the
+  // statement, the editorial or a megabyte of tests.
   const all = deps.catalogue
-    .list()
-    .map((pkg) => summarise(pkg.meta, grouped.get(pkg.meta.slug) ?? [], query.language));
+    .listMeta()
+    .map(({ meta }) => summarise(meta, grouped.get(meta.slug) ?? [], query.language));
 
   const matched = all.filter((summary) => {
     if (query.topic.length > 0 && !query.topic.includes(summary.topic)) return false;
@@ -214,9 +216,12 @@ function relatedTo(meta: ProblemMeta, catalogue: Catalogue): RelatedProblem[] {
   // at a problem that has not been written yet, and a dangling pointer is the
   // validator's complaint to make, not a reason to fail this request.
   return meta.related.flatMap((slug) => {
-    const pkg = catalogue.get(slug);
-    if (!pkg) return [];
-    return [{ slug, title: pkg.meta.title, tier: pkg.meta.tier, rating: pkg.meta.rating }];
+    // `getMeta`, not `get`: a related problem contributes a title and a rating
+    // to a row, and reading its whole package for that was the workspace
+    // loading three problems to show one (P2-14).
+    const related = catalogue.getMeta(slug);
+    if (!related) return [];
+    return [{ slug, title: related.title, tier: related.tier, rating: related.rating }];
   });
 }
 
@@ -254,7 +259,7 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
     version: pkg.meta.version,
     timeoutMs,
     samples: pkg.tests.samples,
-    hiddenCount: pkg.tests.hidden.length,
+    hiddenCount: pkg.hiddenCount,
     hints: pkg.hints.hints,
     editorial: unlocked ? pkg.editorial : null,
     editorialUnlocked: unlocked,

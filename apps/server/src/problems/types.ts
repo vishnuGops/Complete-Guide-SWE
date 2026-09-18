@@ -13,10 +13,25 @@ export interface ProblemLocation {
 }
 
 /** A fully parsed problem package. Only produced when the required files parse. */
+/** Both pools, as `tests.json` holds them (ROADMAP P2-14's `loadTests`). */
+export type ProblemTests = TestsFile;
+
 export interface ProblemPackage {
   location: ProblemLocation;
   meta: ProblemMeta;
+  /**
+   * Both pools.
+   *
+   * Held on the package because the validator and the judge both want them, and
+   * *not* held by the catalogue's cache: `createCatalogue` serves packages read
+   * with `hidden: false`, and the judge calls `loadTests` when it actually
+   * needs the hidden cases (P2-14). A package therefore carries `hidden: []`
+   * unless whoever loaded it asked for more, which `hiddenCount` makes visible
+   * rather than silent.
+   */
   tests: TestsFile;
+  /** How many hidden tests exist, whether or not they were loaded. */
+  hiddenCount: number;
   hints: HintsFile;
   statement: string;
   editorial: string;

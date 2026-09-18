@@ -897,7 +897,16 @@ function checkCatalogue(results: readonly ProblemValidation[]): ValidationIssue[
 // Full validation: static rules plus reference execution (ROADMAP P2-7)
 // ---------------------------------------------------------------------------
 
-export interface FullValidateOptions extends ValidateOptions, ReferenceCheckOptions {}
+export interface FullValidateOptions extends ValidateOptions, ReferenceCheckOptions {
+  /**
+   * Only run the references for these slugs (D23, ROADMAP P2-14).
+   *
+   * `undefined` means all of them. The static rules always cover the whole
+   * catalogue either way - they are milliseconds, and they are where the
+   * cross-problem rules live.
+   */
+  slugs?: readonly string[];
+}
 
 /**
  * Static validation plus the merge gate: both reference solutions must pass
@@ -908,20 +917,64 @@ export interface FullValidateOptions extends ValidateOptions, ReferenceCheckOpti
  * spawning six interpreters to confirm that a package missing its tests.json
  * does not work would just bury the real message.
  */
+/**
+ * How many problems have their references run at once (ROADMAP P2-14).
+ *
+ * Each problem is two compiles and two runs, and they are serial today: 1.7
+ * seconds each, 34 for the seed, six minutes at two hundred on every push and
+ * on two operating systems. Four at a time is the number the judge's own queue
+ * defaults near, and it keeps timings meaningful - a machine running eight JVMs
+ * reports times that say more about the machine than about the solution, and
+ * the reference check reads those times.
+ */
+const REFERENCE_CONCURRENCY = 4;
+
+/** Runs `worker` over `items`, `limit` at a time, keeping input order. */
+async function inParallel<T, R>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const index = next;
+      next += 1;
+      if (index >= items.length) return;
+      out[index] = await worker(items[index]!);
+    }
+  });
+
+  await Promise.all(runners);
+  return out;
+}
+
 export async function validateCatalogueFull(
   options: FullValidateOptions = {},
 ): Promise<CatalogueValidation> {
   const staticReport = validateCatalogue(options);
 
-  const results: ProblemValidation[] = [];
-  for (const result of staticReport.results) {
-    if (!result.pkg || hasErrors(result.issues)) {
-      results.push(result);
-      continue;
-    }
-    const referenceIssues = await checkReferences(result.pkg, options);
-    results.push({ ...result, issues: [...result.issues, ...referenceIssues] });
-  }
+  /*
+   * `slugs` narrows the reference runs and nothing else (D23, P2-14).
+   *
+   * The static rules still cover the whole catalogue, including the
+   * cross-problem ones an incremental run cannot see from a diff: a duplicate
+   * id, a dangling `related`, two problems claiming one `order`.
+   */
+  const only = options.slugs ? new Set(options.slugs) : null;
+
+  const results: ProblemValidation[] = await inParallel(
+    staticReport.results,
+    REFERENCE_CONCURRENCY,
+    async (result) => {
+      if (only !== null && !only.has(result.location.slugDir)) return result;
+      if (!result.pkg || hasErrors(result.issues)) return result;
+      const referenceIssues = await checkReferences(result.pkg, options);
+      return { ...result, issues: [...result.issues, ...referenceIssues] };
+    },
+  );
 
   const everything = [...results.flatMap((r) => r.issues), ...staticReport.crossIssues];
   return {

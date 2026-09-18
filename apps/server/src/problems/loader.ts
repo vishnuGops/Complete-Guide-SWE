@@ -3,7 +3,7 @@ import path from 'node:path';
 import { type z } from 'zod';
 import { hintsFileSchema, problemMetaSchema, testsFileSchema } from '@devpromax/shared';
 import { paths } from '../config.js';
-import type { ProblemLocation, ProblemPackage, ValidationIssue } from './types.js';
+import type { ProblemLocation, ProblemPackage, ProblemTests, ValidationIssue } from './types.js';
 
 /** Files every problem must ship (ROADMAP D7 / docs/PROBLEM_FORMAT.md §1). */
 export const REQUIRED_FILES = [
@@ -102,6 +102,64 @@ export interface LoadResult {
   issues: ValidationIssue[];
 }
 
+export interface MetaResult {
+  meta?: ProblemPackage['meta'];
+  issues: ValidationIssue[];
+}
+
+/**
+ * Reads one problem's `meta.json` and nothing else (ROADMAP P2-14).
+ *
+ * The list page needs a title, a tier, a rating and a topic; reading the whole
+ * package to get them meant parsing every statement, every editorial and every
+ * `tests.json` - which for twenty problems is seven megabytes, and at two
+ * hundred is the difference between a list that appears and a list that loads.
+ */
+export function loadMeta(location: ProblemLocation): MetaResult {
+  const file = relFile(location, 'meta.json');
+  const raw = readText(location.dir, 'meta.json');
+  if (raw === null) {
+    return { issues: [{ file, message: 'required file is missing', severity: 'error' }] };
+  }
+
+  const parsed = parseJsonFile(file, raw);
+  if (!parsed.ok) return { issues: [parsed.issue] };
+
+  const result = problemMetaSchema.safeParse(parsed.value);
+  if (!result.success) return { issues: issuesFromZod(file, result.error) };
+  return { meta: result.data, issues: [] };
+}
+
+export interface TestsResult {
+  tests?: ProblemTests;
+  issues: ValidationIssue[];
+}
+
+/**
+ * Reads one problem's `tests.json`, hidden cases and all (ROADMAP P2-14).
+ *
+ * Separate from `loadProblem` because the hidden tests have exactly two
+ * readers - the judge, when someone presses Submit, and the validator - and
+ * both know they want them. Everything else (the list, the workspace, the
+ * coach) wants the samples, which is a few hundred bytes rather than a
+ * megabyte, so the catalogue can cache what it serves without holding the whole
+ * test suite of two hundred problems in memory.
+ */
+export function loadTests(location: ProblemLocation): TestsResult {
+  const file = relFile(location, 'tests.json');
+  const raw = readText(location.dir, 'tests.json');
+  if (raw === null) {
+    return { issues: [{ file, message: 'required file is missing', severity: 'error' }] };
+  }
+
+  const parsed = parseJsonFile(file, raw);
+  if (!parsed.ok) return { issues: [parsed.issue] };
+
+  const result = testsFileSchema.safeParse(parsed.value);
+  if (!result.success) return { issues: issuesFromZod(file, result.error) };
+  return { tests: result.data, issues: [] };
+}
+
 /**
  * Reads and parses one problem directory.
  *
@@ -110,8 +168,22 @@ export interface LoadResult {
  * returned when all four parsed files are valid; the semantic rules in
  * `validate.ts` need a real package to run against.
  */
-export function loadProblem(location: ProblemLocation): LoadResult {
+export interface LoadOptions {
+  /**
+   * Read the hidden tests too (ROADMAP P2-14).
+   *
+   * Off for anything the API serves: the list, the workspace and the coach all
+   * want the samples, and the hidden cases are the megabyte. The judge and the
+   * validator turn it on, because they are the two readers that genuinely need
+   * them - and `hiddenCount` is filled either way, so a caller can tell the
+   * difference between "no hidden tests" and "did not ask for them".
+   */
+  hidden?: boolean;
+}
+
+export function loadProblem(location: ProblemLocation, options: LoadOptions = {}): LoadResult {
   const issues: ValidationIssue[] = [];
+  const wantHidden = options.hidden !== false;
 
   const contents = new Map<string, string>();
   for (const file of REQUIRED_FILES) {
@@ -149,13 +221,26 @@ export function loadProblem(location: ProblemLocation): LoadResult {
   }
 
   let tests: ProblemPackage['tests'] | undefined;
+  let hiddenCount = 0;
   if (testsRaw !== undefined) {
     const file = relFile(location, 'tests.json');
     const parsed = parseJsonFile(file, testsRaw);
     if (!parsed.ok) {
       issues.push(parsed.issue);
     } else {
-      const result = testsFileSchema.safeParse(parsed.value);
+      /*
+       * The hidden pool is dropped *before* validation, not after (P2-14).
+       *
+       * Parsing a megabyte of JSON is a few milliseconds; running two hundred
+       * test cases through zod is most of the cost of loading a problem, and
+       * nothing that serves a page needs them checked. The count is taken from
+       * the raw array so `hiddenCount` is still true.
+       */
+      const value = parsed.value as { hidden?: unknown };
+      hiddenCount = Array.isArray(value.hidden) ? value.hidden.length : 0;
+      const toCheck = wantHidden ? parsed.value : { ...(parsed.value as object), hidden: [] };
+
+      const result = testsFileSchema.safeParse(toCheck);
       if (result.success) tests = result.data;
       else issues.push(...issuesFromZod(file, result.error));
     }
@@ -209,6 +294,7 @@ export function loadProblem(location: ProblemLocation): LoadResult {
     location,
     meta,
     tests,
+    hiddenCount,
     hints,
     statement,
     editorial,

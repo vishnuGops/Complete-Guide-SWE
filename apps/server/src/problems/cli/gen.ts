@@ -3,8 +3,13 @@
  * `npm run problems:gen <slug> [options]` — (re)builds hidden tests from
  * generator.py with the reference solutions as the oracle (ROADMAP P2-9, D9).
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { PYTHON_COMMAND } from '../../judge/executors/python.js';
+import { paths } from '../../config.js';
 import { GenerateError, generateHiddenTests, writeHiddenTests } from '../generate.js';
-import { loadProblemBySlug } from '../loader.js';
+import { discoverProblems, loadProblemBySlug } from '../loader.js';
 import { validateCatalogue } from '../validate.js';
 
 const USAGE = `
@@ -15,7 +20,86 @@ Usage: npm run problems:gen <slug> -- [options]
   --no-cross-check   skip running the Java reference against the result
   --dry-run          report what would change without writing
   --keep-version     do not bump meta.version even if the tests changed
+  --check [slug]     regenerate and fail if the checked-in tests differ (CI)
 `.trim();
+
+/**
+ * The Python minor the catalogue was generated with.
+ *
+ * `random.Random`'s sequence methods are not stable across minors, so a
+ * regeneration on a different one produces different - still valid - tests, and
+ * a `--check` there would report a difference that means nothing. Recorded in
+ * `problems/GENERATED_WITH` rather than assumed (ROADMAP P2-14).
+ */
+function generatedWith(): string {
+  const file = path.join(paths.problems, 'GENERATED_WITH');
+  const body = fs.readFileSync(file, 'utf8');
+  const line = body
+    .split('\n')
+    .map((entry) => entry.trim())
+    .find((entry) => entry !== '' && !entry.startsWith('#'));
+  if (line === undefined) fail(`${file} names no version`);
+  return line;
+}
+
+/** `3.14` from whatever `python` is on PATH. */
+function pythonMinor(): string {
+  const output = execFileSync(
+    PYTHON_COMMAND,
+    ['-c', 'import sys; print("%d.%d" % sys.version_info[:2])'],
+    {
+      encoding: 'utf8',
+    },
+  );
+  return output.trim();
+}
+
+/**
+ * Regenerates every problem (or one) and fails if the result differs.
+ *
+ * The gap this closes: an edited `generator.py` with a stale `tests.json`
+ * passes every check today, because nothing re-runs the generator. The tests
+ * that ship would then be the ones somebody generated before the edit, and the
+ * editorial's claims about them would quietly stop being true.
+ */
+async function check(only: string | undefined): Promise<void> {
+  const wanted = generatedWith();
+  const running = pythonMinor();
+  if (running !== wanted) {
+    fail(
+      `this check needs Python ${wanted}, and ${running} is on PATH`,
+      'Generated tests are not reproducible across Python minors; see problems/GENERATED_WITH.',
+    );
+  }
+
+  const slugs = only ? [only] : discoverProblems().map((location) => location.slugDir);
+
+  const stale: string[] = [];
+  for (const slug of slugs) {
+    const pkg = loadProblemBySlug(slug);
+    if (!pkg) fail(`No problem found with slug "${slug}".`);
+    if (!pkg.generatorPython) continue;
+
+    const result = await generateHiddenTests(pkg, { crossCheck: false });
+    const same = JSON.stringify(pkg.tests.hidden) === JSON.stringify(result.hidden);
+    console.log(`  ${same ? paint(GREEN, 'ok  ') : paint(RED, 'stale')}  ${slug}`);
+    if (!same) stale.push(slug);
+  }
+
+  if (stale.length === 0) {
+    console.log(paint(GREEN, `${String(slugs.length)} problem(s): tests match their generators.`));
+    return;
+  }
+
+  console.error(
+    [
+      '',
+      `${String(stale.length)} problem(s) have tests their generator no longer produces:`,
+      ...stale.map((slug) => `  npm run problems:gen ${slug}`),
+    ].join('\n'),
+  );
+  process.exit(1);
+}
 
 const RESET = '[0m';
 const DIM = '[2m';
@@ -45,6 +129,16 @@ function numberFlag(argv: readonly string[], name: string): number | undefined {
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const slug = argv.find((arg, i) => !arg.startsWith('--') && !argv[i - 1]?.startsWith('--'));
+
+  if (argv.includes('--check') || process.env['npm_config_check'] === 'true') {
+    // `--check <slug>` reads as a flag with a value to the slug detection
+    // above, so the one problem case is read here instead.
+    const after = argv[argv.indexOf('--check') + 1];
+    const only = after !== undefined && !after.startsWith('--') ? after : slug;
+    await check(only);
+    return;
+  }
+
   if (!slug) {
     console.error(USAGE);
     process.exit(1);

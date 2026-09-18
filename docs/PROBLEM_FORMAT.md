@@ -522,10 +522,25 @@ whenever the generated tests change.**
 ## 11. Validation
 
 ```
-npm run problems:validate --static [slug]   # schema and structure only, no subprocesses
-npm run problems:validate [slug]            # the above, plus both references through the judge
-npm run problems:schema                     # regenerate docs/schema/*.schema.json
+npm run problems:validate --static [slug]        # schema and structure only, no subprocesses
+npm run problems:validate [slug]                 # the above, plus both references through the judge
+npm run problems:validate -- --changed <ref>     # reference runs only for problems that differ from <ref>
+npm run problems:schema [--check]                # regenerate (or verify) docs/schema/*.schema.json
+npm run problems:gen -- --check [slug]           # fail if tests no longer match their generator
 ```
+
+Reference runs are four at a time, and `--changed` narrows _them_ only (D23):
+the static rules always cover the whole catalogue, because that is where the
+cross-problem checks live — a duplicate id, a dangling `related`, two problems
+claiming one `order`. A change under `apps/server/src/judge/`,
+`apps/server/src/problems/`, `packages/shared/` or to any `checker.ts` validates
+everything, since those decide what "passes" means for problems nobody touched.
+
+`problems:gen --check` regenerates and compares, which is the only thing that
+catches an edited `generator.py` with a stale `tests.json`. It refuses to run on
+a Python minor other than the one in `problems/GENERATED_WITH`:
+`random.Random`'s sequence methods are not stable across minors, so a
+regeneration elsewhere differs for reasons that mean nothing.
 
 Static checks (P1-2):
 

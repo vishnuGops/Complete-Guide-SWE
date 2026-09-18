@@ -37,9 +37,10 @@ npm run test:unit           # everything except *.integration.test.ts (seconds, 
 npm run test:integration    # only *.integration.test.ts (spawns real python/java)
 npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db)
 npm run lint && npm run typecheck           # lint:fix, format and format:check also exist
-npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)
+npm run problems:validate [--static] [--changed <ref>] [slug]   # schema (and both references pass)
 npm run problems:new <topic> <slug>
 npm run problems:gen <slug>                   # regenerate hidden tests from generator.py
+npm run problems:gen -- --check [slug]        # fail if tests no longer match their generator
 npm run problems:schema [--check]             # regenerate docs/schema/*.json from the zod schemas
 ```
 

@@ -69,7 +69,9 @@ export function syntheticMeta(overrides: Partial<Record<string, unknown>> = {}):
     title: 'Judge Fixture',
     version: 1,
     topic: 'arrays',
-    patterns: ['fixture'],
+    // Any real pattern: the field is a closed enum now (ROADMAP P6-1), and
+    // what this fixture is about is the judge rather than the vocabulary.
+    patterns: ['one pass'],
     tier: 'Easy',
     rating: 1,
     order: 0,

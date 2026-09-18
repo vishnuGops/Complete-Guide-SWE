@@ -39,6 +39,12 @@ jobs:
 
       - run: npm run typecheck
 
+      # The generated JSON Schemas are checked in so editors can complete
+      # meta.json, and `emit-schema.ts` has always said CI verifies them. It
+      # does now (ROADMAP P2-14).
+      - name: Schemas match the zod source
+        run: npm run problems:schema -- --check
+
       # The build has its own tsconfig and an asset-copy step that `typecheck`
       # never exercises. One OS is enough to catch a broken build config.
       - name: Build
@@ -46,15 +52,27 @@ jobs:
         run: npm run build
 
   test:
-    name: test (${{ matrix.os }})
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        python: ['3.12']
+        # The harness promises Python 3.10 (CLAUDE.md > Environment) and nothing
+        # ran it below 3.12 until now: one Linux cell on the oldest supported
+        # minor, because a `match` statement or a PEP 604 union slipping into
+        # `runner.py` is exactly the kind of thing that only fails for the user
+        # with the older interpreter (ROADMAP P2-14).
+        include:
+          - os: ubuntu-latest
+            python: '3.10'
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `--changed` diffs against the merge base, which needs history.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -66,7 +84,7 @@ jobs:
       # need no environment overrides here.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
 
       - uses: actions/setup-java@v4
         with:
@@ -92,8 +110,51 @@ jobs:
 
       # The merge gate for content: every reference solution passes every test
       # in both languages, and both starters compile.
-      - name: Problem contract
+      #
+      # Incremental on a pull request (D23): the static rules still cover the
+      # whole catalogue - that is where the cross-problem checks live - and the
+      # reference runs are limited to the problems the branch touched, unless
+      # the judge, the harnesses, a checker or the shared schemas changed, in
+      # which case everything runs. On main it is always everything.
+      - name: Problem contract (changed problems)
+        if: github.event_name == 'pull_request'
+        run: npm run problems:validate -- --changed origin/${{ github.base_ref }}
+
+      - name: Problem contract (whole catalogue)
+        if: github.event_name != 'pull_request'
         run: npm run problems:validate
+
+  # Generated tests are only reproducible on the Python minor they were made
+  # with, so this lane pins it rather than sharing the test matrix's (P2-14).
+  generators:
+    name: generators (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Read the generating Python version
+        id: python
+        run: |
+          version=$(grep -v '^#' problems/GENERATED_WITH | grep -v '^$' | head -1)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.python.outputs.version }}
+
+      - run: npm ci
+
+      # An edited generator.py with a stale tests.json passes every other check
+      # in this file: nothing re-runs the generator. This does.
+      - name: Tests still match their generators
+        run: npm run problems:gen -- --check
 
   e2e:
     name: e2e (ubuntu-latest)
