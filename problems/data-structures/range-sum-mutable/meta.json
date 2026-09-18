@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "range-sum-mutable",
+  "slug": "range-sum-mutable",
+  "title": "Sums That Keep Changing",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "fenwick tree"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 5,
+  "mode": "operations",
+  "entry": "SumTable",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["range-minimum", "balance-point"],
+  "targetComplexity": {
+    "time": "O(log n) per operation",
+    "space": "O(n)"
+  }
+}

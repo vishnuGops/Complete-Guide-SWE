@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "least-recently-used",
+  "slug": "least-recently-used",
+  "title": "Keep The Recent Ones",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "cache eviction", "hash map"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 3,
+  "mode": "operations",
+  "entry": "RecentCache",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["least-frequently-used", "browser-history"],
+  "targetComplexity": {
+    "time": "O(1) per operation",
+    "space": "O(capacity)"
+  }
+}

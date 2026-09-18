@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "least-frequently-used",
+  "slug": "least-frequently-used",
+  "title": "Keep The Popular Ones",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "cache eviction", "two maps"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 4,
+  "mode": "operations",
+  "entry": "PopularCache",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["least-recently-used", "tag-index"],
+  "targetComplexity": {
+    "time": "O(1) per operation",
+    "space": "O(capacity)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The plain row answers `set` instantly and `total` in linear time; running totals do the opposite. What would be between the two?",
+    "A structure where each stored number covers a *block* of readings, so a change touches only the blocks containing it, and a total is assembled from a few blocks.",
+    "Let the blocks have sizes that are powers of two, arranged so that every prefix is the sum of at most log n of them.",
+    "Then the total from `from` to `to` is the prefix up to `to` minus the prefix up to `from - 1`, and both are a short walk."
+  ]
+}

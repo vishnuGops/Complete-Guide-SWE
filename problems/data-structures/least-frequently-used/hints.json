@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Start from the recency cache. What has to change so that the *count* decides, with recency only as a tie-break?",
+    "Group the keys by how often they have been used: all the keys with one use together, all with two together, and so on.",
+    "Inside one group the tie-break is recency - so each group is itself a recency-ordered list, exactly the structure the previous problem built.",
+    "Using a key moves it from its group to the next one up. Tracking the smallest non-empty group as you go keeps eviction constant time, because it only ever rises by one or resets to one."
+  ]
+}

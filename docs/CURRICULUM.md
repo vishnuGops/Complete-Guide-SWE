@@ -438,6 +438,9 @@ Patterns to cover: XOR as cancellation, counting bits, masks as sets.
 Mostly `operations` mode: these are problems about a structure's contract rather
 than about one answer.
 
+`union-find-sizes` is gone: `graph-union-find` (Graph 13) is the same structure
+with the same contract, group sizes included. Batch E is 12 problems (P6-6).
+
 | #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                           | Flags   |
 | --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | ---------------------------------- | ------- |
 | 0   | `prefix-tree`           | A Tree Of Prefixes          | Medium | 6      | operations | design, trie, strings              |         |
@@ -452,7 +455,6 @@ than about one answer.
 | 9   | `time-keyed-store`      | Values Through Time         | Medium | 6      | operations | design, binary search, hash map    |         |
 | 10  | `stream-checker`        | Does The Stream End With    | Hard   | 8      | operations | design, trie, reverse traversal    |         |
 | 11  | `rate-limiter`          | Allow, Then Refuse          | Medium | 5      | operations | design, queue                      |         |
-| 12  | `union-find-sizes`      | Groups And Their Sizes      | Medium | 6      | operations | design, union find, amortised O(1) |         |
 
 ---
 

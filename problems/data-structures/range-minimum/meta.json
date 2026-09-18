@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "range-minimum",
+  "slug": "range-minimum",
+  "title": "Smallest In Any Range",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "segment tree"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 6,
+  "mode": "operations",
+  "entry": "MinTable",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["range-sum-mutable", "window-maximum"],
+  "targetComplexity": {
+    "time": "O(log n) per operation",
+    "space": "O(n)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two questions have to be answered in constant time: where is this key, and which entry is the least recently used?",
+    "A hash map answers the first. For the second you need the entries in recency order, with the ability to move one to the front in constant time.",
+    "An array cannot do that - moving an element shifts everything. A doubly linked list can: unlink a node and relink it at the front, both in constant time.",
+    "So the map stores key to *node*, not key to value, and the list holds the entries from most recent to least. Eviction is the last node."
+  ]
+}

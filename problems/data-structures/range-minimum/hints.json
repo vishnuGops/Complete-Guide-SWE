@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Why can the prefix trick from `range-sum-mutable` not be reused here?",
+    "Because minimum cannot be undone: knowing the smallest of the first `to` readings and of the first `from` readings says nothing about the stretch between them.",
+    "So the structure has to cover the queried stretch directly, from pieces it already holds. Build a tree where each node covers a stretch and stores its smallest reading.",
+    "Then a query splits into the few nodes that exactly cover the stretch - at most two per level - and a change updates only the nodes above one leaf."
+  ]
+}
