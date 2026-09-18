@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
+import { childEnv } from './childEnv.js';
 
 export interface SpawnOptions {
   command: string;
@@ -8,6 +9,11 @@ export interface SpawnOptions {
   timeoutMs: number;
   /** Combined stdout+stderr kept before truncation. */
   outputCap?: number;
+  /**
+   * The child's whole environment. Defaults to the allow-list in
+   * `childEnv.ts` - never `process.env`, which carries the coach API key
+   * (ROADMAP P2-11).
+   */
   env?: NodeJS.ProcessEnv;
 }
 
@@ -37,13 +43,23 @@ export function killTree(child: ChildProcess): void {
   if (process.platform === 'win32') {
     // Detached and unref'd: reaping the tree must not keep the judge alive, and
     // a failure here (the process already exited) is not interesting.
+    //
+    // The `error` handler is not optional (P2-11): `spawn` reports a failure to
+    // start - taskkill missing from a trimmed PATH, or the process table full -
+    // as an `error` *event*, not a throw. Unhandled, that event is an
+    // uncaught exception on an EventEmitter, which takes the server down and
+    // with it the queue slot this kill was supposed to free.
     try {
-      spawn('taskkill', ['/pid', String(pid), '/T', '/F'], {
+      const killer = spawn('taskkill', ['/pid', String(pid), '/T', '/F'], {
         stdio: 'ignore',
         detached: true,
-      }).unref();
+      });
+      killer.on('error', () => {
+        forceKill(child);
+      });
+      killer.unref();
     } catch {
-      child.kill('SIGKILL');
+      forceKill(child);
     }
     return;
   }
@@ -51,11 +67,16 @@ export function killTree(child: ChildProcess): void {
   try {
     process.kill(-pid, 'SIGKILL');
   } catch {
-    try {
-      child.kill('SIGKILL');
-    } catch {
-      // Already gone.
-    }
+    forceKill(child);
+  }
+}
+
+/** Last resort: the child alone, and never a throw - it may already be gone. */
+function forceKill(child: ChildProcess): void {
+  try {
+    child.kill('SIGKILL');
+  } catch {
+    // Already gone, which is the outcome this function wanted anyway.
   }
 }
 
@@ -78,7 +99,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       detached: process.platform !== 'win32',
-      env: options.env ?? process.env,
+      env: options.env ?? childEnv(),
       windowsHide: true,
     });
 

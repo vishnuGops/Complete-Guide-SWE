@@ -344,6 +344,175 @@ describe('user output', () => {
 });
 
 // ---------------------------------------------------------------------------
+// What the child is allowed to see (ROADMAP P2-11)
+// ---------------------------------------------------------------------------
+
+describe('child environment', () => {
+  /**
+   * The defect this closes, in the form it was found: the judge spawned its
+   * children with `process.env`, so one `print` returned the user's coach API
+   * key through the run result and into the results panel.
+   *
+   * Real subprocesses are the only honest way to test it - the whole question
+   * is what the operating system handed the child - so the canaries are set on
+   * this process for the duration and the solution prints its own environment.
+   */
+  const SECRETS = {
+    COACH_API_KEY: 'sk-ant-leak-canary-0001',
+    DEVPROMAX_SECRET_CANARY: 'canary-0002',
+    GITHUB_TOKEN: 'ghp-leak-canary-0003',
+  } as const;
+
+  const saved: Record<string, string | undefined> = {};
+
+  beforeAll(() => {
+    for (const [name, value] of Object.entries(SECRETS)) {
+      saved[name] = process.env[name];
+      process.env[name] = value;
+    }
+  });
+
+  afterAll(() => {
+    for (const name of Object.keys(SECRETS)) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
+  });
+
+  const PRINT_ENV = {
+    python: [
+      'import os',
+      '',
+      '',
+      'class Solution:',
+      '    def solve(self, n):',
+      '        for name, value in sorted(os.environ.items()):',
+      '            print(name + "=" + value)',
+      '        return n',
+      '',
+    ].join('\n'),
+    java: [
+      'import java.util.*;',
+      '',
+      'class Solution {',
+      '    public int solve(int n) {',
+      '        for (Map.Entry<String, String> e : new TreeMap<>(System.getenv()).entrySet()) {',
+      '            System.out.println(e.getKey() + "=" + e.getValue());',
+      '        }',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  } as const;
+
+  it.each(LANGUAGES)('%s: cannot read the coach key or any DEVPROMAX_ name', async (language) => {
+    const result = await runSynthetic(language, PRINT_ENV[language]);
+    expect(result.verdict).toBe('AC');
+
+    const printed = result.tests[0]?.stdout ?? '';
+    // Proof that something was printed, or this passes by printing nothing.
+    expect(printed).toMatch(/PATH=/i);
+    expect(result.outputTruncated).toBe(false);
+
+    for (const [name, value] of Object.entries(SECRETS)) {
+      expect(printed).not.toContain(name);
+      expect(printed).not.toContain(value);
+    }
+    expect(printed).not.toContain('DEVPROMAX_');
+  });
+
+  /**
+   * The other half of an allow-list.
+   *
+   * Too short a list breaks the JVM before `main` - without SYSTEMROOT on
+   * Windows it cannot initialise sockets - and the symptom is an unexplained RE
+   * on every problem in the catalogue. So: a temp file and a loopback address,
+   * which are the two things that fail first.
+   */
+  const NEEDS_ENV = {
+    python: [
+      'import tempfile',
+      '',
+      '',
+      'class Solution:',
+      '    def solve(self, n):',
+      '        with tempfile.TemporaryFile() as handle:',
+      '            handle.write(b"ok")',
+      '        return n',
+      '',
+    ].join('\n'),
+    java: [
+      'import java.io.*;',
+      'import java.net.*;',
+      '',
+      'class Solution {',
+      '    public int solve(int n) throws Exception {',
+      '        File temp = File.createTempFile("devpromax", ".tmp");',
+      '        temp.delete();',
+      '        InetAddress.getLoopbackAddress();',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  } as const;
+
+  it.each(LANGUAGES)('%s: still has what it needs to run at all', async (language) => {
+    const result = await runSynthetic(language, NEEDS_ENV[language]);
+    expect(result.verdict).toBe('AC');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Class names the harness owns (ROADMAP P2-11)
+// ---------------------------------------------------------------------------
+
+describe('java: harness class collisions', () => {
+  it('explains a user-declared ListNode instead of blaming the harness', async () => {
+    const code = [
+      'class Solution {',
+      '    public int solve(int n) {',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+      'class ListNode {',
+      '    int val;',
+      '    ListNode next;',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code);
+    expect(result.verdict).toBe('CE');
+    const message = result.compileErrors.map((error) => error.message).join('\n');
+    expect(message).toContain('the judge already defines `ListNode`');
+    expect(message).not.toContain("the judge's Java harness failed to compile");
+  });
+
+  it('accepts a class named Main, which the harness no longer owns', async () => {
+    const code = [
+      'class Solution {',
+      '    public int solve(int n) {',
+      '        return Main.twice(n) - n;',
+      '    }',
+      '}',
+      '',
+      'class Main {',
+      '    static int twice(int n) {',
+      '        return n * 2;',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code);
+    expect(result.verdict).toBe('AC');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Timeouts and the isolation fallback
 // ---------------------------------------------------------------------------
 

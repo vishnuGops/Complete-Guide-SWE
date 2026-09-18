@@ -133,3 +133,45 @@ function isAlive(pid: number): boolean {
     return false;
   }
 }
+
+/**
+ * The child's environment (ROADMAP P2-11).
+ *
+ * `runProcess` used to default to `process.env`, which is how the coach API key
+ * reached the results panel. The default is the allow-list now, and this is the
+ * cheap proof of it: the two executors' own version of this test spawns real
+ * interpreters (`judge.integration.test.ts`).
+ */
+describe('runProcess environment', () => {
+  it('does not pass the coach key to a child by default', async () => {
+    process.env.COACH_API_KEY = 'sk-ant-unit-canary';
+    process.env.DEVPROMAX_UNIT_CANARY = 'canary';
+    try {
+      const result = await node(
+        'process.stdout.write(JSON.stringify([process.env.COACH_API_KEY ?? null, process.env.DEVPROMAX_UNIT_CANARY ?? null]))',
+      );
+      expect(JSON.parse(result.stdout)).toEqual([null, null]);
+    } finally {
+      delete process.env.COACH_API_KEY;
+      delete process.env.DEVPROMAX_UNIT_CANARY;
+    }
+  });
+
+  it('still passes PATH, or nothing would start', async () => {
+    const result = await node(
+      'process.stdout.write(String(Boolean(process.env.PATH ?? process.env.Path)))',
+    );
+    expect(result.stdout).toBe('true');
+  });
+
+  it('uses exactly the environment it is given, when it is given one', async () => {
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'process.stdout.write(process.env.DEVPROMAX_ONLY ?? "missing")'],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      env: { ...(process.env.PATH ? { PATH: process.env.PATH } : {}), DEVPROMAX_ONLY: 'yes' },
+    });
+    expect(result.stdout).toBe('yes');
+  });
+});

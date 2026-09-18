@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createWorkspace, sweepStaleWorkspaces } from './workspace.js';
 
 const roots: string[] = [];
@@ -103,5 +104,25 @@ describe('path resolution', () => {
     expect(path.isAbsolute(workspace.dir)).toBe(true);
     expect(path.isAbsolute(workspace.file('solution.py'))).toBe(true);
     expect(fs.existsSync(workspace.dir)).toBe(true);
+  });
+});
+
+describe('dispose', () => {
+  it('never rejects, even when the directory cannot be removed', async () => {
+    // Windows holds a freshly written `.class` file open for a moment, and
+    // `dispose` runs in `runProblem`'s `finally` - so a rejection here turned a
+    // finished verdict into a 500 (ROADMAP P2-11). The startup sweep owns
+    // whatever is left behind.
+    const root = makeRoot();
+    const workspace = await createWorkspace(root);
+    const rm = vi
+      .spyOn(fsPromises, 'rm')
+      .mockRejectedValue(
+        Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' }),
+      );
+
+    await expect(workspace.dispose()).resolves.toBeUndefined();
+    expect(rm).toHaveBeenCalled();
+    rm.mockRestore();
   });
 });

@@ -4,6 +4,40 @@ import type { CompileError } from '@devpromax/shared';
 /** `<path>:<line>: error: <message>` — javac's default diagnostic format. */
 const DIAGNOSTIC = /^(.*?):(\d+): (error|warning): (.*)$/;
 
+/** `duplicate class: <name>`, the one javac diagnostic the harness can cause. */
+const DUPLICATE_CLASS = /^duplicate class:\s*([\w.$]+)/;
+
+/**
+ * Class names the workspace already contains (ROADMAP P2-11).
+ *
+ * Two kinds. `ListNode` and `TreeNode` are deliberately ours: the harness
+ * defines them so a starter can say `ListNode head` without the user writing
+ * the class, which means declaring a second one is a collision by design and
+ * the message has to say so. The `DevProMax*` names are the harness's own
+ * plumbing, renamed out of the way precisely so that this list is short - a user
+ * who hits one of those has gone looking for it.
+ */
+const HARNESS_CLASSES: Record<string, string> = {
+  ListNode:
+    'the judge already defines `ListNode` for you - delete your own copy and use the provided one (it has `val` and `next`).',
+  TreeNode:
+    'the judge already defines `TreeNode` for you - delete your own copy and use the provided one (it has `val`, `left` and `right`).',
+  DevProMaxMain: 'the judge reserves the class name `DevProMaxMain`. Rename your class.',
+  DevProMaxJson: 'the judge reserves the class name `DevProMaxJson`. Rename your class.',
+  DevProMaxConvert: 'the judge reserves the class name `DevProMaxConvert`. Rename your class.',
+};
+
+/**
+ * Rewrites a collision with the harness into something the user can act on.
+ *
+ * Returns `undefined` for anything else, including a duplicate class the user
+ * declared twice themselves - javac's own wording is already right for that.
+ */
+export function harnessCollisionMessage(message: string): string | undefined {
+  const name = DUPLICATE_CLASS.exec(message)?.[1];
+  return name === undefined ? undefined : HARNESS_CLASSES[name];
+}
+
 export interface ParsedDiagnostics {
   /** Diagnostics about the user's own source, ready for Monaco markers. */
   errors: CompileError[];
@@ -33,15 +67,25 @@ export function parseJavacOutput(output: string, solutionFile: string): ParsedDi
 
     const [, file, lineText, severity, message] = match;
     const column = caretColumn(lines, i);
+    const collision = harnessCollisionMessage(message ?? '');
     const diagnostic: CompileError = {
       line: Number(lineText),
       ...(column !== undefined ? { column } : {}),
-      message: message ?? '',
+      message: collision ?? message ?? '',
       severity: severity === 'warning' ? 'warning' : 'error',
     };
 
     if (file && path.basename(file) === solutionBase) {
       errors.push(diagnostic);
+    } else if (collision !== undefined) {
+      // Attributed to the harness file, but caused by the user's class. javac
+      // reports a duplicate at its later definition and the harness is compiled
+      // first, so this is the order javac would have to invert to produce -
+      // handled anyway, because "the judge's harness failed to compile" is the
+      // one answer that is certainly wrong. The line number is dropped: it
+      // points into a file the user has never seen.
+      const { line: _line, column: _column, ...rest } = diagnostic;
+      errors.push(rest);
     } else {
       harnessErrors.push(diagnostic);
     }
@@ -66,6 +110,19 @@ function caretColumn(lines: readonly string[], from: number): number | undefined
     }
   }
   return undefined;
+}
+
+/**
+ * What a user is told when the compiler itself ran out of time (ROADMAP P2-11).
+ *
+ * Its own message because the generic summary said "compilation failed", which
+ * reads as "your code is wrong" for what is usually a machine doing something
+ * else. Shared by both languages so they answer the same way - Python's syntax
+ * check is a compile step too, whatever it is called.
+ */
+export function compileTimeoutMessage(timeoutMs: number): string {
+  const seconds = (timeoutMs / 1000).toFixed(timeoutMs % 1000 === 0 ? 0 : 1);
+  return `the compiler exceeded ${seconds}s and was stopped. Raise the time limit multiplier in Settings if this machine is busy.`;
 }
 
 /** A readable one-liner for the verdict banner when there is no structured error. */

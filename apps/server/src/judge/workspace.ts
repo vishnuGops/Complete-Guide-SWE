@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { paths } from '../config.js';
+import { logger } from '../logger.js';
 
 /**
  * An isolated scratch directory for one judge run.
@@ -16,6 +17,7 @@ export interface Workspace {
   file(name: string): string;
   write(name: string, contents: string): Promise<string>;
   read(name: string): Promise<string>;
+  /** Never rejects: a workspace that outlives its run is a sweeper's problem. */
   dispose(): Promise<void>;
 }
 
@@ -48,8 +50,29 @@ export async function createWorkspace(root: string = paths.judgeWorkspaces): Pro
         return '';
       }
     },
+    /**
+     * Deletes the workspace, and never fails doing it (ROADMAP P2-11).
+     *
+     * `runProblem` disposes in a `finally`, so a rejection here replaced a
+     * finished verdict with a 500 - the user's code ran, passed, and they were
+     * told the server broke. On Windows this is not hypothetical: `javac` has
+     * just written `.class` files and an antivirus scanner or the loader can
+     * still hold one open for a few hundred milliseconds, and `fs.rm` reports
+     * that as EBUSY or EPERM.
+     *
+     * So: more retries over a longer window, and whatever is left is logged and
+     * swallowed. `sweepStaleWorkspaces` removes it at the next startup, which is
+     * the right owner for a directory nothing is using any more.
+     */
     async dispose() {
-      await fs.rm(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+      try {
+        await fs.rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
+      } catch (error) {
+        logger.warn(
+          { workspace: id, err: error },
+          'judge workspace could not be removed; leaving it for the startup sweep',
+        );
+      }
     },
   };
 }

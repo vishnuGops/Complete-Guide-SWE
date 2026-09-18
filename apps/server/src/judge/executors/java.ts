@@ -7,16 +7,31 @@ import type { HarnessPayload } from '../protocol.js';
 import { runProcess } from '../process.js';
 import type { Workspace } from '../workspace.js';
 import type { Executor, HarnessRun, PrepareResult } from './types.js';
-import { parseJavacOutput, summariseCompileFailure } from './compileErrors.js';
+import {
+  compileTimeoutMessage,
+  parseJavacOutput,
+  summariseCompileFailure,
+} from './compileErrors.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HARNESS_SOURCE = path.resolve(HERE, '..', 'harness', 'Main.java');
+const HARNESS_SOURCE = path.resolve(HERE, '..', 'harness', 'DevProMaxMain.java');
 
 export const JAVAC_COMMAND = process.env['DEVPROMAX_JAVAC'] ?? 'javac';
 export const JAVA_COMMAND = process.env['DEVPROMAX_JAVA'] ?? 'java';
 
 const SOLUTION_FILE = 'Solution.java';
-const HARNESS_FILE = 'Main.java';
+/**
+ * The harness, under a name nobody would write by accident (ROADMAP P2-11).
+ *
+ * It used to be `Main.java` holding `Main`, `Json` and `Convert`, which are
+ * three names a user might reasonably give a helper class. Declaring one made
+ * javac report `duplicate class` against the *harness* file, which this
+ * executor then reported as "the judge's Java harness failed to compile" - our
+ * bug, apparently, for the user's helper. The names are `DevProMax*` now, and
+ * the ones we cannot rename because the user's own signatures use them -
+ * `ListNode`, `TreeNode` - are named as reserved in the message instead.
+ */
+const HARNESS_FILE = 'DevProMaxMain.java';
 const PAYLOAD_FILE = 'payload.json';
 const RESULTS_FILE = 'results.jsonl';
 
@@ -58,8 +73,12 @@ export const javaExecutor: Executor = {
         '-nowarn',
         '-d',
         workspace.dir,
-        workspace.file(SOLUTION_FILE),
+        // The harness first, the user's file second, deliberately: javac
+        // reports a duplicate class at its *later* definition, so this order
+        // puts the diagnostic on the user's line - where a Monaco marker can go
+        // - rather than on a harness file they have never seen.
         workspace.file(HARNESS_FILE),
+        workspace.file(SOLUTION_FILE),
       ],
       cwd: workspace.dir,
       timeoutMs: compileTimeoutMs,
@@ -68,6 +87,18 @@ export const javaExecutor: Executor = {
 
     const timeMs = Date.now() - started;
     if (result.code === 0) return { ok: true, timeMs };
+
+    // A killed javac produced no diagnostics at all, so the generic summary
+    // called it "compilation failed" - which reads as "your code is wrong" for
+    // what is actually a machine too busy to compile it (ROADMAP P2-11).
+    if (result.killed) {
+      return {
+        ok: false,
+        timeMs,
+        errors: [{ message: compileTimeoutMessage(compileTimeoutMs), severity: 'error' }],
+        stderr: result.stderr,
+      };
+    }
 
     const output = `${result.stdout}\n${result.stderr}`;
     const { errors, harnessErrors } = parseJavacOutput(output, SOLUTION_FILE);
@@ -116,7 +147,7 @@ export const javaExecutor: Executor = {
         '-XX:+UseSerialGC',
         '-cp',
         workspace.dir,
-        'Main',
+        'DevProMaxMain',
         workspace.file(PAYLOAD_FILE),
       ],
       cwd: workspace.dir,

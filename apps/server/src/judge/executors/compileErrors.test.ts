@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseJavacOutput, summariseCompileFailure } from './compileErrors.js';
+import {
+  compileTimeoutMessage,
+  harnessCollisionMessage,
+  parseJavacOutput,
+  summariseCompileFailure,
+} from './compileErrors.js';
 
 const MISSING_SEMICOLON = [
   "C:\\work\\abc\\Solution.java:3: error: ';' expected",
@@ -47,7 +52,7 @@ describe('parseJavacOutput', () => {
 
   it('separates harness diagnostics from the user\u2019s, so our bug is not blamed on them', () => {
     const output = [
-      '/x/Main.java:40: error: something wrong in the harness',
+      '/x/DevProMaxMain.java:40: error: something wrong in the harness',
       '    x',
       '    ^',
       '/x/Solution.java:3: error: their mistake',
@@ -129,5 +134,71 @@ describe('summariseCompileFailure', () => {
 
   it('never returns an empty string', () => {
     expect(summariseCompileFailure('   \n')).toBe('compilation failed');
+  });
+});
+
+/**
+ * Collisions with the classes the workspace already holds (ROADMAP P2-11).
+ *
+ * The user-visible failure this replaced: declaring `class ListNode` made javac
+ * report a duplicate against the harness file, and the judge announced "the
+ * judge's Java harness failed to compile" - our bug, apparently, for their
+ * class.
+ */
+describe('harnessCollisionMessage', () => {
+  it('names ListNode and TreeNode as already provided', () => {
+    expect(harnessCollisionMessage('duplicate class: ListNode')).toContain(
+      'the judge already defines `ListNode`',
+    );
+    expect(harnessCollisionMessage('duplicate class: TreeNode')).toContain('`val`, `left`');
+  });
+
+  it('says the DevProMax names are reserved', () => {
+    expect(harnessCollisionMessage('duplicate class: DevProMaxJson')).toContain('reserves');
+  });
+
+  it('leaves a duplicate the user caused twice over to javac, which words it well', () => {
+    expect(harnessCollisionMessage('duplicate class: Helper')).toBeUndefined();
+    expect(harnessCollisionMessage("';' expected")).toBeUndefined();
+  });
+});
+
+describe('parseJavacOutput, harness collisions', () => {
+  it('rewrites the message on the user’s own line', () => {
+    const output = [
+      '/x/Solution.java:7: error: duplicate class: ListNode',
+      'class ListNode {',
+      '^',
+    ].join('\n');
+
+    const { errors, harnessErrors } = parseJavacOutput(output, 'Solution.java');
+    expect(harnessErrors).toHaveLength(0);
+    expect(errors[0]?.line).toBe(7);
+    expect(errors[0]?.message).toContain('the judge already defines `ListNode`');
+  });
+
+  it('claims a collision reported against the harness file, minus its line', () => {
+    // javac reports a duplicate at its later definition and the harness is
+    // compiled first, so this is the inverted order. Handled anyway: "the
+    // harness failed to compile" is the one answer that is certainly wrong, and
+    // a line number pointing into a file the user has never seen is no help.
+    const output = ['/x/DevProMaxMain.java:364: error: duplicate class: ListNode', '^'].join('\n');
+
+    const { errors, harnessErrors } = parseJavacOutput(output, 'Solution.java');
+    expect(harnessErrors).toHaveLength(0);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.line).toBeUndefined();
+    expect(errors[0]?.message).toContain('the judge already defines `ListNode`');
+  });
+});
+
+describe('compileTimeoutMessage', () => {
+  it('says how long the compiler was given, so the number is actionable', () => {
+    expect(compileTimeoutMessage(10_000)).toContain('exceeded 10s');
+    expect(compileTimeoutMessage(2500)).toContain('exceeded 2.5s');
+  });
+
+  it('points at the setting that fixes it', () => {
+    expect(compileTimeoutMessage(10_000)).toContain('time limit multiplier');
   });
 });

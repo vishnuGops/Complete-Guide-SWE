@@ -5,6 +5,7 @@ import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
 import { parseResultLines } from '../protocol.js';
 import type { HarnessPayload } from '../protocol.js';
 import { runProcess } from '../process.js';
+import { compileTimeoutMessage } from './compileErrors.js';
 import type { Workspace } from '../workspace.js';
 import type { Executor, HarnessRun, PrepareResult } from './types.js';
 
@@ -71,6 +72,15 @@ export const pythonExecutor: Executor = {
 
     const timeMs = Date.now() - started;
     if (result.code === 0) return { ok: true, timeMs };
+
+    if (result.killed) {
+      return {
+        ok: false,
+        timeMs,
+        errors: [{ message: compileTimeoutMessage(compileTimeoutMs), severity: 'error' }],
+        stderr: result.stderr,
+      };
+    }
 
     const diagnostic = parseSyntaxDiagnostic(result.stdout);
     return {

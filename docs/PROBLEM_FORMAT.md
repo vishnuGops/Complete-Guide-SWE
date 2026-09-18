@@ -432,7 +432,8 @@ class Solution:
 - Use `List[int]` from `typing` rather than `list[int]` in signatures, so the
   starter reads the same on every supported version.
 - `ListNode` and `TreeNode` are injected by the harness and shown as comments in
-  the starter. Redefining them is a runtime error.
+  the starter. Redefining them is an error in both languages, reported as a
+  compile error in Java that names the class.
 
 ### Java
 
@@ -449,7 +450,11 @@ class Solution {
 
 - Compiled with `--release 21`. The class is `Solution` (or the `entry` class in
   `operations` mode) and must not be `public` — the harness compiles it alongside
-  its own `Main`.
+  its own entry point.
+- Helper classes in the same file are fine and encouraged; the harness keeps its
+  own out of the way under `DevProMax*` names. The four names the workspace
+  already holds are `DevProMaxMain`, `DevProMaxJson`, `DevProMaxConvert` and the
+  two types below; declaring one is reported as a compile error naming it.
 - **A non-void Java starter must return something.** An empty body is a compile
   error in Java, and the validator requires starters to compile (§11). Use a
   cheap placeholder with a comment, as above. The payoff is that Run on an

@@ -24,7 +24,7 @@ import java.util.Map;
  * DevProMax Java harness.
  *
  * Compiled alongside the user's Solution.java and started as
- * `java -cp <workspace> Main payload.json`.
+ * `java -cp <workspace> DevProMaxMain payload.json`.
  *
  * The contract is identical to runner.py's, deliberately: results are JSON Lines
  * flushed to a file after every test, nothing meaningful goes to stdout, and the
@@ -37,7 +37,7 @@ import java.util.Map;
  * here: an unsupported parameter type fails loudly rather than silently
  * receiving null.
  */
-public class Main {
+public class DevProMaxMain {
 
     static final int EXIT_OK = 0;
     static final int EXIT_LOAD_FAILED = 2;
@@ -52,7 +52,7 @@ public class Main {
     private static Writer results;
 
     public static void main(String[] args) throws Exception {
-        Map<String, Object> payload = (Map<String, Object>) Json.parse(
+        Map<String, Object> payload = (Map<String, Object>) DevProMaxJson.parse(
                 Files.readString(Path.of(args[0]), StandardCharsets.UTF_8));
 
         results = Files.newBufferedWriter(
@@ -200,7 +200,7 @@ public class Main {
 
         Object[] args = new Object[types.length];
         for (int i = 0; i < types.length; i++) {
-            args[i] = Convert.toJava(rawArgs.get(i), types[i]);
+            args[i] = DevProMaxConvert.toJava(rawArgs.get(i), types[i]);
         }
 
         method.setAccessible(true);
@@ -210,14 +210,14 @@ public class Main {
         if (expect.equals("return") || expect.equals("both")) {
             out.put("returned", method.getReturnType() == void.class
                     ? null
-                    : Convert.toJson(returned));
+                    : DevProMaxConvert.toJson(returned));
         }
         if (expect.equals("mutatedArgs") || expect.equals("both")) {
             List<Object> mutated = new ArrayList<>();
             for (int i = 0; i < args.length; i++) {
                 Map<String, Object> entry = new LinkedHashMap<>();
                 entry.put("index", i);
-                entry.put("value", Convert.toJson(args[i]));
+                entry.put("value", DevProMaxConvert.toJson(args[i]));
                 mutated.add(entry);
             }
             out.put("mutatedArgs", mutated);
@@ -237,7 +237,7 @@ public class Main {
         Type[] ctorTypes = ctor.getGenericParameterTypes();
         Object[] built = new Object[ctorTypes.length];
         for (int i = 0; i < ctorTypes.length; i++) {
-            built[i] = Convert.toJava(ctorArgs.get(i), ctorTypes[i]);
+            built[i] = DevProMaxConvert.toJava(ctorArgs.get(i), ctorTypes[i]);
         }
         Object instance = ctor.newInstance(built);
 
@@ -261,10 +261,10 @@ public class Main {
                 Type[] types = m.getGenericParameterTypes();
                 Object[] args = new Object[types.length];
                 for (int i = 0; i < types.length; i++) {
-                    args[i] = Convert.toJava(opArgs.get(i), types[i]);
+                    args[i] = DevProMaxConvert.toJava(opArgs.get(i), types[i]);
                 }
                 Object returned = m.invoke(instance, args);
-                returns.add(m.getReturnType() == void.class ? null : Convert.toJson(returned));
+                returns.add(m.getReturnType() == void.class ? null : DevProMaxConvert.toJson(returned));
             }
         }
         Map<String, Object> out = new LinkedHashMap<>();
@@ -336,7 +336,7 @@ public class Main {
     }
 
     private static synchronized void writeRecord(Map<String, Object> record) throws IOException {
-        results.write(Json.write(record));
+        results.write(DevProMaxJson.write(record));
         results.write("\n");
         results.flush();
     }
@@ -405,9 +405,9 @@ class TreeNode {
  * turns a problem-authoring mistake into a baffling NullPointerException inside
  * the user's solution.
  */
-final class Convert {
+final class DevProMaxConvert {
 
-    private Convert() {
+    private DevProMaxConvert() {
     }
 
     static Object toJava(Object value, Type type) {
@@ -690,17 +690,17 @@ final class Convert {
 }
 
 /** A JSON reader and writer with no dependencies, sufficient for the wire format. */
-final class Json {
+final class DevProMaxJson {
 
     private final String text;
     private int at;
 
-    private Json(String text) {
+    private DevProMaxJson(String text) {
         this.text = text;
     }
 
     static Object parse(String text) {
-        Json parser = new Json(text);
+        DevProMaxJson parser = new DevProMaxJson(text);
         parser.skipWhitespace();
         Object value = parser.readValue();
         parser.skipWhitespace();
