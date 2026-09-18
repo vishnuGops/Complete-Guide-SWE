@@ -185,8 +185,8 @@ and merging. Every problem here is **node**-flagged.
 | 1   | `middle-link`         | The Middle Link            | Easy   | 2      | function | fast and slow pointers                              | node       |
 | 2   | `merge-two-chains`    | Merge Two Ordered Chains   | Easy   | 3      | function | merge, dummy head, sorted input                     | node       |
 | 3   | `drop-nth-from-end`   | Drop The N-th From The End | Medium | 4      | function | fast and slow pointers, dummy head                  | node       |
-| 4   | `chain-has-cycle`     | Does The Chain Loop        | Medium | 4      | function | fast and slow pointers, invariant                   | node       |
-| 5   | `cycle-entry`         | Where The Loop Begins      | Medium | 6      | function | fast and slow pointers, invariant                   | node, trap |
+| 4   | `chain-has-cycle`     | Does The Chain Loop        | Medium | 4      | function | fast and slow pointers, invariant                   | node, blocked by P2-15 |
+| 5   | `cycle-entry`         | Where The Loop Begins      | Medium | 6      | function | fast and slow pointers, invariant                   | node, trap, blocked by P2-15 |
 | 6   | `remove-duplicates`   | Collapse Repeated Links    | Easy   | 3      | function | one pass, dummy head                                | node       |
 | 7   | `partition-around`    | Split The Chain Around     | Medium | 5      | function | dummy head, stable partition                        | node       |
 | 8   | `add-two-numbers`     | Add Two Digit Chains       | Medium | 5      | function | one pass, dummy head                                | node       |
@@ -194,6 +194,12 @@ and merging. Every problem here is **node**-flagged.
 | 10  | `is-palindrome-chain` | Reads The Same Both Ways   | Medium | 5      | function | fast and slow pointers, linked list reversal        | node       |
 | 11  | `merge-k-chains`      | Merge K Ordered Chains     | Hard   | 8      | function | k-way merge, heap, merge                            | node, trap |
 | 12  | `reverse-in-groups`   | Reverse Every K Links      | Hard   | 8      | function | linked list reversal, dummy head                    | node       |
+
+`chain-has-cycle` and `cycle-entry` cannot be written yet. A chain crosses the
+wire as the array of its values, and `docs/PROBLEM_FORMAT.md` §5.2 says a cycle
+is not expressible in that encoding — so both are blocked on ROADMAP **P2-15**,
+which adds a cycle argument the harness consumes when building the chain. The
+rest of the topic does not depend on it.
 
 ### Stack (`stack`) — 12 problems
 
