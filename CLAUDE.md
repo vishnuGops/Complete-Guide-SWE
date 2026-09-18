@@ -36,6 +36,7 @@ npm test                    # Vitest unit + contract + judge integration (npm ru
 npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
 npm run test:integration    # only *.integration.test.ts (spawns real python/java)
 npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db)
+npm run perf:lighthouse     # Lighthouse over the built app in both themes; run `npm run build` first
 npm run lint && npm run typecheck           # lint:fix, format and format:check also exist
 npm run problems:validate [--static] [--changed <ref>] [slug]   # schema (and both references pass)
 npm run problems:new <topic> <slug>

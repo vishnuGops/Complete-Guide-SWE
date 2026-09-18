@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:flake-budget": "node scripts/flake-budget.mjs",
+    "perf:lighthouse": "node scripts/lighthouse.mjs",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "jsdom": "^27.0.0",
+    "lighthouse": "^13.5.0",
     "tailwindcss": "^4.1.16",
     "vite": "^7.1.12"
   }

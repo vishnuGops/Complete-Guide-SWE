@@ -74,7 +74,18 @@ export default tseslint.config(
   },
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'apps/web/e2e/**/*.ts'],
-    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      /*
+       * A test that measures something has to say what it measured (P8-2).
+       *
+       * The performance budgets are only useful with the number beside them -
+       * "under 4000 ms" says nothing about whether there is headroom or the
+       * next commit will trip it - and a test runner's stdout is exactly where
+       * that belongs. Application code still may not print.
+       */
+      'no-console': 'off',
+    },
   },
   prettier,
 );

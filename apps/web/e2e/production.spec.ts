@@ -32,6 +32,8 @@ const built = fs.existsSync(SERVER_ENTRY) && fs.existsSync(WEB_INDEX);
 
 let server: ChildProcess | undefined;
 let output = '';
+/** How long the built server took to answer `/health` (ROADMAP P8-2). */
+let coldStartMs = 0;
 
 async function waitForHealth(timeoutMs = 60_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -95,13 +97,30 @@ test.describe('the production server', () => {
       output += chunk.toString();
     });
 
+    const started = Date.now();
     await waitForHealth();
+    coldStartMs = Date.now() - started;
   });
 
   test.afterAll(async () => {
     if (!server || server.exitCode !== null) return;
     server.kill();
     await new Promise((resolve) => setTimeout(resolve, 500));
+  });
+
+  test('is answering within its cold-start budget', () => {
+    /*
+     * The budget is two seconds (ROADMAP P8-2), and this is measured from
+     * `spawn` to the first successful `/health` - so it includes Node starting,
+     * the migrations running, and the catalogue being read off disk.
+     *
+     * Polled every 200 ms, so the figure is that coarse; a budget of two
+     * seconds does not need finer. Loosened only for CI, where the runner is
+     * shared and a cold filesystem is the usual case.
+     */
+    const budget = process.env.CI ? 5_000 : 2_000;
+    console.log(`cold start: ${String(coldStartMs)} ms (budget ${String(budget)} ms)`);
+    expect(coldStartMs).toBeLessThan(budget);
   });
 
   test('prints where it is running', () => {

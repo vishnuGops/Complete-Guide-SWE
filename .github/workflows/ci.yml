@@ -200,3 +200,30 @@ jobs:
           path: apps/web/playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  perf:
+    name: performance budgets (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Lighthouse scores what ships, not a dev server (ROADMAP P8-2), so the
+      # build has to exist before it runs.
+      - run: npm run build
+
+      # The same pinned Chromium the E2E suite uses, so the scores are
+      # comparable between machines and between runs.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Lighthouse, both themes, performance and accessibility >= 90
+        run: npm run perf:lighthouse
