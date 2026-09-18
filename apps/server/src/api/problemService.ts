@@ -75,6 +75,7 @@ export function summarise(
   rows: readonly ProblemProgress[],
   language?: Language,
   hasNote = false,
+  bookmarked = false,
 ): ProblemSummary {
   const relevant = language ? rows.filter((row) => row.language === language) : rows;
 
@@ -102,6 +103,7 @@ export function summarise(
     ),
     solvedAt: relevant.reduce<string | null>((acc, row) => earliest(acc, row.solvedAt), null),
     hasNote,
+    bookmarked,
   };
 }
 
@@ -175,12 +177,19 @@ export function listProblems(
 ): ProblemListResponse {
   const grouped = progressBySlug(deps.repos);
   const noted = new Set(deps.repos.notes.list().map((note) => note.slug));
+  const starred = deps.repos.bookmarks.slugs();
   // Metadata only (ROADMAP P2-14): a title, a tier and a topic do not need the
   // statement, the editorial or a megabyte of tests.
   const all = deps.catalogue
     .listMeta()
     .map(({ meta }) =>
-      summarise(meta, grouped.get(meta.slug) ?? [], query.language, noted.has(meta.slug)),
+      summarise(
+        meta,
+        grouped.get(meta.slug) ?? [],
+        query.language,
+        noted.has(meta.slug),
+        starred.has(meta.slug),
+      ),
     );
 
   // Searched in the database rather than by reading every note into memory: it
@@ -195,6 +204,9 @@ export function listProblems(
     if (query.topic.length > 0 && !query.topic.includes(summary.topic)) return false;
     if (query.tier.length > 0 && !query.tier.includes(summary.tier)) return false;
     if (query.status.length > 0 && !query.status.includes(summary.status)) return false;
+    // Absent means "all of them". `?bookmarked=false` is a question nobody asks
+    // and would read as "the ones I have not starred", so it is not offered.
+    if (query.bookmarked === true && !summary.bookmarked) return false;
     if (query.q !== undefined && query.q !== '' && !matchesQuery(summary, query.q, inNotes)) {
       return false;
     }
@@ -251,7 +263,7 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
   const { repos } = deps;
   const rows = repos.progress.listByProblem(slug);
   const note = repos.notes.get(slug);
-  const summary = summarise(pkg.meta, rows, undefined, note !== null);
+  const summary = summarise(pkg.meta, rows, undefined, note !== null, repos.bookmarks.has(slug));
   const settings = repos.settings.get();
 
   // Solved in *any* language unlocks the editorial: the approach is the same

@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { solvedCount } from '@devpromax/shared';
 import { useProgress } from '../api/hooks.js';
+import { useShortcut } from '../shortcuts/ShortcutProvider.js';
 import { ErrorBoundary, cn } from '../ui/index.js';
+import { CommandPalette } from './CommandPalette.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { useAppTheme } from './useAppTheme.js';
 
@@ -73,6 +76,15 @@ function GlobalProgress() {
 
 export function AppShell() {
   const { theme, setTheme } = useAppTheme();
+  /*
+   * The palette lives here rather than on a screen (ROADMAP P7-7): `Ctrl+K` has
+   * to work from the workspace, the list and the settings alike, and a copy per
+   * screen would be three dialogs that could disagree.
+   */
+  const [palette, setPalette] = useState(false);
+  useShortcut('commandPalette', () => {
+    setPalette(true);
+  });
 
   return (
     <div className="flex h-screen flex-col">
@@ -91,10 +103,27 @@ export function AppShell() {
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
+          {/*
+            Says its own shortcut, because a palette nobody knows about is a
+            palette nobody uses (docs/DESIGN.md section 8).
+          */}
+          <button
+            type="button"
+            onClick={() => {
+              setPalette(true);
+            }}
+            className="focus-ring text-fg-muted hover:text-fg border-border hover:bg-surface-sunken rounded-md border px-2 py-0.5 text-xs"
+          >
+            Search
+            <kbd className="text-fg-subtle ml-2 font-mono text-2xs">Ctrl K</kbd>
+          </button>
+
           <GlobalProgress />
           <ThemeToggle value={theme} onChange={setTheme} />
         </div>
       </header>
+
+      <CommandPalette open={palette} onOpenChange={setPalette} />
 
       <main className="min-h-0 flex-1 max-[1023px]:hidden">
         {/*

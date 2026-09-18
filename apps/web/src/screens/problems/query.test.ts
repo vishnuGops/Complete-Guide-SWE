@@ -46,6 +46,13 @@ describe('filtersFromSearch', () => {
   it('reads an empty query as no filters at all', () => {
     expect(filtersFromSearch(new URLSearchParams(''))).toEqual(NO_FILTERS);
   });
+
+  it('reads the bookmark filter only when it says true (P7-7)', () => {
+    expect(filtersFromSearch(new URLSearchParams('bookmarked=true')).bookmarked).toBe(true);
+    // Anything else is "all of them". There is no "unstarred only".
+    expect(filtersFromSearch(new URLSearchParams('bookmarked=false')).bookmarked).toBe(false);
+    expect(filtersFromSearch(new URLSearchParams('bookmarked=1')).bookmarked).toBe(false);
+  });
 });
 
 describe('searchFromFilters', () => {
@@ -56,6 +63,7 @@ describe('searchFromFilters', () => {
       status: ['solved'],
       q: 'sum',
       language: 'python',
+      bookmarked: true,
       sort: 'rating',
       dir: 'desc',
     };

@@ -7,6 +7,7 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query';
 import type {
+  BookmarkResponse,
   ConnectionTestResponse,
   DashboardResponse,
   DraftResponse,
@@ -16,6 +17,8 @@ import type {
   ProblemDetail,
   ProblemListQuery,
   ProblemListResponse,
+  NextMode,
+  NextProblemResponse,
   ProgressResponse,
   ReportFormat,
   ResetProgressResponse,
@@ -50,10 +53,11 @@ export const keys = {
   settings: ['settings'] as const,
 };
 
-export function useProblems(query: Partial<ProblemListQuery> = {}) {
+export function useProblems(query: Partial<ProblemListQuery> = {}, enabled = true) {
   return useQuery<ProblemListResponse>({
     queryKey: keys.problemList(query),
     queryFn: () => api.problems(query),
+    enabled,
     // Filtering should not blank the table while the next page loads: the
     // previous rows stay, greyed by the caller, until the new ones arrive.
     placeholderData: (previous) => previous,
@@ -89,6 +93,42 @@ export function useProgress() {
  */
 export function useDashboard() {
   return useQuery<DashboardResponse>({ queryKey: keys.dashboard, queryFn: api.dashboard });
+}
+
+/**
+ * Starring a problem (ROADMAP P7-7).
+ *
+ * Invalidates the list and the problem, not progress: a bookmark is intent
+ * rather than work done, and nothing about the status ratchet (D11) moves.
+ */
+export function useSetBookmark(): UseMutationResult<
+  BookmarkResponse,
+  Error,
+  { slug: string; bookmarked: boolean }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug, bookmarked }) => api.setBookmark(slug, bookmarked),
+    onSuccess: (result) => {
+      queryClient.setQueryData<ProblemDetail>(keys.problem(result.slug), (previous) =>
+        previous
+          ? { ...previous, summary: { ...previous.summary, bookmarked: result.bookmarked } }
+          : previous,
+      );
+      void queryClient.invalidateQueries({ queryKey: keys.problems });
+    },
+  });
+}
+
+/**
+ * "What should I do next" (ROADMAP P7-7).
+ *
+ * A mutation rather than a query, and deliberately so for the random mode: a
+ * query would be cached, and a cached random pick is the same problem every
+ * time you ask.
+ */
+export function useNextProblem(): UseMutationResult<NextProblemResponse, Error, NextMode> {
+  return useMutation({ mutationFn: api.nextProblem });
 }
 
 /** Downloading the skills report. A mutation: it is a button, not a fact. */

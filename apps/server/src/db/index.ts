@@ -3,6 +3,7 @@ import { openDatabase, type Database, type OpenOptions } from './open.js';
 import { createCoachRepo, type CoachRepo } from './repos/coach.js';
 import { createDraftRepo, type DraftRepo } from './repos/drafts.js';
 import { createEventRepo, type EventRepo } from './repos/events.js';
+import { createBookmarkRepo, type BookmarkRepo } from './repos/bookmarks.js';
 import { createNoteRepo, type NoteRepo } from './repos/notes.js';
 import { createProgressRepo, type ProgressRepo } from './repos/progress.js';
 import { createSettingsRepo, type SettingsRepo } from './repos/settings.js';
@@ -15,6 +16,7 @@ export type { Migration } from './migrate.js';
 export * from './repos/coach.js';
 export * from './repos/drafts.js';
 export * from './repos/events.js';
+export * from './repos/bookmarks.js';
 export * from './repos/notes.js';
 export * from './repos/progress.js';
 export * from './repos/settings.js';
@@ -32,6 +34,7 @@ export interface Repositories {
   drafts: DraftRepo;
   progress: ProgressRepo;
   notes: NoteRepo;
+  bookmarks: BookmarkRepo;
   settings: SettingsRepo;
   coach: CoachRepo;
   events: EventRepo;
@@ -45,6 +48,7 @@ export function createRepositories(db: Database): Repositories {
     drafts: createDraftRepo(db),
     progress: createProgressRepo(db),
     notes: createNoteRepo(db),
+    bookmarks: createBookmarkRepo(db),
     settings: createSettingsRepo(db),
     coach: createCoachRepo(db),
     events: createEventRepo(db),

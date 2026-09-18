@@ -1,6 +1,7 @@
 import type {
   ApiError as ApiErrorBody,
   ConnectionTestResponse,
+  BookmarkResponse,
   DashboardResponse,
   DraftResponse,
   HintRevealResponse,
@@ -9,6 +10,8 @@ import type {
   ProblemDetail,
   ProblemListQuery,
   ProblemListResponse,
+  NextMode,
+  NextProblemResponse,
   ProgressResponse,
   ReportFormat,
   ResetProgressResponse,
@@ -116,6 +119,9 @@ export function problemQueryString(query: Partial<ProblemListQuery>): string {
   if (query.language) params.set('language', query.language);
   if (query.sort && query.sort !== 'default') params.set('sort', query.sort);
   if (query.dir && query.dir !== 'asc') params.set('dir', query.dir);
+  // Only when true: `?bookmarked=false` would read as "the ones I have not
+  // starred", which is not a question anyone asks (P7-7).
+  if (query.bookmarked) params.set('bookmarked', 'true');
   return params.toString();
 }
 
@@ -130,6 +136,12 @@ export const api = {
     request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
   dashboard: (): Promise<DashboardResponse> => request('/api/dashboard'),
+
+  setBookmark: (slug: string, bookmarked: boolean): Promise<BookmarkResponse> =>
+    request(`/api/bookmarks/${encodeURIComponent(slug)}`, {
+      method: bookmarked ? 'PUT' : 'DELETE',
+    }),
+  nextProblem: (mode: NextMode): Promise<NextProblemResponse> => request(`/api/next?mode=${mode}`),
 
   /**
    * Downloads the skills report (ROADMAP P7-5).

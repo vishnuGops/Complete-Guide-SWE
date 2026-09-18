@@ -5,6 +5,7 @@ import {
   COACH_API_KEY_ENV,
   type ProblemDetail,
   type DashboardResponse,
+  type NextProblemResponse,
   type ProblemListResponse,
   type ProgressResponse,
   type RunResult,
@@ -611,6 +612,99 @@ describe('drafts', () => {
     expect((await api('PUT', '/api/drafts/no-such-problem/python', { code: '' })).statusCode).toBe(
       404,
     );
+  });
+});
+
+describe('bookmarks and what to do next (P7-7)', () => {
+  it('stars a problem and says so on the row', async () => {
+    expect((await api('PUT', `/api/bookmarks/${EASY}`)).json()).toEqual({
+      slug: EASY,
+      bookmarked: true,
+    });
+
+    const list = (await api('GET', '/api/problems')).json() as ProblemListResponse;
+    expect(list.items.find((item) => item.slug === EASY)?.bookmarked).toBe(true);
+    expect(list.items.find((item) => item.slug === MEDIUM)?.bookmarked).toBe(false);
+  });
+
+  it('keeps the original date when starred twice', async () => {
+    await api('PUT', `/api/bookmarks/${EASY}`);
+    const first = repos.bookmarks.list()[0]?.createdAt;
+    await api('PUT', `/api/bookmarks/${EASY}`);
+
+    // A second click on an already-starred problem must not reorder the list.
+    expect(repos.bookmarks.list()).toHaveLength(1);
+    expect(repos.bookmarks.list()[0]?.createdAt).toBe(first);
+  });
+
+  it('unstars one, including a problem that is no longer in the catalogue', async () => {
+    await api('PUT', `/api/bookmarks/${EASY}`);
+    expect((await api('DELETE', `/api/bookmarks/${EASY}`)).json()).toEqual({
+      slug: EASY,
+      bookmarked: false,
+    });
+
+    // Someone with a stale bookmark has to be able to get rid of it.
+    expect((await api('DELETE', '/api/bookmarks/no-such-problem')).statusCode).toBe(200);
+    expect((await api('PUT', '/api/bookmarks/no-such-problem')).statusCode).toBe(404);
+  });
+
+  it('filters the list down to starred problems', async () => {
+    await api('PUT', `/api/bookmarks/${MEDIUM}`);
+
+    const starred = (
+      await api('GET', '/api/problems?bookmarked=true')
+    ).json() as ProblemListResponse;
+    expect(starred.items.map((item) => item.slug)).toEqual([MEDIUM]);
+
+    // Absent means all of them, and the catalogue-wide totals do not move.
+    const all = (await api('GET', '/api/problems')).json() as ProblemListResponse;
+    expect(all.items).toHaveLength(2);
+    expect(starred.total).toBe(2);
+  });
+
+  it('survives a progress reset, like a note does', async () => {
+    await api('PUT', `/api/bookmarks/${EASY}`);
+    await api('POST', '/api/settings/reset-progress');
+
+    expect(repos.bookmarks.has(EASY)).toBe(true);
+  });
+
+  it('recommends the lowest-rated unsolved problem, with a reason', async () => {
+    const body = (await api('GET', '/api/next')).json() as NextProblemResponse;
+
+    // The fixture's Easy problem is rated 2 and the Medium one 4.
+    expect(body.problem?.slug).toBe(EASY);
+    expect(body.reason.length).toBeGreaterThan(20);
+  });
+
+  it('does not recommend something already solved', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    expect(((await api('GET', '/api/next')).json() as NextProblemResponse).problem?.slug).toBe(
+      MEDIUM,
+    );
+  });
+
+  it('says so when there is nothing left to suggest', async () => {
+    for (const slug of [EASY, MEDIUM]) {
+      await api('POST', '/api/submit', { slug, language: 'python', code: 'x = 1' });
+    }
+
+    const body = (await api('GET', '/api/next')).json() as NextProblemResponse;
+    expect(body.problem).toBeNull();
+    expect(body.reason).toContain('Every problem');
+  });
+
+  it('picks an unsolved problem at random, and says that is what it did', async () => {
+    const body = (await api('GET', '/api/next?mode=random')).json() as NextProblemResponse;
+
+    expect([EASY, MEDIUM]).toContain(body.problem?.slug);
+    expect(body.reason).toContain('at random');
+  });
+
+  it('rejects a mode it does not have', async () => {
+    expect((await api('GET', '/api/next?mode=hardest')).statusCode).toBe(400);
   });
 });
 

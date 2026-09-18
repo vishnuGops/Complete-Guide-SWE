@@ -22,6 +22,7 @@ import {
   useJudge,
   useProblem,
   useRevealHint,
+  useSetBookmark,
   useSaveDraft,
   useSettings,
   useUpdateSettings,
@@ -199,6 +200,7 @@ export function Workspace() {
   const saveDraft = useSaveDraft();
   const deleteDraft = useDeleteDraft();
   const revealHint = useRevealHint();
+  const setBookmark = useSetBookmark();
   const updateSettings = useUpdateSettings();
   const busy = run.isPending || submit.isPending;
 
@@ -829,6 +831,22 @@ export function Workspace() {
           }}
         >
           Reset
+        </Button>
+
+        {/*
+          Starring a problem (P7-7). Beside Reset because it is about this
+          problem rather than about the code: a bookmark says "come back to
+          this one", which the command palette and the list filter both read.
+        */}
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-pressed={problem.summary.bookmarked}
+          onClick={() => {
+            setBookmark.mutate({ slug, bookmarked: !problem.summary.bookmarked });
+          }}
+        >
+          {problem.summary.bookmarked ? 'Bookmarked' : 'Bookmark'}
         </Button>
 
         {/*

@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
@@ -369,6 +370,41 @@ function Notes({ slug, note }: { slug: string; note: string | null }) {
   );
 }
 
+/**
+ * The problems `meta.related` points at (ROADMAP P7-7).
+ *
+ * Under the statement rather than in a tab of its own: it is what to read next,
+ * and a tab for five links would be a tab people open once. Rated and tiered on
+ * the row, because "related" alone does not say whether the next one is a step
+ * up or a step sideways.
+ */
+function Related({ related }: { related: ProblemDetail['related'] }) {
+  if (related.length === 0) return null;
+
+  return (
+    <section className="border-border mt-6 border-t pt-3">
+      <h2 className="text-fg-subtle mb-1.5 text-2xs font-medium tracking-wide uppercase">
+        Related problems
+      </h2>
+      <ul>
+        {related.map((problem) => (
+          <li key={problem.slug} className="flex items-baseline gap-2 py-0.5 text-sm">
+            <Link
+              to={`/problems/${problem.slug}`}
+              className="focus-ring hover:text-accent-fg rounded-xs"
+            >
+              {problem.title}
+            </Link>
+            <span className="text-fg-subtle tnum ml-auto text-xs">
+              {problem.tier} · {problem.rating}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function SubmissionRow({
   submission,
   selected,
@@ -676,6 +712,8 @@ function StatementPanelBody({
               time, <code className="font-mono">{problem.targetComplexity.space}</code> space.
             </p>
           )}
+
+          <Related related={problem.related} />
         </div>
       </TabsContent>
 

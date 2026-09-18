@@ -152,6 +152,7 @@ export function aProblem(overrides: Partial<ProblemSummary> = {}): ProblemSummar
     lastAttemptedAt: null,
     solvedAt: null,
     hasNote: false,
+    bookmarked: false,
     ...overrides,
   };
 }

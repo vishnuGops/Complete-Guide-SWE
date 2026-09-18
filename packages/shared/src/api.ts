@@ -103,8 +103,10 @@ export const problemListQuerySchema = z.object({
   topic: multi(topicSchema),
   tier: multi(tierSchema),
   status: multi(progressStatusSchema),
-  /** Substring match over title and patterns, case-insensitive. */
+  /** Substring match over title, patterns and notes, case-insensitive. */
   q: z.string().trim().max(120).optional(),
+  /** Only starred problems (P7-7). Absent means "all of them", not "unstarred". */
+  bookmarked: z.stringbool().optional(),
   /**
    * Narrows progress to one language: a problem's status becomes its status in
    * that language, so `?status=solved&language=python` reads as "solved in
@@ -141,6 +143,8 @@ export const problemSummarySchema = z.object({
    * saying why.
    */
   hasNote: z.boolean(),
+  /** Starred by the user (P7-7). Its own thing, not a status: D11's ratchet is about work done. */
+  bookmarked: z.boolean(),
 });
 export type ProblemSummary = z.infer<typeof problemSummarySchema>;
 
@@ -296,6 +300,43 @@ export const progressResponseSchema = z.object({
   byTier: z.array(tierCountSchema),
 });
 export type ProgressResponse = z.infer<typeof progressResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// PUT / DELETE /api/bookmarks/:slug
+// ---------------------------------------------------------------------------
+
+/** `bookmarked` is the state afterwards, so the caller does not have to infer it. */
+export const bookmarkResponseSchema = z.object({
+  slug: slugSchema,
+  bookmarked: z.boolean(),
+});
+export type BookmarkResponse = z.infer<typeof bookmarkResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// GET /api/next
+// ---------------------------------------------------------------------------
+
+export const NEXT_MODES = ['recommended', 'random'] as const;
+export const nextModeSchema = z.enum(NEXT_MODES);
+export type NextMode = z.infer<typeof nextModeSchema>;
+
+export const nextQuerySchema = z.object({
+  mode: nextModeSchema.default('recommended'),
+});
+export type NextQuery = z.infer<typeof nextQuerySchema>;
+
+/**
+ * What to do next (ROADMAP P7-7).
+ *
+ * `reason` is shown beside the suggestion, because a recommendation with no
+ * stated reason is indistinguishable from a random pick - and one of the two
+ * modes here *is* a random pick.
+ */
+export const nextProblemResponseSchema = z.object({
+  problem: problemSummarySchema.nullable(),
+  reason: z.string(),
+});
+export type NextProblemResponse = z.infer<typeof nextProblemResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // GET /api/dashboard

@@ -14,7 +14,7 @@
  * `Ctrl+/` is Monaco's comment toggle and is never bound here.
  */
 
-export const SHORTCUT_IDS = ['run', 'submit', 'togglePanel', 'aiHelp'] as const;
+export const SHORTCUT_IDS = ['run', 'submit', 'togglePanel', 'aiHelp', 'commandPalette'] as const;
 export type ShortcutId = (typeof SHORTCUT_IDS)[number];
 
 export interface Shortcut {
@@ -51,6 +51,20 @@ export const SHORTCUTS: Record<ShortcutId, Shortcut> = {
     code: 'KeyH',
     shift: true,
     keys: ['Ctrl', 'Shift', 'H'],
+  },
+  /*
+   * `Ctrl+K` is Monaco's chord prefix (`Ctrl+K Ctrl+C` comments a block), and
+   * this takes it. The trade is deliberate: a palette that is not reachable
+   * from inside the editor is not reachable from where people work, and the
+   * chords it displaces have single-key equivalents that are already bound.
+   * `Ctrl+/` stays untouched, which is the comment toggle people actually use.
+   */
+  commandPalette: {
+    id: 'commandPalette',
+    label: 'Command palette',
+    code: 'KeyK',
+    shift: false,
+    keys: ['Ctrl', 'K'],
   },
 };
 

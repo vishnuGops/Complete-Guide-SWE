@@ -4,6 +4,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Language, ProblemDetail, RunResult, Submission } from '@devpromax/shared';
 import {
+  aProblem,
   aProblemDetail,
   fakeServer,
   path,
@@ -129,6 +130,14 @@ function serve(
               ? null
               : { slug: SLUG, body: note, updatedAt: '2026-09-18T00:00:00.000Z' },
         };
+      },
+    },
+    {
+      match: (url) => url.pathname.startsWith('/api/bookmarks/'),
+      body: (_url, init) => {
+        const bookmarked = init?.method === 'PUT';
+        current = { ...current, summary: { ...current.summary, bookmarked } };
+        return { slug: SLUG, bookmarked };
       },
     },
     { match: (url) => url.pathname.startsWith('/api/drafts/'), body: () => ({ draft: null }) },
@@ -641,6 +650,72 @@ describe('interview mode (P7-6)', () => {
     const submit = server.requests.find((request) => request.url.pathname === '/api/submit');
     // Absent, not zero: "not timed" and "solved instantly" are different facts.
     expect(submit?.body).not.toHaveProperty('solveMs');
+  });
+});
+
+describe('navigation aids (P7-7)', () => {
+  it('stars the problem, and says which state it is in', async () => {
+    const server = serve();
+    open();
+
+    const user = userEvent.setup();
+    const button = await screen.findByRole('button', { name: 'Bookmark' });
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(button);
+
+    const starred = await screen.findByRole('button', { name: 'Bookmarked' });
+    expect(starred).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      server.requests.some(
+        (request) =>
+          request.method === 'PUT' && request.url.pathname.endsWith('/bookmarks/' + SLUG),
+      ),
+    ).toBe(true);
+  });
+
+  it('unstars it again', async () => {
+    const server = serve(aProblemDetail({ summary: { ...aProblem(), bookmarked: true } }));
+    open();
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Bookmarked' }));
+
+    expect(await screen.findByRole('button', { name: 'Bookmark' })).toBeInTheDocument();
+    expect(
+      server.requests.some(
+        (request) => request.method === 'DELETE' && request.url.pathname.includes('/bookmarks/'),
+      ),
+    ).toBe(true);
+  });
+
+  it('links the related problems from under the statement', async () => {
+    serve(
+      aProblemDetail({
+        related: [
+          {
+            slug: 'shift-right-in-place',
+            title: 'Shift Right In Place',
+            tier: 'Medium',
+            rating: 4,
+          },
+        ],
+      }),
+    );
+    open();
+
+    const link = await screen.findByRole('link', { name: 'Shift Right In Place' });
+    expect(link).toHaveAttribute('href', '/problems/shift-right-in-place');
+    // Tier and rating on the row, because "related" alone does not say whether
+    // the next one is a step up or a step sideways.
+    expect(screen.getByText(/Medium · 4/)).toBeInTheDocument();
+  });
+
+  it('says nothing at all when a problem has no related ones', async () => {
+    serve();
+    open();
+
+    await screen.findByRole('tab', { name: 'Description' });
+    expect(screen.queryByText('Related problems')).not.toBeInTheDocument();
   });
 });
 

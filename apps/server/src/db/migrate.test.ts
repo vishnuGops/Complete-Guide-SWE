@@ -84,6 +84,7 @@ describe('migrate', () => {
     const db = openDatabase({ file: IN_MEMORY });
     migrate(db);
     expect(tableNames(db)).toEqual([
+      'bookmarks',
       'coach_messages',
       'coach_sessions',
       'drafts',

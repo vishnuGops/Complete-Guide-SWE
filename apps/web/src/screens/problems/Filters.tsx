@@ -208,6 +208,21 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
         ))}
       </Section>
 
+      <Section title="Bookmarks">
+        {/*
+          One way round only (P7-7). "Starred" is a shortlist someone made on
+          purpose; "not starred" is everything else, which is the unfiltered
+          list with an extra click.
+        */}
+        <Check
+          checked={filters.bookmarked}
+          onChange={() => {
+            set({ bookmarked: !filters.bookmarked });
+          }}
+          label="Starred only"
+        />
+      </Section>
+
       {/*
         Not a filter of its own: it re-reads every status as "in this language",
         so `Solved` + `Python` means solved in Python rather than solved in

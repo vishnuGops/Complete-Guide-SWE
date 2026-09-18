@@ -33,6 +33,8 @@ export interface ProblemFilters {
   status: ProgressStatus[];
   q: string;
   language: Language | undefined;
+  /** Starred problems only (P7-7). There is no "unstarred only". */
+  bookmarked: boolean;
   sort: ProblemSort;
   dir: SortDirection;
 }
@@ -43,6 +45,7 @@ export const NO_FILTERS: ProblemFilters = {
   status: [],
   q: '',
   language: undefined,
+  bookmarked: false,
   sort: 'default',
   dir: 'asc',
 };
@@ -75,6 +78,7 @@ export function filtersFromSearch(params: URLSearchParams): ProblemFilters {
     ),
     q: params.get('q')?.slice(0, 120) ?? '',
     language: one(params.get('language'), LANGUAGES),
+    bookmarked: params.get('bookmarked') === 'true',
     sort: one(params.get('sort'), PROBLEM_SORT_KEYS) ?? 'default',
     dir: one(params.get('dir'), ['asc', 'desc'] as const) ?? 'asc',
   };
@@ -88,6 +92,7 @@ export function searchFromFilters(filters: ProblemFilters): string {
     status: filters.status,
     ...(filters.q ? { q: filters.q } : {}),
     ...(filters.language ? { language: filters.language } : {}),
+    ...(filters.bookmarked ? { bookmarked: true } : {}),
     sort: filters.sort,
     dir: filters.dir,
   });
@@ -105,7 +110,8 @@ export function isFiltered(filters: ProblemFilters): boolean {
     filters.tier.length > 0 ||
     filters.status.length > 0 ||
     filters.q !== '' ||
-    filters.language !== undefined
+    filters.language !== undefined ||
+    filters.bookmarked
   );
 }
 
