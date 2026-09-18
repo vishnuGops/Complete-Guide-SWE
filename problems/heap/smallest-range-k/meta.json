@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "smallest-range-k",
+  "slug": "smallest-range-k",
+  "title": "Narrowest Range Covering K",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap", "k-way merge", "sliding window"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 11,
+  "mode": "function",
+  "entry": "narrowestRange",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-k-series", "min-window-cover"],
+  "targetComplexity": {
+    "time": "O(N log k)",
+    "space": "O(k)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "cheapest-k-sums",
+  "slug": "cheapest-k-sums",
+  "title": "K Cheapest Pairings",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap", "k-way merge"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 7,
+  "mode": "function",
+  "entry": "cheapestPairs",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-k-series", "k-closest-to-origin"],
+  "targetComplexity": {
+    "time": "O(k log k)",
+    "space": "O(k)"
+  }
+}

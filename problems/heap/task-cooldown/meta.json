@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "task-cooldown",
+  "slug": "task-cooldown",
+  "title": "Tasks With A Cooldown",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap", "greedy", "counting"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 6,
+  "mode": "function",
+  "entry": "leastTime",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["reorganise-string", "k-most-frequent"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

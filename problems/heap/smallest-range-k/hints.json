@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose you had to pick exactly one reading from each series. What are the range's two ends, and which of them is easy to keep track of?",
+    "The smallest and the largest of the chosen readings. The largest is easy - it only ever goes up as you advance - and the smallest is the one that has to move.",
+    "Keep one reading from each series in a min-heap and remember the largest of them separately. The current range is [heap root, that largest].",
+    "To narrow it, advance the series that owns the smallest reading - nothing else can help. Stop when that series runs out, because from then on no range covers everything."
+  ]
+}

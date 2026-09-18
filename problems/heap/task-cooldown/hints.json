@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Which task decides the schedule? Think about the one that occurs most often.",
+    "It has to be spread out: between two of its runs there must be `cooldown` other ticks. That lays down a skeleton of blocks, and everything else fills the gaps.",
+    "If the most frequent task occurs `m` times, the skeleton is `m - 1` full blocks of `cooldown + 1` ticks, plus the final run - and plus one more for every other task that also occurs `m` times.",
+    "The gaps may not be big enough to hold everything, and then there is no idling at all: the answer is simply the number of tasks. So take the larger of the two."
+  ]
+}

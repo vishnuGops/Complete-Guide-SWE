@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Lay the pairings out as a grid: row `i` uses `first[i]` and column `j` uses `second[j]`. What do you know about the costs along a row, and down a column?",
+    "Both only increase, because both lists are sorted. So the cheapest pairing not yet taken is always the immediate neighbour of one already taken.",
+    "Start with the whole first column - `(i, 0)` for every row - in a min-heap keyed on cost. Pop the cheapest, record it, and push the cell to its right.",
+    "Only the first `k` rows can ever contribute, so seed the heap with `min(k, first.length)` rows rather than all of them."
+  ]
+}
