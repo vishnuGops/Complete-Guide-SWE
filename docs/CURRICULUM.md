@@ -335,7 +335,7 @@ which is where `operations` mode earns its place a second time.
 | 6   | `task-cooldown`       | Tasks With A Cooldown       | Medium | 7      | function   | heap, greedy, counting            | trap  |
 | 7   | `cheapest-k-sums`     | K Cheapest Pairings         | Medium | 7      | function   | heap, k-way merge                 | trap  |
 | 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       |       |
-| 11  | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
+| 9   | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
 
 ### Graph (`graph`) — 14 problems, 13 writable
 

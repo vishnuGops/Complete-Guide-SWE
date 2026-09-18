@@ -172,6 +172,15 @@ describe('test pools', () => {
     );
   });
 
+  it('requires a name on every sample', () => {
+    // Three of the seed problems had unnamed samples, so a failing one showed
+    // in the results panel as its index and said nothing (P6-7).
+    const tests = makeTests();
+    delete (tests.samples[1] as { name?: string }).name;
+    const root = catalogue({ files: { 'tests.json': json(tests) } });
+    expect(expectError(root, 'every sample needs a name').jsonPath).toBe('samples[1].name');
+  });
+
   it('catches tests that disagree about the entry method arity', () => {
     const tests = makeTests();
     tests.hidden[3]!.args = [[1, 2]] as never;
@@ -206,6 +215,7 @@ describe('expect modes', () => {
   it('accepts a well-formed mutatedArgs problem', () => {
     const tests = {
       samples: Array.from({ length: 3 }, (_, i) => ({
+        name: `rotation ${i}`,
         args: [[1, 2, 3], i],
         expectedMutatedArgs: [{ index: 0, value: [3, 1, 2] }],
         explanation: 'rotated',
@@ -229,6 +239,7 @@ describe('expect modes', () => {
   it('rejects a mutated-arg index beyond the argument list', () => {
     const tests = {
       samples: Array.from({ length: 3 }, () => ({
+        name: 'x',
         args: [[1, 2, 3], 1],
         expectedMutatedArgs: [{ index: 5, value: [1] }],
         explanation: 'x',
@@ -256,6 +267,7 @@ describe('expect modes', () => {
           { index: 0, value: [2] },
         ],
         explanation: 'x',
+        name: 'x',
       })),
       hidden: Array.from({ length: 10 }, () => ({
         args: [[1, 2, 3], 1],
@@ -365,6 +377,7 @@ describe('operations mode', () => {
   function opsTests(expected?: unknown[]) {
     return {
       samples: Array.from({ length: 3 }, (_, i) => ({
+        name: `sequence ${i + 1}`,
         ...opsCase(i + 1, expected),
         explanation: 'push then read min',
       })),
@@ -829,6 +842,7 @@ describe('seed-catalogue rules (P6-0)', () => {
         }),
         'tests.json': json({
           samples: Array.from({ length: 3 }, (_, i) => ({
+            name: `peek ${i}`,
             args: [],
             ops: [{ method: 'peek', args: [i] }],
             expected: [i],

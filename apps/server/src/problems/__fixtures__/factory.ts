@@ -33,6 +33,8 @@ const VALID_META = {
 
 function makeTests(sampleCount = 3, hiddenCount = 10) {
   const samples = Array.from({ length: sampleCount }, (_, i) => ({
+    // Named as well as explained: both are required of a sample (P6-0, P6-7).
+    name: `sample ${i + 1}`,
     args: [[1, 2, 3 + i], 3 + i + 1],
     expected: [0, 2],
     explanation: `Sample ${i + 1}.`,

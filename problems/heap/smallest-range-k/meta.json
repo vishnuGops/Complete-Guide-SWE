@@ -8,7 +8,7 @@
   "patterns": ["heap", "k-way merge", "sliding window"],
   "tier": "Hard",
   "rating": 9,
-  "order": 11,
+  "order": 9,
   "mode": "function",
   "entry": "narrowestRange",
   "expect": "return",

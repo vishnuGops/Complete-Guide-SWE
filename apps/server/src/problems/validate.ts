@@ -114,6 +114,19 @@ function checkTestCase(
     );
   }
 
+  // The name is what the results panel labels a failing sample with, so a
+  // sample without one shows as its index and says nothing. Three of the seed
+  // problems had none, found by the P6-7 review pass.
+  if (pool === 'samples' && !test.name?.trim()) {
+    issues.push(
+      error(
+        file,
+        'every sample needs a name; it is what the results panel labels it with',
+        testPath(pool, index, 'name'),
+      ),
+    );
+  }
+
   if (meta.mode === 'operations') {
     if (!test.ops || test.ops.length === 0) {
       issues.push(

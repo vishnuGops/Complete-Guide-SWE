@@ -2,59 +2,297 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "args": [[1,2,3,4,5],2],
-      "expectedMutatedArgs": [{"index":0,"value":[4,5,1,2,3]}],
+      "name": "a shift of two",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        2
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        }
+      ],
       "explanation": "The last two elements wrap to the front; everything else slides two places right."
     },
     {
-      "args": [[4,5,6],3],
-      "expectedMutatedArgs": [{"index":0,"value":[4,5,6]}],
+      "name": "a shift equal to the length",
+      "args": [
+        [
+          4,
+          5,
+          6
+        ],
+        3
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            4,
+            5,
+            6
+          ]
+        }
+      ],
       "explanation": "A shift equal to the length brings every element back where it started."
     },
     {
-      "args": [[-3,-1,0,2,8],9],
-      "expectedMutatedArgs": [{"index":0,"value":[-1,0,2,8,-3]}],
+      "name": "a shift longer than the row",
+      "args": [
+        [
+          -3,
+          -1,
+          0,
+          2,
+          8
+        ],
+        9
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            -1,
+            0,
+            2,
+            8,
+            -3
+          ]
+        }
+      ],
       "explanation": "Only 9 % 5 == 4 matters, which moves the single leading element to the back."
     }
   ],
   "hidden": [
     {
       "name": "single element, no shift",
-      "args": [[9],0],
-      "expectedMutatedArgs": [{"index":0,"value":[9]}]
-    },
-    {
-      "name": "single element, shift larger than the row",
-      "args": [[9],7],
-      "expectedMutatedArgs": [{"index":0,"value":[9]}]
-    },
-    {"name":"two elements","args":[[1,2],1],"expectedMutatedArgs":[{"index":0,"value":[2,1]}]},
-    {"name":"shift of zero","args":[[4,5,6],0],"expectedMutatedArgs":[{"index":0,"value":[4,5,6]}]},
-    {
-      "name": "shift of n - 1",
-      "args": [[-3,-1,0,2,8],4],
-      "expectedMutatedArgs": [{"index":0,"value":[-1,0,2,8,-3]}]
-    },
-    {
-      "name": "all values equal",
-      "args": [[7,7,7,7],2],
-      "expectedMutatedArgs": [{"index":0,"value":[7,7,7,7]}]
-    },
-    {
-      "name": "shift far beyond the row",
-      "args": [[1,2,3,4,5],1000000000],
-      "expectedMutatedArgs": [{"index":0,"value":[1,2,3,4,5]}]
-    },
-    {
-      "args": [[-309,12,553,963,157],0],
-      "expectedMutatedArgs": [{"index":0,"value":[-309,12,553,963,157]}]
-    },
-    {
-      "args": [[676,-857,994,-505,-691,526,-358,-235,687,-457,803,655,417,225,-945,1000,580],10],
+      "args": [
+        [
+          9
+        ],
+        0
+      ],
       "expectedMutatedArgs": [
         {
           "index": 0,
-          "value": [-235,687,-457,803,655,417,225,-945,1000,580,676,-857,994,-505,-691,526,-358]
+          "value": [
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "name": "single element, shift larger than the row",
+      "args": [
+        [
+          9
+        ],
+        7
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "name": "two elements",
+      "args": [
+        [
+          1,
+          2
+        ],
+        1
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            2,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shift of zero",
+      "args": [
+        [
+          4,
+          5,
+          6
+        ],
+        0
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shift of n - 1",
+      "args": [
+        [
+          -3,
+          -1,
+          0,
+          2,
+          8
+        ],
+        4
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            -1,
+            0,
+            2,
+            8,
+            -3
+          ]
+        }
+      ]
+    },
+    {
+      "name": "all values equal",
+      "args": [
+        [
+          7,
+          7,
+          7,
+          7
+        ],
+        2
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            7,
+            7,
+            7,
+            7
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shift far beyond the row",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        1000000000
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          -309,
+          12,
+          553,
+          963,
+          157
+        ],
+        0
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            -309,
+            12,
+            553,
+            963,
+            157
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          676,
+          -857,
+          994,
+          -505,
+          -691,
+          526,
+          -358,
+          -235,
+          687,
+          -457,
+          803,
+          655,
+          417,
+          225,
+          -945,
+          1000,
+          580
+        ],
+        10
+      ],
+      "expectedMutatedArgs": [
+        {
+          "index": 0,
+          "value": [
+            -235,
+            687,
+            -457,
+            803,
+            655,
+            417,
+            225,
+            -945,
+            1000,
+            580,
+            676,
+            -857,
+            994,
+            -505,
+            -691,
+            526,
+            -358
+          ]
         }
       ]
     },

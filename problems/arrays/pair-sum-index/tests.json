@@ -2,28 +2,153 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "args": [[4,9],13],
-      "expected": [0,1],
+      "name": "the only pair there is",
+      "args": [
+        [
+          4,
+          9
+        ],
+        13
+      ],
+      "expected": [
+        0,
+        1
+      ],
       "explanation": "There is only one pair to consider, and 4 + 9 == 13."
     },
     {
-      "args": [[-8,-3,5,11],-11],
-      "expected": [0,1],
+      "name": "two negatives reaching a negative target",
+      "args": [
+        [
+          -8,
+          -3,
+          5,
+          11
+        ],
+        -11
+      ],
+      "expected": [
+        0,
+        1
+      ],
       "explanation": "values[0] + values[1] == -11. No other pair reaches -11."
     },
     {
-      "args": [[7,7,2],14],
-      "expected": [0,1],
+      "name": "two equal values at different positions",
+      "args": [
+        [
+          7,
+          7,
+          2
+        ],
+        14
+      ],
+      "expected": [
+        0,
+        1
+      ],
       "explanation": "The two sevens sit at different positions, so they form a legal pair."
     }
   ],
   "hidden": [
-    {"name":"zeros pair with each other","args":[[0,0,3],0],"expected":[0,1]},
-    {"name":"answer spans the whole array","args":[[10,1,2,3,4],14],"expected":[0,4]},
-    {"args":[[39,5],44],"expected":[0,1]},
-    {"args":[[37,-22,2],39],"expected":[0,2]},
-    {"args":[[-22,31,-45,13,-48],-70],"expected":[0,4]},
-    {"args":[[41,-21,0,44,42,-3,34,-13,14,3,-43,5],29],"expected":[4,7]},
+    {
+      "name": "zeros pair with each other",
+      "args": [
+        [
+          0,
+          0,
+          3
+        ],
+        0
+      ],
+      "expected": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "answer spans the whole array",
+      "args": [
+        [
+          10,
+          1,
+          2,
+          3,
+          4
+        ],
+        14
+      ],
+      "expected": [
+        0,
+        4
+      ]
+    },
+    {
+      "args": [
+        [
+          39,
+          5
+        ],
+        44
+      ],
+      "expected": [
+        0,
+        1
+      ]
+    },
+    {
+      "args": [
+        [
+          37,
+          -22,
+          2
+        ],
+        39
+      ],
+      "expected": [
+        0,
+        2
+      ]
+    },
+    {
+      "args": [
+        [
+          -22,
+          31,
+          -45,
+          13,
+          -48
+        ],
+        -70
+      ],
+      "expected": [
+        0,
+        4
+      ]
+    },
+    {
+      "args": [
+        [
+          41,
+          -21,
+          0,
+          44,
+          42,
+          -3,
+          34,
+          -13,
+          14,
+          3,
+          -43,
+          5
+        ],
+        29
+      ],
+      "expected": [
+        4,
+        7
+      ]
+    },
     {
       "args": [
         [
@@ -70,7 +195,10 @@
         ],
         -63
       ],
-      "expected": [19,38]
+      "expected": [
+        19,
+        38
+      ]
     },
     {
       "args": [
@@ -171,7 +299,10 @@
         ],
         -26364
       ],
-      "expected": [46,79]
+      "expected": [
+        46,
+        79
+      ]
     },
     {
       "args": [
@@ -249,7 +380,10 @@
         ],
         825738
       ],
-      "expected": [23,52]
+      "expected": [
+        23,
+        52
+      ]
     },
     {
       "args": [
@@ -396,7 +530,10 @@
         ],
         -1850488
       ],
-      "expected": [28,38]
+      "expected": [
+        28,
+        38
+      ]
     },
     {
       "args": [
@@ -573,7 +710,10 @@
         ],
         579960
       ],
-      "expected": [52,75]
+      "expected": [
+        52,
+        75
+      ]
     },
     {
       "name": "the stated maximum, where a quadratic scan cannot finish",
@@ -100582,7 +100722,10 @@
         ],
         0
       ],
-      "expected": [30192,37192]
+      "expected": [
+        30192,
+        37192
+      ]
     }
   ]
 }
