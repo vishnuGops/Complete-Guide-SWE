@@ -112,6 +112,17 @@ export type FetchLike = typeof fetch;
 export interface ProviderOptions {
   /** Swapped out in tests; there is no network in CI (ROADMAP P5-7). */
   fetch?: FetchLike;
+  /**
+   * Where the vendor lives, if not where it normally lives.
+   *
+   * Two callers need this. The end-to-end suite (P5-8) types a fake key into
+   * Settings and presses "Test connection", and that has to fail without a
+   * packet leaving the machine - so it points this at the local server, which
+   * answers every unknown path with a 403 and produces an honest "the key was
+   * rejected" on screen. The other is anyone running the vendor behind their own
+   * gateway. Unset in production, where the SDK's own default applies.
+   */
+  baseUrl?: string;
 }
 
 /**

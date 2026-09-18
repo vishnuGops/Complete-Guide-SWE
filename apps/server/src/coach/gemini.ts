@@ -21,7 +21,7 @@ import { sseJsonObjects } from './sse.js';
  * names models `models/<id>`; the prefix is stripped so settings hold the id the
  * user actually typed.
  */
-const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
 /** Re-exported from shared, so pricing and dispatch cannot drift apart (P5-6). */
 export const GEMINI_DEFAULT_MODEL = COACH_DEFAULT_MODEL.gemini;
@@ -36,6 +36,7 @@ function stripPrefix(name: string): string {
 
 export function createGeminiProvider(options: ProviderOptions = {}): CoachProvider {
   const doFetch = options.fetch ?? globalThis.fetch;
+  const base = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
 
   return {
     id: 'gemini',
@@ -50,7 +51,7 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
         // The key goes in a header rather than the query string: a URL carrying
         // a secret ends up in error messages and logs, and this one must not
         // (CLAUDE.md > Secrets).
-        response = await doFetch(`${BASE_URL}/models?pageSize=200`, {
+        response = await doFetch(`${base}/models?pageSize=200`, {
           method: 'GET',
           headers: { 'x-goog-api-key': apiKey },
           signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
@@ -98,7 +99,7 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
       let response: Response;
       try {
         response = await doFetch(
-          `${BASE_URL}/models/${encodeURIComponent(wanted)}:streamGenerateContent?alt=sse`,
+          `${base}/models/${encodeURIComponent(wanted)}:streamGenerateContent?alt=sse`,
           {
             method: 'POST',
             headers: {

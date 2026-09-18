@@ -27,6 +27,25 @@ const PROBLEM = { slug: 'longest-distinct-stretch', title: 'Longest Limited Stre
 /** A second problem, so the test that types cannot disturb the one that must not. */
 const TYPING_PROBLEM = { slug: 'pair-sum-under-limit', title: 'Pairs Under The Limit' };
 
+/** The API's own headers, for the setup and teardown calls that go around the UI. */
+const API_HEADERS = { 'X-DevProMax-Client': 'devpromax-web' };
+
+/**
+ * Removes any stored coach key.
+ *
+ * The settings row is global to the database these tests share, so the test
+ * that pastes a key has to put it back - otherwise "someone with no key" is a
+ * lie the moment that test has run once, which is the same class of bug the
+ * `resetDraft` note above describes.
+ */
+async function clearStoredKey(page: Page): Promise<void> {
+  const response = await page.request.put('/api/settings', {
+    headers: API_HEADERS,
+    data: { coach: { apiKey: '' } },
+  });
+  expect(response.ok(), 'the settings write that clears the key').toBe(true);
+}
+
 /** Reset-to-starter through the API, so the editor really does open on the starter. */
 async function resetDraft(page: Page, slug: string): Promise<void> {
   const response = await page.request.delete(`/api/drafts/${slug}/python`, {
@@ -45,6 +64,16 @@ async function openCoach(page: Page, slug = PROBLEM.slug, title = PROBLEM.title)
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await page.getByRole('tab', { name: 'Coach' }).click();
 }
+
+/*
+ * Serial, because one of these writes settings.
+ *
+ * The key field is the only control in the app that changes state every other
+ * test in the file reads: with a key stored, the pre-check stops sending anyone
+ * to Settings. Running them in order, with the key cleared before and after the
+ * one test that sets it, is cheaper than giving that test a database of its own.
+ */
+test.describe.configure({ mode: 'serial' });
 
 test.describe('AI Help', () => {
   test('explains itself, and promises not to hand over the solution', async ({ page }) => {
@@ -84,6 +113,48 @@ test.describe('AI Help', () => {
 
     await openSettings.click();
     await expect(page).toHaveURL(/\/settings$/);
+
+    // ...and that the page it lands on is one where the key can be set (P5-8).
+    // Asserting only the URL is how the missing field went unnoticed.
+    await expect(page.getByRole('heading', { name: 'AI coach' })).toBeVisible();
+    await expect(page.getByTestId('api-key-status')).toHaveText('No key configured.');
+  });
+
+  test('takes a key from Settings, and says honestly that a fake one fails', async ({ page }) => {
+    await clearStoredKey(page);
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'AI coach' })).toBeVisible();
+
+    const fake = 'sk-ant-not-a-real-key-a1b2c3d4';
+    await page.getByLabel('API key').fill(fake);
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    // The mask is the whole point: what is on screen after a save is the
+    // server's four characters, never the value that was typed.
+    await expect(page.getByTestId('api-key-status')).toContainText('••••••••c3d4');
+    await expect(page.getByTestId('api-key-status')).toContainText('stored on this machine');
+    await expect(page.getByLabel('API key')).toHaveValue('');
+    await expect(page.locator('body')).not.toContainText(fake);
+
+    // Test connection now has something to test, and fails without a packet
+    // leaving the machine - see DEVPROMAX_COACH_BASE_URL in playwright.config.
+    const testButton = page.getByRole('button', { name: 'Test connection' });
+    await expect(testButton).toBeEnabled();
+    await testButton.click();
+    await expect(page.getByText(/rejected that API key/i)).toBeVisible();
+
+    // And the coach no longer sends this user to Settings: with a key present
+    // the pre-check passes and the request is attempted, so what comes back is
+    // a provider error rather than the key prompt.
+    await page.goto(`/problems/${TYPING_PROBLEM.slug}`);
+    await expect(page.getByRole('heading', { name: TYPING_PROBLEM.title })).toBeVisible();
+    await page.getByRole('tab', { name: 'Coach' }).click();
+    await page.getByRole('button', { name: 'AI Help' }).click();
+
+    await expect(page.getByRole('button', { name: /Open Settings/i })).toHaveCount(0);
+    await expect(coachPanel(page).getByRole('alert')).toBeVisible();
+
+    await clearStoredKey(page);
   });
 
   test('opens the Coach tab when AI Help is pressed from the Description tab', async ({ page }) => {

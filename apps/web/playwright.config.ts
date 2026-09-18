@@ -38,6 +38,20 @@ export default defineConfig({
      * reused as-is and will be using the normal database. The specs are written
      * to work either way - none of them deletes anything.
      */
-    env: { DEVPROMAX_DB: path.join(REPO_ROOT, 'data', 'e2e.db') },
+    env: {
+      DEVPROMAX_DB: path.join(REPO_ROOT, 'data', 'e2e.db'),
+      /*
+       * A vendor that is not a vendor.
+       *
+       * `coach.spec.ts` types a fake key into Settings and presses "Test
+       * connection", and that must fail without a packet leaving this machine -
+       * least of all one carrying something key-shaped. Pointed at the API's own
+       * origin, every provider request lands on a path that does not exist and
+       * is answered 403 by the client-header rule (D15), which the provider maps
+       * to "the key was rejected" - the honest answer for a fake key, reached
+       * offline and in the same number of milliseconds every time.
+       */
+      DEVPROMAX_COACH_BASE_URL: 'http://127.0.0.1:5174/__no_vendor__',
+    },
   },
 });

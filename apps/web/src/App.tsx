@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './app/AppShell.js';
 import { KitchenSink } from './dev/KitchenSink.js';
 import { Progress } from './screens/Progress.js';
-import { Settings } from './screens/Settings.js';
+import { Settings } from './screens/settings/Settings.js';
 import { ProblemList } from './screens/problems/ProblemList.js';
 import { Workspace } from './screens/workspace/Workspace.js';
 import { ShortcutProvider } from './shortcuts/ShortcutProvider.js';

@@ -5,6 +5,7 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query';
 import type {
+  ConnectionTestResponse,
   DraftResponse,
   Language,
   ProblemDetail,
@@ -98,6 +99,17 @@ export function useUpdateSettings(): UseMutationResult<SettingsView, Error, Sett
       queryClient.setQueryData(keys.settings, view);
     },
   });
+}
+
+/**
+ * "Test connection" (ROADMAP P5-8).
+ *
+ * A mutation, not a query: it is a button, it costs a round trip to the vendor,
+ * and a query would re-run it on every remount of the Settings screen. Nothing
+ * is invalidated - the answer is about the key, and the key did not change.
+ */
+export function useTestConnection(): UseMutationResult<ConnectionTestResponse, Error, void> {
+  return useMutation({ mutationFn: api.testConnection });
 }
 
 /**

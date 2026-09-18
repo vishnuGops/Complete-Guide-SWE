@@ -1,5 +1,6 @@
 import type {
   ApiError as ApiErrorBody,
+  ConnectionTestResponse,
   DraftResponse,
   Language,
   ProblemDetail,
@@ -126,6 +127,12 @@ export const api = {
   settings: (): Promise<SettingsView> => request('/api/settings'),
   updateSettings: (patch: SettingsUpdate): Promise<SettingsView> =>
     request('/api/settings', { method: 'PUT', body: JSON.stringify(patch) }),
+  /**
+   * Checks the configured key against the provider (P5-8). A POST because it
+   * spends a network round trip, and must never be retried on its own.
+   */
+  testConnection: (): Promise<ConnectionTestResponse> =>
+    request('/api/settings/test-connection', { method: 'POST' }),
   /** Destructive, and confirmed in the UI before it is ever called (P3-4). */
   resetProgress: (): Promise<ResetProgressResponse> =>
     request('/api/settings/reset-progress', { method: 'POST' }),

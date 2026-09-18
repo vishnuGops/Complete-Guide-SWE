@@ -30,10 +30,24 @@ export {
   type PrecheckResult,
 } from './precheck.js';
 
+/**
+ * Where the vendor lives, when it is not where it normally lives.
+ *
+ * Read here rather than in `config.ts` so that both providers get it from one
+ * place and neither has to know an environment variable exists. Set by the
+ * end-to-end suite, which needs a "Test connection" that fails without leaving
+ * the machine (ROADMAP P5-8); unset in normal use.
+ */
+export const COACH_BASE_URL_ENV = 'DEVPROMAX_COACH_BASE_URL';
+
 /** The one place a provider id becomes an implementation. */
 export function createCoachProvider(
   id: CoachProviderId,
   options: ProviderOptions = {},
 ): CoachProvider {
-  return id === 'anthropic' ? createAnthropicProvider(options) : createGeminiProvider(options);
+  const fromEnv = process.env[COACH_BASE_URL_ENV]?.trim();
+  const resolved: ProviderOptions =
+    options.baseUrl === undefined && fromEnv ? { ...options, baseUrl: fromEnv } : options;
+
+  return id === 'anthropic' ? createAnthropicProvider(resolved) : createGeminiProvider(resolved);
 }

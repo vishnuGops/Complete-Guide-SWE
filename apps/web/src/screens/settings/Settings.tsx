@@ -1,9 +1,11 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { editorPrefsSchema, judgePrefsSchema, type ResetProgressResponse } from '@devpromax/shared';
-import { useResetProgress, useSettings, useUpdateSettings } from '../api/hooks.js';
-import { ThemeToggle } from '../app/ThemeToggle.js';
-import { useAppTheme } from '../app/useAppTheme.js';
-import { Button, ConfirmDialog, ErrorState, Input, Loading, Skeleton } from '../ui/index.js';
+import { useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
+import { ThemeToggle } from '../../app/ThemeToggle.js';
+import { useAppTheme } from '../../app/useAppTheme.js';
+import { Button, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
+import { CoachSection } from './CoachSection.js';
+import { NumberField, Row, Section, Toggle } from './fields.js';
 
 /**
  * Settings (ROADMAP P4-2 for the route, P3-4 for what is behind it).
@@ -13,111 +15,13 @@ import { Button, ConfirmDialog, ErrorState, Input, Loading, Skeleton } from '../
  * millisecond, and a Save button's only real job - "do not commit half a form to
  * a remote system" - is not a problem this app has.
  *
- * The coach's provider, model and API key are not here yet. They belong with the
- * feature that uses them (P5-3 and P5-6), which is also what gives the key's
- * masking and "test connection" somewhere to be seen working.
+ * The one field that does not follow that rule is the coach's API key (P5-8): it
+ * is saved explicitly, because a key is pasted rather than typed and a PUT per
+ * character would send eight prefixes of a secret to be written to disk.
  */
 
 const DEFAULT_EDITOR = editorPrefsSchema.parse({});
 const DEFAULT_JUDGE = judgePrefsSchema.parse({});
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="border-border border-b py-5 last:border-b-0">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <p className="text-fg-muted mt-1 mb-3 text-xs">{description}</p>
-      <div className="flex flex-col gap-3">{children}</div>
-    </section>
-  );
-}
-
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-6">
-      <div className="min-w-0">
-        <p className="text-fg text-sm">{label}</p>
-        {hint !== undefined && <p className="text-fg-subtle mt-0.5 text-xs">{hint}</p>}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function NumberField({
-  value,
-  min,
-  max,
-  step = 1,
-  label,
-  onCommit,
-}: {
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  label: string;
-  onCommit: (value: number) => void;
-}) {
-  const id = useId();
-  return (
-    <>
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <Input
-        id={id}
-        type="number"
-        className="w-20 text-right tnum"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(event) => {
-          const next = Number(event.target.value);
-          // An out-of-range value is what a half-typed number looks like; the
-          // schema would reject it and the field would appear to eat keystrokes.
-          if (Number.isFinite(next) && next >= min && next <= max) onCommit(next);
-        }}
-      />
-    </>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label: string;
-}) {
-  const id = useId();
-  return (
-    <>
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        className="focus-ring accent-accent size-4 cursor-pointer"
-        onChange={(event) => {
-          onChange(event.target.checked);
-        }}
-      />
-    </>
-  );
-}
 
 function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
   const parts = [
@@ -135,7 +39,7 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
   return said.length === 0 ? 'There was nothing to clear.' : `Cleared ${said.join(', ')}.`;
 }
 
-/** The three sections' worth of rows, at the height they will be. */
+/** Four sections' worth of rows, at the height they will be. */
 function SettingsSkeleton() {
   return (
     <Loading label="Loading settings" className="mx-auto max-w-2xl px-6 py-6">
@@ -179,6 +83,14 @@ export function Settings() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-2xl px-6 py-6">
         <h1 className="text-xl font-semibold">Settings</h1>
+
+        <CoachSection
+          coach={settings.coach}
+          saving={update.isPending}
+          onChange={(patch) => {
+            update.mutate(patch);
+          }}
+        />
 
         <Section title="Appearance" description="Applies to the whole app, including the editor.">
           <Row label="Theme" hint="System follows your operating system.">

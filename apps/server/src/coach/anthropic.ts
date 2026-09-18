@@ -44,6 +44,7 @@ function createClient(apiKey: string, options: ProviderOptions): Anthropic {
     // `fetch` override, so the seam is the vendor's own rather than one we had
     // to invent around it.
     ...(options.fetch ? { fetch: options.fetch } : {}),
+    ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
   });
 }
 
