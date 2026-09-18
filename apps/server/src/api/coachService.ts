@@ -1,14 +1,17 @@
 import {
   COACH_SKIP_MESSAGE,
   applyProgressEvent,
+  costUsd,
   initialProgress,
   meetsMastery,
+  priceFor,
   statusRank,
   type CoachChatRequest,
   type CoachFeedback,
   type CoachFeedbackRequest,
   type CoachStreamEvent,
   type Language,
+  type TokenUsage,
 } from '@devpromax/shared';
 import {
   buildContext,
@@ -107,6 +110,25 @@ function recallAttempts(
 }
 
 /**
+ * Whether this conversation has already spent its allowance (ROADMAP P5-6).
+ *
+ * The cap is per conversation, which is the reading the schema supports -
+ * `coach_sessions` is the only thing in this codebase called a session - and it
+ * is the unit a runaway actually happens in: someone going round and round on
+ * one problem. It does not bound a whole evening across twenty problems, and
+ * `docs/COACH_PROMPTS.md` says so rather than letting the name imply otherwise.
+ *
+ * Checked *before* a turn, against what has already been spent, because the
+ * cost of the turn about to be made is not knowable until it is made. So the cap
+ * is a floor the next turn may cross, not a ceiling it cannot: with a $1 cap the
+ * bill stops somewhere in the first dollar-and-a-bit, never at twenty.
+ */
+function overSpendCap(sessionId: string, capUsd: number | null, deps: CoachServiceDeps): boolean {
+  if (capUsd === null) return false;
+  return deps.repos.coach.sessionSpendUsd(sessionId) >= capUsd;
+}
+
+/**
  * A structured review of the code currently in the editor.
  *
  * The order of the guards is the order of what they cost. The pre-check is free
@@ -137,6 +159,14 @@ export async function* streamFeedback(
     return;
   }
 
+  // The conversation is found before the cap is checked, because the cap is a
+  // property of the conversation: a fresh one starts from zero.
+  const existing = deps.repos.coach.latestSession(request.slug, request.language);
+  if (existing && overSpendCap(existing.id, settings.coach.spendCapUsd, deps)) {
+    yield skip('spend_cap_reached');
+    return;
+  }
+
   // Solved in any language, matching how the editorial unlocks: the approach is
   // the same approach, and the coach's solution gate is about the same secret.
   const solved = deps.repos.progress
@@ -158,14 +188,14 @@ export async function* streamFeedback(
 
   // The conversation is created before the request, so the panel can address it
   // in a follow-up even if this turn fails partway through.
-  const session =
-    deps.repos.coach.latestSession(request.slug, request.language) ??
-    deps.repos.coach.createSession(request.slug, request.language);
+  const session = existing ?? deps.repos.coach.createSession(request.slug, request.language);
   yield { type: 'start', sessionId: session.id };
 
   deps.repos.coach.addMessage(session.id, { role: 'user', content: context });
 
   const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
+
+  let spent: number | null = null;
 
   try {
     for await (const chunk of streamCoachFeedback(provider, {
@@ -173,6 +203,9 @@ export async function* streamFeedback(
       model: settings.coach.model,
       system: systemPrompt(),
       messages: [{ role: 'user', content: context }],
+      onUsage: (usage: TokenUsage) => {
+        spent = costUsd(usage, priceFor(settings.coach.provider, settings.coach.model));
+      },
     })) {
       if (chunk.type === 'markdown') {
         yield { type: 'markdown', delta: chunk.delta };
@@ -187,6 +220,9 @@ export async function* streamFeedback(
         feedback: chunk.feedback,
         // The code this feedback is about, so the next turn can diff against it.
         code: request.code,
+        // Null when the vendor reported nothing; the cap reads that as unknown,
+        // not as free (P5-6).
+        ...(spent === null ? {} : { costUsd: spent }),
       });
       applyMastery(chunk.feedback, request, deps);
       yield { type: 'done', feedback: chunk.feedback };

@@ -10,6 +10,7 @@ import {
   type ProviderOptions,
   type StreamOptions,
 } from './provider.js';
+import { COACH_DEFAULT_MODEL, type TokenUsage } from '@devpromax/shared';
 import { sseJsonObjects } from './sse.js';
 
 /**
@@ -22,7 +23,8 @@ import { sseJsonObjects } from './sse.js';
  */
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
-export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-pro';
+/** Re-exported from shared, so pricing and dispatch cannot drift apart (P5-6). */
+export const GEMINI_DEFAULT_MODEL = COACH_DEFAULT_MODEL.gemini;
 
 interface ModelsResponse {
   models?: { name?: unknown }[];
@@ -89,7 +91,7 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
      *     narrowed on the way in rather than sent as-is.
      *   - No thinking parameter: 2.5-series models reason by default.
      */
-    async *stream({ apiKey, model, system, messages, schema, signal }: StreamOptions) {
+    async *stream({ apiKey, model, system, messages, schema, signal, onUsage }: StreamOptions) {
       const wanted = stripPrefix(model ?? GEMINI_DEFAULT_MODEL);
       const timeout = AbortSignal.timeout(STREAM_TIMEOUT_MS);
 
@@ -144,10 +146,19 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
         });
       }
 
+      // Gemini repeats `usageMetadata` on every chunk, each a running total,
+      // so the last one seen is the one that counts.
+      let usage: { inputTokens: number; outputTokens: number } | null = null;
+
       for await (const chunk of sseJsonObjects(response.body)) {
         const text = extractText(chunk);
         if (text !== '') yield text;
+
+        const reported = extractUsage(chunk);
+        if (reported) usage = reported;
       }
+
+      if (usage) onUsage?.(usage);
     },
   };
 }
@@ -200,6 +211,16 @@ function toGeminiSchema(schema: JsonSchema): JsonSchema {
 
 interface GeminiChunk {
   candidates?: { content?: { parts?: { text?: unknown }[] } }[];
+  usageMetadata?: { promptTokenCount?: unknown; candidatesTokenCount?: unknown };
+}
+
+function extractUsage(chunk: Record<string, unknown>): TokenUsage | null {
+  const meta = (chunk as GeminiChunk).usageMetadata;
+  if (!meta) return null;
+  const inputTokens = typeof meta.promptTokenCount === 'number' ? meta.promptTokenCount : 0;
+  const outputTokens =
+    typeof meta.candidatesTokenCount === 'number' ? meta.candidatesTokenCount : 0;
+  return inputTokens === 0 && outputTokens === 0 ? null : { inputTokens, outputTokens };
 }
 
 /**

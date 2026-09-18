@@ -1,0 +1,12 @@
+-- The spend cap (ROADMAP P5-6).
+--
+-- What a turn cost, recorded on the turn that cost it, so a session's spend is a
+-- SUM rather than a counter that has to be kept in step with the rows beside it.
+-- Also makes "what has this conversation cost me" answerable from the database
+-- with no application code at all.
+--
+-- USD, computed from the provider's own reported token counts against the price
+-- table in `packages/shared/src/cost.ts`. NULL where a vendor reported no usage
+-- and on every row written before this migration - so the cap treats NULL as
+-- "unknown", not as "free".
+ALTER TABLE coach_messages ADD COLUMN cost_usd REAL;

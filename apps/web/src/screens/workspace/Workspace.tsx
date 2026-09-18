@@ -6,6 +6,8 @@ import {
   PROGRESS_LABEL,
   customTestShapeFrom,
   editorPrefsSchema,
+  estimateTurnCostUsd,
+  formatUsd,
   parseCustomTests,
   type CompileError,
   type CustomTestInput,
@@ -44,6 +46,7 @@ import { ResultsPanel } from './ResultsPanel.js';
 import { StatementPanel } from './StatementPanel.js';
 import { SplitPane } from './SplitPane.js';
 import { TestcasePanel } from './TestcasePanel.js';
+import { judgeHeadline, judgeSummary } from './judgeSummary.js';
 import { useWorkspaceLayout } from './layout.js';
 import { useCoach } from './useCoach.js';
 
@@ -77,6 +80,17 @@ const DEFAULT_EDITOR_PREFS = editorPrefsSchema.parse({});
 
 /** How long after the last keystroke a draft is written. */
 const AUTOSAVE_MS = 800;
+
+/**
+ * Roughly the size of the system prompt, for the cost estimate (P5-6).
+ *
+ * The client does not have the prompt - it is read from disk on the server -
+ * and fetching it to put a "~$0.03" on a tooltip would be a round trip for a
+ * figure that is approximate by construction. It is a versioned file that
+ * changes rarely, so a constant is honest here in a way it would not be for
+ * anything the user edits.
+ */
+const SYSTEM_PROMPT_CHARS = 5_700;
 
 /**
  * The workspace, before it has a problem (ROADMAP P4-10).
@@ -237,6 +251,26 @@ export function Workspace() {
    * the time they find it the prose they were meant to watch arrive is already
    * finished.
    */
+  /**
+   * What the next coaching turn will roughly cost (ROADMAP P5-6).
+   *
+   * On the tooltip rather than beside the button: it is a number to check
+   * before clicking, not one to watch, and a figure that changed on every
+   * keystroke in the toolbar would be noise on a bar that is otherwise stable.
+   *
+   * Estimated from what the client can see - the prompt, the statement and the
+   * code - plus a constant for the system prompt, which the client does not
+   * have and which barely moves. The whole thing is prefixed "about" for the
+   * same reason the shared helper prefixes its tokens with a tilde.
+   */
+  const costEstimate = formatUsd(
+    estimateTurnCostUsd(
+      settings?.coach.provider ?? 'anthropic',
+      settings?.coach.model ?? null,
+      SYSTEM_PROMPT_CHARS + code.length + (problem?.statement.length ?? 0),
+    ),
+  );
+
   const askCoach = (options: { masteryCheck?: boolean } = {}) => {
     setLeftTab('coach');
     setOfferMastery(false);
@@ -522,7 +556,7 @@ export function Workspace() {
             to make it the most clickable thing on the bar (D13).
           */}
           <Tooltip
-            content="Ask the coach about the code you have written"
+            content={`Ask the coach about the code you have written · about ${costEstimate}`}
             keys={SHORTCUTS.aiHelp.keys}
           >
             <Button
@@ -580,6 +614,14 @@ export function Workspace() {
               coach={
                 <CoachPanel
                   state={coach.state}
+                  fallback={
+                    result
+                      ? {
+                          headline: judgeHeadline(result),
+                          points: judgeSummary(result, problem.timeoutMs[language]),
+                        }
+                      : null
+                  }
                   onAsk={() => {
                     askCoach();
                   }}

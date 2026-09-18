@@ -116,6 +116,7 @@ export const COACH_SKIP_REASONS = [
   'unchanged_starter',
   'no_meaningful_code',
   'no_api_key',
+  'spend_cap_reached',
 ] as const;
 export const coachSkipReasonSchema = z.enum(COACH_SKIP_REASONS);
 export type CoachSkipReason = z.infer<typeof coachSkipReasonSchema>;
@@ -124,6 +125,8 @@ export const COACH_SKIP_MESSAGE: Record<CoachSkipReason, string> = {
   unchanged_starter: 'Write some code first, then ask for help.',
   no_meaningful_code: 'There is no solution body to review yet. Sketch an approach first.',
   no_api_key: 'Add an Anthropic or Gemini API key in Settings to use AI Help.',
+  spend_cap_reached:
+    'This conversation has reached the spend cap set in Settings. Raise it there, or start a fresh one.',
 };
 
 /** A follow-up question in an existing conversation (`POST /api/coach/chat`). */

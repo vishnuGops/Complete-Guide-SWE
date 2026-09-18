@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { coachFeedbackSchema, type CoachFeedback } from '@devpromax/shared';
+import { coachFeedbackSchema, type CoachFeedback, type TokenUsage } from '@devpromax/shared';
 import { createStringStreamer } from './partialJson.js';
 import {
   CoachProviderError,
@@ -43,6 +43,7 @@ export interface FeedbackStreamOptions {
   system: string;
   messages: readonly CoachTurn[];
   signal?: AbortSignal;
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 /**
@@ -68,6 +69,7 @@ export async function* streamCoachFeedback(
     messages: options.messages,
     schema: coachFeedbackJsonSchema(),
     signal: options.signal,
+    ...(options.onUsage ? { onUsage: options.onUsage } : {}),
   })) {
     raw += chunk;
     const delta = markdown.push(raw);

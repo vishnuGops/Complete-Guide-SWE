@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { COACH_DEFAULT_MODEL } from '@devpromax/shared';
 import {
   CoachProviderError,
   describeNetworkError,
@@ -20,7 +21,8 @@ import {
  * and what our user should be told when something goes wrong.
  */
 
-export const ANTHROPIC_DEFAULT_MODEL = 'claude-opus-5';
+/** Re-exported from shared, so pricing and dispatch cannot drift apart (P5-6). */
+export const ANTHROPIC_DEFAULT_MODEL = COACH_DEFAULT_MODEL.anthropic;
 
 /**
  * Generous because the cap is a safety net, not a budget.
@@ -128,7 +130,7 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
      *     left at its default, so the thinking is never streamed to the panel -
      *     the user asked for feedback, not for a transcript of deliberation.
      */
-    async *stream({ apiKey, model, system, messages, schema, signal }: StreamOptions) {
+    async *stream({ apiKey, model, system, messages, schema, signal, onUsage }: StreamOptions) {
       const client = createClient(apiKey, options);
 
       try {
@@ -147,11 +149,27 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
           { signal, timeout: STREAM_TIMEOUT_MS },
         );
 
+        // Anthropic splits usage across two events: the input count arrives
+        // with `message_start`, the final output count with `message_delta`.
+        let inputTokens = 0;
+        let outputTokens = 0;
+
         for await (const event of stream) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
             yield event.delta.text;
+            continue;
+          }
+          if (event.type === 'message_start') {
+            inputTokens = event.message.usage.input_tokens;
+            outputTokens = event.message.usage.output_tokens;
+            continue;
+          }
+          if (event.type === 'message_delta') {
+            outputTokens = event.usage.output_tokens;
           }
         }
+
+        if (inputTokens > 0 || outputTokens > 0) onUsage?.({ inputTokens, outputTokens });
       } catch (error) {
         throw toCoachError(error);
       }

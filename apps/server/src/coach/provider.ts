@@ -1,4 +1,8 @@
-import { COACH_PROVIDER_LABEL, type CoachProvider as CoachProviderId } from '@devpromax/shared';
+import {
+  COACH_PROVIDER_LABEL,
+  type CoachProvider as CoachProviderId,
+  type TokenUsage,
+} from '@devpromax/shared';
 
 /**
  * The provider seam (ROADMAP D12).
@@ -72,6 +76,16 @@ export interface StreamOptions {
    */
   schema?: JsonSchema;
   signal?: AbortSignal;
+  /**
+   * What the turn actually used, reported when the vendor says so (P5-6).
+   *
+   * A callback rather than a yielded value, because usage is not part of the
+   * answer: the stream yields the text the panel paints, and threading a second
+   * kind of item through it would make every consumer branch on something only
+   * the spend cap cares about. Not called when a vendor reports nothing, which
+   * is why the cap treats a missing report as its estimate rather than as zero.
+   */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 /** Just enough of JSON Schema to name what crosses the provider seam. */

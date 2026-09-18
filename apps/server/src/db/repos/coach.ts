@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { coachFeedbackSchema, type CoachFeedback, type Language } from '@devpromax/shared';
 import { nowIso, transaction, type Database } from '../open.js';
-import { nullableText, text, type Row } from './rows.js';
+import { nullableNumber, nullableText, text, type Row } from './rows.js';
 
 export const COACH_ROLES = ['user', 'coach'] as const;
 export type CoachRole = (typeof COACH_ROLES)[number];
@@ -23,6 +23,8 @@ export interface CoachMessage {
   feedback: CoachFeedback | null;
   /** The code that was in the editor when this turn was asked for (P5-5). */
   code: string | null;
+  /** USD this turn cost, or null when the vendor reported no usage (P5-6). */
+  costUsd: number | null;
   createdAt: string;
 }
 
@@ -31,6 +33,7 @@ export interface NewCoachMessage {
   content: string;
   feedback?: CoachFeedback;
   code?: string;
+  costUsd?: number;
 }
 
 function toSession(row: Row): CoachSession {
@@ -52,6 +55,7 @@ function toMessage(row: Row): CoachMessage {
     content: text(row, 'content'),
     feedback: raw === null ? null : coachFeedbackSchema.parse(JSON.parse(raw)),
     code: nullableText(row, 'code'),
+    costUsd: nullableNumber(row, 'cost_usd'),
     createdAt: text(row, 'created_at'),
   };
 }
@@ -66,12 +70,14 @@ export interface CoachRepo {
   listMessages(sessionId: string): CoachMessage[];
   /** Feedback turns for a problem, newest first - the input to P5-5's attempt memory. */
   recentFeedback(slug: string, language: Language, limit: number): CoachMessage[];
+  /** What this conversation has cost so far, for the spend cap (P5-6). */
+  sessionSpendUsd(sessionId: string): number;
   deleteSession(id: string): boolean;
   /** Drops every conversation; messages go with them by cascade. */
   clearSessions(): number;
 }
 
-const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, code, created_at';
+const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, code, cost_usd, created_at';
 const SESSION_COLUMNS = 'id, slug, language, created_at, updated_at';
 
 export function createCoachRepo(db: Database): CoachRepo {
@@ -88,19 +94,22 @@ export function createCoachRepo(db: Database): CoachRepo {
     `SELECT ${SESSION_COLUMNS} FROM coach_sessions WHERE slug = ? ORDER BY created_at DESC`,
   );
   const insertMessage = db.prepare(
-    `INSERT INTO coach_messages (${MESSAGE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO coach_messages (${MESSAGE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const touchSession = db.prepare('UPDATE coach_sessions SET updated_at = ? WHERE id = ?');
   const listMessages = db.prepare(
     `SELECT ${MESSAGE_COLUMNS} FROM coach_messages WHERE session_id = ? ORDER BY created_at, rowid`,
   );
   const recentFeedback = db.prepare(
-    `SELECT m.id, m.session_id, m.role, m.content, m.feedback, m.code, m.created_at
+    `SELECT m.id, m.session_id, m.role, m.content, m.feedback, m.code, m.cost_usd, m.created_at
      FROM coach_messages m
      JOIN coach_sessions s ON s.id = m.session_id
      WHERE s.slug = ? AND s.language = ? AND m.feedback IS NOT NULL
      ORDER BY m.created_at DESC, m.rowid DESC
      LIMIT ?`,
+  );
+  const sessionSpend = db.prepare(
+    'SELECT COALESCE(SUM(cost_usd), 0) AS total FROM coach_messages WHERE session_id = ?',
   );
   const deleteSession = db.prepare('DELETE FROM coach_sessions WHERE id = ?');
   const clearSessions = db.prepare('DELETE FROM coach_sessions');
@@ -155,6 +164,7 @@ export function createCoachRepo(db: Database): CoachRepo {
           message.content,
           feedback,
           message.code ?? null,
+          message.costUsd ?? null,
           createdAt,
         );
         touchSession.run(createdAt, sessionId);
@@ -167,6 +177,7 @@ export function createCoachRepo(db: Database): CoachRepo {
         content: message.content,
         feedback: message.feedback ?? null,
         code: message.code ?? null,
+        costUsd: message.costUsd ?? null,
         createdAt,
       };
     },
@@ -177,6 +188,12 @@ export function createCoachRepo(db: Database): CoachRepo {
 
     recentFeedback(slug, language, limit) {
       return (recentFeedback.all(slug, language, limit) as Row[]).map(toMessage);
+    },
+
+    sessionSpendUsd(sessionId) {
+      const row = sessionSpend.get(sessionId) as Row | undefined;
+      const total = row?.['total'];
+      return typeof total === 'number' ? total : 0;
     },
 
     deleteSession(id) {

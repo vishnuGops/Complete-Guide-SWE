@@ -522,3 +522,91 @@ describe('the mastery nudge (P5-4)', () => {
     expect(body.masteryCheck).toBe(true);
   });
 });
+
+describe('the no-key fallback (P5-6)', () => {
+  const noKey: CoachStreamEvent = {
+    type: 'skipped',
+    reason: 'no_api_key',
+    message: 'Add an Anthropic or Gemini API key in Settings to use AI Help.',
+  };
+
+  function routes() {
+    return [
+      ...baseRoutes(() => sse([noKey])),
+      {
+        match: path('/api/run'),
+        body: () => ({
+          slug: SLUG,
+          language: 'python',
+          kind: 'run',
+          problemVersion: 1,
+          verdict: 'WA',
+          passed: 0,
+          total: 3,
+          totalTimeMs: 20,
+          compileErrors: [],
+          tests: [
+            {
+              index: 0,
+              source: 'sample',
+              verdict: 'WA',
+              timeMs: 4,
+              revealed: true,
+              input: { args: [[1, 2], 3] },
+              expected: [0, 1],
+              actual: [],
+              stdout: '',
+              stderr: '',
+            },
+            {
+              index: 1,
+              source: 'sample',
+              verdict: 'WA',
+              timeMs: 4,
+              revealed: true,
+              input: { args: [[4, 5], 9] },
+              expected: [0, 1],
+              actual: [],
+              stdout: '',
+              stderr: '',
+            },
+          ],
+          outputTruncated: false,
+          isolationFallback: false,
+        }),
+      },
+    ];
+  }
+
+  it('still says something useful about the last run', async () => {
+    server = fakeServer(routes());
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => {
+      expect(server.requests.some((r) => r.url.pathname === '/api/run')).toBe(true);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+
+    expect(await screen.findByText(/What the judge can tell you/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 of 3 tests disagreed/)).toBeInTheDocument();
+    expect(screen.getByText(/same value/)).toBeInTheDocument();
+    // Still offers the fix for the actual problem.
+    expect(screen.getByRole('button', { name: /Open Settings/i })).toBeInTheDocument();
+  });
+
+  it('shows no fallback before anything has been run', async () => {
+    server = fakeServer(routes());
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+
+    expect(await screen.findByRole('button', { name: /Open Settings/i })).toBeInTheDocument();
+    expect(screen.queryByText(/What the judge can tell you/i)).not.toBeInTheDocument();
+  });
+});

@@ -124,6 +124,13 @@ function Turn({ turn }: { turn: CoachState['turns'][number] }) {
 
 export interface CoachPanelProps {
   state: CoachState;
+  /**
+   * What the judge alone can say about the last run (P5-6). Shown in the
+   * no-key state, so the Coach tab still answers "help me" for someone who has
+   * not configured a provider - and shows what a local answer looks like next
+   * to what a coached one would.
+   */
+  fallback?: { headline: string; points: string[] } | null;
   /** Runs a fresh review of whatever is in the editor now. */
   onAsk: () => void;
   onFollowUp: (message: string) => void;
@@ -132,7 +139,14 @@ export interface CoachPanelProps {
   onOpenSettings: () => void;
 }
 
-export function CoachPanel({ state, onAsk, onFollowUp, onStop, onOpenSettings }: CoachPanelProps) {
+export function CoachPanel({
+  state,
+  fallback,
+  onAsk,
+  onFollowUp,
+  onStop,
+  onOpenSettings,
+}: CoachPanelProps) {
   const [question, setQuestion] = useState('');
   const streaming = state.phase === 'streaming';
   const empty = state.turns.length === 0 && state.streaming === '';
@@ -150,6 +164,20 @@ export function CoachPanel({ state, onAsk, onFollowUp, onStop, onOpenSettings }:
           <Button className="mt-3" onClick={onOpenSettings}>
             Open Settings
           </Button>
+
+          {fallback && fallback.points.length > 0 && (
+            <div className="border-border mt-3 border-t pt-3">
+              <p className="text-fg-subtle text-2xs font-medium tracking-wide uppercase">
+                What the judge can tell you
+              </p>
+              <p className="text-fg-muted mt-1 text-sm">{fallback.headline}</p>
+              <ul className="text-fg-muted mt-2 flex list-disc flex-col gap-1 pl-4 text-sm">
+                {fallback.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       ) : state.phase === 'skipped' && state.skipped ? (
         <p className="text-fg-muted text-sm">{state.skipped.message}</p>

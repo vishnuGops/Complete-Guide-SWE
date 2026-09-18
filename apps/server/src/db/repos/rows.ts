@@ -39,6 +39,19 @@ export function num(row: Row, column: string): number {
   return value;
 }
 
+/**
+ * A numeric column that may be NULL.
+ *
+ * Distinct from `num` because for some columns NULL means something: a coach
+ * turn's `cost_usd` is null when the vendor reported no usage, and reading that
+ * as 0 would tell the spend cap the turn was free (P5-6).
+ */
+export function nullableNumber(row: Row, column: string): number | null {
+  const value = row[column];
+  if (value === null || value === undefined) return null;
+  return num(row, column);
+}
+
 /** Parses a JSON column, returning `fallback` when it is NULL. */
 export function json<T>(row: Row, column: string, fallback: T): T {
   const value = nullableText(row, column);

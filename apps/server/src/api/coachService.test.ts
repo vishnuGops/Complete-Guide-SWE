@@ -429,3 +429,94 @@ describe('attempt memory (P5-5)', () => {
     expect(requests[0]).not.toContain('Changed since that feedback');
   });
 });
+
+describe('the spend cap (P5-6)', () => {
+  /** An Anthropic stream that also reports usage, as a real one does. */
+  function withUsage(inputTokens: number, outputTokens: number): string {
+    return [
+      `event: message_start\ndata: ${JSON.stringify({
+        type: 'message_start',
+        message: {
+          id: 'm',
+          type: 'message',
+          role: 'assistant',
+          model: 'claude-opus-5',
+          content: [],
+          stop_reason: null,
+          stop_sequence: null,
+          usage: { input_tokens: inputTokens, output_tokens: 0 },
+        },
+      })}\n\n`,
+      'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n',
+      `event: content_block_delta\ndata: ${JSON.stringify({
+        type: 'content_block_delta',
+        index: 0,
+        delta: { type: 'text_delta', text: JSON.stringify(ANSWER) },
+      })}\n\n`,
+      'event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n',
+      `event: message_delta\ndata: ${JSON.stringify({
+        type: 'message_delta',
+        delta: { stop_reason: 'end_turn', stop_sequence: null },
+        usage: { output_tokens: outputTokens },
+      })}\n\n`,
+      'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+    ].join('');
+  }
+
+  function setCap(capUsd: number | null) {
+    repos.settings.update({ coach: { spendCapUsd: capUsd } });
+  }
+
+  it('records what a turn cost, from the vendor’s own token counts', async () => {
+    const fetch = providerFetch(withUsage(1_000_000, 0));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    const session = repos.coach.latestSession(SLUG, 'python')!;
+    // A million input tokens on the default model (claude-opus-5) is $5 by the
+    // shared price table - not the unknown-model rate, because a null model in
+    // settings resolves to a specific default rather than to "unknown".
+    expect(repos.coach.sessionSpendUsd(session.id)).toBeCloseTo(5);
+  });
+
+  it('lets a turn through while the conversation is under the cap', async () => {
+    setCap(10);
+    const fetch = providerFetch(withUsage(1_000_000, 0));
+    const events = await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    expect(events.some((e) => e.type === 'done')).toBe(true);
+  });
+
+  it('refuses the next turn once the cap is reached, without calling the provider', async () => {
+    setCap(1);
+    const fetch = providerFetch(withUsage(1_000_000, 0));
+
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    expect(requests).toHaveLength(1);
+
+    const second = await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    expect(second[0]).toMatchObject({ type: 'skipped', reason: 'spend_cap_reached' });
+    // The point of a cap: the refusal costs nothing.
+    expect(requests).toHaveLength(1);
+  });
+
+  it('does nothing when no cap is set', async () => {
+    setCap(null);
+    const fetch = providerFetch(withUsage(1_000_000, 0));
+
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    const second = await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    expect(second.some((e) => e.type === 'done')).toBe(true);
+  });
+
+  it('treats a turn the vendor reported nothing for as unknown, not free', async () => {
+    // Zero counts mean "not reported", which must not be recorded as $0 - that
+    // would let an unmetered turn look like a free one to the cap.
+    const fetch = providerFetch(withUsage(0, 0));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    const session = repos.coach.latestSession(SLUG, 'python')!;
+    const coachTurn = repos.coach.listMessages(session.id).find((m) => m.feedback !== null);
+    expect(coachTurn?.costUsd).toBeNull();
+  });
+});

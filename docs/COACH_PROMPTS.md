@@ -83,3 +83,33 @@ This is a design decision, not a preference. `docs/DESIGN.md` rules out decorati
 `prompts/prompts.test.ts` pins the rules other code depends on: every rubric dimension and hint rung is named, the `solution` gate mentions both conditions, mastery is tied to every dimension, and the editorial is marked secret. It cannot test whether the advice is _good_ — that needs a model, and CI has no keys (D17) — but it does catch an edit that silently drops a rule the app assumes is being obeyed.
 
 `context.test.ts` covers the assembly and the drop order, including the case that matters most: a very long solution pushes the droppable sections out and still arrives with the code intact.
+
+## 8. Cost and the spend cap
+
+Implements ROADMAP **P5-6**. The numbers live in `packages/shared/src/cost.ts` so that the estimate under the AI Help button and the figure the cap is enforced against are computed the same way.
+
+**Before a turn**, the tooltip shows an estimate: characters ÷ 4 for the prompt, plus a constant for the answer, priced against the configured model. It is prefixed "about" because none of those three inputs is exact.
+
+**After a turn**, the provider reports what it actually used — Anthropic across `message_start` and `message_delta`, Gemini in `usageMetadata` — and that is what gets stored. An estimate is not good enough to stop someone spending money with.
+
+Three properties are deliberate:
+
+- **The price table will go stale, and fails safe.** An unknown model is charged at the _dearest_ rate known for its provider, so a price we do not have trips the cap early rather than late. Caching is not modelled either, and that also only makes the real bill smaller than the estimate.
+- **A model of `null` is not unknown.** It resolves through `COACH_DEFAULT_MODEL` to the specific model the provider will actually use. Charging the default configuration — the one most users never change — at the unknown-model rate would overstate every estimate they ever see.
+- **A vendor that reports nothing is recorded as `NULL`, not `0`.** The cap reads that as unknown, not as free.
+
+### What "session" means
+
+The cap is **per conversation** — one `coach_sessions` row, which is one problem in one language. That is the unit a runaway actually happens in: someone going round and round on a problem they are stuck on. It does **not** bound an evening spread across twenty problems.
+
+It is also checked _before_ a turn, against what has already been spent, because a turn's cost is not knowable until it is made. So the cap is a floor the next turn may cross, not a ceiling it cannot: with a $1 cap the spend stops somewhere in the first dollar and a bit, never at twenty.
+
+### Without a key
+
+The Coach tab still answers "help me". `judgeSummary` derives what can be said from the run result alone — the verdict, the failing count, a compile error's line, a pass that came close to the time limit, and one pattern that is provable from the data ("every failing case returned the same value").
+
+It deliberately does not guess. An earlier draft also reported "every failing input is empty or minimal", and that was removed rather than tuned: whether `target = 0` counts as minimal depends on the problem, and a local heuristic that guesses at causes reads exactly like coaching with no way for the reader to tell the difference.
+
+### Keys and logs
+
+`REDACT_PATHS` in `apps/server/src/logger.ts` is asserted by `logger.test.ts` against a real pino instance, one case per shape the app logs. The trap it exists to document: pino's `*` matches exactly one level, so `*.apiKey` covers `{coach: {apiKey}}` and silently does **not** cover `{settings: {coach: {apiKey}}}` — and the settings object is routinely passed one level deeper than the coach object inside it.
