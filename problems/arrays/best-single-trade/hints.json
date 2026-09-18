@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "For a given selling day, which buying day would you have wanted? Nothing about that choice depends on the days after the sale.",
+    "The best purchase price for a sale on day `j` is the smallest price among the days before it - a running minimum.",
+    "Walk the days once, keeping the smallest price seen so far and the best profit seen so far; at each day, compare today's price against that minimum.",
+    "Update the minimum after taking the profit for the day, or a day will be allowed to buy and sell from itself."
+  ]
+}

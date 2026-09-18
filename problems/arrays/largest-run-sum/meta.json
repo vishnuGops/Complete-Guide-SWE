@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "largest-run-sum",
+  "slug": "largest-run-sum",
+  "title": "Largest Run Sum",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["one pass", "running total", "invariant"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 10,
+  "mode": "function",
+  "entry": "largestRunSum",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["balance-point", "best-single-trade"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

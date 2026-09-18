@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "best-single-trade",
+  "slug": "best-single-trade",
+  "title": "Best Single Trade",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["one pass", "running total"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 9,
+  "mode": "function",
+  "entry": "bestTrade",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["running-maximum"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

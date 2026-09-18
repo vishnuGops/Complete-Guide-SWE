@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The non-zero values keep their order, and the zeroes do not need to keep anything. Which of the two is worth tracking?",
+    "Think of a second position that walks behind the one you are reading from: it marks where the next non-zero value belongs.",
+    "Walk once, copying each non-zero value to the write position and advancing it. Then fill the rest of the row with zeroes.",
+    "Swapping instead of copying works too, and saves the second sweep - each swap puts a zero exactly where the value came from."
+  ]
+}

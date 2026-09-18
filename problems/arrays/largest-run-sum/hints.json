@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Ask what the best run *ending at this minute* is, rather than what the best run anywhere is. The second question is a maximum over the answers to the first.",
+    "A run ending here either extends the best run ending at the previous minute, or starts fresh at this minute. Nothing else is possible.",
+    "Carry two numbers as you walk: the best run ending here, and the best run seen anywhere so far.",
+    "The running value starts at the first element, not at zero - otherwise a row of negatives answers zero, which is a run of no minutes."
+  ]
+}

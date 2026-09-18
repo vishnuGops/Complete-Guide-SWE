@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "zero-gravity",
+  "slug": "zero-gravity",
+  "title": "Sink The Zeroes",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["in-place", "mutated argument", "two pointers"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 5,
+  "mode": "function",
+  "entry": "sinkZeroes",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["even-odd-partition"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}
