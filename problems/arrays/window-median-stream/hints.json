@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The window changes by one reading in and one reading out. What would you need to keep so that the median is available without looking at the other k - 1 readings?",
+    "Split the window in two halves: the smaller readings and the larger ones. If you can always see the largest of the small half and the smallest of the large half, the median is one or two lookups.",
+    "Keep a max-heap of the smaller half and a min-heap of the larger half, sized so that they differ by at most one. Adding a reading is a push plus a rebalance.",
+    "Heaps cannot remove an arbitrary element, so do not try: record the departing reading as owed, fix the two sizes by hand, and drop owed readings only when they surface at the top of a heap."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Suppose a stretch from `left` to `right` covers the need. What do you learn about every stretch that ends further right and starts further left?",
+    "They all cover it too, so they are never shorter. That means once a stretch covers the need, the only useful move is to pull `left` forward.",
+    "Grow `right` until the stretch covers the need, then pull `left` forward while it still covers, recording the best stretch each time. Both ends only move forward, so the whole thing is one pass.",
+    "Track how many *distinct* needed letters are still short of their quota rather than re-checking the whole map: the count only changes when a letter's tally crosses exactly its quota."
+  ]
+}

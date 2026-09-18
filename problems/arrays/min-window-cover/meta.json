@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "min-window-cover",
+  "slug": "min-window-cover",
+  "title": "Shortest Covering Stretch",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["sliding window", "frequency map", "two pointers"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 13,
+  "mode": "function",
+  "entry": "shortestCover",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["longest-distinct-stretch", "window-average-peak"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

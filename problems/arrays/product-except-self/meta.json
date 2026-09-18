@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "product-except-self",
+  "slug": "product-except-self",
+  "title": "Everything But Me",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["prefix sum", "two passes", "in-place"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 11,
+  "mode": "function",
+  "entry": "productExceptSelf",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["balance-point", "running-maximum"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

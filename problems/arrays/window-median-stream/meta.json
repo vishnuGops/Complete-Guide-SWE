@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "window-median-stream",
+  "slug": "window-median-stream",
+  "title": "Median Of The Last K",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["sliding window", "two heaps"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 12,
+  "mode": "function",
+  "entry": "windowMedians",
+  "expect": "return",
+  "comparator": {
+    "kind": "floatTolerance",
+    "eps": 1e-06
+  },
+  "related": ["window-average-peak", "longest-distinct-stretch"],
+  "targetComplexity": {
+    "time": "O(n log k)",
+    "space": "O(k)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The product of everything except position `i` splits into two independent halves. What are they?",
+    "It is the product of everything to the left of `i` times the product of everything to its right. Neither half depends on `readings[i]`.",
+    "Sweep left to right storing the running product of everything before each position, then sweep right to left multiplying in the running product of everything after it.",
+    "Use the output list itself to hold the left-hand products during the first sweep; the second sweep only needs one extra variable."
+  ]
+}
