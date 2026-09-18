@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Language, ProblemDetail, RunResult } from '@devpromax/shared';
@@ -358,3 +358,185 @@ describe('live status propagation (P4-8)', () => {
     });
   });
 });
+
+/**
+ * Draft integrity (ROADMAP P4-11).
+ *
+ * Every test here is a way the audit found of losing work the editor claimed
+ * was saved. They are written against the round trip rather than against the
+ * request, because "the PUT was sent" was already true while the draft was
+ * being lost: what was wrong was what the app believed afterwards.
+ */
+describe('draft integrity', () => {
+  /** A drafts route that behaves like the real one: PUT echoes, DELETE clears. */
+  function draftRoute(): FakeRoute {
+    return {
+      match: (url) => url.pathname.startsWith('/api/drafts/'),
+      body: (url, init) => {
+        if (init?.method === 'DELETE') return { draft: null };
+        const code = (JSON.parse(String(init?.body ?? '{}')) as { code?: string }).code ?? '';
+        const language = url.pathname.split('/').pop() as Language;
+        return {
+          draft: { slug: SLUG, language, code, updatedAt: '2026-09-17T10:00:00.000Z' },
+        };
+      },
+    };
+  }
+
+  function serveWithDrafts(detail: ProblemDetail = aProblemDetail()) {
+    const server = serve(detail, [draftRoute()]);
+    return server;
+  }
+
+  it('survives switching language twice', async () => {
+    serveWithDrafts();
+    open();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'my python answer');
+
+    // Away and back. The editor is re-seeded from the cached problem each time,
+    // so before the write-through this restored the starter - and the next
+    // autosave wrote that starter over the real draft.
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+    expect(await screen.findByLabelText('Code')).toHaveValue('class Solution {}\n');
+
+    await user.click(screen.getByRole('button', { name: 'Python' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Code')).toHaveValue('my python answer');
+    });
+  });
+
+  it('flushes what was typed a moment before the language changed', async () => {
+    const server = serveWithDrafts();
+    open();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'typed and left');
+    // Immediately - well inside the 800 ms debounce, which used to be cleared
+    // without being flushed.
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+
+    await waitFor(() => {
+      const put = server.requests.find(
+        (request) => request.method === 'PUT' && request.url.pathname.endsWith('/python'),
+      );
+      expect(put).toBeDefined();
+    });
+  });
+
+  it('locks the other language while the judge is working', async () => {
+    // The switch itself is the fix: a run in flight belongs to the language
+    // that started it, and switching mid-run leaves the user in front of one
+    // editor waiting for the other one's verdict.
+    let release: (() => void) | undefined;
+    const held: FakeRoute = {
+      match: path('/api/run'),
+      body: () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              release = () => {
+                controller.enqueue(new TextEncoder().encode(JSON.stringify(aRunResult())));
+                controller.close();
+              };
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+    };
+
+    serve(aProblemDetail(), [held, draftRoute()]);
+    open();
+    const user = userEvent.setup();
+
+    await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Java' })).toBeDisabled();
+    });
+
+    release?.();
+
+    // Released, the verdict lands as usual and the switch is available again.
+    expect(await screen.findByText('Accepted')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Java' })).toBeEnabled();
+  });
+
+  it('drops a verdict that arrives after the user opened another problem', async () => {
+    const OTHER = 'shift-right-in-place';
+    let release: (() => void) | undefined;
+
+    const held: FakeRoute = {
+      match: path('/api/run'),
+      body: () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              release = () => {
+                controller.enqueue(new TextEncoder().encode(JSON.stringify(aRunResult())));
+                controller.close();
+              };
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+    };
+
+    const other = aProblemDetail({
+      summary: { ...aProblemDetail().summary, slug: OTHER, title: 'Shift Right In Place' },
+    });
+
+    serve(aProblemDetail(), [
+      held,
+      draftRoute(),
+      { match: path(`/api/problems/${OTHER}`), body: () => other },
+      { match: path(`/api/problems/${OTHER}/submissions`), body: () => ({ items: [] }) },
+    ]);
+
+    renderApp(
+      <>
+        <Elsewhere to={`/problems/${OTHER}`} />
+        <Routes>
+          <Route path="/problems/:slug" element={<Workspace />} />
+        </Routes>
+      </>,
+      { route: `/problems/${SLUG}` },
+    );
+
+    const user = userEvent.setup();
+    await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+
+    // The route changes without unmounting the workspace - same component, new
+    // slug - and then the first problem's verdict arrives.
+    await user.click(screen.getByRole('button', { name: 'open the other problem' }));
+    await screen.findByRole('heading', { name: 'Shift Right In Place' });
+    release?.();
+
+    // It is not shown: a verdict about code that is no longer on screen would
+    // be read as a verdict about the code that is (P4-11).
+    await waitFor(() => {
+      expect(screen.queryByText('Accepted')).not.toBeInTheDocument();
+    });
+  });
+});
+
+/** A link out of the workspace, for the stale-result test. */
+function Elsewhere({ to }: { to: string }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => {
+        void navigate(to);
+      }}
+    >
+      open the other problem
+    </button>
+  );
+}

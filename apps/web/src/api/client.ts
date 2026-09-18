@@ -142,6 +142,28 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ code }),
     }),
+  /**
+   * The same save, for a page that is going away (ROADMAP P4-11).
+   *
+   * `keepalive` is what lets the request outlive the document: a normal fetch
+   * started from a `pagehide` handler is cancelled along with the page, which
+   * is exactly the moment the last few hundred milliseconds of typing needed to
+   * be written. Errors are swallowed on purpose - there is nothing left to show
+   * one to, and the alternative is an unhandled rejection on the way out.
+   */
+  saveDraftKeepalive: async (slug: string, language: Language, code: string): Promise<void> => {
+    try {
+      await fetch(`/api/drafts/${encodeURIComponent(slug)}/${language}`, {
+        method: 'PUT',
+        credentials: 'omit',
+        keepalive: true,
+        headers: { [CLIENT_HEADER]: CLIENT_NAME, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+    } catch {
+      // The page is unloading; there is no one to tell.
+    }
+  },
   /** Reset-to-starter: deleting the draft is what makes the reset survive a reload. */
   deleteDraft: (slug: string, language: Language): Promise<DraftResponse> =>
     request(`/api/drafts/${encodeURIComponent(slug)}/${language}`, { method: 'DELETE' }),

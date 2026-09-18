@@ -2,6 +2,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
   type UseMutationResult,
 } from '@tanstack/react-query';
 import type {
@@ -130,19 +131,46 @@ export function useResetProgress(): UseMutationResult<ResetProgressResponse, Err
 }
 
 /**
- * Autosaving the editor.
+ * Writes a draft the server has confirmed into the cached problem.
  *
- * Deliberately invalidates nothing. A draft changes no status and no counts
- * (D11), and refetching the problem after every keystroke's worth of debounce
- * would replace the code the user is typing with the code they had a second ago.
+ * The bug this exists for (ROADMAP P4-11): the workspace seeds the editor from
+ * `problem.drafts[language]`, and the cached problem was whatever the page
+ * loaded with. So Java, then Python, then back to Java restored the *starter*
+ * over ten minutes of typing - and the next autosave wrote that starter over
+ * the real draft on disk. The save was working perfectly; the cache had never
+ * been told.
+ *
+ * A write-through rather than an invalidation, deliberately. D11 says a draft
+ * moves nothing, and refetching the problem after every keystroke's worth of
+ * debounce would replace the code being typed with the code from a second ago.
  */
+function writeDraftThrough(
+  queryClient: QueryClient,
+  slug: string,
+  language: Language,
+  draft: DraftResponse['draft'],
+): void {
+  queryClient.setQueryData<ProblemDetail>(keys.problem(slug), (previous) => {
+    if (!previous) return previous;
+    const drafts = { ...previous.drafts };
+    if (draft === null) delete drafts[language];
+    else drafts[language] = draft;
+    return { ...previous, drafts };
+  });
+}
+
+/** Autosaving the editor. Invalidates nothing; see `writeDraftThrough`. */
 export function useSaveDraft(): UseMutationResult<
   DraftResponse,
   Error,
   { slug: string; language: Language; code: string }
 > {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ slug, language, code }) => api.saveDraft(slug, language, code),
+    onSuccess: (result, { slug, language }) => {
+      writeDraftThrough(queryClient, slug, language, result.draft);
+    },
   });
 }
 
@@ -154,8 +182,11 @@ export function useDeleteDraft(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ slug, language }) => api.deleteDraft(slug, language),
-    onSuccess: (_result, { slug }) => {
-      void queryClient.invalidateQueries({ queryKey: keys.problem(slug) });
+    // Reset-to-starter removes one language's draft and nothing else, so the
+    // same write-through applies: an invalidation here would refetch the whole
+    // problem to learn one thing the response already said.
+    onSuccess: (_result, { slug, language }) => {
+      writeDraftThrough(queryClient, slug, language, null);
     },
   });
 }

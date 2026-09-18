@@ -204,3 +204,56 @@ test.describe('the golden path', () => {
     await expect(page.getByTestId('problem-status')).toHaveText('Solved in Python');
   });
 });
+
+/**
+ * Drafts, through two language switches and a reload (ROADMAP P4-11).
+ *
+ * The defect this covers was invisible to every other test: the PUT was always
+ * sent, so "the draft was saved" was true - what was wrong was what the app
+ * believed afterwards. Java → Python → Java restored the starter over ten
+ * minutes of typing, and the next autosave wrote that starter over the real
+ * draft. Only a round trip through two switches and a reload can tell.
+ *
+ * Its own problem, so it cannot disturb the golden path, and it never submits -
+ * this test writes drafts and nothing else.
+ */
+test.describe('drafts', () => {
+  const PROBLEM = { slug: 'sequence-run-length', title: 'Longest Consecutive Run' };
+
+  const PYTHON_MARK = '# python draft P4-11';
+  const JAVA_MARK = '// java draft P4-11';
+
+  test('survive switching language twice and reloading', async ({ page }) => {
+    await page.goto(`/problems/${PROBLEM.slug}`);
+    await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
+
+    // Python first.
+    await setEditorContents(page, `${PYTHON_MARK}\nclass Solution:\n    pass\n`);
+    await page.getByRole('button', { name: 'Java' }).click();
+
+    // Java second, typed immediately after the switch - so the Python flush and
+    // this edit are both in flight within the debounce window.
+    await setEditorContents(page, `${JAVA_MARK}\nclass Solution {}\n`);
+    await page.getByRole('button', { name: 'Python' }).click();
+
+    await expect(page.locator('[data-testid="editor"]')).toContainText(PYTHON_MARK);
+
+    // And after a reload, which is the only way to prove the server has them
+    // rather than the page.
+    await page.reload();
+    await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
+    await expect(page.locator('[data-testid="editor"]')).toContainText(PYTHON_MARK);
+
+    await page.getByRole('button', { name: 'Java' }).click();
+    await expect(page.locator('[data-testid="editor"]')).toContainText(JAVA_MARK);
+
+    // Left as the reference solutions, so a later run of this suite starts from
+    // something sane rather than from these two stubs.
+    await page.request.delete(`/api/drafts/${PROBLEM.slug}/java`, {
+      headers: { 'X-DevProMax-Client': 'devpromax-web' },
+    });
+    await page.request.delete(`/api/drafts/${PROBLEM.slug}/python`, {
+      headers: { 'X-DevProMax-Client': 'devpromax-web' },
+    });
+  });
+});

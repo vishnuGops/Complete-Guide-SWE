@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   LANGUAGES,
@@ -15,6 +15,7 @@ import {
   type ProgressStatus,
   type RunResult,
 } from '@devpromax/shared';
+import { api } from '../../api/client.js';
 import {
   useDeleteDraft,
   useJudge,
@@ -169,11 +170,27 @@ export function Workspace() {
   const [loadedFrom, setLoadedFrom] = useState(source);
   /** What the server already has: the draft it sent, or the starter when none. */
   const [persisted, setPersisted] = useState('');
+  /**
+   * What was on screen last time each language was, this visit.
+   *
+   * The saved draft is the source of truth across visits, but there is a window
+   * in which it is not the freshest thing anyone knows: switching language
+   * flushes the draft and switching straight back re-seeds the editor before
+   * that PUT has answered, which showed the *starter* over code typed a second
+   * earlier (found by the P4-11 end-to-end test). Nothing was lost - the save
+   * was in flight - but the user was looking at the wrong code, and typing on
+   * top of it is how that becomes lost.
+   */
+  const [buffers, setBuffers] = useState<Record<string, string>>({});
   if (problem && loadedFrom !== source) {
-    const starting = problem.drafts[language]?.code ?? problem.starters[language];
+    const saved = problem.drafts[language]?.code ?? problem.starters[language];
+    const starting = buffers[source] ?? saved;
+    // Recorded on the way out, not on every keystroke: one entry per switch,
+    // and the outgoing code is exactly what `code` still holds here.
+    setBuffers({ ...buffers, [loadedFrom]: code });
     setLoadedFrom(source);
     setCode(starting);
-    setPersisted(starting);
+    setPersisted(saved);
     setResult(null);
     setCustomInputs([]);
     setTab('testcases');
@@ -182,25 +199,96 @@ export function Workspace() {
   }
 
   /**
-   * Autosave, debounced.
+   * Autosave, debounced - and flushed rather than dropped.
    *
    * `persisted` is what the server already has, so reverting an edit by hand
    * does not queue a write of a value that is already stored. `mutate` is stable
    * across renders, which is what stops this timer from being cleared and
    * restarted on every render and therefore never firing.
+   *
+   * Three effects rather than one, and the split is the whole point (ROADMAP
+   * P4-11):
+   *
+   *   1. `pending` records what is unsaved. In a ref, because the flush must
+   *      not be a reason to re-run anything.
+   *   2. The debounce. Its cleanup only clears the timer - a cleanup that also
+   *      flushed would write on every keystroke, which is the opposite of a
+   *      debounce.
+   *   3. The flush, keyed on the problem and language. Its cleanup is the only
+   *      one that means "we are leaving", and it runs on exactly the three
+   *      things most likely to happen right after typing: pressing Back,
+   *      clicking the other language, and changing problem. Before this, the
+   *      last 800 ms of typing was dropped by all three.
+   *
+   * `persisted` moves in `onSuccess` and not before the request: marking it
+   * saved optimistically meant a failed PUT was never retried and never
+   * noticed - the draft was gone and the editor claimed otherwise.
    */
   const save = saveDraft.mutate;
   const ready = problem !== undefined;
+
+  const pending = useRef<{ slug: string; language: Language; code: string } | null>(null);
+  useEffect(() => {
+    pending.current = code === persisted ? null : { slug, language, code };
+  }, [code, persisted, slug, language]);
+
+  /** Which problem and language the editor is showing *now*, for the flush. */
+  const showing = useRef({ slug, language });
+  useEffect(() => {
+    showing.current = { slug, language };
+  }, [slug, language]);
+
+  const flush = useCallback(() => {
+    const next = pending.current;
+    if (next === null) return;
+    pending.current = null;
+    save(next, {
+      onSuccess: () => {
+        // Only if the editor still holds the code that was saved. A flush on
+        // the way out resolves after the next language is on screen, and
+        // marking *that* code persisted would hide its first edit.
+        if (showing.current.slug === next.slug && showing.current.language === next.language) {
+          setPersisted(next.code);
+        }
+      },
+    });
+  }, [save]);
+
   useEffect(() => {
     if (!ready || code === persisted) return;
-    const timer = setTimeout(() => {
-      setPersisted(code);
-      save({ slug, language, code });
-    }, AUTOSAVE_MS);
+    const timer = setTimeout(flush, AUTOSAVE_MS);
     return () => {
       clearTimeout(timer);
     };
-  }, [code, persisted, ready, slug, language, save]);
+  }, [code, persisted, ready, flush]);
+
+  useEffect(
+    () => () => {
+      flush();
+    },
+    [slug, language, flush],
+  );
+
+  /**
+   * The tab closing, which no React cleanup sees.
+   *
+   * `pagehide` fires on close, reload and navigating away, including into the
+   * back-forward cache where `beforeunload` does not. The request has to
+   * outlive the page, which is what `keepalive` is for - a normal `fetch` from
+   * a page being torn down is cancelled with it.
+   */
+  useEffect(() => {
+    const onPageHide = (): void => {
+      const next = pending.current;
+      if (next === null) return;
+      pending.current = null;
+      void api.saveDraftKeepalive(next.slug, next.language, next.code);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, []);
 
   const shape = useMemo(
     () => (problem ? customTestShapeFrom(problem.summary.mode, problem.samples) : null),
@@ -231,7 +319,14 @@ export function Workspace() {
           : {}),
       },
       {
-        onSuccess: (next) => {
+        onSuccess: (next, variables) => {
+          // A Java submit that resolves after the user switched to Python was
+          // landing its verdict, its tab switch and its mastery nudge on the
+          // Python screen - advice about code no longer on display (P4-11).
+          // The result is still cached by the mutation; it is only refused the
+          // screen it no longer belongs to.
+          if (variables.slug !== slug || variables.language !== language) return;
+
           setResult(next);
           setTab('results');
           if (layout.panelCollapsed) setLayout({ panelCollapsed: false });
@@ -320,6 +415,9 @@ export function Workspace() {
 
   const resetToStarter = () => {
     const starter = problem.starters[language];
+    // Dropped before the DELETE, not after: a pending autosave that landed
+    // second would restore the draft this is deleting (P4-11).
+    pending.current = null;
     setCode(starter);
     setPersisted(starter);
     deleteDraft.mutate({ slug, language });
@@ -502,6 +600,13 @@ export function Workspace() {
               size="sm"
               variant={language === option ? 'secondary' : 'ghost'}
               aria-pressed={language === option}
+              /*
+                Locked while the judge is working (P4-11). The run in flight is
+                for the language that started it, and a switch mid-run puts the
+                user in front of one language's editor waiting for the other
+                language's verdict.
+              */
+              disabled={busy && language !== option}
               onClick={() => {
                 setChosen(option);
                 updateSettings.mutate({ lastLanguage: option });
