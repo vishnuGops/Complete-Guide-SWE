@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "How can a route have arrived at a given cell? There are only two possibilities, as in `grid-paths`.",
+    "From above or from the left - so the cheapest arrival here is this cell's toll plus the cheaper of those two.",
+    "Fill the grid top to bottom and left to right, so both are known when a cell is reached.",
+    "The first row and first column have only one way in each; treating a missing neighbour as infinitely expensive makes them fall out without a special case."
+  ]
+}

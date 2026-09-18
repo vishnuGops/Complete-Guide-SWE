@@ -1,0 +1,89 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "three letters shared",
+      "args": ["abcde","ace"],
+      "expected": 3,
+      "explanation": "`ace` is a reading of both."
+    },
+    {
+      "name": "identical words",
+      "args": ["abc","abc"],
+      "expected": 3,
+      "explanation": "The whole word is shared."
+    },
+    {
+      "name": "nothing shared",
+      "args": ["abc","def"],
+      "expected": 0,
+      "explanation": "No letter appears in both."
+    }
+  ],
+  "hidden": [
+    {"name":"one letter, shared","args":["a","a"],"expected":1},
+    {"name":"one letter, not shared","args":["a","b"],"expected":0},
+    {"name":"the same letters, reversed","args":["abc","cba"],"expected":1},
+    {"name":"one letter repeated","args":["aaaa","aa"],"expected":2},
+    {"args":["bbbb","baaaaa"],"expected":1},
+    {"args":["aaab","aabab"],"expected":4},
+    {"args":["bcacaccccb","abababca"],"expected":4},
+    {"args":["ccbccbaba","caabbacb"],"expected":5},
+    {"args":["bcdadebdaacaebcadcbeddddbaaead","eeabedabcdaebddaaddbbcbda"],"expected":14},
+    {"args":["cebcaeaebccaebcabaebceedbea","cbeecdebabcbceeecedcdbea"],"expected":17},
+    {
+      "args": [
+        "irkwmgzfsrhaafuegyksugaxcrnopsnakunsomtogzliesscbtrbdnooilwv",
+        "rwuzvyugfiuhefxyhffmyfyyomgsvpvlvbtirdutckepnepalacinljyzhml"
+      ],
+      "expected": 18
+    },
+    {
+      "args": [
+        "mhjukjamcuaicsuytrwsskgniljtvdmayfchnzvoqfpjqipklroxwpjotnej",
+        "hbufuwkcussyxyytxopgewspsmkqgnmtmaqyrsbhvqewvxjikrxkwjtkpyhn"
+      ],
+      "expected": 30
+    },
+    {
+      "name": "two long runs of one letter",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "expected": 200
+    },
+    {
+      "name": "four hundred over two letters",
+      "args": [
+        "bbbbaabaaabbbbbaabbbbaaaabbbbbbaabbbbabbbbabbbabbababbaaaaabbabbbababbbbaaabbbbbbbbbaabaaaaaaaabaabbbabbababbbbbbabbaabbaabaaaabaaabbbbabaababbaabaaaaaabaaaabbabaabbabbbaababaaabaaaabbaaaaabaaababaaaabbbbbababbbbbabbbbbabababaaaabbbbaaaababababbbbabbbabaabababaabaaababbaabaaaababaaaaaaaaaabbbabbaaabbabaaababbabaaaaabbbabbabaabbbbaabbbbaabaaaabbabbbabababababbbbbabbaababbbaabaaaabaabaabaabababaabaa",
+        "bbaaabaaaaabbbabbbaaaaabbbbbbbabaaaabbbbaabbabbaabaaaabbaaaaabaababaaaabbbbaaabababbabbbabbbabaaaaababbaaabaaaabbbbbaaaaabbabbbaaaaababaaaaaabbbbaaaaaaaabbbbbbaaababbaabbbbabbbbbaaaabbbabaabaabbabaababaaabaabbaabbabaabbabaaaabaaabbaaaaaababbaaaabbabbabbaabbababbabbaaabbaabaaaabababbabaabbbbabababaaabbabbbabaabbabbaabababbaabbbaaabaabbbbaaaabaaaababbabababbbaaaaaabaababbaaabaabaaabaababbaabbbbbbabb"
+      ],
+      "expected": 313
+    },
+    {
+      "name": "the stated maxima over the full alphabet",
+      "args": [
+        "xqvsrffxndznaxetryicdnftfuricutrrgfyoptqswxwrunrcblzkdxqkthuomeayaifaqcfhqbsxvfrhopdowsrqqxsvoquabtojppmmjutebgbvdrfnwtdmrwifnnargkmosuqccgtwlwscrehzbkxbanvdxxjjznplfovigzskzjgccwqcldhewrehabrbkubkirgnhuseernbxjodrjjuwkyyhanxmavvgpbxhogmmlurcnioqsqroxmdcekdzbaxildhsldtcxpylbraiteqqzmvrelgdbpwxhyyftyonitymehkuvdiubgjedzpfywdddztqnmejsajwqdivlrhsouxndycgubnmughxngchiaamliusrzgztkfhjbzmljhfcwmarmontkiciaiufeyminjoxmefordrnycsjvvkoujqblkqiryndicvfzdqmxoapiyizfgxekhqoxizfdmajzmosittpqgpjqlxcxheefrnnyoszanqxatfzwbrnlrwyuycnqqjavdmfjbitfcoalorekahyoinjiqjjxzhqtkhlnqttaxgahvcmtmbcvvvdecejkxyrzolgsrhfgujrfnpvmkmjmjzmecpmicnivbbkrinjinxtbushsusxhlvpqvspwuansjxrvspokuefsolaltkubwbbppulfhuenlwhcdatpkyaicbzcbcsjbqbrqhbzgaffgfngrvfvgovzfafetotlcenkbbhxaauulyuingewwqyubfdlvihskexqrsfimcboosgesddvplajjqcwsdrtdgywzzofjxjtikcgfanbeltctbnqreockuxzlcqurgdldlpptxozuboewmyqhginewokiwofoqhxampzuijhaahurvsfmsczyqkcnozlpaixvskftncjhkyaofvzngthsvrscjvubkhltdvshrxmwxmmmdvbyyjtiiqocvsaewgrafzjhfoaeshdcngcjfzalzlq",
+        "kvxfekufmtxscplxviaulclgjlyfiiqzoyicawxwngsryrgishgvwfwvxnmrcivpheyzktxhexdprtkjuosmfkcnlckmouwpwdtqnnzhbaattbysqedemtdyopscwrxnlaknenhakuvcdtpjemdjwcrqhayhuhgsdrxtibhxdnsqpfpmosggnoaxzholvsfkihqixmqpqiwlreakmpwnkwqiqxgamzmtiecyzralibsereognaxzrzttktywvplrbsscqkbcrbfiarnfmqgmsjyuizhbnwuulktsyvszwjyelpyvdrnqycnxwxptxbfpxdzuhdjchzvkexypbjxxdrrbygrjbpfxmzxysllrjbqsvypcthfpvwxprxfneljcsljujwzeyqqcutvstvmklowidoreijgmnutumlfsgracocrmkfrusawuikmciqedoayfwtchplaqsgtxwybidxcyxbegfuatmfhhyjdvyojupzchwxcydmffljkstfdzterzmlbsobcqknnlbweghcayxtfmvnkwaegcrveeyrwrvpckucdfuwwgmrofaukmhdbcbdmtivdgixeiyigpeyahfcmrgtvddxihrahifbfvehsgpvkvrkqmwbtcflirjhhjzfernhfwqmlkfoasssaqgvysahswemrfcxkqgiiekpqlycpontffxgfzxrarszvijsserdkseawhhyxuuewjmyrfrpswhozjwuqxtwkzzzsywoxepvtpzgjzjzpxkviyagnyvrnfibuyluffdnsiljxdayunmjmlxbbuikqbykmjyucfxefprhwafmunxtpnevdbvfywaukmlokxftzettjkdirjmojgtipqnmcoxocmcmpmdeiohmkgsrmegzpljzqihjdmhicigwlfartbggtmfkewnjxgxiindmstknzclnsoptmsjfqhwxsmivkxcyehklcxokemyjjpsllrljtpbnvpwinouueg"
+      ],
+      "expected": 313
+    },
+    {
+      "name": "the stated maxima over three letters",
+      "args": [
+        "ccbbababcccbaababcabaacccbacaababbacabcaaabbcbbbbabbbaabababbccbaabbacbaaacbbccccaaaabaababccccabbaaabccaccacaccacbaabbacaacbacabcccaaabbccacabbbbcbaaabbbaaaacaaccbcaccccbaaaaaaabaacbabbcacaaabaaaaaacabcccbbbcbccaabbabbaaacbbbbbabcabcccabbcccbcccbbacbccbaacaacbccbaccbbcaacbbccbabbaaabccbccbaaaaaccaaaccbbabcbbccccbcbccbbaacccbcbcccbccbbbaababccbcacccaaacccabbaabaabcaccbabcaabaacacababbcbabbccaaaccbbccbbababcacbbccaccbcccaacaccaaabcabbccaababcbaabaccaccacaaaacaacacccabbcacbcbabbbbbbbcbacbbbabacbcaaaacaaaaacacabcacccbacccaabaaaccaccbbccbbccabbbacbcbcccabcccbcbabcbcbcccbacababcbccaabccbacabbbabababcbbbabaacaaaabcccbccaaaabbaaccbbbccbabbbbaababccacabacacaacacbbbbccacaaabaacccbcbbbbaacaaabaaacaaccaabbbbaaacabbabccaababbabccbaaaccaabaacabacbabcbcccbabaacabcabaaacacacbaabbcababccabbcbabbbccaacacacabbcacbcacaacbaccccccbacccabcabaacbbbcccbbbcabaabcabababcbbcbbbabcaabccbbbcbacbccaabaaaaaaabbbabcbbbabaccabbbacacbbbaaacbbaccbaaaacacacabbccaccbcbacbbabccacbbccbbcbccbbabbccbccabbbbbabccaacbbabaabbaba",
+        "cacbaaacaacacabbbcacaabaaabcabccaccbbabcbcbbbbacbbbaabbcbbabcaccbabacabbabcbaaabcbcacabaacbacaccbabbaacccbabaccbcccbabaabaccbaccaabcccbaabcabbabbbacccabbcbbbabcabcbaabbcbababaabaccbbacacbbcccccaabccbbcccacabcbabbabcabcacacbabaabcbbbaaaabacaabbacacbcbcaabccbbaaaaacabcabbbcacacacbbcabcacbcabbbaaabaccabcbbbcbbaabaccababccbbbacbbabacaabcabacbaacacbbabccabbbbbabccabacbbaabbaccacbabaaccaacaacbaccacccbabbccbaababbabcabcbbcacacbaababacaabaaabccbacacacbacaaccbbcacccaacbbccccbaababcacccacaababacccbbabcbcbabbacabaacabacbababcabbabcbacbbbabaaababcaccbbbaaaccbcacbbaccbcccaccccabacabbccbcacaabbaaaacccbcbbaacbcbccbaccbcccbcabbbaaabccaccbcaccaaacccacacbbaccabaacbabaabbabcbaaaacaacacbccbabcbaacbcbbbbcbcaccaacccbbaaacabababacaacbcccaacbbbbbabcbbbbacbcabaabcbcbaacabbcbbaaabacacabcaaacbbabbcaccabcbaccbccbcbcbbbbbbaccabcabcaaaabbcbcaaaacacaacccbcbaababcabbbbbcbabcbcabbbbbbbcabbbcacbbbcbbabbcabbcbcabbcabbabaacaacabaaaabacaacbbcbccbabcaabcbcabcbabaccccbccaaabcbccbbcaaaabccaabbbcccbccccacbccbabacaabccccabccbb"
+      ],
+      "expected": 707
+    },
+    {
+      "name": "the stated maxima, identical",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "expected": 1000
+    }
+  ]
+}

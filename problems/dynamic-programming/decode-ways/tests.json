@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"three readings","args":["226"],"expected":3,"explanation":"2 2 6, 2 26 and 22 6."},
+    {"name":"a leading zero","args":["06"],"expected":0,"explanation":"Nothing can be read."},
+    {
+      "name": "a zero that must pair up",
+      "args": ["10"],
+      "expected": 1,
+      "explanation": "The 0 cannot stand alone, so 10 is read as one letter."
+    }
+  ],
+  "hidden": [
+    {"name":"a single zero","args":["0"],"expected":0},
+    {"name":"a single digit","args":["1"],"expected":1},
+    {"name":"the other zero that can pair up","args":["20"],"expected":1},
+    {"name":"a zero that cannot pair up","args":["30"],"expected":0},
+    {"name":"zeroes in the middle","args":["2101"],"expected":1},
+    {"name":"a pair that is too large","args":["27"],"expected":1},
+    {"name":"two zeroes in a row","args":["100"],"expected":0},
+    {"args":["111"],"expected":3},
+    {"args":["026660"],"expected":0},
+    {"args":["000162"],"expected":0},
+    {"args":["693799828195"],"expected":2},
+    {"args":["948173498424"],"expected":4},
+    {"args":["69036793539266032967"],"expected":0},
+    {"args":["25061626868749911060"],"expected":0},
+    {"args":["122112122122112122111112211222"],"expected":1346269},
+    {"args":["121221122112211122122122112221"],"expected":1346269},
+    {"name":"twenty ones","args":["11111111111111111111"],"expected":10946},
+    {
+      "name": "the stated maximum, all ones - the largest possible count",
+      "args": ["111111111111111111111111111111111111111111111"],
+      "expected": 1836311903
+    },
+    {
+      "name": "the stated maximum",
+      "args": ["336003702486247527620732487668604524435986635"],
+      "expected": 0
+    },
+    {
+      "name": "the stated maximum, alternating",
+      "args": ["121212121212121212121212121212121212121212121"],
+      "expected": 1836311903
+    }
+  ]
+}

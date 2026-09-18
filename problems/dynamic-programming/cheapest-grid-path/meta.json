@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "cheapest-grid-path",
+  "slug": "cheapest-grid-path",
+  "title": "Cheapest Way Across",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["dp on grids", "two-dimensional dp"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 7,
+  "mode": "function",
+  "entry": "cheapestAcross",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["grid-paths", "cheapest-route"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(columns)"
+  }
+}

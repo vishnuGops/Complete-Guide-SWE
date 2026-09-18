@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "longest-rising-run",
+  "slug": "longest-rising-run",
+  "title": "Longest Rising Run",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["longest increasing subsequence", "binary search"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 4,
+  "mode": "function",
+  "entry": "longestRising",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["insert-position", "house-robber"],
+  "targetComplexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  }
+}

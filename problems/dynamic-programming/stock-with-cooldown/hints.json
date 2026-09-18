@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "At the end of any given day you are in one of a small number of situations. What are they?",
+    "Holding an item, having just sold today, or free to buy. Three states, and the cooldown is exactly what separates the last two.",
+    "Write the best profit achievable in each state at the end of each day, in terms of the three values from the day before.",
+    "Holding comes from holding, or from being free and buying today. Just-sold comes only from holding and selling today. Free comes from being free, or from having sold *yesterday*."
+  ]
+}

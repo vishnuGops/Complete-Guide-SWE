@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "stock-with-cooldown",
+  "slug": "stock-with-cooldown",
+  "title": "Trades With A Cooldown",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["state machine", "one-dimensional dp"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 14,
+  "mode": "function",
+  "entry": "bestProfit",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["best-single-trade", "house-robber"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

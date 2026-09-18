@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Compare the two words from their ends. If the last letters are equal, what does that cost?",
+    "Nothing: keep them both and solve the rest. If they differ, one edit has to be spent, and there are exactly three ways to spend it.",
+    "Delete the first word's last letter, insert the second word's last letter, or replace one with the other - each leaves a smaller pair of prefixes to solve.",
+    "So it is a table over pairs of prefixes, and the base row and column are not zeroes: turning a word into nothing costs one deletion per letter."
+  ]
+}

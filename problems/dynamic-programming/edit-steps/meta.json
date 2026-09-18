@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "edit-steps",
+  "slug": "edit-steps",
+  "title": "Fewest Edits",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["edit distance", "two-dimensional dp"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 9,
+  "mode": "function",
+  "entry": "fewestEdits",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["shared-subsequence", "word-break-possible"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 m)",
+    "space": "O(min(n, m))"
+  }
+}

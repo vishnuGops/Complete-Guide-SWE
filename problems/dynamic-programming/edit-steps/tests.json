@@ -1,0 +1,92 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "three edits",
+      "args": ["horse","ros"],
+      "expected": 3,
+      "explanation": "One replacement and two deletions."
+    },
+    {"name":"already equal","args":["abc","abc"],"expected":0,"explanation":"Nothing to change."},
+    {
+      "name": "from nothing",
+      "args": ["","abc"],
+      "expected": 3,
+      "explanation": "Each letter has to be inserted."
+    }
+  ],
+  "hidden": [
+    {"name":"both empty","args":["",""],"expected":0},
+    {"name":"into nothing","args":["abc",""],"expected":3},
+    {"name":"one replacement","args":["a","b"],"expected":1},
+    {"name":"the classic pair","args":["intention","execution"],"expected":5},
+    {"args":["ababb","abbabab"],"expected":2},
+    {"args":["ababb","bbbba"],"expected":3},
+    {"args":["bbbaccacaaba","babccacaabaa"],"expected":3},
+    {"args":["bbbaccacaaba","babaabbaaaba"],"expected":5},
+    {"args":["ccdddcdaeedecebeaddbbaebccecbb","ccddcdaedeccbeaaddebbaeaccdecbb"],"expected":7},
+    {"args":["ccdddcdaeedecebeaddbbaebccecbb","cacaeeaccdaabecebacddaababeada"],"expected":19},
+    {
+      "args": [
+        "rtoajjxjoejahgjfcrmhapbbxfzkyvaufmqllertmhzvecpczkrskxpimrie",
+        "rzmoajjoehtfcrmwhapbboxzkyvafknllertmhvvecpzkrsgxpimrie"
+      ],
+      "expected": 17
+    },
+    {
+      "args": [
+        "rtoajjxjoejahgjfcrmhapbbxfzkyvaufmqllertmhzvecpczkrskxpimrie",
+        "ewoenmescqiakgeihtkdvedqcfaiwluzjxiplaxtpijitmarqzefzgtsqqju"
+      ],
+      "expected": 54
+    },
+    {
+      "name": "a hundred replacements",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "expected": 100
+    },
+    {
+      "name": "fifty deletions",
+      "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "expected": 50
+    },
+    {
+      "name": "the stated maxima, eighty edits apart",
+      "args": [
+        "uoxpnptsdyigjnxjswzlnqgtugxktunwebrrlvzlaqybikwjxvuonjsypcrhjieddcuuvznjxgzmrgfuksbtycitkwpawdgylakhwqpmmkidhoiygqixklaycclvlygfjkrxywzhjdwtxahcfavsvdhfrzjqckskkxlrevdmdvjflwxkwtjflxxjxrdjmkuvfosmysqiwbhaqxgsepfkahftkyzdktiekgtpmtooxfrsskhirbpnkjlklyvmwiaifthtwqibytsjqtdqvtvtjwftjodrnspyhnmornkbpyqsglztutpvfbczvfmawxtfjvnjqrrwzfngyysppuvgulsrhgvgrsrhmhzsltazwrdqynxfgmltiuwnrltiwkttidhfoapcdcyrmaduvwrcqpuwbjmehqjxofesrbfssumgalwtfolcmwgazznvvdwsoafthcolqkaekudbytgzmqcktmivhhefqejythldtdvlzveyqnhy",
+        "uoqqpnptsdyigjnxjxswzlnqgtugxoktunwerrlvzlaqybikwjxvuonjsypcrhjieddcuuzgjxgzmrgfuksbtycitkwpawpdgylakhwqpmkkidhoiyguqixklaycfvcycgjrxywzhdwetxahfarvsvdhrzjqckskkxlrvdmdvjflwxkwmjflxxjxrdjmkuvfosmysqiwbhqcxgsepfkavftxyzdktiekghpmtooxfgsskhirbpnklknlnvewiaidfthtwqibytsjqtdqvtvttjwftjoeydrnxvpyhnornkbpyqsggztutpvfbcevfjmawwxtfjvnjrwhzfnwgyspuugulsrhgvgnsrhmhzstltzwrdqynxfgmltiuwnrltiwkttidhfolypcdcyrmaduvwtrcqpuwjmehqjxofesrbfssumgalwtfolcvmbgazzznvvdwloafthscolqkaemudbytgnmqcktmvfhyhefqejythldtdvlzdeyqnhgy"
+      ],
+      "expected": 70
+    },
+    {
+      "name": "the stated maxima, unrelated",
+      "args": [
+        "uoxpnptsdyigjnxjswzlnqgtugxktunwebrrlvzlaqybikwjxvuonjsypcrhjieddcuuvznjxgzmrgfuksbtycitkwpawdgylakhwqpmmkidhoiygqixklaycclvlygfjkrxywzhjdwtxahcfavsvdhfrzjqckskkxlrevdmdvjflwxkwtjflxxjxrdjmkuvfosmysqiwbhaqxgsepfkahftkyzdktiekgtpmtooxfrsskhirbpnkjlklyvmwiaifthtwqibytsjqtdqvtvtjwftjodrnspyhnmornkbpyqsglztutpvfbczvfmawxtfjvnjqrrwzfngyysppuvgulsrhgvgrsrhmhzsltazwrdqynxfgmltiuwnrltiwkttidhfoapcdcyrmaduvwrcqpuwbjmehqjxofesrbfssumgalwtfolcmwgazznvvdwsoafthcolqkaekudbytgzmqcktmivhhefqejythldtdvlzveyqnhy",
+        "jqqvaqnitvmashzllhnivssbidztpvaflilfqaqnqgxqxliuhbamxsvynubhaqvylelkfezomqqmcdpswpnboarugkgnfqvwxwjfvibawauyfkiirjmbscuobqxcrynodzwtqpvenraqjgsuqmqxdyiylkovnagptbazdshifmnyzmftiiqhmajloxgczyupzsfedjokyvygxljhtkwuksyupgritdevjkwmvjzghevhaixytghvjeduhgcnoifjpfkpjxafapoifbpbzksohthibrnoxrbnrnwjfaqtoyvqnjdmjxvbneizftfqycpxtkvbomcirafraztqqqhcwcsfeucmxgzaikslqaxbzycfbbqelzaggesocqeuthhvxtgebdptwotojfjtxuzawgpdrndfzdbvpzftmlzhlwkpbdmaprcvqudywbsriwwteyibaasputbxsmqqjldegctuenenkxstwuixjzcuwsmzblsuegej"
+      ],
+      "expected": 449
+    },
+    {
+      "name": "the stated maxima over two letters",
+      "args": [
+        "bbababbbabbbaaabbababbaabaabbabbaaaaabbbbaaabbbbbaabaabbabaababababbababbabbbabbabbaaabaaaaaababbbaabbabbabbaabbaabaabbbaabbabbabbaaaaabbaaaabbaaabbabaaababbbabaabbbbabbbbbbbbbaabbaaabaabbbbbabbbabaabbabaaaabbaaabaaaaabbbaabbbbbbaaabbabbbbabbbbbbbabbbabaaaaabbbbbbbbabababaaabaaaaaabbaabaaababbababaababbbbbbaaaabbbbabbabaaaabaabbbabaabbbbbabbababaaaaaaaaabbbbaaabbbbabbbbaaabaabbbbabaabbbaababbabbbbbababbbababaababaabaabbaaabbaaaababababaaaaaabbabbbbaaabbbbbbaaaababaaaaaaababbaaabbababababbbaabbab",
+        "aaaabbaabaabaabbaaaaaaababbbbbbababaaabbababaaababaababaaababaaaaaabaaabbabaabbbabbbbbaababaaaaaabaabbbbbbaababababbababbabaabbaaaaabbaabaaababbabbabbababaaababbabaaaaababbbbbbbbbababbababbbbaababbbabaaaaabaaabaabbaaabababbbaabbbababaaababbbabbaaaaaaaaaabbbaaaabbbbbabbaababaaaaaabbbbbababbaabaabbababbbbbabaaabababaabbabbbababbabababababbbbaabbabbabbaaababababbabbbbabaaabababaaabbabbbbabababbbaaabbbababbaababbbbbabbabbaaabababaabaabaaaabaabbaababbabbbabbbaaaaaaaabbbaabbbabaaababbaabbabaaaababbbbb"
+      ],
+      "expected": 152
+    },
+    {
+      "name": "the stated maximum from nothing",
+      "args": [
+        "",
+        "cbcaacacbaacaccccccbbbbcaaaabbbacabacbacbbccabbbacabacbcbaaabbabbaccacbccabbaabaacabaaaaaccbbacccbccaaacaacacbcabbccbbaacaaccaabbabcaabcbaabaacbccbbbbaccaaaccaaaaccccabbaacbbcabbbbcabbaaaacaabaccabbbaccaaacbbcbaccbcbcaccbacacabcbbbbbcbbaccccaabccbabbcccacbbbbaccbbaaaabbbbacaacaccaabaabcacabacbbaacabaabaabaccacbacacaccababaabbcabcacaabcaabcbcaabacccabcaaaacbccabcabcacababbaabbaaccbbabbbbbabbcbbbbcbbccabcccabbccbbaacaababcababcbbacaaabaabbcaccabcabcbccbcbbacbcaacacaaacbbacaabaccaaccbcabcbababbbbac"
+      ],
+      "expected": 500
+    }
+  ]
+}

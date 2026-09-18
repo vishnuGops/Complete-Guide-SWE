@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Work along the digits, counting the readings of each prefix. How can a reading of the first `i` digits end?",
+    "With a one-digit letter or a two-digit one - so the count at `i` is the count at `i-1` plus the count at `i-2`, with each term allowed only when its letter is legal.",
+    "A one-digit letter is legal when the digit is not `0`. A two-digit one is legal when the pair reads between 10 and 26.",
+    "That is the stairs recurrence with two conditions attached, and the zeroes are what make the conditions matter."
+  ]
+}

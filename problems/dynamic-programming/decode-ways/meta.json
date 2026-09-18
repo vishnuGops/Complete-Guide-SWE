@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "decode-ways",
+  "slug": "decode-ways",
+  "title": "Ways To Read The Digits",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "state machine"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 13,
+  "mode": "function",
+  "entry": "waysToRead",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["stair-ways", "word-break-possible"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

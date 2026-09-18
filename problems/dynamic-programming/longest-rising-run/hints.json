@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The quadratic table asks, for each position, how long a run ends there. Turn the question round: for each *length*, what is the smallest value a run of that length can end with?",
+    "Keep a list where entry `i` is the smallest possible last value of a run of length `i + 1`. That list is always sorted.",
+    "For each reading, find where it belongs in that list: it either extends the list by one, or replaces the first entry that is not smaller than it.",
+    "Because the list is sorted, finding that place is a binary search - and the answer is the list's final length, not its contents."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "shared-subsequence",
+  "slug": "shared-subsequence",
+  "title": "Longest Shared Reading",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["longest common subsequence", "two-dimensional dp"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 8,
+  "mode": "function",
+  "entry": "sharedLength",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["edit-steps", "longest-rising-run"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 m)",
+    "space": "O(min(n, m))"
+  }
+}

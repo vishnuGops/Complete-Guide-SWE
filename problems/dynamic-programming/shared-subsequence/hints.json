@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Compare the two words from their ends. What are the cases for the last letter of each?",
+    "If the last letters match, they can both be used, and the rest of the problem is the two words with those letters removed. If they differ, at least one of them is unused - so try dropping each and take the better.",
+    "That gives a recurrence over a pair of positions, which is a two-dimensional table: one row per letter of the first word, one column per letter of the second.",
+    "Fill it row by row, and notice that each row needs only the row above it - so the whole table is never needed at once."
+  ]
+}
