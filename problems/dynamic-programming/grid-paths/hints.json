@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "How can the robot have arrived at a given cell? There are only two possibilities.",
+    "From the cell above or the cell to its left - so the routes to a cell are the routes to those two, added together.",
+    "Fill the grid top to bottom and left to right, so both of those are known before the cell is reached. A blocked cell has zero routes.",
+    "The first row and the first column need care: they have only one neighbour to come from, and a block anywhere in them cuts off everything after it."
+  ]
+}

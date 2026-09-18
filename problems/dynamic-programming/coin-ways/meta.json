@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "coin-ways",
+  "slug": "coin-ways",
+  "title": "Ways To Make The Amount",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "knapsack"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "waysToMake",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["fewest-coins", "sum-combinations"],
+  "targetComplexity": {
+    "time": "O(coins \u00b7 amount)",
+    "space": "O(amount)"
+  }
+}

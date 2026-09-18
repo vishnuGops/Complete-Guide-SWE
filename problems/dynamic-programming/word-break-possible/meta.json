@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "word-break-possible",
+  "slug": "word-break-possible",
+  "title": "Can It Be Read At All",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "memoisation", "strings"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 5,
+  "mode": "function",
+  "entry": "canBeRead",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["word-break-all", "fewest-coins"],
+  "targetComplexity": {
+    "time": "O(n^2 + dictionary)",
+    "space": "O(n)"
+  }
+}

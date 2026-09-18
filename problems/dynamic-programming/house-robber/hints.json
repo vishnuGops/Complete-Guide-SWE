@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Walk the row and ask, at each house, what the best total ending here or before here is.",
+    "At house `i` there are two choices: take it, which means you could not have taken `i-1`, or skip it, which leaves whatever was best up to `i-1`.",
+    "So `best(i) = max(best(i-1), best(i-2) + houses[i])` - the same two-back shape as the stairs, with a maximum instead of a sum.",
+    "Only the last two values matter, so two variables replace the table."
+  ]
+}

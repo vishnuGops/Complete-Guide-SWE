@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "grid-paths",
+  "slug": "grid-paths",
+  "title": "Ways Across The Grid",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["dp on grids", "two-dimensional dp"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 6,
+  "mode": "function",
+  "entry": "pathsAcross",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["stair-ways", "count-islands"],
+  "targetComplexity": {
+    "time": "O(rows \u00b7 columns)",
+    "space": "O(columns)"
+  }
+}

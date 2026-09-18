@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "house-robber",
+  "slug": "house-robber",
+  "title": "Skip A House",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "state machine"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 1,
+  "mode": "function",
+  "entry": "bestHaul",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["stair-ways", "fewest-coins"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

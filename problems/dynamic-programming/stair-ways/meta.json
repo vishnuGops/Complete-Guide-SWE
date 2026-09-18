@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "stair-ways",
+  "slug": "stair-ways",
+  "title": "Ways Up The Stairs",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "tabulation"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 0,
+  "mode": "function",
+  "entry": "waysUp",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["house-robber", "grid-paths"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

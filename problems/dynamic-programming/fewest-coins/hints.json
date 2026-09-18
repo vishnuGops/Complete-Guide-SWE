@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "For a given amount, what is the last coin you take? What does the answer become once you have chosen it?",
+    "Whichever coin it is, the rest of the problem is the same question asked of `amount - coin` - so `fewest(a) = 1 + min over coins of fewest(a - coin)`.",
+    "Computed downwards that recomputes the same amounts endlessly. Compute it upwards instead: fill a table from 0 to the amount, each cell once.",
+    "Use a sentinel for 'not reachable' that is larger than any real answer, and check for it at the end rather than carrying a special case through the loop."
+  ]
+}

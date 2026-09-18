@@ -1,0 +1,54 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "four ways to make five",
+      "args": [[1,2,5],5],
+      "expected": 4,
+      "explanation": "5, 2+2+1, 2+1+1+1 and 1+1+1+1+1."
+    },
+    {
+      "name": "no way at all",
+      "args": [[2],3],
+      "expected": 0,
+      "explanation": "Every total made of 2s is even."
+    },
+    {
+      "name": "making nothing",
+      "args": [[1],0],
+      "expected": 1,
+      "explanation": "Take no coins. One way, not zero."
+    }
+  ],
+  "hidden": [
+    {"name":"the extremes of the stated ranges","args":[[1000],1000],"expected":1},
+    {"name":"every coin is larger than the amount","args":[[3,5,7],2],"expected":0},
+    {"name":"one coin, one way","args":[[1],500],"expected":1},
+    {"args":[[6,10],20],"expected":1},
+    {"args":[[6,10],26],"expected":1},
+    {"args":[[5,11,1],60],"expected":43},
+    {"args":[[5,11,1],321],"expected":987},
+    {"args":[[35,23,14,13,36],120],"expected":9},
+    {"args":[[35,23,14,13,36],923],"expected":7379},
+    {"args":[[87,59,18,72],300],"expected":3},
+    {"args":[[87,59,18,72],797],"expected":18},
+    {"args":[[393,310,239,655,333,275,639,642],613],"expected":0},
+    {"args":[[966,246,326,797,934,720,761,764,787,730],947],"expected":0},
+    {"args":[[590,205,427],851],"expected":0},
+    {
+      "name": "the stated maxima with 12 coins",
+      "args": [[839,276,544,776,185,547,90,849,78,97,466,125],1000],
+      "expected": 18
+    },
+    {
+      "name": "the stated maxima with 16 coins",
+      "args": [[589,206,274,512,224,842,909,430,184,89,748,593,72,622,311,997],1000],
+      "expected": 9
+    },
+    {
+      "name": "the stated maxima with 20 coins",
+      "args": [[75,429,90,288,436,53,724,172,509,649,302,91,386,824,81,165,900,499,458,685],1000],
+      "expected": 253
+    }
+  ]
+}

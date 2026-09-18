@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Define one boolean per position: can the letters up to here be read?",
+    "Position 0 is reachable with no words at all. Position `i` is reachable when some earlier reachable position `j` has a dictionary word spanning `j` to `i`.",
+    "So the table fills left to right, and each cell looks back at the positions a word could have started from.",
+    "Put the dictionary in a set, and bound the look-back by the longest word - there is no point testing a span longer than anything in the dictionary."
+  ]
+}

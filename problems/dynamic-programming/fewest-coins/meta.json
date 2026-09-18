@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "fewest-coins",
+  "slug": "fewest-coins",
+  "title": "Fewest Coins",
+  "version": 1,
+  "topic": "dynamic-programming",
+  "patterns": ["one-dimensional dp", "tabulation"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 3,
+  "mode": "function",
+  "entry": "fewestCoins",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["coin-ways", "min-load-capacity"],
+  "targetComplexity": {
+    "time": "O(coins \u00b7 amount)",
+    "space": "O(amount)"
+  }
+}

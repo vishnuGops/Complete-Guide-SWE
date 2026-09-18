@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Count the ways to make every amount from 0 upwards, using a table. What does the table's base case have to be?",
+    "One way to make zero: take nothing. Everything else builds on that.",
+    "Now the ordering question: if you loop over amounts on the outside and coins on the inside, you count 1+2 and 2+1 separately. Which loop belongs outside?",
+    "The coins. Fix a coin, let every amount use it, then move to the next coin - so each way is built with the coins in one fixed order and counted once."
+  ]
+}

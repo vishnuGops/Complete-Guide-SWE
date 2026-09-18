@@ -1,0 +1,46 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {"name":"three coins make eleven","args":[[1,2,5],11],"expected":3,"explanation":"5 + 5 + 1."},
+    {
+      "name": "no combination works",
+      "args": [[2],3],
+      "expected": -1,
+      "explanation": "Every total made of 2s is even."
+    },
+    {
+      "name": "greed gets it wrong",
+      "args": [[1,3,4],6],
+      "expected": 2,
+      "explanation": "3 + 3 beats 4 + 1 + 1."
+    }
+  ],
+  "hidden": [
+    {"name":"making nothing","args":[[1],0],"expected":0},
+    {"name":"greed gets it wrong again","args":[[1,7,10],14],"expected":2},
+    {"name":"the extremes of the stated ranges","args":[[10000],10000],"expected":1},
+    {"name":"every coin is larger than the amount","args":[[3,5,7],2],"expected":-1},
+    {"name":"an ordinary coin system","args":[[1,2,5,10,20,50,100,200],9999],"expected":56},
+    {"args":[[12,14],40],"expected":3},
+    {"args":[[12,14],4279],"expected":-1},
+    {"args":[[5,8,27,22],150],"expected":7},
+    {"args":[[5,8,27,22],4945],"expected":185},
+    {"args":[[182,136,115,63,106,35],900],"expected":8},
+    {"args":[[182,136,115,63,106,35],198],"expected":-1},
+    {"args":[[134,139,1369,1892,1515,1345,1786,1064],6000],"expected":7},
+    {"args":[[134,139,1369,1892,1515,1345,1786,1064],9079],"expected":8},
+    {"args":[[318,41,205,385,294,275,230,437],1900],"expected":6},
+    {"args":[[412,122,470,24,222,275,145,272],3499],"expected":9},
+    {"args":[[481,114,287,118,86],7953],"expected":21},
+    {
+      "name": "the stated maxima",
+      "args": [[8374,7385,2278,4944,6340,4972,5698,4856,1812,430,1137,1037],10000],
+      "expected": -1
+    },
+    {
+      "name": "the stated maxima, always reachable",
+      "args": [[1,8365,5659,2519,5643,7644,5696,7265,5677,741,1405,2827],10000],
+      "expected": 12
+    }
+  ]
+}

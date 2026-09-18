@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Think about the last move rather than the first. Where were you just before reaching the top?",
+    "One step below or two steps below, and nowhere else - so the ways to reach step `n` are the ways to reach `n-1` plus the ways to reach `n-2`.",
+    "That recurrence computed straight down is exponential, because the same step is reached along many routes. Compute it upwards instead, once per step.",
+    "Only the last two values are ever needed, so two variables do the job and the table is not needed at all."
+  ]
+}
