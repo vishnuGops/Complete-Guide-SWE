@@ -21,6 +21,7 @@ import {
   useDeleteDraft,
   useJudge,
   useProblem,
+  useReVerify,
   useRevealHint,
   useSetBookmark,
   useSaveDraft,
@@ -210,6 +211,7 @@ export function Workspace() {
   const deleteDraft = useDeleteDraft();
   const revealHint = useRevealHint();
   const setBookmark = useSetBookmark();
+  const reVerify = useReVerify();
   const updateSettings = useUpdateSettings();
   const busy = run.isPending || submit.isPending;
 
@@ -462,6 +464,15 @@ export function Workspace() {
    */
   const interviewMode = timer.running;
   const hideAssistance = interviewMode || reviewing;
+  /*
+   * Solved against tests that have since changed (P7-9). Only when there is a
+   * pass to compare: a problem nobody has solved has not drifted, it is just
+   * unsolved.
+   */
+  const drifted =
+    problem !== undefined &&
+    problem.summary.solvedVersion !== null &&
+    problem.summary.solvedVersion < problem.summary.version;
   /**
    * Starting the clock while the Hints tab is open (P7-6).
    *
@@ -939,6 +950,54 @@ export function Workspace() {
           </Tooltip>
         </div>
       </header>
+
+      {/*
+        Version drift (ROADMAP P7-9).
+
+        The status does not move for this - D11's ratchet stands, and quietly
+        un-solving somebody's problem because a generator seed changed would be
+        exactly the automatic demotion that rule exists to forbid. What it gets
+        instead is a sentence saying the bar moved and a button that finds out.
+        Re-verify is an ordinary submit of the last accepted code, so it can
+        fail, and a failure is recorded and demotes nothing.
+      */}
+      {drifted && (
+        <div className="border-border bg-warn-subtle flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
+          <p className="text-fg text-xs">
+            Solved against v{problem.summary.solvedVersion}; the tests are now v
+            {problem.summary.version}.
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto"
+            disabled={reVerify.isPending || busy}
+            onClick={() => {
+              reVerify.mutate(
+                { slug, language },
+                {
+                  onSuccess: (next) => {
+                    if (showing.current.slug !== slug) return;
+                    setResult(next);
+                    setTab('results');
+                  },
+                },
+              );
+            }}
+          >
+            {reVerify.isPending ? 'Re-verifying…' : `Re-verify in ${LANGUAGE_LABEL[language]}`}
+          </Button>
+        </div>
+      )}
+
+      {reVerify.error && (
+        <p
+          className="text-danger-fg border-border shrink-0 border-b px-3 py-1.5 text-xs"
+          role="alert"
+        >
+          {reVerify.error.message}
+        </p>
+      )}
 
       {/*
         Review mode says so (P7-8). A screen that has quietly removed two tabs

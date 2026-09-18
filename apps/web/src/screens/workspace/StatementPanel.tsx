@@ -557,8 +557,13 @@ function Submissions({
   language: Language;
   onRestore: (submission: Submission) => void;
 }) {
-  const { data, isPending, error } = useSubmissions(slug);
+  const { data, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useSubmissions(slug);
   const [openId, setOpenId] = useState<string | null>(null);
+  // The pages flattened. The archive is kept forever (P7-9 paginates it), and
+  // whether a row arrived on the first page or the third is not a fact about
+  // the row.
+  const items = (data ?? []).flatMap((page) => page.items);
 
   if (isPending) return <p className="text-fg-muted p-4 text-sm">Loading submissions…</p>;
   if (error) {
@@ -568,7 +573,7 @@ function Submissions({
       </p>
     );
   }
-  if (data.items.length === 0) {
+  if (items.length === 0) {
     return (
       <p className="text-fg-muted p-4 text-sm">
         Nothing submitted yet. Run is for trying things; Submit is what gets recorded here.
@@ -578,7 +583,7 @@ function Submissions({
 
   return (
     <ul aria-label="Submissions for this problem, newest first" className="text-sm">
-      {data.items.map((submission) => (
+      {items.map((submission) => (
         <li key={submission.id} className="border-border border-b">
           <SubmissionRow
             submission={submission}
@@ -597,6 +602,21 @@ function Submissions({
           )}
         </li>
       ))}
+
+      {hasNextPage && (
+        <li className="px-3 py-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isFetchingNextPage}
+            onClick={() => {
+              void fetchNextPage();
+            }}
+          >
+            {isFetchingNextPage ? 'Loading…' : 'Older submissions'}
+          </Button>
+        </li>
+      )}
     </ul>
   );
 }

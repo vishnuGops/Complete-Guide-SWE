@@ -146,6 +146,18 @@ export const problemSummarySchema = z.object({
   hasNote: z.boolean(),
   /** Starred by the user (P7-7). Its own thing, not a status: D11's ratchet is about work done. */
   bookmarked: z.boolean(),
+  /** `meta.version` as it stands now. */
+  version: z.int().min(1),
+  /**
+   * The newest version this problem has been accepted against, or null if it
+   * never has been (P7-9).
+   *
+   * Below `version` means the tests have changed since it was solved. The
+   * status does not move for that - D11's ratchet stands and the user decides -
+   * but the row says so, because a Solved earned against tests that no longer
+   * exist is worth knowing about.
+   */
+  solvedVersion: z.int().min(1).nullable(),
 });
 export type ProblemSummary = z.infer<typeof problemSummarySchema>;
 
@@ -281,13 +293,41 @@ export type HintRevealResponse = z.infer<typeof hintRevealResponseSchema>;
 export const submissionListQuerySchema = z.object({
   language: languageSchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
+  /**
+   * Cursor: only submissions older than this one (P7-9).
+   *
+   * The previous page's `nextCursor`, which is a `created_at` timestamp. A
+   * cursor rather than an offset, because the list is newest-first and a submit
+   * made while someone is reading page two would shift every offset by one and
+   * show them a row they had already seen.
+   */
+  before: z.iso.datetime().optional(),
 });
 export type SubmissionListQuery = z.infer<typeof submissionListQuerySchema>;
 
 export const submissionListResponseSchema = z.object({
   items: z.array(submissionSchema),
+  /** Pass back as `before` for the next page. Null when this is the last one. */
+  nextCursor: z.iso.datetime().nullable(),
 });
 export type SubmissionListResponse = z.infer<typeof submissionListResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// POST /api/problems/:slug/re-verify
+// ---------------------------------------------------------------------------
+
+/**
+ * Re-running the last accepted code against the tests as they stand (P7-9).
+ *
+ * The body names a language because a problem can be solved in both, and each
+ * has its own last accepted answer. The result is an ordinary `RunResult` from
+ * an ordinary submit: it is recorded, it can fail, and a failure does not
+ * demote anything - D11's ratchet stands and the user decides what to do.
+ */
+export const reVerifySchema = z.object({
+  language: languageSchema,
+});
+export type ReVerify = z.infer<typeof reVerifySchema>;
 
 // ---------------------------------------------------------------------------
 // GET /api/progress
@@ -415,6 +455,8 @@ export const dashboardResponseSchema = z.object({
   editorialsRevealed: z.int().min(0),
   /** What is due for a re-solve, and what is coming (P7-8). */
   reviews: reviewQueueSchema,
+  /** Solved against tests that have since changed (P7-9), counted apart from the rest. */
+  driftedSolves: z.int().min(0),
   /** When this was produced, which the exported report is dated by. */
   generatedAt: z.iso.datetime(),
 });

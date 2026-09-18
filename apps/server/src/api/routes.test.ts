@@ -708,6 +708,150 @@ describe('bookmarks and what to do next (P7-7)', () => {
   });
 });
 
+describe('problem version drift (P7-9)', () => {
+  /** Re-writes the fixture's meta with a newer version, then reloads. */
+  async function bumpVersion(to: number) {
+    writeProblem(root, {
+      topic: 'arrays',
+      slug: EASY,
+      files: { 'meta.json': json({ ...VALID_META, version: to, related: [MEDIUM] }) },
+    });
+    await app.close();
+    app = await buildServer({
+      logger: silentLogger,
+      repositories: repos,
+      problemsRoot: root,
+      judge: fakeJudge(),
+      env: {},
+      provider: { fetch: stubFetch },
+    });
+    await app.ready();
+  }
+
+  it('says nothing about a problem that was never solved', async () => {
+    await bumpVersion(4);
+
+    const detail = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(detail.summary.version).toBe(4);
+    // Not drifted. Unsolved.
+    expect(detail.summary.solvedVersion).toBeNull();
+  });
+
+  it('records which version a solve was earned against, and keeps the status', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    await bumpVersion(2);
+
+    const detail = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(detail.summary.solvedVersion).toBe(1);
+    expect(detail.summary.version).toBe(2);
+    // D11's ratchet stands: the bar moved, the status did not.
+    expect(detail.summary.status).toBe('solved');
+  });
+
+  it('counts drifted solves on the dashboard, apart from the solved total', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    await bumpVersion(3);
+
+    const body = (await api('GET', '/api/dashboard')).json() as DashboardResponse;
+    expect(body.driftedSolves).toBe(1);
+    // Still solved. The work was done; what changed is what it was measured
+    // against.
+    expect(body.byStatus.solved).toBe(1);
+  });
+
+  it('re-verifies the last accepted code against the tests as they stand', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'the accepted code' });
+    await bumpVersion(2);
+
+    const result = (
+      await api('POST', `/api/problems/${EASY}/re-verify`, {
+        language: 'python',
+      })
+    ).json() as RunResult;
+
+    expect(result.kind).toBe('submit');
+    // The judge saw the stored code, not whatever is in anyone's editor.
+    expect(judgeSaw?.code).toBe('the accepted code');
+    // Recorded like any other submit, against the current version.
+    const submissions = repos.submissions.list({ slug: EASY });
+    expect(submissions).toHaveLength(2);
+    expect(submissions[0]?.problemVersion).toBe(2);
+  });
+
+  it('refuses to re-verify what was never accepted', async () => {
+    verdict = 'WA';
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    const response = await api('POST', `/api/problems/${EASY}/re-verify`, { language: 'python' });
+    expect(response.statusCode).toBe(404);
+    expect(response.json().message).toContain('re-verify');
+  });
+
+  it('needs a language it has heard of', async () => {
+    expect(
+      (await api('POST', `/api/problems/${EASY}/re-verify`, { language: 'rust' })).statusCode,
+    ).toBe(400);
+  });
+});
+
+describe('submission pagination (P7-9)', () => {
+  function passed(n: number, at: string) {
+    repos.db
+      .prepare(
+        `INSERT INTO submissions
+           (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+         VALUES (?, ?, 'python', 'x = 1', 'AC', 3, 3, 1, 1, ?)`,
+      )
+      .run(`00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, EASY, at);
+  }
+
+  it('offers a cursor only while there is another page', async () => {
+    for (let i = 1; i <= 3; i += 1) passed(i, `2026-09-0${String(i)}T09:00:00.000Z`);
+
+    const first = (
+      await api('GET', `/api/problems/${EASY}/submissions?limit=2`)
+    ).json() as SubmissionListResponse;
+    expect(first.items).toHaveLength(2);
+    expect(first.nextCursor).not.toBeNull();
+
+    const second = (
+      await api(
+        'GET',
+        `/api/problems/${EASY}/submissions?limit=2&before=${encodeURIComponent(first.nextCursor ?? '')}`,
+      )
+    ).json() as SubmissionListResponse;
+    expect(second.items).toHaveLength(1);
+    // The last page says so rather than offering an empty one.
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it('does not repeat a row across pages, and does not skip one', async () => {
+    for (let i = 1; i <= 5; i += 1) passed(i, `2026-09-0${String(i)}T09:00:00.000Z`);
+
+    const seen: string[] = [];
+    let cursor: string | null | undefined;
+    do {
+      const page = (
+        await api(
+          'GET',
+          `/api/problems/${EASY}/submissions?limit=2${cursor ? `&before=${encodeURIComponent(cursor)}` : ''}`,
+        )
+      ).json() as SubmissionListResponse;
+      seen.push(...page.items.map((item) => item.id));
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    expect(seen).toHaveLength(5);
+    expect(new Set(seen).size).toBe(5);
+  });
+
+  it('rejects a cursor that is not a timestamp', async () => {
+    expect(
+      (await api('GET', `/api/problems/${EASY}/submissions?before=yesterday`)).statusCode,
+    ).toBe(400);
+  });
+});
+
 describe('the review queue (P7-8)', () => {
   /**
    * An accepted submission dated in the past.

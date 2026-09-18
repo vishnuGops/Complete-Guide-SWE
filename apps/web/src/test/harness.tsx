@@ -153,6 +153,8 @@ export function aProblem(overrides: Partial<ProblemSummary> = {}): ProblemSummar
     solvedAt: null,
     hasNote: false,
     bookmarked: false,
+    version: 1,
+    solvedVersion: null,
     ...overrides,
   };
 }

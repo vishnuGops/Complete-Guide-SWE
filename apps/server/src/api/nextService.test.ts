@@ -27,6 +27,8 @@ function problem(overrides: Partial<ProblemSummary>): ProblemSummary {
     solvedAt: null,
     hasNote: false,
     bookmarked: false,
+    version: 1,
+    solvedVersion: null,
     ...overrides,
   };
 }

@@ -66,6 +66,35 @@ describe('the table', () => {
     expect(within(solved).getByText('Solved')).not.toHaveClass('sr-only');
   });
 
+  it('marks a row whose tests changed after it was solved (P7-9)', async () => {
+    serve(
+      aList([
+        aProblem({
+          slug: 'pair-sum-index',
+          title: 'Pair Sum Index',
+          status: 'solved',
+          version: 3,
+          solvedVersion: 1,
+        }),
+      ]),
+    );
+    renderApp(<ProblemList />);
+
+    const row = await screen.findByRole('row', { name: /Pair Sum Index/ });
+    // The list is where someone decides what to work on, so a Solved earned
+    // against tests that no longer exist is worth saying before they skip past.
+    expect(within(row).getByText('tests changed')).toBeInTheDocument();
+    expect(row).toHaveTextContent('Solved against version 1');
+  });
+
+  it('marks a row with a note (P7-4)', async () => {
+    serve(aList([aProblem({ slug: 'pair-sum-index', title: 'Pair Sum Index', hasNote: true })]));
+    renderApp(<ProblemList />);
+
+    const row = await screen.findByRole('row', { name: /Pair Sum Index/ });
+    expect(within(row).getByText('Has a note')).toBeInTheDocument();
+  });
+
   it('says how many rows are on screen out of the catalogue', async () => {
     // Not the solved count: the top bar carries that on every screen already, and
     // printing it twice on one page makes both copies read like they might mean

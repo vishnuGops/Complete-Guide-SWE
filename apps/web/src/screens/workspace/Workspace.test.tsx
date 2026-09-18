@@ -79,7 +79,14 @@ function serve(
   return fakeServer([
     ...extra,
     { match: path(`/api/problems/${SLUG}`), body: () => current },
-    { match: path(`/api/problems/${SLUG}/submissions`), body: () => ({ items: submissions }) },
+    {
+      match: path(`/api/problems/${SLUG}/submissions`),
+      body: () => ({ items: submissions, nextCursor: null }),
+    },
+    {
+      match: path(`/api/problems/${SLUG}/re-verify`),
+      body: () => aRunResult({ kind: 'submit' }),
+    },
     {
       // Also stateful: revealing unlocks the editorial and puts the reference
       // solutions into the payload, and the answer is the whole new detail.
@@ -754,6 +761,71 @@ describe('review mode (P7-8)', () => {
 
     expect(await screen.findByRole('tab', { name: 'Hints' })).toBeInTheDocument();
     expect(screen.queryByText(/Reviewing from memory/)).not.toBeInTheDocument();
+  });
+});
+
+describe('version drift (P7-9)', () => {
+  function drifted() {
+    return aProblemDetail({
+      summary: {
+        ...aProblem(),
+        status: 'solved',
+        statusByLanguage: { python: 'solved' },
+        version: 3,
+        solvedVersion: 1,
+      },
+    });
+  }
+
+  it('says the tests moved, without taking the status away', async () => {
+    serve(drifted());
+    open();
+
+    expect(await screen.findByText(/Solved against v1; the tests are now v3/)).toBeInTheDocument();
+    // D11's ratchet: the bar moved, the status did not.
+    expect(screen.getByTestId('problem-status')).toHaveTextContent(/Solved/);
+  });
+
+  it('re-verifies the last accepted code and shows the result', async () => {
+    const server = serve(drifted());
+    open();
+
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Re-verify in Python' }));
+
+    await waitFor(() => {
+      expect(
+        server.requests.some(
+          (request) => request.method === 'POST' && request.url.pathname.endsWith('/re-verify'),
+        ),
+      ).toBe(true);
+    });
+    // The body names the language, because each has its own last accepted answer.
+    const asked = server.requests.find((request) => request.url.pathname.endsWith('/re-verify'));
+    expect(asked?.body).toEqual({ language: 'python' });
+    expect(await screen.findByRole('tab', { name: /Results/, selected: true })).toBeInTheDocument();
+  });
+
+  it('says nothing when the solve is against the current tests', async () => {
+    serve(
+      aProblemDetail({
+        summary: { ...aProblem(), status: 'solved', version: 2, solvedVersion: 2 },
+      }),
+    );
+    open();
+
+    await screen.findByRole('tab', { name: 'Description' });
+    expect(screen.queryByText(/the tests are now/)).not.toBeInTheDocument();
+  });
+
+  it('says nothing about a problem nobody has solved', async () => {
+    // Not drifted. Unsolved.
+    serve(aProblemDetail({ summary: { ...aProblem(), version: 5, solvedVersion: null } }));
+    open();
+
+    await screen.findByRole('tab', { name: 'Description' });
+    expect(screen.queryByRole('button', { name: /Re-verify/ })).not.toBeInTheDocument();
   });
 });
 

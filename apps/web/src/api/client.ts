@@ -132,8 +132,17 @@ export const api = {
   },
   problem: (slug: string): Promise<ProblemDetail> =>
     request(`/api/problems/${encodeURIComponent(slug)}`),
-  submissions: (slug: string): Promise<SubmissionListResponse> =>
-    request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
+  submissions: (slug: string, before?: string): Promise<SubmissionListResponse> =>
+    request(
+      `/api/problems/${encodeURIComponent(slug)}/submissions${
+        before === undefined ? '' : `?before=${encodeURIComponent(before)}`
+      }`,
+    ),
+  reVerify: (slug: string, language: Language): Promise<RunResult> =>
+    request(`/api/problems/${encodeURIComponent(slug)}/re-verify`, {
+      method: 'POST',
+      body: JSON.stringify({ language }),
+    }),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
   dashboard: (): Promise<DashboardResponse> => request('/api/dashboard'),
 

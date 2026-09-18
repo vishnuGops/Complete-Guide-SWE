@@ -21,6 +21,8 @@ export interface SubmissionQuery {
   slug?: string;
   language?: Language;
   limit?: number;
+  /** Only rows older than this timestamp, for the cursor pagination in P7-9. */
+  before?: string;
 }
 
 function toSubmission(row: Row): Submission {
@@ -49,6 +51,14 @@ export interface SubmissionRepo {
   /** The newest accepted submission, used to seed the editorial diff and mastery check. */
   latestAccepted(slug: string, language: Language): Submission | null;
   countByProblem(slug: string): number;
+  /**
+   * The newest problem version each problem has been accepted against (P7-9).
+   *
+   * One query for the whole list, because the alternative is a query per row.
+   * MAX rather than "the version of the newest submission": versions only ever
+   * go up, so they are the same number, and MAX needs no ordering.
+   */
+  acceptedVersions(): Map<string, number>;
   /** Wipes the archive; returns how many rows went. Used by reset-all-progress. */
   clear(): number;
 }
@@ -60,6 +70,10 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
   const getStmt = db.prepare(`SELECT ${COLUMNS} FROM submissions WHERE id = ?`);
   const countStmt = db.prepare('SELECT COUNT(*) AS n FROM submissions WHERE slug = ?');
   const clearStmt = db.prepare('DELETE FROM submissions');
+  const acceptedVersionsStmt = db.prepare(
+    `SELECT slug, MAX(problem_version) AS version FROM submissions
+      WHERE verdict = 'AC' GROUP BY slug`,
+  );
   const latestAcceptedStmt = db.prepare(
     `SELECT ${COLUMNS} FROM submissions
      WHERE slug = ? AND language = ? AND verdict = 'AC'
@@ -90,6 +104,11 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
       return row;
     },
 
+    acceptedVersions() {
+      const rows = acceptedVersionsStmt.all() as Row[];
+      return new Map(rows.map((row) => [text(row, 'slug'), num(row, 'version')]));
+    },
+
     get(id) {
       const row = getStmt.get(id) as Row | undefined;
       return row ? toSubmission(row) : null;
@@ -101,6 +120,12 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
       if (query.slug !== undefined) {
         where.push('slug = ?');
         params.push(query.slug);
+      }
+      if (query.before !== undefined) {
+        // Strictly older. Timestamps are ISO-8601 UTC and sort as text, which
+        // is the one assumption this whole schema already makes.
+        where.push('created_at < ?');
+        params.push(query.before);
       }
       if (query.language !== undefined) {
         where.push('language = ?');

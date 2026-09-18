@@ -24,6 +24,7 @@ function aDashboard(overrides: Partial<DashboardResponse> = {}): DashboardRespon
     skills: [],
     editorialsRevealed: 0,
     reviews: { due: [], upcoming: [] },
+    driftedSolves: 0,
     generatedAt: '2026-09-18T09:30:00.000Z',
     ...overrides,
   };
@@ -63,6 +64,18 @@ describe('the dashboard', () => {
 
     // Folding these into the solved count would make the headline a lie.
     expect(await screen.findByText(/2 editorials opened before solving/)).toBeInTheDocument();
+  });
+
+  it('counts drifted solves apart from the solved total (P7-9)', async () => {
+    serve(aDashboard({ driftedSolves: 2 }));
+    renderApp(<Progress />);
+
+    // Apart from, not deducted from: the work was done, and what changed is
+    // the bar it was measured against.
+    expect(
+      await screen.findByText(/2 solved against tests that have since changed/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/3 of 10 problems solved/)).toBeInTheDocument();
   });
 
   it('explains the empty skills table rather than showing an empty table', async () => {

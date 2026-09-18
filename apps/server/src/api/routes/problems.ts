@@ -5,15 +5,18 @@ import { z } from 'zod';
 import {
   hintRevealSchema,
   problemListQuerySchema,
+  reVerifySchema,
   slugSchema,
   submissionListQuerySchema,
   type HintRevealResponse,
   type ProblemDetail,
   type ProblemListResponse,
+  type RunResult,
   type SubmissionListResponse,
 } from '@devpromax/shared';
 import { badRequest, notFound, parseInput } from '../errors.js';
 import { listProblems, problemDetail } from '../problemService.js';
+import { executeRun } from '../runService.js';
 import type { ApiDeps } from './types.js';
 
 const slugParams = z.object({ slug: slugSchema });
@@ -52,13 +55,54 @@ export function registerProblemRoutes(app: FastifyInstance, deps: ApiDeps): void
     const query = parseInput(submissionListQuerySchema, request.query, 'query');
     if (!deps.catalogue.get(slug)) throw notFound(`No problem with slug "${slug}".`);
 
+    /*
+     * One more row than asked for, then dropped (P7-9).
+     *
+     * It is how "is there another page" is answered without a second COUNT
+     * query, and without the off-by-one where a list whose length happens to
+     * equal the limit offers a page that turns out to be empty.
+     */
+    const rows = deps.repos.submissions.list({
+      slug,
+      ...(query.language ? { language: query.language } : {}),
+      ...(query.before ? { before: query.before } : {}),
+      limit: query.limit + 1,
+    });
+    const items = rows.slice(0, query.limit);
+
     return {
-      items: deps.repos.submissions.list({
-        slug,
-        ...(query.language ? { language: query.language } : {}),
-        limit: query.limit,
-      }),
+      items,
+      nextCursor: rows.length > query.limit ? (items.at(-1)?.createdAt ?? null) : null,
     };
+  });
+
+  /**
+   * Re-verify: the last accepted code, against the tests as they stand (P7-9).
+   *
+   * An ordinary submit, recorded like any other - which is the point. The
+   * problem's tests have changed since this code passed, and the honest way to
+   * find out whether it still passes is to run it. A failure records a failure
+   * and demotes nothing: D11's ratchet stands, and what to do about it is the
+   * user's call.
+   */
+  app.post('/api/problems/:slug/re-verify', async (request): Promise<RunResult> => {
+    const { slug } = parseInput(slugParams, request.params, 'params');
+    const { language } = parseInput(reVerifySchema, request.body, 'body');
+    if (!deps.catalogue.get(slug)) throw notFound(`No problem with slug "${slug}".`);
+
+    const last = deps.repos.submissions.latestAccepted(slug, language);
+    if (!last) {
+      throw notFound(`No accepted ${language} submission for "${slug}" to re-verify.`);
+    }
+
+    return executeRun(
+      { slug, language, code: last.code, kind: 'submit' },
+      {
+        repos: deps.repos,
+        ...(deps.judge ? { judge: deps.judge } : {}),
+        ...(deps.problemsRoot ? { problemsRoot: deps.problemsRoot } : {}),
+      },
+    );
   });
 
   /**

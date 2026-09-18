@@ -451,6 +451,11 @@ export function Progress() {
           <h1 className="text-xl font-semibold">Progress</h1>
           <p className="text-fg-muted tnum mt-1 text-sm">
             {solved} of {data.total} problems solved.
+            {data.driftedSolves > 0 && (
+              /* Counted apart from the solved total, not deducted from it: the
+                 work was done, and what changed is the bar (P7-9). */
+              <> {data.driftedSolves} solved against tests that have since changed.</>
+            )}
             {data.editorialsRevealed > 0 && (
               /* Said out loud rather than folded into the solved count: an
                  editorial you opened is not a problem you solved. */

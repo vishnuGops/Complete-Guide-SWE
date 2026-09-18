@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -71,11 +72,53 @@ export function useProblem(slug: string) {
   });
 }
 
+/**
+ * A problem's submissions, a page at a time (ROADMAP P7-3, paginated by P7-9).
+ *
+ * An infinite query rather than a list: the archive is kept forever, and a
+ * problem someone has been coming back to for months is a long list to send in
+ * one response. The cursor is the oldest row's timestamp, so a submit made
+ * while the reader is on page two cannot shift the page under them - which an
+ * offset would.
+ */
 export function useSubmissions(slug: string, enabled = true) {
-  return useQuery<SubmissionListResponse>({
+  return useInfiniteQuery<
+    SubmissionListResponse,
+    Error,
+    SubmissionListResponse[],
+    readonly unknown[],
+    string | undefined
+  >({
     queryKey: keys.submissions(slug),
-    queryFn: () => api.submissions(slug),
+    queryFn: ({ pageParam }) => api.submissions(slug, pageParam),
+    initialPageParam: undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    select: (data) => data.pages,
     enabled,
+  });
+}
+
+/**
+ * Re-verify (ROADMAP P7-9).
+ *
+ * Invalidates everything a submit does, because it *is* a submit: the last
+ * accepted code, run against the tests as they stand now, and recorded.
+ */
+export function useReVerify(): UseMutationResult<
+  RunResult,
+  Error,
+  { slug: string; language: Language }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug, language }) => api.reVerify(slug, language),
+    onSuccess: (_result, { slug }) => {
+      void queryClient.invalidateQueries({ queryKey: keys.problems });
+      void queryClient.invalidateQueries({ queryKey: keys.problem(slug) });
+      void queryClient.invalidateQueries({ queryKey: keys.progress });
+      void queryClient.invalidateQueries({ queryKey: keys.dashboard });
+      void queryClient.invalidateQueries({ queryKey: keys.submissions(slug) });
+    },
   });
 }
 

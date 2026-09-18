@@ -86,6 +86,24 @@ function Row({ problem }: { problem: ProblemSummary }) {
           something the user wrote shows a row with nothing on it saying why -
           and the note itself has no business in a list row.
         */}
+        {/*
+          The tests moved after this was solved (P7-9). On the row because the
+          list is where someone decides what to work on, and a Solved earned
+          against tests that no longer exist is worth knowing before you skip
+          past it.
+        */}
+        {problem.solvedVersion !== null && problem.solvedVersion < problem.version && (
+          <span
+            className="text-warn-fg ml-1.5 text-2xs"
+            title={`Solved against v${String(problem.solvedVersion)}; the tests are now v${String(problem.version)}`}
+          >
+            <span aria-hidden>tests changed</span>
+            <span className="sr-only">
+              Solved against version {problem.solvedVersion}; tests are now version{' '}
+              {problem.version}
+            </span>
+          </span>
+        )}
         {problem.hasNote && (
           <span className="text-fg-subtle ml-1.5 text-2xs" title="You have a note on this problem">
             <span aria-hidden>note</span>

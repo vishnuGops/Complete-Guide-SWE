@@ -34,6 +34,7 @@ function aDashboard(overrides: Partial<DashboardResponse> = {}): DashboardRespon
     ],
     editorialsRevealed: 0,
     reviews: { due: [], upcoming: [] },
+    driftedSolves: 0,
     generatedAt: '2026-09-18T09:30:00.000Z',
     ...overrides,
   };

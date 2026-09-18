@@ -101,12 +101,16 @@ test.describe('the golden path', () => {
 
     const rows = page.getByRole('row').filter({ hasText: 'Easy' });
     await expect(rows.first()).toBeVisible();
-    // Everything on screen matches both filters, which is the only assertion
-    // that would catch a filter the server ignored.
-    for (const row of await rows.all()) {
-      await expect(row).toContainText('Arrays');
-      await expect(row).toContainText('Easy');
-    }
+    /*
+     * Everything on screen matches both filters, which is the only assertion
+     * that would catch a filter the server ignored.
+     *
+     * Asserted as "no row fails to match" rather than by walking the rows:
+     * `all()` snapshots a list of locators, and the list re-renders when the
+     * query settles, so by the time the sixth was checked it could be gone.
+     * This form is one retrying assertion over whatever is on screen now.
+     */
+    await expect(rows.filter({ hasNotText: 'Arrays' })).toHaveCount(0);
 
     // --- open it ------------------------------------------------------------
     await page.getByRole('link', { name: problem.title }).click();
@@ -118,15 +122,31 @@ test.describe('the golden path', () => {
     // The statement is rendered markdown, not a wall of asterisks (P4-3).
     await expect(page.getByRole('heading', { name: 'Input' })).toBeVisible();
 
-    // A hint at a time, and only when asked for (P4-6). Deliberately not the
-    // editorial's locked state, which is only locked until the first time this
-    // test passes - an assertion that can never be true twice is worse than no
-    // assertion. `Workspace.test.tsx` covers the lock, where the state is made
-    // rather than inherited.
+    /*
+     * A hint at a time, and only when asked for (P4-6).
+     *
+     * Written as "one more than there was" rather than "the first one", because
+     * P7-1 made reveals persist: against a database that has seen this test
+     * before, the first rung is already open and a button named "Show the first
+     * hint" does not exist. Same reasoning as the editorial's lock, which this
+     * test deliberately does not assert - an assertion that can never be true
+     * twice is worse than no assertion. `Workspace.test.tsx` covers both
+     * transitions, where the state is made rather than inherited.
+     */
     await page.getByRole('tab', { name: 'Hints' }).click();
-    await page.getByRole('button', { name: 'Show the first hint' }).click();
-    await expect(page.getByText('Hint 1')).toBeVisible();
-    await expect(page.getByText('Hint 2')).toBeHidden();
+    const revealed = page.getByText(/^Hint \d+$/);
+    const reveal = page.getByRole('button', { name: /Show the (first|next) hint/ });
+
+    if (await reveal.isVisible()) {
+      const before = await revealed.count();
+      await reveal.click();
+      await expect(revealed).toHaveCount(before + 1);
+    } else {
+      // The whole ladder is already open on this database, which is still the
+      // feature working - just not a transition this run can watch.
+      await expect(page.getByText('That is every hint for this problem.')).toBeVisible();
+    }
+    await expect(revealed.first()).toBeVisible();
     await page.getByRole('tab', { name: 'Description' }).click();
 
     // --- run the samples ----------------------------------------------------
@@ -158,7 +178,10 @@ test.describe('the golden path', () => {
     // verdict it earned.
     await expect.poll(() => submissionCount(page)).toBe(before + 1);
     await page.getByRole('tab', { name: /Submissions/ }).click();
-    await expect(page.getByRole('row').filter({ hasText: 'Accepted' }).first()).toBeVisible();
+    // A list rather than a table since P7-3: every row is one button that opens
+    // the attempt under it, and there are no column headers left to justify one.
+    const history = page.getByRole('list', { name: /Submissions for this problem/ });
+    await expect(history.getByText('Accepted').first()).toBeVisible();
 
     // --- back to the list, and then back to the app -------------------------
     await page.getByRole('link', { name: 'Problems' }).click();

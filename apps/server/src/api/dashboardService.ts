@@ -146,6 +146,16 @@ export function dashboard(deps: ProblemServiceDeps): DashboardResponse {
     editorialsRevealed: repos.events.list().filter((event) => event.type === 'editorial_revealed')
       .length,
     reviews: reviewQueue(deps, generatedAt),
+    /*
+     * Counted apart from the solved total (P7-9), not deducted from it. The
+     * work was done; what changed is the bar it was measured against, and
+     * quietly un-solving somebody's problem because a generator seed moved
+     * would be exactly the automatic demotion D11 rules out.
+     */
+    driftedSolves: [...repos.submissions.acceptedVersions()].filter(([slug, version]) => {
+      const current = titles.get(slug)?.version;
+      return current !== undefined && version < current;
+    }).length,
     generatedAt,
   };
 }

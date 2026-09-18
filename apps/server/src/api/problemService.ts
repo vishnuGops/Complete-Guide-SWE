@@ -76,6 +76,7 @@ export function summarise(
   language?: Language,
   hasNote = false,
   bookmarked = false,
+  solvedVersion: number | null = null,
 ): ProblemSummary {
   const relevant = language ? rows.filter((row) => row.language === language) : rows;
 
@@ -104,6 +105,8 @@ export function summarise(
     solvedAt: relevant.reduce<string | null>((acc, row) => earliest(acc, row.solvedAt), null),
     hasNote,
     bookmarked,
+    version: meta.version,
+    solvedVersion,
   };
 }
 
@@ -178,6 +181,7 @@ export function listProblems(
   const grouped = progressBySlug(deps.repos);
   const noted = new Set(deps.repos.notes.list().map((note) => note.slug));
   const starred = deps.repos.bookmarks.slugs();
+  const passedVersions = deps.repos.submissions.acceptedVersions();
   // Metadata only (ROADMAP P2-14): a title, a tier and a topic do not need the
   // statement, the editorial or a megabyte of tests.
   const all = deps.catalogue
@@ -189,6 +193,7 @@ export function listProblems(
         query.language,
         noted.has(meta.slug),
         starred.has(meta.slug),
+        passedVersions.get(meta.slug) ?? null,
       ),
     );
 
@@ -263,7 +268,14 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
   const { repos } = deps;
   const rows = repos.progress.listByProblem(slug);
   const note = repos.notes.get(slug);
-  const summary = summarise(pkg.meta, rows, undefined, note !== null, repos.bookmarks.has(slug));
+  const summary = summarise(
+    pkg.meta,
+    rows,
+    undefined,
+    note !== null,
+    repos.bookmarks.has(slug),
+    repos.submissions.acceptedVersions().get(slug) ?? null,
+  );
   const settings = repos.settings.get();
 
   // Solved in *any* language unlocks the editorial: the approach is the same
