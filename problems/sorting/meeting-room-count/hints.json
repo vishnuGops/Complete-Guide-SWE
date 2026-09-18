@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The answer is a count at a moment in time. Which moments could possibly be the busiest?",
+    "Only a moment when a booking starts - nothing gets busier between two starts. So there are at most n moments to check.",
+    "Sort the starts and sort the ends separately. Walk the starts in order, releasing every room whose end time has already passed, then take the room; the high-water mark is the answer.",
+    "The same thing falls out of a heap of end times: for each booking in start order, pop every end that is at or before this start, push this end, and the heap's size is the rooms in use."
+  ]
+}

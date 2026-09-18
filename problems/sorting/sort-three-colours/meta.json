@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "sort-three-colours",
+  "slug": "sort-three-colours",
+  "title": "Three Kinds Of Reading",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["in-place", "two pointers", "counting sort"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "sortThreeKinds",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["even-odd-partition", "zero-gravity"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

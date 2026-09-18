@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two groups, each keeping its internal order. What is the simplest thing that produces exactly that?",
+    "Two passes: collect the evens, then collect the odds, then join them. Order within each group is preserved because you never reorder anything.",
+    "The sorting lens: sort by the key `reading % 2`, which is 0 for even and 1 for odd. That gives the same answer only if the sort is *stable*.",
+    "In Java the primitive array sort takes no comparator and is not stable, so sorting by a key there means boxing every reading first - a real cost, and the reason the two-pass answer wins."
+  ]
+}

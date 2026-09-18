@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "meeting-room-count",
+  "slug": "meeting-room-count",
+  "title": "Rooms At Once",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["intervals", "sweep", "heap"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 3,
+  "mode": "function",
+  "entry": "roomsAtOnce",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-overlapping-windows", "insert-one-window"],
+  "targetComplexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  }
+}

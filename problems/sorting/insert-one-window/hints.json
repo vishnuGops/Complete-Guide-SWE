@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The schedule is already sorted and merged. What does that let you say about the windows that come before the new one, and about the ones after it?",
+    "They are untouched. Only a contiguous run in the middle can possibly meet the new window, because the existing windows are disjoint and in order.",
+    "Walk the schedule once in three phases: copy the windows that end before the new one starts, absorb the ones that meet it, then copy the rest.",
+    "Absorbing means widening the new window: its start becomes the smaller of the two starts, its end the larger of the two ends. Add it to the output only once the absorbing is done."
+  ]
+}

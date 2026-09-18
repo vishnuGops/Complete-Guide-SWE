@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "sort-by-parity-stable",
+  "slug": "sort-by-parity-stable",
+  "title": "Even Ones First, In Order",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["stable partition", "custom sort"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 8,
+  "mode": "function",
+  "entry": "evensFirst",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["even-odd-partition", "frequency-order"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

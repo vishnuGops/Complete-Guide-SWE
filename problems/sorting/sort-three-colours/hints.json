@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "With only three possible values, what would you need to know at any moment to place the next reading correctly?",
+    "Keep three regions: the 0s settled at the front, the 2s settled at the back, and the part you have not looked at yet. The 1s end up in the middle for free.",
+    "Carry three positions: `low` (where the next 0 belongs), `high` (where the next 2 belongs) and `at` (what you are looking at). Swap according to the value at `at`.",
+    "After swapping a 2 down from the back, do not advance `at` - the value you just pulled in from the back has not been looked at yet."
+  ]
+}

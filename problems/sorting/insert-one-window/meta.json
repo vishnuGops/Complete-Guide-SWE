@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "insert-one-window",
+  "slug": "insert-one-window",
+  "title": "Fit One More Window",
+  "version": 1,
+  "topic": "sorting",
+  "patterns": ["intervals", "one pass"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 4,
+  "mode": "function",
+  "entry": "insertWindow",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-overlapping-windows", "meeting-room-count"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}
