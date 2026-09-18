@@ -112,12 +112,24 @@ test.describe('the filters', () => {
   test('sorts by a column, then reverses it', async ({ page }) => {
     await page.goto('/');
 
+    const column = page.getByRole('columnheader', { name: /Rating/ });
     const rating = page.getByRole('button', { name: /^Rating/ });
-    await rating.click();
-    await expect(page).toHaveURL(/sort=rating/);
-    await expect(page).not.toHaveURL(/dir=desc/);
 
     await rating.click();
+    await expect(page).toHaveURL(/sort=rating/);
+    /*
+     * Waited on the header's own `aria-sort` rather than only on the URL.
+     *
+     * The URL changes on the click and the rows arrive a request later, so
+     * clicking twice in a row can land the second click before the first has
+     * settled - and then "ascending, then descending" is a race rather than an
+     * assertion. This is also the state a screen reader is told about, which
+     * makes it the right thing to assert either way.
+     */
+    await expect(column).toHaveAttribute('aria-sort', 'ascending');
+
+    await rating.click();
+    await expect(column).toHaveAttribute('aria-sort', 'descending');
     await expect(page).toHaveURL(/dir=desc/);
   });
 
