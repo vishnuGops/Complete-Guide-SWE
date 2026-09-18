@@ -37,8 +37,22 @@ export interface CoachStreamOptions {
  * in the server's `routes/coach.ts`. Callers therefore have to read events to
  * know a turn succeeded; checking only for a thrown error is not enough.
  */
+/**
+ * The routes that answer with an event stream.
+ *
+ * Listed rather than left as `string`, so a typo is a compile error and the set
+ * of streaming endpoints is readable in one place. The interview pair joined in
+ * P9-1 and take a session id in the path, which is why this is a template type
+ * rather than a union of literals.
+ */
+export type StreamPath =
+  | '/api/coach/feedback'
+  | '/api/coach/chat'
+  | `/api/interview/${string}/say`
+  | `/api/interview/${string}/finish`;
+
 export async function* streamCoach(
-  path: '/api/coach/feedback' | '/api/coach/chat',
+  path: StreamPath,
   body: unknown,
   options: CoachStreamOptions = {},
 ): AsyncGenerator<CoachStreamEvent> {

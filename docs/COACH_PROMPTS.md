@@ -161,3 +161,19 @@ COACH_LIVE_TESTS=1 ANTHROPIC_API_KEY=sk-... npm run test:integration
 It does one real feedback turn and one real cancellation per provider that has a key, and then scores the five code states in `coach/__fixtures__/rubric.ts` — an untouched starter, a wrong approach, a correct-but-quadratic solution, a right-but-unreadable one, and the reference. Each case says which dimensions must be below 4, the furthest rung the state justifies, and whether mastery is even possible; the wording is never asserted, because two good reviews of the same code share almost no sentences.
 
 The assertions are one-directional on purpose: a coach that is _more_ generous than the fixtures allow fails, and one that is more conservative does not. Run it before bumping the version. It costs a few cents and finds the thing no offline test can — that `v3` hands out approaches to someone who needed a nudge.
+
+## 11. The interviewer
+
+The mock interview (ROADMAP P9-1) drives the same provider seam with a different system prompt, `prompts/interviewer/system.md`. It is deliberately **unversioned**: nothing is stored against it, nothing is scored by it, and there is no history of answers to trace back to a wording. `PROMPT_VERSION` exists so a number in the database can be explained; a conversation that leaves no number behind needs no number.
+
+It is a different job, not a different tone. The coach reviews finished work and is told to be useful; the interviewer sits opposite someone mid-problem and is told, in the first line, that it is not the coach. Three rules carry the feature:
+
+- **The approach before the code.** It asks what the candidate would do and pushes back on it. This is the part practice normally leaves out, and it is the whole reason the screen exists.
+- **The complexity with the reason attached.** The same bar `v4` sets for the coach's _Saying it out loud_ section: `"O(n log n)"` is a number, `"O(n log n) because the sort dominates the single pass after it"` is an answer, and the first form is not accepted.
+- **No answers.** It probes, it does not hand over. A mock interview that helps is not a measurement of anything.
+
+The debrief is one turn like any other, streamed and then stored on the interview row. It is told that a debrief saying everything went well is worth nothing - an honest one is the only part of the sitting with any value afterwards.
+
+The context-is-data rule from `v2` applies here too, and for the same reason: the statement, the candidate's own code and their drafts all arrive as material, and none of them can talk the interviewer into giving the answer.
+
+What the interviewer is told about the sitting is assembled in `interviewService.ts` and goes **with the message rather than into history** - the stage, the clock, what has been submitted, the current statement and the drafts are all true _now_, and a stale copy three turns back would have it asking about a stage the candidate has left.

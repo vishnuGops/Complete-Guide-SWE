@@ -5,6 +5,8 @@ import {
   COACH_API_KEY_ENV,
   type ProblemDetail,
   type DashboardResponse,
+  type Interview,
+  type InterviewResponse,
   type NextProblemResponse,
   type ProblemListResponse,
   type RuntimeReport,
@@ -1035,6 +1037,118 @@ describe('the dashboard (P7-5)', () => {
     expect(response.body).toContain('# DSA practice report');
 
     expect((await api('GET', '/api/dashboard/report?format=pdf')).statusCode).toBe(400);
+  });
+});
+
+describe('the mock interview (P9-1)', () => {
+  it('refuses to start when there are not two unsolved problems', async () => {
+    // The fixture catalogue has two, so solving one leaves one.
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    const response = await api('POST', '/api/interview');
+    expect(response.statusCode).toBe(400);
+    expect(response.json().message).toContain('two unsolved problems');
+  });
+
+  it('picks two, starts on the approach, and says how long there is', async () => {
+    const body = (await api('POST', '/api/interview')).json() as Interview;
+
+    expect(body.problems).toHaveLength(2);
+    // The approach comes before the code. That ordering is the feature.
+    expect(body.stage).toBe('approach');
+    expect(body.at).toBe(0);
+    expect(body.remainingMs).toBeGreaterThan(40 * 60 * 1000);
+    expect(body.endedAt).toBeNull();
+    expect(body.debrief).toBeNull();
+  });
+
+  it('is the one the screen opens on afterwards', async () => {
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+
+    const current = (await api('GET', '/api/interview')).json() as InterviewResponse;
+    expect(current.interview?.id).toBe(started.id);
+  });
+
+  it('says there is none before there has been one', async () => {
+    expect(((await api('GET', '/api/interview')).json() as InterviewResponse).interview).toBeNull();
+  });
+
+  it('walks approach to coding to review, then on to the next problem', async () => {
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+    const advance = async () =>
+      (await api('POST', `/api/interview/${started.id}/advance`)).json() as Interview;
+
+    expect((await advance()).stage).toBe('coding');
+    expect((await advance()).stage).toBe('review');
+
+    const second = await advance();
+    expect(second.at).toBe(1);
+    expect(second.stage).toBe('approach');
+  });
+
+  it('ends at the debrief after the last problem', async () => {
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+    let last: Interview = started;
+    // Three stages each for two problems.
+    for (let i = 0; i < 6; i += 1) {
+      last = (await api('POST', `/api/interview/${started.id}/advance`)).json() as Interview;
+    }
+
+    expect(last.stage).toBe('debrief');
+    expect(last.at).toBe(2);
+  });
+
+  it('reports what was submitted during the sitting, and only that', async () => {
+    /*
+     * A failed attempt from before the interview, dated in the past. It leaves
+     * the problem unsolved - so the interview still asks it - and it must not
+     * be read as an answer given today.
+     */
+    repos.db
+      .prepare(
+        `INSERT INTO submissions
+           (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+         VALUES ('00000000-0000-4000-8000-00000000aaaa', ?, 'python', 'x = 1', 'WA', 0, 3, 1, 1, ?)`,
+      )
+      .run(EASY, '2026-09-01T09:00:00.000Z');
+
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+    expect(started.problems.every((problem) => !problem.attempted)).toBe(true);
+
+    const slug = started.problems[0]?.slug ?? '';
+    await api('POST', '/api/submit', { slug, language: 'python', code: 'x = 1' });
+
+    const now = (await api('GET', '/api/interview')).json() as InterviewResponse;
+    const problem = now.interview?.problems.find((entry) => entry.slug === slug);
+    expect(problem?.attempted).toBe(true);
+    expect(problem?.solved).toBe(true);
+  });
+
+  it('404s an interview that does not exist', async () => {
+    expect(
+      (await api('GET', '/api/interview/11111111-1111-4111-8111-111111111111')).statusCode,
+    ).toBe(404);
+    expect((await api('POST', '/api/interview/not-a-uuid/advance')).statusCode).toBe(400);
+  });
+
+  it('says so rather than streaming when there is no key', async () => {
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+
+    const response = await api('POST', `/api/interview/${started.id}/say`, {
+      message: 'I would use a hash map.',
+    });
+
+    // The same `skipped` event a coach turn produces: the pre-check spends
+    // nothing and needs no vendor (D13).
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('no_api_key');
+  });
+
+  it('refuses an empty thing to say', async () => {
+    const started = (await api('POST', '/api/interview')).json() as Interview;
+    expect(
+      (await api('POST', `/api/interview/${started.id}/say`, { message: '' })).statusCode,
+    ).toBe(400);
   });
 });
 

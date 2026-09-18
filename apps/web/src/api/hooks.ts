@@ -12,6 +12,8 @@ import type {
   ConnectionTestResponse,
   DashboardResponse,
   DraftResponse,
+  Interview,
+  InterviewResponse,
   HintRevealResponse,
   Language,
   NoteResponse,
@@ -52,6 +54,7 @@ export const keys = {
   submissions: (slug: string) => ['submissions', slug] as const,
   progress: ['progress'] as const,
   dashboard: ['dashboard'] as const,
+  interview: ['interview'] as const,
   settings: ['settings'] as const,
   runtimeCheck: ['runtime-check'] as const,
 };
@@ -179,6 +182,37 @@ export function useNextProblem(): UseMutationResult<NextProblemResponse, Error, 
 /** Downloading the skills report. A mutation: it is a button, not a fact. */
 export function useDownloadReport(): UseMutationResult<void, Error, ReportFormat> {
   return useMutation({ mutationFn: api.downloadReport });
+}
+
+/**
+ * The mock interview (ROADMAP P9-1).
+ *
+ * One sitting at a time, so there is no key per id: the screen always opens on
+ * the latest one, finished or not, which is also how a debrief stays readable
+ * after the clock has stopped.
+ */
+export function useInterview() {
+  return useQuery<InterviewResponse>({ queryKey: keys.interview, queryFn: api.interview });
+}
+
+export function useStartInterview(): UseMutationResult<Interview, Error, void> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.startInterview,
+    onSuccess: (interview) => {
+      queryClient.setQueryData<InterviewResponse>(keys.interview, { interview });
+    },
+  });
+}
+
+export function useAdvanceInterview(): UseMutationResult<Interview, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.advanceInterview,
+    onSuccess: (interview) => {
+      queryClient.setQueryData<InterviewResponse>(keys.interview, { interview });
+    },
+  });
 }
 
 export function useSettings() {

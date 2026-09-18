@@ -4,6 +4,7 @@ import { createCoachRepo, type CoachRepo } from './repos/coach.js';
 import { createDraftRepo, type DraftRepo } from './repos/drafts.js';
 import { createEventRepo, type EventRepo } from './repos/events.js';
 import { createBookmarkRepo, type BookmarkRepo } from './repos/bookmarks.js';
+import { createInterviewRepo, type InterviewRepo } from './repos/interviews.js';
 import { createNoteRepo, type NoteRepo } from './repos/notes.js';
 import { createProgressRepo, type ProgressRepo } from './repos/progress.js';
 import { createSettingsRepo, type SettingsRepo } from './repos/settings.js';
@@ -17,6 +18,7 @@ export * from './repos/coach.js';
 export * from './repos/drafts.js';
 export * from './repos/events.js';
 export * from './repos/bookmarks.js';
+export * from './repos/interviews.js';
 export * from './repos/notes.js';
 export * from './repos/progress.js';
 export * from './repos/settings.js';
@@ -35,6 +37,7 @@ export interface Repositories {
   progress: ProgressRepo;
   notes: NoteRepo;
   bookmarks: BookmarkRepo;
+  interviews: InterviewRepo;
   settings: SettingsRepo;
   coach: CoachRepo;
   events: EventRepo;
@@ -49,6 +52,7 @@ export function createRepositories(db: Database): Repositories {
     progress: createProgressRepo(db),
     notes: createNoteRepo(db),
     bookmarks: createBookmarkRepo(db),
+    interviews: createInterviewRepo(db),
     settings: createSettingsRepo(db),
     coach: createCoachRepo(db),
     events: createEventRepo(db),

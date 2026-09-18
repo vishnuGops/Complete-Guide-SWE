@@ -118,6 +118,15 @@ export function CommandPalette({
         },
       },
       {
+        id: 'interview',
+        label: 'Start a mock interview',
+        hint: 'two problems, 45 minutes, approach first',
+        run: () => {
+          void navigate('/interview');
+          return Promise.resolve(null);
+        },
+      },
+      {
         id: 'progress',
         label: 'Progress',
         hint: 'streak, topics, skills report',

@@ -362,6 +362,44 @@ export async function* streamChat(
   deps: CoachServiceDeps,
   signal?: AbortSignal,
 ): AsyncGenerator<CoachStreamEvent> {
+  yield* streamCoachTurn(
+    { sessionId: request.sessionId, system: systemPrompt(), message: request.message },
+    deps,
+    signal,
+  );
+}
+
+/** One prose turn: what to send, and what to remember having sent. */
+export interface CoachTurnRequest {
+  sessionId: string;
+  /** The system prompt for this turn. The coach's, or the interviewer's (P9-1). */
+  system: string;
+  /** What the provider is asked. */
+  message: string;
+  /**
+   * What goes in the history instead, when the two differ.
+   *
+   * A mock interview sends the provider the stage, the clock and the code
+   * alongside what the candidate said, because all of that is true *now* - and
+   * storing it would leave a stale copy three turns back, with the interviewer
+   * asking about a stage the candidate has left. The history keeps the sentence
+   * the person actually typed.
+   */
+  stored?: string;
+}
+
+/**
+ * One turn of a conversation, streamed (ROADMAP P5-3, generalised by P9-1).
+ *
+ * The spend cap, the usage accounting, the abort handling and the history
+ * window are all here rather than in each caller, because a second copy of the
+ * cap is a cap that can disagree with itself about whether it has been reached.
+ */
+export async function* streamCoachTurn(
+  request: CoachTurnRequest,
+  deps: CoachServiceDeps,
+  signal?: AbortSignal,
+): AsyncGenerator<CoachStreamEvent> {
   const session = deps.repos.coach.getSession(request.sessionId);
   if (!session) throw notFound('That coaching conversation no longer exists.');
 
@@ -393,7 +431,7 @@ export async function* streamChat(
     for await (const chunk of provider.stream({
       apiKey: resolved.key,
       model: settings.coach.model,
-      system: systemPrompt(),
+      system: request.system,
       // No schema: prose, not a document. The schema that makes a review
       // parseable would make a one-sentence answer arrive quoted and escaped,
       // and the panel would render the escapes.
@@ -412,7 +450,7 @@ export async function* streamChat(
     // Gemini would reject on every later turn (P5-9).
     deps.repos.coach.addMessage(session.id, {
       role: 'user',
-      content: request.message,
+      content: request.stored ?? request.message,
       ...(spent === null ? {} : { costUsd: spent }),
     });
     if (!isAbort(error, signal)) yield toErrorEvent(error);
@@ -421,7 +459,10 @@ export async function* streamChat(
 
   // Persisted as a pair, after the fact: a question with no answer after it is
   // not a turn anyone can continue from.
-  deps.repos.coach.addMessage(session.id, { role: 'user', content: request.message });
+  deps.repos.coach.addMessage(session.id, {
+    role: 'user',
+    content: request.stored ?? request.message,
+  });
   deps.repos.coach.addMessage(session.id, {
     role: 'coach',
     content: reply,

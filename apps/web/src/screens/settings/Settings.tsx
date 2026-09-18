@@ -31,6 +31,7 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
     [cleared.drafts, 'draft'],
     [cleared.events, 'activity event'],
     [cleared.coachSessions, 'coach session'],
+    [cleared.interviews, 'mock interview'],
   ] as const;
 
   const said = parts

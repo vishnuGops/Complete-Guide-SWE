@@ -89,6 +89,7 @@ describe('migrate', () => {
       'coach_sessions',
       'drafts',
       'events',
+      'interviews',
       'notes',
       'problem_progress',
       'settings',

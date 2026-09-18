@@ -583,6 +583,7 @@ export const resetProgressResponseSchema = z.object({
     drafts: z.int().min(0),
     events: z.int().min(0),
     coachSessions: z.int().min(0),
+    interviews: z.int().min(0),
   }),
 });
 export type ResetProgressResponse = z.infer<typeof resetProgressResponseSchema>;

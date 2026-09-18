@@ -184,6 +184,7 @@ describe('reset all progress', () => {
     repos.events.record({ type: 'submit', slug: 'pair-sum-index', language: 'python' });
     const session = repos.coach.createSession('pair-sum-index', 'python');
     repos.coach.addMessage(session.id, { role: 'user', content: 'help' });
+    repos.interviews.create({ slugs: ['pair-sum-index'], budgetMs: 60_000 });
     repos.notes.save('pair-sum-index', 'my own notes');
     updateSettings({ coach: { apiKey: KEY } }, { repos, env: {} });
   });
@@ -197,12 +198,16 @@ describe('reset all progress', () => {
       drafts: 1,
       events: 1,
       coachSessions: 1,
+      interviews: 1,
     });
     expect(repos.submissions.list()).toEqual([]);
     expect(repos.progress.list()).toEqual([]);
     expect(repos.drafts.get('pair-sum-index', 'python')).toBeNull();
     expect(repos.events.list()).toEqual([]);
     expect(repos.coach.listSessions('pair-sum-index')).toEqual([]);
+    // A sitting about problems the reset has just unsolved is not a record
+    // worth keeping either.
+    expect(repos.interviews.latest()).toBeNull();
   });
 
   it('keeps what the user wrote and what they configured', () => {

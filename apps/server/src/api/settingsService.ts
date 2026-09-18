@@ -149,8 +149,10 @@ export async function testConnection(deps: SettingsServiceDeps): Promise<Connect
 /**
  * Wipes everything the user has done, keeping everything they have written.
  *
- * Submissions, progress, drafts, activity and coach conversations go: they are a
- * record of practice, and "reset all progress" means exactly that. Notes and
+ * Submissions, progress, drafts, activity, coach conversations and mock
+ * interviews go: they are a record of practice, and "reset all progress" means
+ * exactly that - a sitting left behind would be one asking about problems the
+ * reset has just marked unsolved again. Notes and
  * settings stay - a note is the user's own writing about a problem, and losing
  * it (along with the API key) to a button labelled "reset progress" would be a
  * nasty surprise. The UI must still confirm before calling this.
@@ -163,6 +165,7 @@ export function resetProgress(repos: Repositories): ResetProgressResponse {
       drafts: repos.drafts.clear(),
       events: repos.events.clear(),
       coachSessions: repos.coach.clearSessions(),
+      interviews: repos.interviews.clear(),
     },
   }));
 }

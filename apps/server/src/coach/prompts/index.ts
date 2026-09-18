@@ -52,3 +52,22 @@ const SYSTEM_PROMPT = readFileSync(path.join(here, PROMPT_VERSION, 'system.md'),
 export function systemPrompt(): string {
   return SYSTEM_PROMPT;
 }
+
+/**
+ * The interviewer (ROADMAP P9-1).
+ *
+ * A separate prompt rather than a section of the coach's, because the two jobs
+ * are opposites: the coach exists to get someone unstuck, and an interviewer
+ * who does that has destroyed the only information the sitting produces. One
+ * file cannot hold both without the model averaging them.
+ *
+ * Unversioned, unlike the coach's. `PROMPT_VERSION` exists so stored rubric
+ * feedback can be traced to the wording that produced it; an interview's output
+ * is prose the candidate reads once, and there is no score to re-interpret
+ * later. If that changes - a rubric in the debrief - this gains a version too.
+ */
+const INTERVIEWER_PROMPT = readFileSync(path.join(here, 'interviewer', 'system.md'), 'utf8').trim();
+
+export function interviewerPrompt(): string {
+  return INTERVIEWER_PROMPT;
+}

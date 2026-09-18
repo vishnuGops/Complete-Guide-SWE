@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { CLIENT_HEADERS } from './helpers.js';
 
 /**
  * The accessibility audit (ROADMAP P4-10).
@@ -58,6 +59,7 @@ const PAGES = [
   { name: 'problem list', url: '/', ready: 'Problems' },
   { name: 'progress', url: '/progress', ready: 'Progress' },
   { name: 'settings', url: '/settings', ready: 'Settings' },
+  { name: 'interview', url: '/interview', ready: 'Mock interview' },
   { name: 'workspace', url: '/problems/pair-sum-index', ready: 'Pair Sum Index' },
 ] as const;
 
@@ -202,6 +204,46 @@ function detail(node: { any?: { id: string; data?: unknown }[] }): string {
   if (data?.contrastRatio === undefined) return '';
   return ` - ${String(data.contrastRatio)}:1, ${String(data.fgColor)} on ${String(data.bgColor)}, ${String(data.fontSize)}`;
 }
+
+/**
+ * The interview while it is running (ROADMAP P9-1).
+ *
+ * The page in `PAGES` is the one with no sitting behind it - a heading, a
+ * paragraph and a button. The screen that matters is the other one: a clock
+ * that updates itself, a list of problems, a stage instruction and a transcript
+ * with a text box under it, none of which exist until an interview is started.
+ *
+ * One theme, like `after a run` above and for the same reason: what this adds
+ * is markup, and the colours in it are audited on every other screen.
+ */
+test.describe('an interview in progress', () => {
+  test('has no serious violations while the clock is running', async ({ page, request }) => {
+    const started = await request.post('/api/interview', { headers: CLIENT_HEADERS });
+    test.skip(
+      !started.ok(),
+      'needs two unsolved problems, and this database has fewer than two left',
+    );
+    const { id } = (await started.json()) as { id: string };
+
+    try {
+      await applyTheme(page, 'light', '/interview');
+      await expect(page.getByRole('timer')).toBeVisible();
+
+      const { violations } = await audit(page).analyze();
+      const serious = violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      );
+      expect(
+        serious.map((violation) => `${violation.impact ?? 'unknown'} ${violation.id}`),
+        describe(violations, 'the interview screen mid-sitting'),
+      ).toEqual([]);
+    } finally {
+      // Ended whatever happened above: the audit of the idle `/interview` page
+      // runs in this same worker and expects the screen with the button on it.
+      await request.post(`/api/interview/${id}/finish`, { headers: CLIENT_HEADERS });
+    }
+  });
+});
 
 /**
  * The screens that only exist after something happened (ROADMAP P4-13).

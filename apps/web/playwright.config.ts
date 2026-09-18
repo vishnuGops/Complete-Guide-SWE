@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /(a11y|settings)\.spec\.ts/,
+      testIgnore: /(a11y|settings|interview)\.spec\.ts/,
     },
     /*
      * Settings get a project of their own, one worker wide (ROADMAP P8-1).
@@ -50,6 +50,22 @@ export default defineConfig({
       name: 'settings',
       use: { ...devices['Desktop Chrome'] },
       testMatch: /settings\.spec\.ts/,
+      workers: 1,
+      fullyParallel: false,
+    },
+    /*
+     * And so does the interview, for the same reason (ROADMAP P9-1).
+     *
+     * There is one current sitting per database, so two tests starting one at
+     * once are each other's - and the audit below walks `/interview`, which
+     * draws a completely different screen while one is running. Serialised
+     * here, and before the audit, so what the audit meets is whatever this
+     * project left behind rather than a screen mid-interview.
+     */
+    {
+      name: 'interview',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /interview\.spec\.ts/,
       workers: 1,
       fullyParallel: false,
     },
@@ -74,9 +90,11 @@ export default defineConfig({
        * After the settings project, never beside it. The audit reads the theme
        * out of the page it is measuring, and `settings.spec.ts` changes the
        * theme for every window there is - which would be one project's text
-       * measured against the other project's background.
+       * measured against the other project's background. The interview project
+       * is a dependency for the same class of reason: it starts and ends the
+       * sitting that decides which of two screens `/interview` draws.
        */
-      dependencies: ['settings'],
+      dependencies: ['settings', 'interview'],
     },
   ],
   webServer: {

@@ -4,6 +4,8 @@ import type {
   BookmarkResponse,
   DashboardResponse,
   DraftResponse,
+  Interview,
+  InterviewResponse,
   HintRevealResponse,
   Language,
   NoteResponse,
@@ -146,6 +148,11 @@ export const api = {
     }),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
   dashboard: (): Promise<DashboardResponse> => request('/api/dashboard'),
+
+  interview: (): Promise<InterviewResponse> => request('/api/interview'),
+  startInterview: (): Promise<Interview> => request('/api/interview', { method: 'POST' }),
+  advanceInterview: (id: string): Promise<Interview> =>
+    request(`/api/interview/${encodeURIComponent(id)}/advance`, { method: 'POST' }),
 
   setBookmark: (slug: string, bookmarked: boolean): Promise<BookmarkResponse> =>
     request(`/api/bookmarks/${encodeURIComponent(slug)}`, {
