@@ -719,6 +719,44 @@ describe('navigation aids (P7-7)', () => {
   });
 });
 
+describe('review mode (P7-8)', () => {
+  function openForReview() {
+    return renderApp(
+      <Routes>
+        <Route path="/problems/:slug" element={<Workspace />} />
+      </Routes>,
+      { route: `/problems/${SLUG}?review=1` },
+    );
+  }
+
+  it('shuts the hints and the editorial, and says why', async () => {
+    serve();
+    openForReview();
+
+    expect(await screen.findByText(/Reviewing from memory/)).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Hints' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Editorial' })).not.toBeInTheDocument();
+  });
+
+  it('has a way out that is not the address bar', async () => {
+    serve();
+    openForReview();
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Leave review mode' }));
+
+    expect(await screen.findByRole('tab', { name: 'Hints' })).toBeInTheDocument();
+    expect(screen.queryByText(/Reviewing from memory/)).not.toBeInTheDocument();
+  });
+
+  it('is off unless the URL says so', async () => {
+    serve();
+    open();
+
+    expect(await screen.findByRole('tab', { name: 'Hints' })).toBeInTheDocument();
+    expect(screen.queryByText(/Reviewing from memory/)).not.toBeInTheDocument();
+  });
+});
+
 describe('the editor', () => {
   it('starts from the starter when there is no draft', async () => {
     serve();

@@ -96,6 +96,19 @@ export function CommandPalette({
         },
       },
       {
+        id: 'review',
+        label: 'Review something due',
+        hint: 'the most overdue thing you have solved',
+        run: async () => {
+          const result = await suggest('review');
+          if (!result.problem) return result.reason;
+          // Straight into review mode: coming here from the queue and then
+          // being able to open the editorial would make the review pointless.
+          void navigate(`/problems/${result.problem.slug}?review=1`);
+          return null;
+        },
+      },
+      {
         id: 'bookmarks',
         label: 'Bookmarked problems',
         hint: 'the ones you starred',

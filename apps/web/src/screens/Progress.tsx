@@ -9,6 +9,8 @@ import {
   solvedCount,
   type ActiveDay,
   type RecentActivity,
+  type ReviewItem,
+  type ReviewQueue,
   type Streak,
   type TierCount,
   type TopicCount,
@@ -329,6 +331,82 @@ function Export() {
   );
 }
 
+/**
+ * The review queue (ROADMAP P7-8).
+ *
+ * Two lists, and the second one matters as much as the first: a queue that only
+ * shows what is due is a nag, and one that also shows what is coming is a
+ * calendar. Each row says how long ago it was last solved and how many times it
+ * has been, because "review this" without that is an instruction rather than a
+ * reason.
+ */
+function ReviewRow({ item, overdue }: { item: ReviewItem; overdue: boolean }) {
+  const when = overdue
+    ? item.overdueDays === 0
+      ? 'due today'
+      : `${String(item.overdueDays)} day${item.overdueDays === 1 ? '' : 's'} overdue`
+    : `due ${new Date(item.dueAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+
+  return (
+    <li className="border-border flex items-baseline gap-2 border-b py-1.5 text-sm last:border-b-0">
+      {/*
+        `?review=1` is what puts the workspace into review mode: hints and the
+        editorial stay shut, because a review you can look up is not a review.
+      */}
+      <Link
+        to={`/problems/${item.slug}?review=1`}
+        className="focus-ring hover:text-accent-fg rounded-xs font-medium"
+      >
+        {item.title}
+      </Link>
+      <span className="text-fg-subtle text-xs">{TOPIC_LABEL[item.topic]}</span>
+      <span className="text-fg-subtle tnum text-xs">
+        {item.passes} pass{item.passes === 1 ? '' : 'es'}
+      </span>
+      <span className={cn('tnum ml-auto text-xs', overdue ? 'text-warn-fg' : 'text-fg-subtle')}>
+        {when}
+      </span>
+    </li>
+  );
+}
+
+function Reviews({ reviews }: { reviews: ReviewQueue }) {
+  if (reviews.due.length === 0 && reviews.upcoming.length === 0) return null;
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
+        Review queue
+      </h2>
+
+      {reviews.due.length === 0 ? (
+        <p className="text-fg-muted text-sm">
+          Nothing due. The queue fills up as what you have solved gets older.
+        </p>
+      ) : (
+        <ul>
+          {reviews.due.map((item) => (
+            <ReviewRow key={item.slug} item={item} overdue />
+          ))}
+        </ul>
+      )}
+
+      {reviews.upcoming.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-fg-muted focus-ring cursor-pointer rounded-xs text-xs">
+            {reviews.upcoming.length} coming up
+          </summary>
+          <ul className="mt-1">
+            {reviews.upcoming.map((item) => (
+              <ReviewRow key={item.slug} item={item} overdue={false} />
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
 /** Two tables' worth of rows, at the height they will be when they arrive. */
 function ProgressSkeleton() {
   return (
@@ -458,6 +536,7 @@ export function Progress() {
               </table>
             </section>
 
+            <Reviews reviews={data.reviews} />
             <Skills skills={data.skills} />
             <Recent recent={data.recent} />
             <Export />

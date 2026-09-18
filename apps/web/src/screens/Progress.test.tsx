@@ -23,6 +23,7 @@ function aDashboard(overrides: Partial<DashboardResponse> = {}): DashboardRespon
     recent: [],
     skills: [],
     editorialsRevealed: 0,
+    reviews: { due: [], upcoming: [] },
     generatedAt: '2026-09-18T09:30:00.000Z',
     ...overrides,
   };
@@ -155,6 +156,74 @@ describe('the dashboard', () => {
 
     expect(await screen.findByText(/no problems to make progress through/)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Streak' })).not.toBeInTheDocument();
+  });
+
+  it('lists what is due for review, and links into review mode (P7-8)', async () => {
+    serve(
+      aDashboard({
+        reviews: {
+          due: [
+            {
+              slug: 'pair-sum-index',
+              title: 'Pair Sum Index',
+              topic: 'arrays',
+              tier: 'Easy',
+              status: 'solved',
+              lastPassedAt: '2026-09-01T09:00:00.000Z',
+              passes: 2,
+              dueAt: '2026-09-08T09:00:00.000Z',
+              overdueDays: 10,
+            },
+          ],
+          upcoming: [],
+        },
+      }),
+    );
+    renderApp(<Progress />);
+
+    // `?review=1` is the point: a review you can look the answer up in is not
+    // a review, and the link is what shuts the hints.
+    expect(await screen.findByRole('link', { name: 'Pair Sum Index' })).toHaveAttribute(
+      'href',
+      '/problems/pair-sum-index?review=1',
+    );
+    expect(screen.getByText('10 days overdue')).toBeInTheDocument();
+    expect(screen.getByText('2 passes')).toBeInTheDocument();
+  });
+
+  it('shows what is coming even when nothing is due yet (P7-8)', async () => {
+    serve(
+      aDashboard({
+        reviews: {
+          due: [],
+          upcoming: [
+            {
+              slug: 'pair-sum-index',
+              title: 'Pair Sum Index',
+              topic: 'arrays',
+              tier: 'Easy',
+              status: 'solved',
+              lastPassedAt: '2026-09-18T09:00:00.000Z',
+              passes: 1,
+              dueAt: '2026-09-21T09:00:00.000Z',
+              overdueDays: -3,
+            },
+          ],
+        },
+      }),
+    );
+    renderApp(<Progress />);
+
+    expect(await screen.findByText(/Nothing due/)).toBeInTheDocument();
+    expect(screen.getByText('1 coming up')).toBeInTheDocument();
+  });
+
+  it('says nothing about reviews before anything has been solved (P7-8)', async () => {
+    serve();
+    renderApp(<Progress />);
+
+    await screen.findByRole('heading', { name: 'Streak' });
+    expect(screen.queryByRole('heading', { name: 'Review queue' })).not.toBeInTheDocument();
   });
 
   it('downloads the report in the format that was clicked', async () => {

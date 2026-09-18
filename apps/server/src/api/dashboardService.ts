@@ -9,6 +9,7 @@ import {
 } from '@devpromax/shared';
 import { nowIso } from '../db/open.js';
 import { progressOverview, type ProblemServiceDeps } from './problemService.js';
+import { reviewQueue } from './reviewService.js';
 
 /**
  * The progress dashboard (ROADMAP P7-5).
@@ -144,6 +145,7 @@ export function dashboard(deps: ProblemServiceDeps): DashboardResponse {
     skills: skillsFrom(repos.coach.scoredTurns(), (slug) => titles.get(slug)?.topic),
     editorialsRevealed: repos.events.list().filter((event) => event.type === 'editorial_revealed')
       .length,
+    reviews: reviewQueue(deps, generatedAt),
     generatedAt,
   };
 }

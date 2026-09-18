@@ -18,6 +18,7 @@ import {
   submissionSchema,
   type ProgressStatus,
 } from './progress.js';
+import { reviewQueueSchema } from './review.js';
 
 /**
  * The HTTP contract (ROADMAP P3-1).
@@ -316,7 +317,7 @@ export type BookmarkResponse = z.infer<typeof bookmarkResponseSchema>;
 // GET /api/next
 // ---------------------------------------------------------------------------
 
-export const NEXT_MODES = ['recommended', 'random'] as const;
+export const NEXT_MODES = ['recommended', 'random', 'review'] as const;
 export const nextModeSchema = z.enum(NEXT_MODES);
 export type NextMode = z.infer<typeof nextModeSchema>;
 
@@ -412,6 +413,8 @@ export const dashboardResponseSchema = z.object({
   skills: z.array(topicSkillSchema),
   /** Problems whose editorial was opened rather than earned (P7-2). */
   editorialsRevealed: z.int().min(0),
+  /** What is due for a re-solve, and what is coming (P7-8). */
+  reviews: reviewQueueSchema,
   /** When this was produced, which the exported report is dated by. */
   generatedAt: z.iso.datetime(),
 });

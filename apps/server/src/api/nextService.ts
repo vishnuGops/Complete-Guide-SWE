@@ -9,6 +9,7 @@ import {
 } from '@devpromax/shared';
 import { skillsFrom } from './dashboardService.js';
 import { listProblems, type ProblemServiceDeps } from './problemService.js';
+import { reviewQueue } from './reviewService.js';
 
 /**
  * "What should I do next" (ROADMAP P7-7).
@@ -81,6 +82,27 @@ export function nextProblem(
     { topic: [], tier: [], status: [], sort: 'default', dir: 'asc' },
     deps,
   ).items;
+  if (mode === 'review') {
+    /*
+     * Solved problems, so none of them are in `candidates` below: the review
+     * queue is the opposite question from "what have I not done yet".
+     */
+    const [first] = reviewQueue(deps).due;
+    if (!first) {
+      return {
+        problem: null,
+        reason: 'Nothing is due for review. The queue fills up as what you solved gets older.',
+      };
+    }
+    return {
+      problem: all.find((summary) => summary.slug === first.slug) ?? null,
+      reason:
+        first.overdueDays > 0
+          ? `Due ${String(first.overdueDays)} day(s) ago, and the most overdue thing you have solved.`
+          : 'Due today, and the first thing in your review queue.',
+    };
+  }
+
   const candidates = all.filter(unsolved);
 
   if (candidates.length === 0) {

@@ -630,15 +630,17 @@ export interface StatementPanelProps {
   /** Puts an old submission back in the editor (P7-3). */
   onRestore: (submission: Submission) => void;
   /**
-   * The interview timer is running (P7-6), so the hints and the editorial are
-   * not on screen.
+   * Hints and editorial are off the screen.
+   *
+   * Two things ask for it: the interview timer (P7-6) and a review opened from
+   * the queue (P7-8). Both want the same thing for the same reason, and the
+   * panel does not need to know which - so the prop says what it does rather
+   * than which feature turned it on.
    *
    * Removed rather than disabled. A disabled tab is still a tab you can see and
-   * think about, and the point of the mode is to practise without the option -
-   * the same reason the button that opens it is a deliberate choice rather than
-   * a default.
+   * think about, and the point of either mode is to practise without the option.
    */
-  interviewMode: boolean;
+  hideAssistance: boolean;
   coach: ReactNode;
 }
 
@@ -651,7 +653,7 @@ function StatementPanelBody({
   language,
   code,
   onRestore,
-  interviewMode,
+  hideAssistance,
   coach,
 }: StatementPanelProps) {
   const { summary } = problem;
@@ -685,9 +687,9 @@ function StatementPanelBody({
         <TabsTrigger value="description">Description</TabsTrigger>
         {/* Gone while the clock runs (P7-6), not disabled: a greyed-out Hints
             tab is still a hint tab you can see and think about. */}
-        {!interviewMode && <TabsTrigger value="hints">Hints</TabsTrigger>}
+        {!hideAssistance && <TabsTrigger value="hints">Hints</TabsTrigger>}
         <TabsTrigger value="coach">Coach</TabsTrigger>
-        {!interviewMode && <TabsTrigger value="editorial">Editorial</TabsTrigger>}
+        {!hideAssistance && <TabsTrigger value="editorial">Editorial</TabsTrigger>}
         <TabsTrigger value="notes">
           Notes
           {problem.note !== null && (
@@ -717,7 +719,7 @@ function StatementPanelBody({
         </div>
       </TabsContent>
 
-      {!interviewMode && (
+      {!hideAssistance && (
         <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
           <Hints hints={problem.hints} revealed={revealedHints} onReveal={onRevealHint} />
         </TabsContent>
@@ -731,7 +733,7 @@ function StatementPanelBody({
         {coach}
       </StickyTabsContent>
 
-      {!interviewMode && (
+      {!hideAssistance && (
         <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
           <Editorial problem={problem} language={language} code={code} />
         </TabsContent>

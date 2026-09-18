@@ -708,6 +708,96 @@ describe('bookmarks and what to do next (P7-7)', () => {
   });
 });
 
+describe('the review queue (P7-8)', () => {
+  /**
+   * An accepted submission dated in the past.
+   *
+   * Written with SQL rather than through the repository, which stamps the
+   * current time - the whole point here is a pass that happened weeks ago, and
+   * a `createdAt` parameter on `insert` would exist only for this test.
+   */
+  let n = 0;
+  function passed(slug: string, at: string) {
+    n += 1;
+    repos.db
+      .prepare(
+        `INSERT INTO submissions
+           (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+         VALUES (?, ?, 'python', 'x = 1', 'AC', 3, 3, 1, 1, ?)`,
+      )
+      .run(`00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, slug, at);
+  }
+
+  async function dashboard() {
+    return (await api('GET', '/api/dashboard')).json() as DashboardResponse;
+  }
+
+  it('is empty until something has been solved', async () => {
+    expect((await dashboard()).reviews).toEqual({ due: [], upcoming: [] });
+  });
+
+  it('puts a problem solved weeks ago in the due list', async () => {
+    passed(EASY, '2026-09-01T09:00:00.000Z');
+
+    const { reviews } = await dashboard();
+    expect(reviews.due.map((item) => item.slug)).toEqual([EASY]);
+    expect(reviews.due[0]?.passes).toBe(1);
+    expect(reviews.due[0]?.overdueDays).toBeGreaterThan(0);
+  });
+
+  it('keeps a problem solved an hour ago out of it', async () => {
+    passed(EASY, new Date(Date.now() - 60 * 60 * 1000).toISOString());
+
+    const { reviews } = await dashboard();
+    expect(reviews.due).toEqual([]);
+    // Still on the calendar, though: a queue that only shows what is due is a
+    // nag, and one that also shows what is coming is a schedule.
+    expect(reviews.upcoming.map((item) => item.slug)).toEqual([EASY]);
+  });
+
+  it('counts a re-solve as a pass and pushes the next review further out', async () => {
+    passed(EASY, '2026-09-01T09:00:00.000Z');
+    const first = (await dashboard()).reviews.due[0];
+
+    passed(EASY, '2026-09-02T09:00:00.000Z');
+    const second = (await dashboard()).reviews.due[0];
+
+    expect(second?.passes).toBe(2);
+    // One day later and one rung up the ladder: 1 September plus three days
+    // against 2 September plus seven.
+    expect((second?.dueAt ?? '') > (first?.dueAt ?? '')).toBe(true);
+  });
+
+  it('ignores a failed submission - it is not a pass', async () => {
+    passed(EASY, '2026-09-01T09:00:00.000Z');
+    repos.db
+      .prepare(
+        `INSERT INTO submissions
+           (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+         VALUES ('00000000-0000-4000-8000-999999999999', ?, 'python', 'x = 1', 'WA', 1, 3, 1, 1, ?)`,
+      )
+      .run(MEDIUM, '2026-09-01T09:00:00.000Z');
+
+    const { reviews } = await dashboard();
+    expect([...reviews.due, ...reviews.upcoming].map((item) => item.slug)).toEqual([EASY]);
+  });
+
+  it('sends the most overdue problem when asked for a review', async () => {
+    passed(EASY, '2026-08-01T09:00:00.000Z');
+    passed(MEDIUM, '2026-09-10T09:00:00.000Z');
+
+    const body = (await api('GET', '/api/next?mode=review')).json() as NextProblemResponse;
+    expect(body.problem?.slug).toBe(EASY);
+    expect(body.reason).toContain('overdue');
+  });
+
+  it('says so when nothing is due for review', async () => {
+    const body = (await api('GET', '/api/next?mode=review')).json() as NextProblemResponse;
+    expect(body.problem).toBeNull();
+    expect(body.reason).toContain('Nothing is due');
+  });
+});
+
 describe('the interview timer (P7-6)', () => {
   it('records the elapsed time on a submit', async () => {
     await api('POST', '/api/submit', {

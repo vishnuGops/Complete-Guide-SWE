@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
@@ -133,6 +133,15 @@ function WorkspaceSkeleton() {
 
 export function Workspace() {
   const { slug = '' } = useParams<{ slug: string }>();
+  /*
+   * Review mode (ROADMAP P7-8), carried in the URL.
+   *
+   * In the URL rather than in state, because the review queue links to it and a
+   * reloaded review has to still be a review. `?review=1` hides the hints and
+   * the editorial: a review you can look the answer up in is not a review.
+   */
+  const [search, setSearch] = useSearchParams();
+  const reviewing = search.get('review') === '1';
   const { data: problem, isPending, error, refetch } = useProblem(slug);
   const { data: settings } = useSettings();
   const theme = useResolvedTheme();
@@ -452,6 +461,7 @@ export function Workspace() {
    * text they have already read.
    */
   const interviewMode = timer.running;
+  const hideAssistance = interviewMode || reviewing;
   /**
    * Starting the clock while the Hints tab is open (P7-6).
    *
@@ -460,7 +470,7 @@ export function Workspace() {
    * in the button's handler, because the timer can also start from a place that
    * does not know which tab is showing.
    */
-  if (interviewMode && (leftTab === 'hints' || leftTab === 'editorial')) {
+  if (hideAssistance && (leftTab === 'hints' || leftTab === 'editorial')) {
     setLeftTab('description');
   }
   const reveal = revealHint.mutate;
@@ -930,6 +940,31 @@ export function Workspace() {
         </div>
       </header>
 
+      {/*
+        Review mode says so (P7-8). A screen that has quietly removed two tabs
+        without explaining itself is a screen that looks broken - and the way
+        out has to be on it, because the only other one is editing the URL.
+      */}
+      {reviewing && (
+        <div className="border-border bg-surface-sunken flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
+          <p className="text-fg-muted text-xs">
+            Reviewing from memory. Hints and the editorial are shut until you leave review mode.
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto"
+            onClick={() => {
+              const next = new URLSearchParams(search);
+              next.delete('review');
+              setSearch(next, { replace: true });
+            }}
+          >
+            Leave review mode
+          </Button>
+        </div>
+      )}
+
       <SplitPane
         direction="row"
         ratio={layout.statement}
@@ -948,7 +983,7 @@ export function Workspace() {
               onRevealHint={onRevealHint}
               language={language}
               code={code}
-              interviewMode={timer.running}
+              hideAssistance={hideAssistance}
               onRestore={restoreSubmission}
               coach={coachPanel}
             />
