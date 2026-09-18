@@ -6,7 +6,7 @@ Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` fi
 
 DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists ~200 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **M1 reached (2026-09-17)** — the vertical slice works: 20 validated problems, the judge, the Fastify API, and a web UI you can filter, read, solve and watch flip to Solved, in both languages and from the keyboard alone (`npm run dev`; `apps/web/e2e/flows.spec.ts` walks it and `e2e/a11y.spec.ts` audits it in both themes). Next is M2, the coach (P5-1 onwards): the provider's streaming half, the versioned prompts, and the AI Help panel. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Current state: **M2 reached (2026-09-17)** — the vertical slice works (20 validated problems, judge, API, web UI in both languages and from the keyboard alone; `apps/web/e2e/flows.spec.ts` walks it, `e2e/a11y.spec.ts` audits it in both themes) and the coach streams rubric feedback into the Coach panel. The 2026-09-17 audit found the coach can only be configured from `COACH_API_KEY` (no Settings UI yet) and that `npm start` serves the API alone. Next is **M2.1**, the audit-fix block P5-8 … P4-13 in ROADMAP.md, then M3, the catalogue. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
 ## Stack (decided, see ROADMAP D1–D17)
 
@@ -31,19 +31,19 @@ Current state: **M1 reached (2026-09-17)** — the vertical slice works: 20 vali
 ```
 npm install                 # all workspaces
 npm run dev                 # web + server with hot reload
-npm start                   # production build + serve on 127.0.0.1
-npm test                    # Vitest unit + contract + judge integration
+npm start                   # production build, then the API on 127.0.0.1:5174 (serves no UI until P3-6)
+npm test                    # Vitest unit + contract + judge integration (npm run test:watch for watch mode)
 npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
 npm run test:integration    # only *.integration.test.ts (spawns real python/java)
 npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db)
-npm run lint && npm run typecheck
+npm run lint && npm run typecheck           # lint:fix, format and format:check also exist
 npm run problems:validate [--static] [slug]   # schema (and reference solutions pass in both languages)
 npm run problems:new <topic> <slug>
 npm run problems:gen <slug>                   # regenerate hidden tests from generator.py
 npm run problems:schema [--check]             # regenerate docs/schema/*.json from the zod schemas
 ```
 
-Until P0-5 lands, none of these exist yet. Do not invent others without adding them here.
+Do not invent others without adding them here.
 
 ## Conventions
 
