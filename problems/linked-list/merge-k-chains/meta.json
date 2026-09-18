@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "merge-k-chains",
+  "slug": "merge-k-chains",
+  "title": "Merge K Ordered Chains",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["k-way merge", "heap", "merge"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 11,
+  "mode": "function",
+  "entry": "mergeAll",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-two-chains", "kth-largest-value"],
+  "targetComplexity": {
+    "time": "O(N log k)",
+    "space": "O(k)"
+  }
+}

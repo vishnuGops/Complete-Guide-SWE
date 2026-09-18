@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "reverse-in-groups",
+  "slug": "reverse-in-groups",
+  "title": "Reverse Every K Links",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["linked list reversal", "dummy head"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 12,
+  "mode": "function",
+  "entry": "reverseEveryK",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["reverse-chain", "reorder-chain"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "reorder-chain",
+  "slug": "reorder-chain",
+  "title": "Fold The Chain",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["fast and slow pointers", "linked list reversal", "merge"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 9,
+  "mode": "function",
+  "entry": "foldChain",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["is-palindrome-chain", "middle-link"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

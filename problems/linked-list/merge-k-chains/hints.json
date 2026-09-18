@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "At any moment the next link of the answer is the smallest among the current heads of the chains. How much does that set change when you take one?",
+    "By exactly one element: the chain you took from advances, and nothing else moves. So you need a structure that gives the smallest of `k` things and supports one replacement cheaply.",
+    "A min-heap of the current heads, keyed by value. Pop the smallest, append it, and push its successor if there is one.",
+    "Merging pairwise in a tournament - merge chains two at a time, then the results, and so on - gives the same `O(N log k)` without a heap, and is worth knowing as the other half of the answer."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You already know how to reverse a whole chain. What extra information does reversing a *segment* need that reversing the whole chain does not?",
+    "Where the segment ends, and what comes before it - because the reversed segment has to be spliced back between its neighbours.",
+    "Before reversing a group, walk `k` links ahead. If you fall off the end, fewer than `k` remain and you are finished; otherwise you have found the group's last link and what follows it.",
+    "Reverse the group by walking to the link *after* the group rather than to null, seeding `previous` with that link - then the reversed group is already attached to its tail."
+  ]
+}

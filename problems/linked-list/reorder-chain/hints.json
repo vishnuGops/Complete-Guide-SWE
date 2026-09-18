@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Look at what the answer is made of: the first half in order, interleaved with the second half in reverse. Both of those are things you already know how to produce.",
+    "Split the chain at the middle, reverse the second half, then weave the two halves together one link at a time.",
+    "Split so that the first half is never shorter than the second. Then the weave ends when the second half runs out, and the odd chain's middle link is already in place.",
+    "Terminate the first half where you cut it, or the two halves still point into each other and the weave builds a loop."
+  ]
+}
