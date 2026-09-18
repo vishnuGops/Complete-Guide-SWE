@@ -49,6 +49,19 @@ export interface Executor {
    */
   prepare(workspace: Workspace, code: string, compileTimeoutMs: number): Promise<PrepareResult>;
 
-  /** Runs a batch of tests in a single process. */
-  run(workspace: Workspace, payload: HarnessPayload, wallClockMs: number): Promise<HarnessRun>;
+  /**
+   * Runs a batch of tests in a single process.
+   *
+   * `stallMs` bounds the gap *between* results rather than the whole run
+   * (ROADMAP P2-13): the harness's own per-test watchdog cannot interrupt an
+   * uninterruptible call - a catastrophic regex, `[0] * 10**9` - so without
+   * this the only bound is the batch's wall clock, which for twenty hidden
+   * tests is over a minute before the isolation fallback even starts.
+   */
+  run(
+    workspace: Workspace,
+    payload: HarnessPayload,
+    wallClockMs: number,
+    stallMs?: number,
+  ): Promise<HarnessRun>;
 }

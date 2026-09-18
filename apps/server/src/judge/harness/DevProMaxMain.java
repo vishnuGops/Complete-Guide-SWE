@@ -1,4 +1,3 @@
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -45,6 +44,16 @@ public class DevProMaxMain {
 
     /** Per test, so one runaway println cannot exhaust the heap. */
     static final int OUTPUT_CAP = 16 * 1024;
+
+    /**
+     * The largest result line the judge will read (ROADMAP P2-13).
+     *
+     * A wrong subsets-style answer can be tens of megabytes. Serialised whole
+     * it is parsed whole by zod and sent to the browser, where it is a wrong
+     * answer nobody can scroll through anyway. Two megabytes is far more than
+     * any correct answer in this catalogue.
+     */
+    static final int RESULT_CAP = 2 * 1024 * 1024;
 
     /** Matches runner.py's thread stack, so deep recursion behaves alike. */
     static final long STACK_BYTES = 64L * 1024 * 1024;
@@ -112,8 +121,8 @@ public class DevProMaxMain {
             String entry, String expect, Map<String, Object> test, long timeoutMs)
             throws IOException {
 
-        ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+        DevProMaxCappedStream outBuffer = new DevProMaxCappedStream(OUTPUT_CAP);
+        DevProMaxCappedStream errBuffer = new DevProMaxCappedStream(OUTPUT_CAP);
         PrintStream realOut = System.out;
         PrintStream realErr = System.err;
 
@@ -186,15 +195,29 @@ public class DevProMaxMain {
         }
 
         record.put("timeMs", elapsedMs);
-        String stdout = capture(outBuffer);
-        String stderr = capture(errBuffer);
-        record.put("stdout", stdout);
-        record.put("stderr", stderr);
-        if (outBuffer.size() > OUTPUT_CAP || errBuffer.size() > OUTPUT_CAP) {
+        record.put("stdout", outBuffer.text());
+        record.put("stderr", errBuffer.text());
+        if (outBuffer.truncated() || errBuffer.truncated()) {
             record.put("outputTruncated", true);
         }
 
-        writeRecord(record);
+        try {
+            writeRecord(record);
+        } catch (DevProMaxResultTooLarge tooLarge) {
+            // The test fails; the run carries on. Reported as a serialisation
+            // error rather than as a wrong answer, because the answer was never
+            // compared - it was too big to carry (P2-13).
+            Map<String, Object> replacement = new LinkedHashMap<>();
+            replacement.put("index", index);
+            replacement.put("status", "error");
+            replacement.put("timeMs", elapsedMs);
+            Map<String, Object> error = new LinkedHashMap<>();
+            error.put("type", "SerialisationError");
+            error.put("message", tooLarge.getMessage());
+            error.put("traceback", "");
+            replacement.put("error", error);
+            writeRecord(replacement);
+        }
         return true;
     }
 
@@ -345,12 +368,6 @@ public class DevProMaxMain {
     // Output
     // -----------------------------------------------------------------------
 
-    private static String capture(ByteArrayOutputStream buffer) {
-        byte[] bytes = buffer.toByteArray();
-        int length = Math.min(bytes.length, OUTPUT_CAP);
-        return new String(bytes, 0, length, StandardCharsets.UTF_8);
-    }
-
     private static String stackTrace(Throwable err) {
         StringWriter writer = new StringWriter();
         err.printStackTrace(new PrintWriter(writer));
@@ -359,7 +376,13 @@ public class DevProMaxMain {
     }
 
     private static synchronized void writeRecord(Map<String, Object> record) throws IOException {
-        results.write(DevProMaxJson.write(record));
+        String line = DevProMaxJson.write(record);
+        if (line.length() > RESULT_CAP) {
+            throw new DevProMaxResultTooLarge(String.format(
+                    "the result is %.1f MB, past the %d MB the judge will carry",
+                    line.length() / 1024.0 / 1024.0, RESULT_CAP / (1024 * 1024)));
+        }
+        results.write(line);
         results.write("\n");
         results.flush();
     }
@@ -382,6 +405,65 @@ public class DevProMaxMain {
     // ListNode / TreeNode - visible to the user's solution, which is compiled
     // in the same default package.
     // =======================================================================
+}
+
+/** A result too big to send as it stands (ROADMAP P2-13). */
+final class DevProMaxResultTooLarge extends RuntimeException {
+    DevProMaxResultTooLarge(String message) {
+        super(message);
+    }
+}
+
+/**
+ * An output stream that stops storing past a cap (ROADMAP P2-13).
+ *
+ * The `ByteArrayOutputStream` this replaces grew without bound and was capped
+ * only afterwards, so `while (true) System.out.println(x)` filled `-Xmx` before
+ * the per-test watchdog fired - and the OutOfMemoryError was then reported as
+ * MLE, blaming the user's memory use for their print loop. Writes past the cap
+ * are dropped as they arrive, so a print storm costs time and nothing else.
+ */
+final class DevProMaxCappedStream extends java.io.OutputStream {
+
+    private final byte[] buffer;
+    private int length;
+    private boolean truncated;
+
+    DevProMaxCappedStream(int cap) {
+        this.buffer = new byte[cap];
+    }
+
+    @Override
+    public void write(int b) {
+        if (length >= buffer.length) {
+            truncated = true;
+            return;
+        }
+        buffer[length++] = (byte) b;
+    }
+
+    @Override
+    public void write(byte[] bytes, int offset, int count) {
+        int room = buffer.length - length;
+        if (room <= 0) {
+            truncated = true;
+            return;
+        }
+        int taken = Math.min(room, count);
+        System.arraycopy(bytes, offset, buffer, length, taken);
+        length += taken;
+        if (taken < count) {
+            truncated = true;
+        }
+    }
+
+    boolean truncated() {
+        return truncated;
+    }
+
+    String text() {
+        return new String(buffer, 0, length, StandardCharsets.UTF_8);
+    }
 }
 
 /** A failure during one call of an operations sequence (ROADMAP P2-12). */

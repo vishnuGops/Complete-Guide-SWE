@@ -175,3 +175,63 @@ describe('runProcess environment', () => {
     expect(result.stdout).toBe('yes');
   });
 });
+
+/**
+ * The stall watchdog (ROADMAP P2-13).
+ *
+ * `progress` is a function here rather than a file, which is what makes the
+ * bound testable: the judge passes the size of the results file, and the
+ * integration suite proves the real thing ends as a timeout.
+ */
+describe('runProcess stall detection', () => {
+  it('kills a child that stops making progress', async () => {
+    const started = Date.now();
+    const result = await runProcess({
+      command: NODE,
+      // Alive and silent, with a wall clock far beyond the stall budget.
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+      stall: { ms: 600, progress: () => 0 },
+    });
+
+    expect(result.killed).toBe(true);
+    // Killed by the stall, not by the wall clock, which is fifty times longer.
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+
+  it('leaves a child alone while it is making progress', async () => {
+    let ticks = 0;
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'setTimeout(() => { process.stdout.write("done"); }, 1200)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+      // Progress changes on every poll, which is what a results file growing
+      // once per completed test looks like.
+      stall: {
+        ms: 400,
+        progress: () => {
+          ticks += 1;
+          return ticks;
+        },
+      },
+    });
+
+    expect(result.killed).toBe(false);
+    expect(result.stdout).toBe('done');
+    expect(ticks).toBeGreaterThan(1);
+  });
+
+  it('does not watch for a stall when no budget is given', async () => {
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'setTimeout(() => { process.stdout.write("ok"); }, 700)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+    });
+
+    expect(result.killed).toBe(false);
+    expect(result.stdout).toBe('ok');
+  });
+});

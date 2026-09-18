@@ -48,6 +48,14 @@ const EXECUTORS: Record<Language, Executor> = {
  * has to catch a process that is wedged below the harness's reach - a C-level
  * blocking call, say - so it is deliberately generous.
  */
+/**
+ * How long past a per-test budget the judge waits before calling it a stall.
+ *
+ * Generous, because the thing being measured is "a result appeared", and the
+ * first result of a run is behind interpreter start-up and module import.
+ */
+const STALL_SLACK_MS = 3_000;
+
 const BATCH_OVERHEAD_MS = 5_000;
 
 export interface JudgeTest {
@@ -232,6 +240,12 @@ async function executeAll(
     workspace,
     payloadFor(workspace, executor, meta, tests, all, perTestMs),
     all.length * perTestMs + BATCH_OVERHEAD_MS,
+    // The gap between results, not the whole run (ROADMAP P2-13). The harness's
+    // own per-test watchdog cannot interrupt an uninterruptible call, so
+    // without this a single hang costs the batch's whole wall clock - over a
+    // minute for twenty hidden tests - before the isolation fallback re-runs
+    // them one at a time.
+    perTestMs + STALL_SLACK_MS,
   );
 
   let outputTruncated = batch.outputTruncated;

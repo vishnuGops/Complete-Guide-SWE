@@ -15,6 +15,21 @@ export interface SpawnOptions {
    * (ROADMAP P2-11).
    */
   env?: NodeJS.ProcessEnv;
+  /**
+   * Kill the child when it stops making progress (ROADMAP P2-13).
+   *
+   * The per-test watchdog lives *inside* the harness, and in Python it is a
+   * `threading.Timer` that cannot fire while a C call holds the GIL: a
+   * catastrophic regex or `[0] * 10**9` is uninterruptible, so the only bound
+   * left was the batch's whole wall clock - 85 seconds for twenty hidden tests,
+   * and then the isolation fallback runs them again.
+   *
+   * `progress` is polled and compared with its previous value; when it has not
+   * changed for `ms`, the tree is killed and the run is reported as killed,
+   * exactly as the wall-clock timeout is. The judge passes the size of the
+   * results file, which grows once per completed test.
+   */
+  stall?: { ms: number; progress: () => number };
 }
 
 export interface SpawnResult {
@@ -157,11 +172,40 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       killTree(child);
     }, options.timeoutMs);
 
+    /*
+     * The stall watchdog (P2-13).
+     *
+     * Polled rather than event-driven: what it watches is a file the child
+     * writes, and `fs.watch` on Windows is both flaky and more machinery than a
+     * stat every few hundred milliseconds. The tick is a quarter of the budget,
+     * so the kill lands within 25% of the stated time.
+     */
+    const stall = options.stall;
+    let lastProgress = stall ? stall.progress() : 0;
+    let sinceProgress = 0;
+    const stallTick = stall ? Math.max(100, Math.floor(stall.ms / 4)) : 0;
+    const stallTimer = stall
+      ? setInterval(() => {
+          const now = stall.progress();
+          if (now !== lastProgress) {
+            lastProgress = now;
+            sinceProgress = 0;
+            return;
+          }
+          sinceProgress += stallTick;
+          if (sinceProgress >= stall.ms) {
+            killed = true;
+            killTree(child);
+          }
+        }, stallTick)
+      : undefined;
+
     const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
       if (settled) return;
       settled = true;
       live.delete(child);
       clearTimeout(watchdog);
+      if (stallTimer) clearInterval(stallTimer);
       resolve({
         code,
         signal,
@@ -178,6 +222,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       settled = true;
       live.delete(child);
       clearTimeout(watchdog);
+      if (stallTimer) clearInterval(stallTimer);
       reject(err);
     });
 

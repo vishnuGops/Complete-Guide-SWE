@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
@@ -134,6 +135,7 @@ export const javaExecutor: Executor = {
     workspace: Workspace,
     payload: HarnessPayload,
     wallClockMs: number,
+    stallMs?: number,
   ): Promise<HarnessRun> {
     await workspace.write(PAYLOAD_FILE, JSON.stringify(payload));
     await fs.rm(workspace.file(RESULTS_FILE), { force: true });
@@ -153,6 +155,11 @@ export const javaExecutor: Executor = {
       cwd: workspace.dir,
       timeoutMs: wallClockMs,
       outputCap: OUTPUT_CAP_BYTES,
+      // Progress is the results file growing, which happens once per completed
+      // test (ROADMAP P2-13).
+      ...(stallMs === undefined
+        ? {}
+        : { stall: { ms: stallMs, progress: () => resultsSizeOf(workspace.file(RESULTS_FILE)) } }),
     });
 
     const records = parseResultLines(await workspace.read(RESULTS_FILE));
@@ -169,3 +176,17 @@ export const javaExecutor: Executor = {
     };
   },
 };
+
+/**
+ * The size of the results file, for the stall watchdog (ROADMAP P2-13).
+ *
+ * Synchronous and forgiving: it runs on a timer beside a child process, the
+ * file may not exist yet, and a missing file is simply "no progress".
+ */
+function resultsSizeOf(path: string): number {
+  try {
+    return fsSync.statSync(path).size;
+  } catch {
+    return 0;
+  }
+}

@@ -19,7 +19,6 @@ structural patterns, no PEP 695 generics, no `itertools.batched`.
 """
 
 import importlib.util
-import io
 import json
 import os
 import sys
@@ -33,6 +32,14 @@ EXIT_TIMEOUT = 3
 
 # Per test, so one runaway print cannot exhaust memory before the judge's own cap.
 OUTPUT_CAP = 16 * 1024
+
+# The largest result line the judge will read (ROADMAP P2-13).
+#
+# A wrong subsets-style answer can be tens of megabytes. Serialised whole it is
+# then parsed whole by zod and sent to the browser, where it is a wrong answer
+# nobody can scroll through anyway. Two megabytes is far more than any correct
+# answer in this catalogue and small enough that the failure is instant.
+RESULT_CAP = 2 * 1024 * 1024
 
 RECURSION_LIMIT = 10_000
 # Matches the JVM's -Xss64m, so a solution that recurses to the stated depth
@@ -315,17 +322,32 @@ def encode_value(value):
 # ---------------------------------------------------------------------------
 
 
+class ResultTooLarge(Exception):
+    """A record too big to send as it stands (ROADMAP P2-13)."""
+
+
 class Results:
+    """The result stream.
+
+    Flushed after every line, so the judge can read what completed even when
+    the process is killed mid-run - which is what makes the timeout isolation
+    fallback possible.
+
+    Deliberately *not* `fsync`ed. The reader is a separate process that starts
+    after this one has exited, so the operating system's own buffer is already
+    enough; on Windows an fsync per record costs milliseconds each and buys
+    nothing (P2-13).
+    """
+
     def __init__(self, path):
         self._file = open(path, "w", encoding="utf-8", newline="\n")
         self._lock = threading.Lock()
 
     def write(self, record):
-        line = json.dumps(record, ensure_ascii=False, allow_nan=False)
+        line = self._encode(record)
         with self._lock:
             self._file.write(line + "\n")
             self._file.flush()
-            os.fsync(self._file.fileno())
 
     @property
     def lock(self):
@@ -333,16 +355,73 @@ class Results:
 
     def write_locked(self, record):
         """Write without taking the lock; the caller already holds it."""
-        line = json.dumps(record, ensure_ascii=False, allow_nan=False)
+        line = self._encode(record)
         self._file.write(line + "\n")
         self._file.flush()
-        os.fsync(self._file.fileno())
+
+    @staticmethod
+    def _encode(record):
+        line = json.dumps(record, ensure_ascii=False, allow_nan=False)
+        if len(line) > RESULT_CAP:
+            raise ResultTooLarge(
+                "the result is %.1f MB, past the %d MB the judge will carry"
+                % (len(line) / 1024.0 / 1024.0, RESULT_CAP // (1024 * 1024))
+            )
+        return line
 
 
-def cap(text):
-    if len(text) <= OUTPUT_CAP:
-        return text, False
-    return text[:OUTPUT_CAP], True
+class CappingWriter:
+    """A text stream that stops storing past `OUTPUT_CAP` characters.
+
+    The buffers this replaces were unbounded and capped only afterwards
+    (ROADMAP P2-13), so `while True: print(x)` ran until the per-test timeout,
+    having first allocated as much memory as it could. Dropping writes as they
+    arrive makes a print storm cost nothing but time.
+
+    `truncated` is what the record reports, so the panel can say the output was
+    cut rather than implying the program stopped printing.
+    """
+
+    def __init__(self, cap=OUTPUT_CAP):
+        self._parts = []
+        self._length = 0
+        self._cap = cap
+        self.truncated = False
+
+    def write(self, text):
+        if not isinstance(text, str):
+            text = str(text)
+        written = len(text)
+        room = self._cap - self._length
+        if room <= 0:
+            self.truncated = True
+            return written
+        if written > room:
+            self._parts.append(text[:room])
+            self._length = self._cap
+            self.truncated = True
+            return written
+        self._parts.append(text)
+        self._length += written
+        return written
+
+    def getvalue(self):
+        return "".join(self._parts)
+
+    # Enough of the file protocol for whatever a solution reaches for.
+    def flush(self):
+        return None
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
+    def isatty(self):
+        return False
+
+    @property
+    def encoding(self):
+        return "utf-8"
 
 
 # ---------------------------------------------------------------------------
@@ -468,8 +547,8 @@ def run_tests(module, payload, results):
         timer.daemon = True
         timer.start()
 
-        out_buffer = io.StringIO()
-        err_buffer = io.StringIO()
+        out_buffer = CappingWriter()
+        err_buffer = CappingWriter()
         real_stdout, real_stderr = sys.stdout, sys.stderr
         sys.stdout, sys.stderr = out_buffer, err_buffer
 
@@ -510,18 +589,18 @@ def run_tests(module, payload, results):
                 state["done"] = True
 
         record["timeMs"] = elapsed_ms
-        stdout_text, stdout_cut = cap(out_buffer.getvalue())
-        stderr_text, stderr_cut = cap(err_buffer.getvalue())
-        record["stdout"] = stdout_text
-        record["stderr"] = stderr_text
-        if stdout_cut or stderr_cut:
+        record["stdout"] = out_buffer.getvalue()
+        record["stderr"] = err_buffer.getvalue()
+        if out_buffer.truncated or err_buffer.truncated:
             record["outputTruncated"] = True
 
         try:
             results.write(record)
-        except ValueError as err:
-            # encode_value already rejects non-finite floats; this is the backstop
-            # for anything else json refuses, so the test fails rather than the run.
+        except (ValueError, ResultTooLarge) as err:
+            # Two cases, one answer: a value json refuses (encode_value already
+            # rejects non-finite floats, so this is the backstop) and a value
+            # too large to carry (P2-13). Either way this test fails and the
+            # rest of the run continues.
             results.write(
                 {
                     "index": index,
@@ -542,8 +621,10 @@ def user_traceback(err):
     kept = [f for f in frames if os.path.basename(f.filename) != "runner.py"]
     lines = traceback.format_list(kept or frames)
     lines.extend(traceback.format_exception_only(type(err), err))
-    text, _ = cap("".join(lines))
-    return text
+    text = "".join(lines)
+    # The same cap the captured output gets; `cap` itself went with the
+    # unbounded buffers it belonged to (P2-13).
+    return text[:OUTPUT_CAP]
 
 
 # ---------------------------------------------------------------------------

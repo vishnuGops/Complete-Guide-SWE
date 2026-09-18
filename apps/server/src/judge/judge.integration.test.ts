@@ -1029,3 +1029,105 @@ describe('operations mode: which call failed', () => {
     expect(result.tests[0]?.message).toMatch(/operation 1 \(peek\)/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bounds on output, results and hangs (ROADMAP P2-13)
+// ---------------------------------------------------------------------------
+
+describe('output and result bounds', () => {
+  const fastLimits = { limits: { timeoutMs: { python: 1500, java: 2500 } } };
+
+  it.each(LANGUAGES)('%s: a print storm is a timeout, not a memory error', async (language) => {
+    // The buffers used to grow without bound and be capped only afterwards, so
+    // this filled `-Xmx` in Java and was reported as MLE - blaming the user's
+    // memory use for their print loop.
+    const code =
+      language === 'python'
+        ? [
+            'class Solution:',
+            '    def solve(self, n):',
+            '        while True:',
+            '            print("x" * 1000)',
+            '        return n',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public int solve(int n) {',
+            '        String line = "x".repeat(1000);',
+            '        while (true) {',
+            '            System.out.println(line);',
+            '        }',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, { meta: fastLimits });
+
+    expect(result.verdict).toBe('TLE');
+    // What it must *not* be: the print loop is not an allocation problem.
+    expect(result.tests[0]?.verdict).not.toBe('MLE');
+  });
+
+  it.each(LANGUAGES)('%s: reports a return too large to carry', async (language) => {
+    // A wrong subsets-style answer can be tens of megabytes; serialised whole
+    // it is parsed whole by zod and sent to the browser.
+    const code =
+      language === 'python'
+        ? [
+            'class Solution:',
+            '    def solve(self, n):',
+            '        return ["x" * 1000] * 4000',
+            '',
+          ].join('\n')
+        : [
+            'import java.util.*;',
+            '',
+            'class Solution {',
+            '    public List<String> solve(int n) {',
+            '        List<String> out = new ArrayList<>();',
+            '        String chunk = "x".repeat(1000);',
+            '        for (int i = 0; i < 4000; i++) {',
+            '            out.add(chunk);',
+            '        }',
+            '        return out;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, { meta: fastLimits });
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toMatch(/past the 2 MB the judge will carry/);
+    // And the run survived it: this is one failing test, not a broken judge.
+    expect(result.tests).toHaveLength(1);
+  });
+
+  it('python: an uninterruptible call still ends as a timeout', async () => {
+    /*
+     * The harness's own watchdog is a `threading.Timer`, and a C call holding
+     * the GIL keeps it from firing at all - so before P2-13 the only bound was
+     * the batch's whole wall clock, and then the isolation fallback ran every
+     * test again. The judge now watches the results file and kills the process
+     * when nothing has arrived for a per-test budget plus slack.
+     *
+     * The *bound* is asserted in `process.test.ts`, where a fake progress
+     * function makes it deterministic. What matters here is that a real
+     * uninterruptible call is reported as a timeout rather than as a crash.
+     */
+    const code = [
+      'class Solution:',
+      '    def solve(self, n):',
+      '        # Allocating a gigantic list holds the GIL inside C.',
+      '        return len([0] * (10 ** 10))',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('python', code, { meta: fastLimits });
+
+    expect(result.verdict).toBe('TLE');
+    expect(result.tests[0]?.message).toMatch(/time limit/i);
+  });
+});
