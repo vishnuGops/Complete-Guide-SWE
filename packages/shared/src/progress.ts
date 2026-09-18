@@ -158,13 +158,31 @@ export function applyProgressEvent(
       if (target === undefined) {
         throw new Error('manual_override requires the status to override to.');
       }
+      /*
+       * Solved at most (D25, ROADMAP P5-10).
+       *
+       * "I solved this on paper" is a real claim the user is entitled to make.
+       * "The coach passed this" is not something anyone can assert on the
+       * coach's behalf - and an override to Mastered unlocked the editorial and
+       * the `solution` rung with no submission behind it, which is the one
+       * thing D13 exists to prevent. Mastered is set by the coach or not at all.
+       *
+       * Clamped rather than rejected: the user asked for the highest status
+       * they can claim, and refusing the whole request would be a worse answer
+       * than granting the part of it that is theirs to grant.
+       */
+      const claimed = statusRank(target) > statusRank('solved') ? 'solved' : target;
+
       // The only event allowed to move a status down: the user is the authority
       // on their own progress, including marking something they know they have
       // not really learned back to In progress.
-      next.status = target;
-      next.solvedAt = statusRank(target) >= statusRank('solved') ? (current.solvedAt ?? at) : null;
+      next.status = claimed;
+      next.solvedAt = statusRank(claimed) >= statusRank('solved') ? (current.solvedAt ?? at) : null;
+      // Always cleared, because `claimed` can never reach Mastered: the
+      // timestamp records the coach's decision, and a row that is no longer
+      // Mastered has no such decision standing. Re-earning it sets it again.
       next.masteredAt =
-        statusRank(target) >= statusRank('mastered') ? (current.masteredAt ?? at) : null;
+        statusRank(claimed) >= statusRank('mastered') ? (current.masteredAt ?? at) : null;
       break;
     }
   }

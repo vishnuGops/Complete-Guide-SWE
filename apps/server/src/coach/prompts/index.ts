@@ -18,7 +18,13 @@ import { fileURLToPath } from 'node:url';
  * in a way that would change the advice.
  */
 
-export const PROMPT_VERSION = 'v1';
+/**
+ * `v2` (ROADMAP P5-10): the untrusted-input rule and the requirement that
+ * every score below 4 be justified in the prose. Both change the advice, which
+ * is what the bump rule in `docs/COACH_PROMPTS.md` asks for - `v1` stays on
+ * disk so feedback recorded against it can still be traced to its wording.
+ */
+export const PROMPT_VERSION = 'v2';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 

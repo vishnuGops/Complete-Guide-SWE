@@ -133,3 +133,53 @@ describe('images', () => {
     );
   });
 });
+
+/**
+ * Images in a model's answer (ROADMAP P5-10).
+ *
+ * `rehype-sanitize` allows any `img src`, and coach markdown is influenced by
+ * the code in the editor and by the problem text - so an injected image URL is
+ * a beacon that fires the moment the answer paints, with no click involved.
+ */
+describe('coach content', () => {
+  it('drops an image that points anywhere but this app', () => {
+    const { container } = render(
+      <Markdown content="![beacon](https://elsewhere.example/x.png?c=1)" trust="coach" />,
+    );
+
+    // Queried through the container rather than by role: an `img` with no `src`
+    // has no accessible image role to find it by, which is rather the point.
+    const image = container.querySelector('img');
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute('src') ?? '').not.toContain('elsewhere.example');
+  });
+
+  it('keeps an image served by the assets route', () => {
+    render(
+      <Markdown content="![grid](/api/problems/pair-sum-index/assets/grid.png)" trust="coach" />,
+    );
+
+    expect(screen.getByRole('img', { name: 'grid' })).toHaveAttribute(
+      'src',
+      '/api/problems/pair-sum-index/assets/grid.png',
+    );
+  });
+
+  it('leaves a link alone, because following one is the user’s choice', () => {
+    render(<Markdown content="[the docs](https://example.com/spec)" trust="coach" />);
+
+    expect(screen.getByRole('link', { name: 'the docs' })).toHaveAttribute(
+      'href',
+      'https://example.com/spec',
+    );
+  });
+
+  it('still embeds a statement’s own images, which we wrote', () => {
+    render(<Markdown content="![grid](grid.png)" assetSlug="pair-sum-index" />);
+
+    expect(screen.getByRole('img', { name: 'grid' })).toHaveAttribute(
+      'src',
+      '/api/problems/pair-sum-index/assets/grid.png',
+    );
+  });
+});

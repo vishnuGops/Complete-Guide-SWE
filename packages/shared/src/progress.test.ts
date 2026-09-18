@@ -245,13 +245,35 @@ describe('manual_override', () => {
     expect(next.masteredAt).toBeNull();
   });
 
-  it('marks mastered directly, because the user is the authority on their progress', () => {
+  it('reaches Solved at most, because Mastered is the coach’s to give (D25)', () => {
+    // "I solved this on paper" is a claim the user is entitled to make. "The
+    // coach passed this" is not - and an override to Mastered unlocked the
+    // editorial and the `solution` rung with no submission behind it, which is
+    // the one thing D13 exists to prevent (P5-10).
     const next = apply(initialProgress('pair-sum-index', 'python'), 'manual_override', {
       status: 'mastered',
     });
-    expect(next.status).toBe('mastered');
+
+    // Clamped rather than refused: the highest status that is theirs to claim
+    // is granted, which is a better answer than rejecting the whole request.
+    expect(next.status).toBe('solved');
     expect(next.solvedAt).toBe(LATER);
-    expect(next.masteredAt).toBe(LATER);
+    expect(next.masteredAt).toBeNull();
+  });
+
+  it('cannot re-grant a mastery it once had', () => {
+    // The row was Mastered, the user dropped it to In progress, and now claims
+    // Mastered again: still Solved at most, and the coach's old timestamp does
+    // not come back with it.
+    const dropped = apply(at('mastered'), 'manual_override', { status: 'in_progress' });
+    const next = applyProgressEvent(dropped, {
+      event: 'manual_override',
+      status: 'mastered',
+      at: LATER,
+    });
+
+    expect(next.status).toBe('solved');
+    expect(next.masteredAt).toBeNull();
   });
 
   it('keeps the attempt count, which records what actually happened', () => {

@@ -115,7 +115,7 @@ function Turn({ turn }: { turn: CoachState['turns'][number] }) {
   return (
     <div className="mt-4">
       {turn.feedback && <p className="text-fg mb-2 text-sm font-medium">{turn.feedback.summary}</p>}
-      <Markdown content={turn.content} />
+      <Markdown content={turn.content} trust="coach" />
       {turn.feedback?.nextStep !== undefined && <NextStep text={turn.feedback.nextStep} />}
       {turn.feedback && <RubricCard feedback={turn.feedback} />}
     </div>
@@ -229,7 +229,7 @@ export function CoachPanel({
       */}
       {state.streaming !== '' && (
         <div className="mt-4" role="status" aria-busy="true" data-testid="coach-streaming">
-          <Markdown content={state.streaming} />
+          <Markdown content={state.streaming} trust="coach" />
         </div>
       )}
 

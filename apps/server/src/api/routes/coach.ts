@@ -92,6 +92,12 @@ async function pipe(
     reply.hijack();
     raw.writeHead(200, {
       'content-type': 'text/event-stream; charset=utf-8',
+      // `hijack()` takes the response away from Fastify, and the `onSend` hook
+      // that adds these to every other response with it (ROADMAP P5-10). An
+      // event stream a browser might sniff as something else is the one kind
+      // of response where that matters least and costs nothing to fix.
+      'x-content-type-options': 'nosniff',
+      'referrer-policy': 'no-referrer',
       // A proxy that buffers an event stream turns streaming into a long pause
       // followed by everything at once, which is the failure this whole feature
       // exists to avoid.
