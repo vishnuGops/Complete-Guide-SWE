@@ -367,6 +367,7 @@ describe('the submissions tab (P7-3)', () => {
       total: 3,
       timeMs: 12.4,
       problemVersion: 1,
+      solveMs: null,
       createdAt: '2026-09-17T10:00:00.000Z',
       ...overrides,
     };
@@ -535,6 +536,111 @@ describe('the notes tab (P7-4)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Preview' }));
     expect(screen.getByRole('heading', { name: 'What I missed' })).toBeInTheDocument();
+  });
+});
+
+describe('interview mode (P7-6)', () => {
+  async function startStopwatch() {
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Interview mode' }));
+    await user.click(screen.getByRole('button', { name: 'Stopwatch' }));
+    return user;
+  }
+
+  it('takes the hints and the editorial off the screen while it runs', async () => {
+    serve();
+    open();
+
+    expect(await screen.findByRole('tab', { name: 'Hints' })).toBeInTheDocument();
+
+    const user = await startStopwatch();
+
+    // Removed rather than disabled: a greyed-out Hints tab is still a hint tab
+    // you can see and think about.
+    expect(screen.queryByRole('tab', { name: 'Hints' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Editorial' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Description' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(screen.getByRole('tab', { name: 'Hints' })).toBeInTheDocument();
+  });
+
+  it('moves off a tab that is about to stop existing', async () => {
+    serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Hints' }));
+    await user.click(screen.getByRole('button', { name: 'Interview mode' }));
+    await user.click(screen.getByRole('button', { name: 'Stopwatch' }));
+
+    // Radix left with a selected value and no matching trigger shows nothing at
+    // all, which reads as a broken panel rather than as a mode.
+    expect(screen.getByRole('tab', { name: 'Description', selected: true })).toBeInTheDocument();
+  });
+
+  it('shows a clock, and can be called off', async () => {
+    serve();
+    open();
+
+    const user = await startStopwatch();
+    expect(screen.getByRole('timer')).toHaveAccessibleName('Elapsed time');
+
+    await user.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Interview mode' })).toBeInTheDocument();
+  });
+
+  it('counts down when a length was chosen', async () => {
+    serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Interview mode' }));
+    await user.click(screen.getByRole('button', { name: '30 min' }));
+
+    const clock = screen.getByRole('timer');
+    expect(clock).toHaveAccessibleName('Time remaining');
+    expect(clock).toHaveTextContent('30:00');
+  });
+
+  it('can be dismissed without starting anything', async () => {
+    serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Interview mode' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Hints' })).toBeInTheDocument();
+  });
+
+  it('records the elapsed time on a submit, and nothing on a run', async () => {
+    const server = serve();
+    open();
+
+    const user = await startStopwatch();
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    const run = server.requests.find((request) => request.url.pathname === '/api/run');
+    const submit = server.requests.find((request) => request.url.pathname === '/api/submit');
+
+    // A run is not an attempt at anything, so it carries no solve time.
+    expect(run?.body).not.toHaveProperty('solveMs');
+    expect(submit?.body).toHaveProperty('solveMs');
+  });
+
+  it('sends no solve time when the clock was never started', async () => {
+    const server = serve();
+    open();
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Submit' }));
+
+    const submit = server.requests.find((request) => request.url.pathname === '/api/submit');
+    // Absent, not zero: "not timed" and "solved instantly" are different facts.
+    expect(submit?.body).not.toHaveProperty('solveMs');
   });
 });
 

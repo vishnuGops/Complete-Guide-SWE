@@ -29,6 +29,7 @@ import {
 import { useResolvedTheme } from '../../app/useAppTheme.js';
 import type { CodeEditorHandle } from '../../editor/CodeEditor.js';
 import { SHORTCUTS } from '../../shortcuts/shortcuts.js';
+import { InterviewTimerControl, useInterviewTimer } from './InterviewTimer.js';
 import { useShortcut } from '../../shortcuts/ShortcutProvider.js';
 import {
   Button,
@@ -165,6 +166,15 @@ export function Workspace() {
    * would make the hint appear only once the POST answered; holding only local
    * state would re-hide it on reload.
    */
+  /**
+   * Interview mode (ROADMAP P7-6).
+   *
+   * Owned here because three things need it: the header draws the clock, the
+   * statement panel hides the hints and the editorial while it runs, and a
+   * submit records how long it had been going.
+   */
+  const timer = useInterviewTimer();
+  const stopTimer = timer.stop;
   const [revealedLocally, setRevealedLocally] = useState(0);
   const revealedHints = Math.max(revealedLocally, problem?.revealedHints ?? 0);
 
@@ -248,6 +258,10 @@ export function Workspace() {
       setRestoring(null);
     }
     setOfferMastery(false);
+    // A different problem is a different sitting. Leaving the clock running
+    // across a change would record the first problem's time against the
+    // second one's submission.
+    stopTimer();
     // Only the overlay: `problem.revealedHints` is what the user has actually
     // read, and it is per problem rather than per language - the ladder is the
     // same ladder whichever language they are writing in.
@@ -373,6 +387,10 @@ export function Workspace() {
         ...(kind === 'run' && parsedCustom?.ok && parsedCustom.tests.length > 0
           ? { customTests: parsedCustom.tests }
           : {}),
+        // Only on a submit, and only when the clock was running (P7-6). A run
+        // is not an attempt, and an untimed submit records null rather than
+        // zero - "not timed" and "solved instantly" are different facts.
+        ...(kind === 'submit' && timer.running ? { solveMs: timer.elapsedMs } : {}),
       },
       {
         onSuccess: (next, variables) => {
@@ -431,6 +449,18 @@ export function Workspace() {
    * alternative (waiting for the answer, or rolling back on failure) takes back
    * text they have already read.
    */
+  const interviewMode = timer.running;
+  /**
+   * Starting the clock while the Hints tab is open (P7-6).
+   *
+   * That tab is about to stop existing, and Radix left with no matching trigger
+   * shows an empty panel. Moved back to the Description in render rather than
+   * in the button's handler, because the timer can also start from a place that
+   * does not know which tab is showing.
+   */
+  if (interviewMode && (leftTab === 'hints' || leftTab === 'editorial')) {
+    setLeftTab('description');
+  }
   const reveal = revealHint.mutate;
   const onRevealHint = useCallback(
     (next: number) => {
@@ -472,9 +502,9 @@ export function Workspace() {
     (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
       setLeftTab('coach');
       setOfferMastery(false);
-      coachAsk({ slug, language, code, revealedHints, ...options });
+      coachAsk({ slug, language, code, revealedHints, interviewMode, ...options });
     },
-    [coachAsk, slug, language, code, revealedHints],
+    [coachAsk, slug, language, code, revealedHints, interviewMode],
   );
 
   useShortcut(
@@ -802,6 +832,14 @@ export function Workspace() {
         </Button>
 
         {/*
+          Interview mode (P7-6). Beside Reset rather than out on the right with
+          Run and Submit: it changes the conditions you are working under, which
+          is the same kind of thing as which language you are writing in, and
+          not an action on the code.
+        */}
+        <InterviewTimerControl timer={timer} />
+
+        {/*
           Live status propagation (ROADMAP P4-8), and the whole of the
           confirmation an accepted submit gets.
 
@@ -892,6 +930,7 @@ export function Workspace() {
               onRevealHint={onRevealHint}
               language={language}
               code={code}
+              interviewMode={timer.running}
               onRestore={restoreSubmission}
               coach={coachPanel}
             />

@@ -47,6 +47,7 @@ export interface AskOptions {
   language: Language;
   code: string;
   revealedHints?: number;
+  interviewMode?: boolean;
   masteryCheck?: boolean;
   requestFullSolution?: boolean;
   /**
@@ -245,6 +246,7 @@ export function useCoach(slug: string, language: Language) {
           language: options.language,
           code: options.code,
           revealedHints: options.revealedHints ?? 0,
+          interviewMode: options.interviewMode ?? false,
           masteryCheck: options.masteryCheck ?? false,
           requestFullSolution: options.requestFullSolution ?? false,
           newConversation: options.newConversation ?? false,

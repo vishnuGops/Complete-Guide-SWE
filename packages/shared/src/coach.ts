@@ -106,6 +106,14 @@ export const coachFeedbackRequestSchema = z.object({
   /** True when the user explicitly asked to see the full solution. */
   requestFullSolution: z.boolean().default(false),
   /**
+   * The interview-mode timer was running when this was asked (P7-6).
+   *
+   * Adds the "Saying it out loud" section to the answer. Only here: practice
+   * that is not against a clock does not need a paragraph about explaining
+   * yourself, and one on every review would be padding.
+   */
+  interviewMode: z.boolean().default(false),
+  /**
    * Start a fresh conversation rather than continuing the latest one (P5-9).
    *
    * This is the route out of `spend_cap_reached`, which has always told the

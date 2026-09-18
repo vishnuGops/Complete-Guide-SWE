@@ -593,6 +593,16 @@ export interface StatementPanelProps {
   code: string;
   /** Puts an old submission back in the editor (P7-3). */
   onRestore: (submission: Submission) => void;
+  /**
+   * The interview timer is running (P7-6), so the hints and the editorial are
+   * not on screen.
+   *
+   * Removed rather than disabled. A disabled tab is still a tab you can see and
+   * think about, and the point of the mode is to practise without the option -
+   * the same reason the button that opens it is a deliberate choice rather than
+   * a default.
+   */
+  interviewMode: boolean;
   coach: ReactNode;
 }
 
@@ -605,6 +615,7 @@ function StatementPanelBody({
   language,
   code,
   onRestore,
+  interviewMode,
   coach,
 }: StatementPanelProps) {
   const { summary } = problem;
@@ -636,9 +647,11 @@ function StatementPanelBody({
 
       <TabsList className="shrink-0 px-2">
         <TabsTrigger value="description">Description</TabsTrigger>
-        <TabsTrigger value="hints">Hints</TabsTrigger>
+        {/* Gone while the clock runs (P7-6), not disabled: a greyed-out Hints
+            tab is still a hint tab you can see and think about. */}
+        {!interviewMode && <TabsTrigger value="hints">Hints</TabsTrigger>}
         <TabsTrigger value="coach">Coach</TabsTrigger>
-        <TabsTrigger value="editorial">Editorial</TabsTrigger>
+        {!interviewMode && <TabsTrigger value="editorial">Editorial</TabsTrigger>}
         <TabsTrigger value="notes">
           Notes
           {problem.note !== null && (
@@ -666,9 +679,11 @@ function StatementPanelBody({
         </div>
       </TabsContent>
 
-      <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Hints hints={problem.hints} revealed={revealedHints} onReveal={onRevealHint} />
-      </TabsContent>
+      {!interviewMode && (
+        <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
+          <Hints hints={problem.hints} revealed={revealedHints} onReveal={onRevealHint} />
+        </TabsContent>
+      )}
 
       {/*
         Kept mounted: it holds a half-typed question and a streaming answer, and
@@ -678,9 +693,11 @@ function StatementPanelBody({
         {coach}
       </StickyTabsContent>
 
-      <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Editorial problem={problem} language={language} code={code} />
-      </TabsContent>
+      {!interviewMode && (
+        <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
+          <Editorial problem={problem} language={language} code={code} />
+        </TabsContent>
+      )}
 
       {/*
         Kept mounted, like the coach: it holds something the user typed, and

@@ -13,6 +13,8 @@ const base: NewSubmission = {
   total: 12,
   timeMs: 34.5,
   problemVersion: 1,
+  // Not timed, which is not the same as solved instantly (P7-6).
+  solveMs: null,
 };
 
 beforeEach(() => {

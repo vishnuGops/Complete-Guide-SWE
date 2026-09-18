@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { submissionSchema, type Language, type Submission, type Verdict } from '@devpromax/shared';
 import { nowIso, type Database } from '../open.js';
-import { num, text, type Row } from './rows.js';
+import { nullableNumber, num, text, type Row } from './rows.js';
 
 /** Everything a submission needs except the identity and timestamp the repo assigns. */
 export interface NewSubmission {
@@ -13,6 +13,8 @@ export interface NewSubmission {
   total: number;
   timeMs: number;
   problemVersion: number;
+  /** Interview-mode elapsed time, or null when the timer was not running (P7-6). */
+  solveMs: number | null;
 }
 
 export interface SubmissionQuery {
@@ -32,12 +34,13 @@ function toSubmission(row: Row): Submission {
     total: num(row, 'total'),
     timeMs: num(row, 'time_ms'),
     problemVersion: num(row, 'problem_version'),
+    solveMs: nullableNumber(row, 'solve_ms'),
     createdAt: text(row, 'created_at'),
   });
 }
 
 const COLUMNS =
-  'id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at';
+  'id, slug, language, code, verdict, passed, total, time_ms, problem_version, solve_ms, created_at';
 
 export interface SubmissionRepo {
   insert(submission: NewSubmission): Submission;
@@ -52,7 +55,7 @@ export interface SubmissionRepo {
 
 export function createSubmissionRepo(db: Database): SubmissionRepo {
   const insertStmt = db.prepare(
-    `INSERT INTO submissions (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO submissions (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const getStmt = db.prepare(`SELECT ${COLUMNS} FROM submissions WHERE id = ?`);
   const countStmt = db.prepare('SELECT COUNT(*) AS n FROM submissions WHERE slug = ?');
@@ -81,6 +84,7 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
         row.total,
         row.timeMs,
         row.problemVersion,
+        row.solveMs,
         row.createdAt,
       );
       return row;

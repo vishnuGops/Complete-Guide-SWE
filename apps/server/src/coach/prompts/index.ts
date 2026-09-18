@@ -19,6 +19,12 @@ import { fileURLToPath } from 'node:url';
  */
 
 /**
+ * `v4` (ROADMAP P7-6): interview mode. When the context says the user worked
+ * against a clock, the feedback ends with a "Saying it out loud" section - the
+ * one-sentence approach, the complexity with its reason attached, and the
+ * question an interviewer would ask next. It changes the advice on exactly the
+ * turns that flag is set, which is what the bump rule asks about.
+ *
  * `v3` (ROADMAP P7-1): the authored hint ladder is canonical. The coach is now
  * given the next rung the problem's author wrote and told to point the same way
  * in its own words - and never to hand it over, because it is a rung the user
@@ -30,7 +36,7 @@ import { fileURLToPath } from 'node:url';
  * is what the bump rule in `docs/COACH_PROMPTS.md` asks for - old versions stay
  * on disk so feedback recorded against them can still be traced to its wording.
  */
-export const PROMPT_VERSION = 'v3';
+export const PROMPT_VERSION = 'v4';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 

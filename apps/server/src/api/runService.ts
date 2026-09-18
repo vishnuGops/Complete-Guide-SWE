@@ -148,6 +148,9 @@ function record(request: RunRequest, result: RunResult, options: RunServiceOptio
         // solution's cost.
         timeMs: result.tests.reduce((slowest, test) => Math.max(slowest, test.timeMs), 0),
         problemVersion: result.problemVersion,
+        // Only what the client measured, and only on a submit: `/api/run` is
+        // not an attempt at anything (P7-6).
+        solveMs: request.solveMs ?? null,
       });
     }
 

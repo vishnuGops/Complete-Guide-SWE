@@ -74,11 +74,20 @@ describe('submissionSchema', () => {
     total: 13,
     timeMs: 42,
     problemVersion: 2,
+    solveMs: null,
     createdAt: '2026-09-16T10:00:00.000Z',
   };
 
   it('accepts a complete submission', () => {
     expect(submissionSchema.parse(base).problemVersion).toBe(2);
+  });
+
+  it('tells an untimed submission apart from an instant one (P7-6)', () => {
+    // Null is "the clock was not running"; zero would be "solved the moment it
+    // opened", and P7-10 calibrates ratings against these.
+    expect(submissionSchema.parse(base).solveMs).toBeNull();
+    expect(submissionSchema.parse({ ...base, solveMs: 0 }).solveMs).toBe(0);
+    expect(submissionSchema.safeParse({ ...base, solveMs: -1 }).success).toBe(false);
   });
 
   it('requires a uuid id', () => {

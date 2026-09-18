@@ -113,6 +113,12 @@ export const runRequestSchema = z.object({
   kind: runKindSchema,
   /** Only honoured for `kind: 'run'`; ignored on submit. */
   customTests: z.array(testCaseSchema).max(20).optional(),
+  /**
+   * Elapsed interview-mode timer in milliseconds, recorded on the submission
+   * (ROADMAP P7-6). Absent when the timer was not running, and ignored on a
+   * run - a run is not an attempt at anything.
+   */
+  solveMs: z.number().min(0).max(86_400_000).optional(),
 });
 export type RunRequest = z.infer<typeof runRequestSchema>;
 

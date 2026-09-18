@@ -239,6 +239,7 @@ export async function* streamFeedback(
     priorAttempts: recallAttempts(deps.repos, request.slug, request.language, request.code),
     masteryCheck: request.masteryCheck,
     requestFullSolution: request.requestFullSolution,
+    interviewMode: request.interviewMode,
     solved,
   });
 

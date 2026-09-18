@@ -92,6 +92,8 @@ export interface RunBody {
   code: string;
   /** Ignored by `/api/submit`, which runs the problem's own tests only. */
   customTests?: TestCase[];
+  /** Interview-mode elapsed time; recorded on a submit, ignored on a run (P7-6). */
+  solveMs?: number;
 }
 
 /**

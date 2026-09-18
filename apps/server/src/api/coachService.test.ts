@@ -93,6 +93,7 @@ const feedbackRequest = (overrides: Record<string, unknown> = {}) => ({
   revealedHints: 0,
   masteryCheck: false,
   requestFullSolution: false,
+  interviewMode: false,
   newConversation: false,
   ...overrides,
 });
@@ -229,6 +230,17 @@ describe('streamFeedback', () => {
     // Rung 3 is the one ahead now, so it is the direction rather than a rung
     // the user is assumed to have read.
     expect(requests[0]).toContain('Scan once, checking for the complement');
+  });
+
+  it('tells the coach whether the clock was running (P7-6)', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    expect(requests[0]).toContain('This is interview mode: no');
+
+    await collect(streamFeedback(feedbackRequest({ interviewMode: true }), deps(fetch)));
+    // Stated as a fact in the context; the prompt is what decides what to do
+    // about it, the same split the solution gate uses.
+    expect(requests[1]).toContain('This is interview mode: yes');
   });
 
   it('sends no next hint when the ladder is exhausted (P7-1)', async () => {

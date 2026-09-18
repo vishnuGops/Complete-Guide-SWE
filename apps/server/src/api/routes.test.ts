@@ -614,6 +614,49 @@ describe('drafts', () => {
   });
 });
 
+describe('the interview timer (P7-6)', () => {
+  it('records the elapsed time on a submit', async () => {
+    await api('POST', '/api/submit', {
+      slug: EASY,
+      language: 'python',
+      code: 'x = 1',
+      solveMs: 754_000,
+    });
+
+    expect(repos.submissions.list({ slug: EASY })[0]?.solveMs).toBe(754_000);
+  });
+
+  it('records null when the clock was not running', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    // Not zero. "Not timed" and "solved instantly" are different facts, and
+    // P7-10 calibrates ratings against these.
+    expect(repos.submissions.list({ slug: EASY })[0]?.solveMs).toBeNull();
+  });
+
+  it('ignores it on a run, which is not an attempt at anything', async () => {
+    await api('POST', '/api/run', {
+      slug: EASY,
+      language: 'python',
+      code: 'x = 1',
+      solveMs: 1_000,
+    });
+
+    expect(repos.submissions.list({ slug: EASY })).toEqual([]);
+  });
+
+  it('refuses a timer that has been left running for a day', async () => {
+    const response = await api('POST', '/api/submit', {
+      slug: EASY,
+      language: 'python',
+      code: 'x = 1',
+      solveMs: 90_000_000,
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+});
+
 describe('the dashboard (P7-5)', () => {
   it('answers with the counts, the streak and the recent list', async () => {
     await api('POST', '/api/run', { slug: EASY, language: 'python', code: 'x = 1' });

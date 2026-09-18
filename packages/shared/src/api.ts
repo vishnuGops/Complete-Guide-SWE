@@ -430,6 +430,12 @@ export const runBodySchema = z.object({
   code: z.string().max(MAX_CODE_BYTES),
   /** Ignored by `/api/submit`, which runs the problem's own tests only. */
   customTests: z.array(testCaseSchema).max(20).optional(),
+  /**
+   * Elapsed interview-mode timer, in milliseconds (P7-6). Recorded on the
+   * submission; ignored by `/api/run`, which is not an attempt at anything.
+   * Capped at a day, because a timer left running overnight is not a solve time.
+   */
+  solveMs: z.number().min(0).max(86_400_000).optional(),
 });
 export type RunBody = z.infer<typeof runBodySchema>;
 

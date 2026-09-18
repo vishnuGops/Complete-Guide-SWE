@@ -1,0 +1,12 @@
+-- 004_submission_solve_ms.sql - interview mode's timer (ROADMAP P7-6).
+--
+-- How long the user had been working when they submitted, in milliseconds,
+-- measured by the timer in the workspace rather than by the judge. Not the same
+-- number as `time_ms`, which is how long the slowest test took to run.
+--
+-- NULL for every submission made without the timer running, which is most of
+-- them and all of the ones written before this migration. That is the whole
+-- reason it is nullable rather than 0: "not timed" and "solved instantly" are
+-- different facts, and P7-10 calibrates difficulty against these, so counting
+-- untimed submissions as zero would make every problem look easy.
+ALTER TABLE submissions ADD COLUMN solve_ms REAL;

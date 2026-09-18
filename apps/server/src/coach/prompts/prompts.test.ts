@@ -17,7 +17,7 @@ describe('the system prompt', () => {
   const prompt = systemPrompt();
 
   it('is a real prompt, read from the versioned file', () => {
-    expect(PROMPT_VERSION).toBe('v3');
+    expect(PROMPT_VERSION).toBe('v4');
     expect(prompt.length).toBeGreaterThan(1_000);
     // Trimmed at load: trailing whitespace would change the cached bytes for
     // no reason, and the prefix has to be identical to be cacheable (D12).
@@ -53,6 +53,16 @@ describe('the system prompt', () => {
 
   it('tells the coach the editorial and the authored hint are secret', () => {
     expect(prompt).toMatch(/Never quote either, never mention that you have them/);
+  });
+
+  it('adds the spoken explanation only in interview mode (P7-6)', () => {
+    // Gated on the context flag, not on every turn: most practice is not
+    // against a clock, and a section about what to say out loud on every
+    // review would be padding.
+    expect(prompt).toMatch(/When the context says this is interview mode/);
+    expect(prompt).toMatch(/Saying it out loud/);
+    // Complexity with the reason attached, which is the part people get wrong.
+    expect(prompt).toMatch(/is an answer; "O\(n log n\)" is a number/);
   });
 
   it('makes the authored hint ladder the canonical path (P7-1)', () => {

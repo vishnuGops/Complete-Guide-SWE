@@ -217,6 +217,14 @@ export const submissionSchema = z.object({
   timeMs: z.number().min(0),
   /** meta.version at submit time: a later test change must not silently rewrite history. */
   problemVersion: z.int().min(1),
+  /**
+   * How long the user had been working when they submitted (ROADMAP P7-6).
+   *
+   * From the workspace timer, not the judge - `timeMs` above is how long the
+   * slowest test took. Null when the timer was not running, which is a
+   * different fact from zero and is what P7-10 has to be able to tell apart.
+   */
+  solveMs: z.number().min(0).nullable(),
   createdAt: z.iso.datetime(),
 });
 export type Submission = z.infer<typeof submissionSchema>;

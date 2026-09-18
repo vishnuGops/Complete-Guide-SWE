@@ -12,7 +12,7 @@ Every coaching turn is three things, assembled in `apps/server/src/coach/`:
 
 | Part            | Built by                                    | Changes between requests? |
 | --------------- | ------------------------------------------- | ------------------------- |
-| System prompt   | `prompts/index.ts` reading `v3/system.md`   | Never                     |
+| System prompt   | `prompts/index.ts` reading `v4/system.md`   | Never                     |
 | User turn       | `context.ts` → `buildContext()`             | Every time                |
 | Response schema | `feedback.ts` → `coachFeedbackJsonSchema()` | Never                     |
 
@@ -20,9 +20,11 @@ The split is not cosmetic. The system prompt is the largest stable part of the r
 
 ## 2. Versioning
 
-`PROMPT_VERSION` (currently `v3`) names the directory the prompt is read from, and is recorded alongside stored feedback so an answer can always be traced to the wording that produced it.
+`PROMPT_VERSION` (currently `v4`) names the directory the prompt is read from, and is recorded alongside stored feedback so an answer can always be traced to the wording that produced it.
 
 **Bump the version when a change would change the advice.** Fixing a typo is not a bump; changing what a score of 3 means is. To bump: copy the current directory to the next one, edit, change `PROMPT_VERSION`, and update the assertions in `prompts/prompts.test.ts` that no longer hold. Old directories stay on disk, so feedback recorded against them can still be traced to the wording that produced it.
+
+`v4` (ROADMAP P7-6) added interview mode. When the context says the user worked against a clock, the feedback ends with a **Saying it out loud** section: the one-sentence statement of the approach, the complexity with its reason attached ("O(n log n), because the sort dominates" is an answer; "O(n log n)" is a number), and the question an interviewer would ask next. Gated on the flag rather than added to every turn, because most practice is not against a clock and a paragraph about explaining yourself on every review is padding.
 
 `v3` (ROADMAP P7-1) made the problem's own hint ladder canonical. The coach is now given the next rung the author wrote - the one the user has _not_ unlocked - and told to point the same way in its own words, aimed at the code in front of it. Two problems this fixes: a coach that did not know where the author was pointing would happily start someone down a second, equally valid approach halfway through a problem, leaving the static ladder and the coach pulling in different directions; and a user who then revealed the next hint got advice that contradicted it. The rung is marked SECRET in the same breath as the editorial, with an extra sentence saying why - handing it over verbatim spends a hint the user has not spent.
 
@@ -70,7 +72,7 @@ Which rungs those are is the server's own count (`events.highestHintRevealed`), 
 | 4   | Latest judge result                                       | No                             | Including an explicit "they have not run this yet" — silence would be read as "it passes". |
 | 5   | Hints already read                                        | No                             | Prevents repetition.                                                                       |
 | 6   | The author's next hint, marked SECRET (P7-1)              | Yes                            | The direction the ladder points; never handed over, because it is an unspent rung.         |
-| 7   | Request flags                                             | No                             | The `solution` gate.                                                                       |
+| 7   | Request flags                                             | No                             | The `solution` gate, and whether the clock was running (P7-6).                             |
 | 8   | Editorial approach, marked SECRET                         | Yes                            | Steers the hints; the coach is told never to quote it or mention having it.                |
 | 9   | Prior coaching (P5-5)                                     | Yes                            | Lets the coach say "you fixed X, now Y" instead of repeating itself.                       |
 

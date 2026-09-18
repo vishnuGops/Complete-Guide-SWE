@@ -58,6 +58,8 @@ export interface ContextInput {
   /** Earlier coach turns on this problem, newest first (P5-5). */
   priorAttempts?: readonly AttemptMemory[];
   masteryCheck?: boolean;
+  /** The user was working against a clock (P7-6); adds the spoken-explanation section. */
+  interviewMode?: boolean;
   requestFullSolution?: boolean;
   /** Whether the problem is already solved, which gates the `solution` rung. */
   solved?: boolean;
@@ -274,6 +276,7 @@ export function buildContext(input: ContextInput): string {
       `Problem already solved by this user: ${input.solved ? 'yes' : 'no'}`,
       `User explicitly asked for the full solution: ${input.requestFullSolution ? 'yes' : 'no'}`,
       `This is a mastery check: ${input.masteryCheck ? 'yes' : 'no'}`,
+      `This is interview mode: ${input.interviewMode ? 'yes' : 'no'}`,
     ].join('\n'),
     droppable: false,
   });

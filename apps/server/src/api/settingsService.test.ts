@@ -169,6 +169,7 @@ describe('reset all progress', () => {
       total: 3,
       timeMs: 12,
       problemVersion: 1,
+      solveMs: null,
     });
     repos.progress.put({
       slug: 'pair-sum-index',

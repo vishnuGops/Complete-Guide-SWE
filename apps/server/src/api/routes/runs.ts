@@ -27,6 +27,9 @@ export function registerRunRoutes(app: FastifyInstance, deps: ApiDeps): void {
           // cases to it is a client bug, and quietly running them would make the
           // recorded verdict mean something different from what it says.
           ...(kind === 'run' && parsed.customTests ? { customTests: parsed.customTests } : {}),
+          // The same shape, the other way round: the interview timer is
+          // recorded on a submission, and a run records nothing at all (P7-6).
+          ...(kind === 'submit' && parsed.solveMs !== undefined ? { solveMs: parsed.solveMs } : {}),
         },
         {
           repos: deps.repos,
