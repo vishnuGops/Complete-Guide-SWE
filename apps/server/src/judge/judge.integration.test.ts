@@ -904,6 +904,89 @@ describe('node arguments', () => {
 
     expect(result.verdict).toBe('AC');
   });
+
+  /**
+   * A returned tree with a missing child (ROADMAP P6-4).
+   *
+   * The level-order format puts a `null` in the queue for every absent child,
+   * and the Java encoder used an `ArrayDeque`, which refuses null elements - so
+   * every tree that was not perfect came back as a NullPointerException thrown
+   * from inside the harness. Nothing caught it because P2-12 covered trees as
+   * *arguments* and lists as returns, and no catalogue problem handed a tree
+   * back until `flatten-to-chain`.
+   *
+   * `[1, 2, 3, null, 4]` has exactly that shape: the 2 has no left child.
+   */
+  it.each(LANGUAGES)('%s: encodes a returned tree with a missing child', async (language) => {
+    const code =
+      language === 'python'
+        ? [
+            'from typing import Optional',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, root: Optional[TreeNode]) -> Optional[TreeNode]:',
+            '        return root',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public TreeNode solve(TreeNode root) {',
+            '        return root;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      tests: [
+        {
+          source: 'sample',
+          test: { args: [[1, 2, 3, null, 4]], expected: [1, 2, 3, null, 4] },
+        },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+
+  /** The same encoder, reached through `mutatedArgs` rather than a return. */
+  it.each(LANGUAGES)('%s: encodes a tree that the method changed in place', async (language) => {
+    const code =
+      language === 'python'
+        ? [
+            'from typing import Optional',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, root: Optional[TreeNode]) -> None:',
+            '        root.left = None',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public void solve(TreeNode root) {',
+            '        root.left = null;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      meta: { expect: 'mutatedArgs' },
+      tests: [
+        {
+          source: 'sample',
+          test: {
+            args: [[1, 2, 3]],
+            expectedMutatedArgs: [{ index: 0, value: [1, null, 3] }],
+          },
+        },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
 });
 
 describe('java: argument conversion refuses what it cannot represent', () => {

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "max-path-sum",
+  "slug": "max-path-sum",
+  "title": "Best Path Through",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search", "invariant"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 14,
+  "mode": "function",
+  "entry": "bestPathSum",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["largest-run-sum", "all-paths-summing"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

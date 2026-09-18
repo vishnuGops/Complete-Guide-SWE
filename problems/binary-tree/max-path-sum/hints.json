@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Every path turns around at exactly one node - its highest point. What if you asked, for each node, 'what is the best path whose highest point is here?'",
+    "It is the node's value plus the best downward path into its left subtree and the best into its right - taking either only if it helps.",
+    "So each node has to report one number upwards: the best path that goes *down* from it, which may use only one of its two sides. And it separately contributes a candidate answer that may use both.",
+    "A negative contribution is never worth taking: clamp each side's downward best at zero before adding it."
+  ]
+}

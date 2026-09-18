@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Take one node with a left subtree. In the finished chain, what comes immediately after the last node of that left subtree?",
+    "Whatever used to be the node's right child - because the left subtree is walked completely before the right one.",
+    "So find the rightmost node of the left subtree, hang the node's right subtree off it, then move the whole left subtree across to the right and clear the left.",
+    "Then move on to the node's new right child and repeat. Every node is visited a constant number of times, so the walk stays linear even though finding the rightmost node looks like extra work."
+  ]
+}

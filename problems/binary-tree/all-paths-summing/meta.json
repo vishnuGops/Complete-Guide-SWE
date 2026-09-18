@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "all-paths-summing",
+  "slug": "all-paths-summing",
+  "title": "Every Path That Sums",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "depth-first search", "backtracking"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 6,
+  "mode": "function",
+  "entry": "pathsSumming",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["path-sum-exists", "tree-depth"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 depth)",
+    "space": "O(depth)"
+  }
+}

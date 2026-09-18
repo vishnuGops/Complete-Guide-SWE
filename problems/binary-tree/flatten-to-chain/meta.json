@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "flatten-to-chain",
+  "slug": "flatten-to-chain",
+  "title": "Flatten Into A Chain",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree traversal", "in-place", "mutated argument"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 13,
+  "mode": "function",
+  "entry": "flatten",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["level-order-reading", "reverse-chain"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

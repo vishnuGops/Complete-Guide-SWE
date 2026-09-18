@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Carry two things down the tree: the total still needed, and the values already on the path.",
+    "At a leaf, if the remaining total equals the leaf's value, the path you are carrying - plus that leaf - is an answer.",
+    "The path has to shrink again when you come back up. Appending on the way down and removing on the way up is backtracking, and it keeps one list rather than one per path.",
+    "Copy the path when you record an answer. Recording the working list itself stores a reference that later steps will change underneath you."
+  ]
+}

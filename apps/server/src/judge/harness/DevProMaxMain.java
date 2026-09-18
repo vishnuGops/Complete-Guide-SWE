@@ -777,10 +777,16 @@ final class DevProMaxConvert {
         if (root == null) {
             return out;
         }
-        Deque<TreeNode> queue = new ArrayDeque<>();
+        // An ArrayList read with an index, not an ArrayDeque: the level order
+        // this format uses puts a null in the queue for every absent child, and
+        // ArrayDeque refuses null elements. Encoding any tree with a missing
+        // child threw a NullPointerException from inside the harness until
+        // ROADMAP P6-4, when flatten-to-chain became the first catalogue
+        // problem to hand a tree back.
+        List<TreeNode> queue = new ArrayList<>();
         queue.add(root);
-        while (!queue.isEmpty()) {
-            TreeNode node = queue.poll();
+        for (int at = 0; at < queue.size(); at++) {
+            TreeNode node = queue.get(at);
             if (node == null) {
                 out.add(null);
                 continue;

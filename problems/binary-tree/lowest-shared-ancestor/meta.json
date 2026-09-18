@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "lowest-shared-ancestor",
+  "slug": "lowest-shared-ancestor",
+  "title": "Their Nearest Shared Ancestor",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["lowest common ancestor", "depth-first search"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 9,
+  "mode": "function",
+  "entry": "sharedAncestor",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["path-sum-exists", "is-search-tree"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

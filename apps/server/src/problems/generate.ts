@@ -311,9 +311,9 @@ async function crossCheck(
       .map((test) =>
         [
           `case ${test.index} (${test.verdict})`,
-          `  input:    ${JSON.stringify(test.input?.args).slice(0, 200)}`,
-          `  python:   ${JSON.stringify(test.expected ?? test.expectedMutatedArgs).slice(0, 200)}`,
-          `  java:     ${JSON.stringify(test.actual ?? test.actualMutatedArgs).slice(0, 200)}`,
+          `  input:    ${brief(test.input?.args)}`,
+          `  python:   ${brief(test.expected ?? test.expectedMutatedArgs)}`,
+          `  java:     ${brief(test.actual ?? test.actualMutatedArgs)}`,
           test.message ? `  ${test.message}` : '',
         ]
           .filter(Boolean)
@@ -321,6 +321,23 @@ async function crossCheck(
       )
       .join('\n'),
   );
+}
+
+/**
+ * One value, short enough to read in an error message.
+ *
+ * `JSON.stringify(undefined)` is `undefined` rather than `"undefined"`, so the
+ * obvious `JSON.stringify(x).slice(0, 200)` throws on any field the run did not
+ * produce - which is every field of a case that ended in a runtime error, and
+ * the `actual` of a `mutatedArgs` problem whose Java side failed. The report
+ * explaining the disagreement then became a TypeError about `.slice`, hiding
+ * the thing it was written to say (ROADMAP P6-4).
+ */
+function brief(value: unknown): string {
+  if (value === undefined) return '(not produced)';
+  const text = JSON.stringify(value);
+  if (text === undefined) return '(not representable)';
+  return text.length > 200 ? `${text.slice(0, 200)}…` : text;
 }
 
 // ---------------------------------------------------------------------------

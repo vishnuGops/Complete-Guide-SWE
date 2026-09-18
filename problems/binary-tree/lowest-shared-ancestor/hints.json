@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "If you had, for each of the two nodes, the list of its ancestors from the root downwards, what would the answer be?",
+    "The last place the two lists agree. Building those lists needs to know each node's parent, which the tree does not give you directly.",
+    "One walk over the tree recording every node's parent gives you that. Then climb from one node collecting its ancestors into a set, and climb from the other until you meet the set.",
+    "The recursive answer does it without the parent map: a node whose two subtrees contain one target each is the answer, and so is a node that is itself a target."
+  ]
+}
