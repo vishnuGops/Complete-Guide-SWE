@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "stream-checker",
+  "slug": "stream-checker",
+  "title": "Does The Stream End With",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "trie", "reverse traversal"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 10,
+  "mode": "operations",
+  "entry": "StreamChecker",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["prefix-tree", "wildcard-dictionary"],
+  "targetComplexity": {
+    "time": "O(longest word) per letter",
+    "space": "O(total letters)"
+  }
+}

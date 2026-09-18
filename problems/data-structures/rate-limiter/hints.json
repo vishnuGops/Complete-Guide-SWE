@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What do you actually need to remember about the requests already allowed?",
+    "Only when they happened - and only the ones still inside the window, because older ones can never become relevant again.",
+    "Those are exactly the most recent ones, and they leave in the order they arrived. That is a queue.",
+    "On each request, drop everything from the front that has aged out, then compare the queue's size against the limit."
+  ]
+}

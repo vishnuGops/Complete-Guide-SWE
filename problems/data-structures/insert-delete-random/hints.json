@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Picking a member at random in constant time needs the members in an array, so one can be reached by index. Which operation does that make hard?",
+    "Removing: taking a value out of the middle of an array shifts everything after it.",
+    "Unless the order does not matter - and it does not. So move the *last* element into the hole and shrink the array by one.",
+    "Finding the hole in constant time needs a map from value to its position in the array, kept up to date whenever anything moves."
+  ]
+}

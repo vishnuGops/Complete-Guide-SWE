@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Start from the trie that answers `startsWith`. Walking the prefix lands you at a node - what is below it?",
+    "Every word beginning with that prefix. So the question becomes: what are the three alphabetically smallest words in that subtree?",
+    "Walking children in alphabetical order and stopping after three finds them, and visits only the part of the subtree it needs.",
+    "The other design keeps the answer ready: store, at every node, the three smallest words passing through it, updated as words are added."
+  ]
+}

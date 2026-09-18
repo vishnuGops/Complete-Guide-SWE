@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "time-keyed-store",
+  "slug": "time-keyed-store",
+  "title": "Values Through Time",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "binary search", "hash map"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 9,
+  "mode": "operations",
+  "entry": "TimeStore",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["first-not-below", "prefix-tree"],
+  "targetComplexity": {
+    "time": "O(1) to set, O(log n) to get",
+    "space": "O(entries)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "window-maximum",
+  "slug": "window-maximum",
+  "title": "Largest In Every Window",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["monotonic deque", "sliding window"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 7,
+  "mode": "function",
+  "entry": "windowMaxima",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["window-median-stream", "next-greater-cycle"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(k)"
+  }
+}

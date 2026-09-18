@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Once a reading has a larger reading after it, can it ever be the answer for any later window?",
+    "No - every window containing it from then on also contains the larger one. So it can be discarded the moment the larger reading arrives.",
+    "Keep the readings that are still candidates in a deque, and they will always be in decreasing order: each new reading evicts every smaller one from the back.",
+    "The front of the deque is the window's maximum; when it falls out of the window by age, remove it from the front."
+  ]
+}

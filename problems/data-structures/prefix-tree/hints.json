@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "A hash set answers `has` instantly and cannot answer `startsWith` without looking at every word. What structure shares the work between words with the same beginning?",
+    "A tree whose edges are letters: the path from the root spells a prefix, and every word that begins with it lives below that node.",
+    "So both questions are the same walk down from the root, one letter at a time. They differ only in what is asked at the end.",
+    "`startsWith` succeeds if the walk gets there at all; `has` needs the node to be marked as the end of a word, which is the one extra bit each node carries."
+  ]
+}

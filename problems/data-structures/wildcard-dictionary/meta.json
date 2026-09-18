@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "wildcard-dictionary",
+  "slug": "wildcard-dictionary",
+  "title": "A Dictionary With Blanks",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": [
+    "design",
+    "trie",
+    "depth-first search"
+  ],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 2,
+  "mode": "operations",
+  "entry": "BlankDictionary",
+  "expect": "return",
+  "comparator": "exact",
+  "related": [
+    "prefix-tree",
+    "regex-match"
+  ],
+  "targetComplexity": {
+    "time": "O(26^blanks · length) per search",
+    "space": "O(total letters)"
+  }
+}

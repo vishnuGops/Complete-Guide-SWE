@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Without dots this is the trie walk from `prefix-tree`: one child per letter, and the node must end a word.",
+    "A dot is the only difference, and it is one line: instead of following the one matching child, try every child that exists.",
+    "That makes the walk branch, so it is a depth-first search rather than a straight descent - and it succeeds if any branch does.",
+    "Every branch still consumes exactly one letter of the pattern, so the search naturally only ever reaches nodes at the right depth."
+  ]
+}

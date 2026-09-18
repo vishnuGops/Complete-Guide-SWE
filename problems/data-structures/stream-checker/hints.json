@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The question is about the *end* of the stream, and the end is the part that keeps changing. What would be easier to match if the stream were read backwards?",
+    "A suffix read backwards is a prefix - so store the words reversed in a trie, and walk the stream backwards from the newest letter.",
+    "Then each call walks back at most as far as the longest word, following the reversed trie and checking for an end-of-word marker as it goes.",
+    "Keep the letters seen so far in a list, and only the last few are ever needed - anything older than the longest word can never be part of a match."
+  ]
+}

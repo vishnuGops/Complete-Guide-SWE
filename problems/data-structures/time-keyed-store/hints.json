@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Each key's history is independent, so start with a map from key to that key's history.",
+    "The times for a key arrive in increasing order, so its history is a list that is always sorted - which is exactly the input a binary search wants.",
+    "`get` is then: find the last entry whose time is not after the one asked about.",
+    "That is the boundary search from `first-not-below`, read one place back - and when the boundary is at the very start, the key had no value yet."
+  ]
+}

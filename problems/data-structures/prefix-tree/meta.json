@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "prefix-tree",
+  "slug": "prefix-tree",
+  "title": "A Tree Of Prefixes",
+  "version": 1,
+  "topic": "data-structures",
+  "patterns": ["design", "trie", "strings"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 0,
+  "mode": "operations",
+  "entry": "PrefixTree",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["wildcard-dictionary", "prefix-suggestions"],
+  "targetComplexity": {
+    "time": "O(length) per operation",
+    "space": "O(total letters)"
+  }
+}
