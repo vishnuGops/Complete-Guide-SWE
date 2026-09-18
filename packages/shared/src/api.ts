@@ -298,6 +298,94 @@ export const progressResponseSchema = z.object({
 export type ProgressResponse = z.infer<typeof progressResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// GET /api/dashboard
+// ---------------------------------------------------------------------------
+
+/** One UTC day of the streak calendar. */
+export const activeDaySchema = z.object({
+  /** `YYYY-MM-DD`, UTC, which is how the events table stores its timestamps. */
+  day: z.string(),
+  count: z.int().min(0),
+});
+export type ActiveDay = z.infer<typeof activeDaySchema>;
+
+export const streakSchema = z.object({
+  /**
+   * Days up to and including today. Today not being active yet does not break
+   * the streak - it is not over until the day is - so a run that ends yesterday
+   * still counts while today is young.
+   */
+  current: z.int().min(0),
+  longest: z.int().min(0),
+  /** Active days only, newest first. A year of mostly-zeroes is not worth sending. */
+  days: z.array(activeDaySchema),
+});
+export type Streak = z.infer<typeof streakSchema>;
+
+export const activityKindSchema = z.enum([
+  'run',
+  'submit',
+  'coach_feedback',
+  'hint_revealed',
+  'editorial_revealed',
+  'status_override',
+]);
+export type ActivityKind = z.infer<typeof activityKindSchema>;
+
+export const recentActivitySchema = z.object({
+  kind: activityKindSchema,
+  slug: slugSchema.nullable(),
+  /** The problem's title, resolved here so the client does not need the catalogue. */
+  title: z.string().nullable(),
+  language: languageSchema.nullable(),
+  /** The verdict, for a `submit`; null for everything else. */
+  verdict: z.string().nullable(),
+  at: z.iso.datetime(),
+});
+export type RecentActivity = z.infer<typeof recentActivitySchema>;
+
+/**
+ * How one topic scores, averaged over every coach turn about it (P7-5).
+ *
+ * `samples` is how many turns went into it, and the UI has to show it: an
+ * average of one turn is an anecdote, and "your weakest topic" chosen from
+ * anecdotes would send people to practise the wrong thing.
+ */
+export const topicSkillSchema = z.object({
+  topic: topicSchema,
+  samples: z.int().min(0),
+  scores: z.record(z.string(), z.number()),
+  /** Mean across the five dimensions, 0-4. What the list is sorted by. */
+  average: z.number(),
+});
+export type TopicSkill = z.infer<typeof topicSkillSchema>;
+
+export const dashboardResponseSchema = z.object({
+  total: z.int().min(0),
+  byStatus: statusCountsSchema,
+  byTopic: z.array(topicCountSchema),
+  byTier: z.array(tierCountSchema),
+  streak: streakSchema,
+  recent: z.array(recentActivitySchema),
+  /** Weakest first. Empty until the coach has scored something. */
+  skills: z.array(topicSkillSchema),
+  /** Problems whose editorial was opened rather than earned (P7-2). */
+  editorialsRevealed: z.int().min(0),
+  /** When this was produced, which the exported report is dated by. */
+  generatedAt: z.iso.datetime(),
+});
+export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+
+export const REPORT_FORMATS = ['json', 'markdown', 'html'] as const;
+export const reportFormatSchema = z.enum(REPORT_FORMATS);
+export type ReportFormat = z.infer<typeof reportFormatSchema>;
+
+export const reportQuerySchema = z.object({
+  format: reportFormatSchema.default('markdown'),
+});
+export type ReportQuery = z.infer<typeof reportQuerySchema>;
+
+// ---------------------------------------------------------------------------
 // PUT /api/drafts/:slug/:language
 // ---------------------------------------------------------------------------
 

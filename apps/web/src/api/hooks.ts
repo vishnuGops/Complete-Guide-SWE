@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 import type {
   ConnectionTestResponse,
+  DashboardResponse,
   DraftResponse,
   HintRevealResponse,
   Language,
@@ -16,6 +17,7 @@ import type {
   ProblemListQuery,
   ProblemListResponse,
   ProgressResponse,
+  ReportFormat,
   ResetProgressResponse,
   RunResult,
   SettingsUpdate,
@@ -44,6 +46,7 @@ export const keys = {
   problem: (slug: string) => ['problem', slug] as const,
   submissions: (slug: string) => ['submissions', slug] as const,
   progress: ['progress'] as const,
+  dashboard: ['dashboard'] as const,
   settings: ['settings'] as const,
 };
 
@@ -75,6 +78,22 @@ export function useSubmissions(slug: string, enabled = true) {
 /** The catalogue-wide counts. Unfiltered by construction, so the top bar can use it. */
 export function useProgress() {
   return useQuery<ProgressResponse>({ queryKey: keys.progress, queryFn: api.progress });
+}
+
+/**
+ * The dashboard (ROADMAP P7-5).
+ *
+ * Its own key rather than an extension of `['progress']`: the top bar reads the
+ * cheap counts on every screen, and this one walks the event log and every
+ * stored coach score. They are refetched by different things.
+ */
+export function useDashboard() {
+  return useQuery<DashboardResponse>({ queryKey: keys.dashboard, queryFn: api.dashboard });
+}
+
+/** Downloading the skills report. A mutation: it is a button, not a fact. */
+export function useDownloadReport(): UseMutationResult<void, Error, ReportFormat> {
+  return useMutation({ mutationFn: api.downloadReport });
 }
 
 export function useSettings() {
@@ -288,6 +307,8 @@ export function useRevealEditorial(): UseMutationResult<ProblemDetail, Error, st
     onSuccess: (detail, slug) => {
       queryClient.setQueryData(keys.problem(slug), detail);
       void queryClient.invalidateQueries({ queryKey: keys.progress });
+      // The dashboard counts the same things plus the activity behind them.
+      void queryClient.invalidateQueries({ queryKey: keys.dashboard });
     },
   });
 }
@@ -310,6 +331,8 @@ export function useJudge(kind: 'run' | 'submit'): UseMutationResult<RunResult, E
       void queryClient.invalidateQueries({ queryKey: keys.problems });
       void queryClient.invalidateQueries({ queryKey: keys.problem(variables.slug) });
       void queryClient.invalidateQueries({ queryKey: keys.progress });
+      // The dashboard counts the same things plus the activity behind them.
+      void queryClient.invalidateQueries({ queryKey: keys.dashboard });
       if (kind === 'submit') {
         void queryClient.invalidateQueries({ queryKey: keys.submissions(variables.slug) });
       }

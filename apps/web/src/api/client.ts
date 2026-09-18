@@ -1,6 +1,7 @@
 import type {
   ApiError as ApiErrorBody,
   ConnectionTestResponse,
+  DashboardResponse,
   DraftResponse,
   HintRevealResponse,
   Language,
@@ -9,6 +10,7 @@ import type {
   ProblemListQuery,
   ProblemListResponse,
   ProgressResponse,
+  ReportFormat,
   ResetProgressResponse,
   RunResult,
   SettingsUpdate,
@@ -125,6 +127,43 @@ export const api = {
   submissions: (slug: string): Promise<SubmissionListResponse> =>
     request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
+  dashboard: (): Promise<DashboardResponse> => request('/api/dashboard'),
+
+  /**
+   * Downloads the skills report (ROADMAP P7-5).
+   *
+   * Through `fetch` and a blob rather than a plain link, because every `/api`
+   * request needs the `X-DevProMax-Client` header (D15) and a link cannot send
+   * one. The object URL is revoked immediately after the click - the browser
+   * has the blob by then, and an un-revoked one is a leak that lives as long as
+   * the tab.
+   */
+  downloadReport: async (format: ReportFormat): Promise<void> => {
+    const response = await fetch(`/api/dashboard/report?format=${format}`, {
+      credentials: 'omit',
+      headers: { [CLIENT_HEADER]: CLIENT_NAME },
+    });
+    if (!response.ok) {
+      throw new ApiError(response.status, {
+        error: 'Unknown',
+        message: `The report could not be built (${String(response.status)}).`,
+      });
+    }
+
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const named = /filename="([^"]+)"/.exec(disposition);
+    const url = URL.createObjectURL(await response.blob());
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = named?.[1] ?? `devpromax-report.${format === 'markdown' ? 'md' : format}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  },
   saveNote: (slug: string, body: string): Promise<NoteResponse> =>
     request(`/api/notes/${encodeURIComponent(slug)}`, {
       method: 'PUT',

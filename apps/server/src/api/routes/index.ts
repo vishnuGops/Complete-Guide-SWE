@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { registerCoachRoutes } from './coach.js';
+import { registerDashboardRoutes } from './dashboard.js';
 import { registerDraftRoutes } from './drafts.js';
 import { registerNoteRoutes } from './notes.js';
 import { registerProblemRoutes } from './problems.js';
@@ -23,6 +24,7 @@ export function registerRoutes(app: FastifyInstance, deps: ApiDeps): void {
   registerDraftRoutes(app, deps);
   registerNoteRoutes(app, deps);
   registerProgressRoutes(app, deps);
+  registerDashboardRoutes(app, deps);
   registerSettingsRoutes(app, deps);
   registerCoachRoutes(app, deps);
 }

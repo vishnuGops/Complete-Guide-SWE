@@ -4,6 +4,7 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import {
   COACH_API_KEY_ENV,
   type ProblemDetail,
+  type DashboardResponse,
   type ProblemListResponse,
   type ProgressResponse,
   type RunResult,
@@ -610,6 +611,58 @@ describe('drafts', () => {
     expect((await api('PUT', '/api/drafts/no-such-problem/python', { code: '' })).statusCode).toBe(
       404,
     );
+  });
+});
+
+describe('the dashboard (P7-5)', () => {
+  it('answers with the counts, the streak and the recent list', async () => {
+    await api('POST', '/api/run', { slug: EASY, language: 'python', code: 'x = 1' });
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    const body = (await api('GET', '/api/dashboard')).json() as DashboardResponse;
+
+    expect(body.total).toBe(2);
+    expect(body.byStatus.solved + body.byStatus.mastered).toBe(1);
+    // Two events today, so today is an active day and the streak has started.
+    expect(body.streak.current).toBe(1);
+    expect(body.recent[0]?.kind).toBe('submit');
+    expect(body.recent[0]?.title).toBe('Pair Sum Index');
+    expect(body.recent[0]?.verdict).toBe('AC');
+  });
+
+  it('counts the editorials that were opened rather than earned', async () => {
+    await api('POST', `/api/problems/${EASY}/editorial`);
+
+    expect(
+      ((await api('GET', '/api/dashboard')).json() as DashboardResponse).editorialsRevealed,
+    ).toBe(1);
+  });
+
+  it('has no skills to report before the coach has scored anything', async () => {
+    expect(((await api('GET', '/api/dashboard')).json() as DashboardResponse).skills).toEqual([]);
+  });
+
+  it('downloads the report in each format, as a file', async () => {
+    for (const [format, type] of [
+      ['json', 'application/json'],
+      ['markdown', 'text/markdown'],
+      ['html', 'text/html'],
+    ] as const) {
+      const response = await api('GET', `/api/dashboard/report?format=${format}`);
+
+      expect(response.statusCode, format).toBe(200);
+      expect(response.headers['content-type']).toContain(type);
+      expect(response.headers['content-disposition']).toContain('attachment; filename=');
+      expect(response.body.length).toBeGreaterThan(50);
+    }
+  });
+
+  it('defaults to markdown and rejects a format it does not have', async () => {
+    const response = await api('GET', '/api/dashboard/report');
+    expect(response.headers['content-type']).toContain('text/markdown');
+    expect(response.body).toContain('# DSA practice report');
+
+    expect((await api('GET', '/api/dashboard/report?format=pdf')).statusCode).toBe(400);
   });
 });
 

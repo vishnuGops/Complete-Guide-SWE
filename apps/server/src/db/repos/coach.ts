@@ -28,6 +28,14 @@ export interface CoachMessage {
   createdAt: string;
 }
 
+/** One scored turn, with the problem it was about (ROADMAP P7-5). */
+export interface ScoredTurn {
+  slug: string;
+  language: Language;
+  feedback: CoachFeedback;
+  createdAt: string;
+}
+
 /** What a conversation has spent, and how many turns nobody could price (P5-9). */
 export interface SessionSpend {
   reportedUsd: number;
@@ -94,6 +102,14 @@ export interface CoachRepo {
    * the context row the turn started with (P5-9).
    */
   setMessageCost(id: string, costUsd: number): boolean;
+  /**
+   * Every scored turn, with the problem it was about (ROADMAP P7-5).
+   *
+   * The dashboard averages these per topic to say which topics are weakest, so
+   * it needs all of them rather than the most recent few - and needs the slug,
+   * which lives on the session rather than on the message.
+   */
+  scoredTurns(): ScoredTurn[];
   deleteSession(id: string): boolean;
   /** Drops every conversation; messages go with them by cascade. */
   clearSessions(): number;
@@ -129,6 +145,13 @@ export function createCoachRepo(db: Database): CoachRepo {
      WHERE s.slug = ? AND s.language = ? AND m.feedback IS NOT NULL
      ORDER BY m.created_at DESC, m.rowid DESC
      LIMIT ?`,
+  );
+  const scoredTurns = db.prepare(
+    `SELECT s.slug, s.language, m.feedback, m.created_at
+     FROM coach_messages m
+     JOIN coach_sessions s ON s.id = m.session_id
+     WHERE m.feedback IS NOT NULL
+     ORDER BY m.created_at, m.rowid`,
   );
   const sessionSpend = db.prepare(
     `SELECT COALESCE(SUM(cost_usd), 0) AS total,
@@ -227,6 +250,15 @@ export function createCoachRepo(db: Database): CoachRepo {
 
     recentFeedback(slug, language, limit) {
       return (recentFeedback.all(slug, language, limit) as Row[]).map(toMessage);
+    },
+
+    scoredTurns() {
+      return (scoredTurns.all() as Row[]).map((row) => ({
+        slug: text(row, 'slug'),
+        language: text(row, 'language') as Language,
+        feedback: coachFeedbackSchema.parse(JSON.parse(text(row, 'feedback'))),
+        createdAt: text(row, 'created_at'),
+      }));
     },
 
     sessionSpend(sessionId) {
