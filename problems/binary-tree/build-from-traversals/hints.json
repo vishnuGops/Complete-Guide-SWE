@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "What does the first value of the pre-order reading tell you, and what does finding that value in the in-order reading tell you?",
+    "The first pre-order value is the root; everything before it in the in-order reading is its left subtree and everything after is its right one. That gives you both subtrees' sizes.",
+    "With the sizes known, the pre-order reading splits too: the root, then exactly that many values for the left subtree, then the rest for the right. Now recurse on the two halves.",
+    "Finding the root's position by scanning is what makes this quadratic. Build a map from value to in-order position once, and every lookup becomes constant time."
+  ]
+}

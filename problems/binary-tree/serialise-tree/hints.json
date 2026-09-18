@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Do the two halves separately: read the pre-order text into a tree, then write that tree out level by level.",
+    "Reading is a walk with a cursor: take the next token; if it is `#` the child is absent, otherwise make a node and read its left subtree and then its right one, in that order.",
+    "Because every absent child is written down, the reader never has to guess where a subtree ends - the `#`s mark every boundary, which is why this form can be read back at all.",
+    "Writing is the level queue, pushing both children of every real node including the absent ones, and trimming the `#`s off the end at the finish."
+  ]
+}

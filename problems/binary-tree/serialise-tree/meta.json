@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "serialise-tree",
+  "slug": "serialise-tree",
+  "title": "Write It Down And Back",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["serialisation", "tree traversal"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 11,
+  "mode": "function",
+  "entry": "rewrite",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["build-from-traversals", "level-order-reading"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

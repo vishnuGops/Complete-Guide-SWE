@@ -31,6 +31,14 @@ written:
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
 
+`serialise-tree` is a `function` problem rather than an `operations` one. A codec
+class would have to take a tree as an operation argument, and operations mode
+hands arguments to the method untouched - Python would receive a raw list where
+Java's reflection builds a real `TreeNode`, so the two languages would diverge on
+every case. Instead it takes a tree written in pre-order form and returns it in
+level-order form, which needs a genuine reader and a genuine writer and is the
+same exercise (P6-4).
+
 `is-search-tree` loses its trap flag: what it traps is *correctness* - a check
 that compares each node only with its two children accepts a tree that is not a
 search tree - and no input size defeats the obvious approach, which is already
@@ -281,7 +289,7 @@ invariants, construction from traversals, and serialisation.
 | 8   | `kth-smallest-in-bst`    | The K-th Smallest In A BST    | Medium | 5      | function   | binary search tree, tree traversal               | node       |
 | 9   | `lowest-shared-ancestor` | Their Nearest Shared Ancestor | Medium | 6      | function   | lowest common ancestor, depth-first search       | node       |
 | 10  | `build-from-traversals`  | Rebuild From Two Readings     | Medium | 7      | function   | tree construction, hash map                      | node, trap |
-| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | operations | serialisation, tree traversal                    | node       |
+| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | function   | serialisation, tree traversal                    | node       |
 | 12  | `widest-level`           | The Widest Level              | Medium | 5      | function   | breadth-first search, tree traversal             | node       |
 | 13  | `flatten-to-chain`       | Flatten Into A Chain          | Medium | 6      | function   | tree traversal, in-place, mutated argument       | node       |
 | 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function   | tree traversal, depth-first search, invariant    | node, trap |

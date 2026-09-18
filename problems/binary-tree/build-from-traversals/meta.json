@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "build-from-traversals",
+  "slug": "build-from-traversals",
+  "title": "Rebuild From Two Readings",
+  "version": 1,
+  "topic": "binary-tree",
+  "patterns": ["tree construction", "hash map"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 10,
+  "mode": "function",
+  "entry": "rebuild",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["serialise-tree", "level-order-reading"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}
