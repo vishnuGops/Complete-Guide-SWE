@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "running-maximum",
+  "slug": "running-maximum",
+  "title": "Highest So Far",
+  "version": 1,
+  "topic": "arrays",
+  "patterns": ["one pass", "running total"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 4,
+  "mode": "function",
+  "entry": "runningMaximum",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["balance-point"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

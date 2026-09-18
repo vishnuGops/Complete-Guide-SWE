@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Look at what position `i` of the answer has to do with position `i - 1`. How much of the list do you actually have to look at again?",
+    "The answer at each minute is either the reading at that minute or the answer from the minute before, whichever is larger. That is a running value, not a fresh search.",
+    "Walk the readings once, keeping the largest seen so far in a single variable, and append it at every step.",
+    "Update the variable before you append, so that the current reading is included in its own answer."
+  ]
+}
