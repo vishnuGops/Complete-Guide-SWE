@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "No two queens share a row, so each row holds exactly one. What does that make the search?",
+    "A choice of column per row - one queen placed at a time, row by row, and the search is over columns rather than over squares.",
+    "Before placing a queen, check it against the queens already placed: same column, or same diagonal. Reject there, and the branch is never explored.",
+    "The two diagonals through a square are identified by `row + column` and `row - column`. Keeping a set of the used columns and of the used diagonals makes each check O(1)."
+  ]
+}

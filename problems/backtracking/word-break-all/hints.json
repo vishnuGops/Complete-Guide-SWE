@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Take the first word, then ask the same question of the rest of the letters.",
+    "So the answer for a position is: for every dictionary word that starts there, that word followed by each answer for the position after it.",
+    "Notice what that means - the answer depends only on the position, not on how you got there. So it can be computed once and reused.",
+    "Remember the list of readings for each position the first time it is worked out. Without that, a suffix reachable in many ways is solved once per way."
+  ]
+}

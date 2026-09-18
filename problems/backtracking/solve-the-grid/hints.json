@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Fill the blanks in a fixed order, one at a time. What has to be true of the digit you write before you move on to the next blank?",
+    "It must not already appear in that cell's row, column or box. Checking that before recursing is what makes the search finish.",
+    "When no digit fits a blank, the grid is wrong further back: undo the last write and try the next digit there. That undo is the backtracking.",
+    "Three arrays of nine bit masks - one per row, one per column, one per box - make each check a single bit test, and each write and undo a single flip."
+  ]
+}

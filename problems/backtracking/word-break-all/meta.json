@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "word-break-all",
+  "slug": "word-break-all",
+  "title": "Every Way To Read It",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "memoisation", "strings"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 11,
+  "mode": "function",
+  "entry": "everyReading",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["split-into-palindromes", "restore-addresses"],
+  "targetComplexity": {
+    "time": "O(answers \u00b7 n + n^2 \u00b7 dictionary)",
+    "space": "O(n^2)"
+  }
+}

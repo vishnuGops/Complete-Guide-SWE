@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "n-queens-count",
+  "slug": "n-queens-count",
+  "title": "How Many Queen Placements",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "pruning", "bit masking"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 7,
+  "mode": "function",
+  "entry": "queenPlacements",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["all-permutations", "solve-the-grid"],
+  "targetComplexity": {
+    "time": "O(n!) with heavy pruning",
+    "space": "O(n)"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "solve-the-grid",
+  "slug": "solve-the-grid",
+  "title": "Fill The Number Grid",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "pruning", "mutated argument"],
+  "tier": "Hard",
+  "rating": 9,
+  "order": 8,
+  "mode": "function",
+  "entry": "fillGrid",
+  "expect": "mutatedArgs",
+  "comparator": "exact",
+  "related": ["n-queens-count", "zero-the-cross"],
+  "targetComplexity": {
+    "time": "exponential in the blanks, heavily pruned",
+    "space": "O(1)"
+  }
+}

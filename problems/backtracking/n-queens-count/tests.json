@@ -1,0 +1,34 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "the four by four board",
+      "args": [4],
+      "expected": 2,
+      "explanation": "Two placements, mirror images of each other."
+    },
+    {"name":"one queen","args":[1],"expected":1,"explanation":"The only square works."},
+    {
+      "name": "no placement exists",
+      "args": [3],
+      "expected": 0,
+      "explanation": "Every arrangement leaves two queens attacking."
+    }
+  ],
+  "hidden": [
+    {"name":"two queens, which cannot be placed","args":[2],"expected":0},
+    {"name":"ten placements","args":[5],"expected":10},
+    {"name":"four placements","args":[6],"expected":4},
+    {"name":"forty placements","args":[7],"expected":40},
+    {"name":"the classic board","args":[8],"expected":92},
+    {"name":"three hundred and fifty-two","args":[9],"expected":352},
+    {"name":"seven hundred and twenty-four","args":[10],"expected":724},
+    {"name":"two thousand six hundred and eighty","args":[11],"expected":2680},
+    {"name":"fourteen thousand two hundred","args":[12],"expected":14200},
+    {
+      "name": "the stated maximum, where an unpruned search cannot finish",
+      "args": [13],
+      "expected": 73712
+    }
+  ]
+}
