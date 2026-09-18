@@ -31,6 +31,15 @@ export interface HarnessPayload {
   /** Absolute paths, so the harness never has to guess the layout. */
   solutionPath: string;
   resultsPath: string;
+  /**
+   * A chain argument to close into a cycle before calling (ROADMAP P2-15).
+   *
+   * Sent per run rather than per test because it is a fact about the problem:
+   * which argument holds the values and which holds the position the tail links
+   * back to. Absent for every problem that does not need one, which is all but
+   * two of them.
+   */
+  cycle?: { chain: number; at: number };
   tests: HarnessTest[];
 }
 

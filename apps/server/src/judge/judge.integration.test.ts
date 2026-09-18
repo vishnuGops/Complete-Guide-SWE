@@ -46,6 +46,145 @@ async function runSynthetic(
 }
 
 // ---------------------------------------------------------------------------
+// Cyclic chains (ROADMAP P2-15)
+// ---------------------------------------------------------------------------
+
+describe.each(LANGUAGES)('%s: a chain the harness closes into a cycle', (language) => {
+  /**
+   * Detect a cycle by walking - the only thing a solution can do with one.
+   *
+   * Written with two pointers rather than a set of seen nodes, because a set
+   * would pass on a chain that merely *repeats a value*, and the whole question
+   * this feature answers is whether the harness handed over a chain that loops
+   * rather than one that looks like it might.
+   */
+  const solutions: Record<string, string> = {
+    python: [
+      'class Solution:',
+      '    def hasCycle(self, head):',
+      '        slow = fast = head',
+      '        while fast is not None and fast.next is not None:',
+      '            slow = slow.next',
+      '            fast = fast.next.next',
+      '            if slow is fast:',
+      '                return True',
+      '        return False',
+      '',
+    ].join('\n'),
+    java: [
+      'class Solution {',
+      '    public boolean hasCycle(ListNode head) {',
+      '        ListNode slow = head;',
+      '        ListNode fast = head;',
+      '        while (fast != null && fast.next != null) {',
+      '            slow = slow.next;',
+      '            fast = fast.next.next;',
+      '            if (slow == fast) return true;',
+      '        }',
+      '        return false;',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  };
+
+  const meta = { entry: 'hasCycle', cycle: { chain: 0, at: 1 } };
+
+  it('hands the solution a chain that actually loops', async () => {
+    const result = await runSynthetic(language, solutions[language] as string, {
+      meta,
+      tests: [
+        // The textbook case: four nodes, the last pointing at the second.
+        { source: 'sample', test: { args: [[3, 2, 0, -4], 1], expected: true } },
+        { source: 'sample', test: { args: [[1, 2], 0], expected: true } },
+        // A single node pointing at itself, which is the smallest cycle there
+        // is and the one an off-by-one in the builder gets wrong.
+        { source: 'sample', test: { args: [[7], 0], expected: true } },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+    expect(result.passed).toBe(3);
+  });
+
+  it('leaves the chain open when the index is -1', async () => {
+    const result = await runSynthetic(language, solutions[language] as string, {
+      meta,
+      tests: [
+        { source: 'sample', test: { args: [[3, 2, 0, -4], -1], expected: false } },
+        { source: 'sample', test: { args: [[1], -1], expected: false } },
+        // An empty chain has no tail to link, whatever the index says.
+        { source: 'sample', test: { args: [[], -1], expected: false } },
+        { source: 'sample', test: { args: [[], 0], expected: false } },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+    expect(result.passed).toBe(4);
+  });
+
+  it('does not pass the cycle index to the solution', async () => {
+    /*
+     * The signature the starter declares is the signature that gets called.
+     * A solution taking one parameter is handed one argument, so if the index
+     * leaked through, this would be an arity error rather than a verdict - and
+     * on Java it would pick the wrong overload before that.
+     */
+    const counts: Record<string, string> = {
+      python: [
+        'class Solution:',
+        '    def hasCycle(self, head):',
+        '        # Walks the chain, so a leaked integer would raise here.',
+        '        seen = 0',
+        '        node = head',
+        '        while node is not None and seen < 100:',
+        '            seen += 1',
+        '            node = node.next',
+        '        return seen >= 100',
+        '',
+      ].join('\n'),
+      java: [
+        'class Solution {',
+        '    public boolean hasCycle(ListNode head) {',
+        '        int seen = 0;',
+        '        ListNode node = head;',
+        '        while (node != null && seen < 100) {',
+        '            seen++;',
+        '            node = node.next;',
+        '        }',
+        '        return seen >= 100;',
+        '    }',
+        '}',
+        '',
+      ].join('\n'),
+    };
+
+    const result = await runSynthetic(language, counts[language] as string, {
+      meta,
+      tests: [
+        // A loop of three never runs out, so the walk hits its own hundred.
+        { source: 'sample', test: { args: [[1, 2, 3], 0], expected: true } },
+        { source: 'sample', test: { args: [[1, 2, 3], -1], expected: false } },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+
+  it('reports an index past the end as an error rather than looping forever', async () => {
+    const result = await runSynthetic(language, solutions[language] as string, {
+      meta,
+      tests: [{ source: 'sample', test: { args: [[1, 2], 9], expected: true } }],
+    });
+
+    // A generator bug, not a wrong answer: the harness says so and the run
+    // survives it.
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message ?? '').toMatch(/cycle index/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // The happy path, on the real pilot problems
 // ---------------------------------------------------------------------------
 

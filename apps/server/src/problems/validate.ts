@@ -273,6 +273,67 @@ function checkTests(pkg: ProblemPackage): ValidationIssue[] {
     );
   }
 
+  /*
+   * A cyclic chain's two argument slots have to be there and have to be
+   * numbers (ROADMAP P2-15).
+   *
+   * The harness consumes the cycle index while building the chain, so a test
+   * that omits it, or puts a string where the index goes, fails inside the
+   * harness as a runtime error - which reads as the *solution's* fault. Said
+   * here instead, where it is the problem author's.
+   */
+  if (pkg.meta.mode === 'function' && pkg.meta.cycle) {
+    const { chain, at } = pkg.meta.cycle;
+    const needed = Math.max(chain, at) + 1;
+    for (const [pool, tests] of [
+      ['samples', samples],
+      ['hidden', hidden],
+    ] as const) {
+      tests.forEach((test, index) => {
+        if (test.args.length < needed) {
+          issues.push(
+            error(
+              file,
+              `a cyclic chain needs ${String(needed)} argument(s): the values at [${String(chain)}] and the cycle index at [${String(at)}]`,
+              testPath(pool, index, 'args'),
+            ),
+          );
+          return;
+        }
+        const values = test.args[chain];
+        const position = test.args[at];
+        if (!Array.isArray(values)) {
+          issues.push(
+            error(
+              file,
+              `args[${String(chain)}] is the chain's values and must be an array`,
+              testPath(pool, index, `args[${String(chain)}]`),
+            ),
+          );
+        }
+        if (typeof position !== 'number' || !Number.isInteger(position) || position < -1) {
+          issues.push(
+            error(
+              file,
+              `args[${String(at)}] is the cycle index and must be a whole number, or -1 for no cycle`,
+              testPath(pool, index, `args[${String(at)}]`),
+            ),
+          );
+        } else if (Array.isArray(values) && position >= values.length) {
+          // The harness raises on this, so it would be found - but as a
+          // runtime error on every single test rather than as one message.
+          issues.push(
+            error(
+              file,
+              `cycle index ${String(position)} is past the end of a chain of ${String(values.length)}`,
+              testPath(pool, index, `args[${String(at)}]`),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   return issues;
 }
 

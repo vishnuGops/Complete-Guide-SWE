@@ -8,7 +8,7 @@
   "patterns": ["shortest path", "heap"],
   "tier": "Medium",
   "rating": 7,
-  "order": 7,
+  "order": 6,
   "mode": "function",
   "entry": "whenAllHear",
   "expect": "return",

@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "cycle-entry",
+  "slug": "cycle-entry",
+  "title": "Where The Loop Begins",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["fast and slow pointers", "invariant"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 5,
+  "mode": "function",
+  "entry": "cycleStart",
+  "expect": "return",
+  "comparator": "exact",
+  "cycle": {
+    "chain": 0,
+    "at": 1
+  },
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "related": ["chain-has-cycle", "middle-link"]
+}

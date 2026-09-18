@@ -74,6 +74,35 @@ def to_list_node(values):
     return head
 
 
+def to_cyclic_list_node(values, at):
+    """A chain whose tail points back at index `at` (ROADMAP P2-15).
+
+    `at` is -1 for no cycle, which is the ordinary chain. The index is into the
+    values as given, so `([3, 2, 0, -4], 1)` is the textbook example: four
+    nodes, the last pointing at the second.
+
+    The solution never sees `at`. It sees the head of a chain that happens to
+    loop, which is the whole point - a problem about detecting a cycle has to be
+    handed one, not told about one.
+    """
+    head = to_list_node(values)
+    if head is None or at is None or at < 0:
+        return head
+    if at >= len(values):
+        raise ValueError(
+            "cycle index %d is past the end of a chain of %d" % (at, len(values))
+        )
+
+    target = head
+    for _ in range(at):
+        target = target.next
+    tail = head
+    while tail.next is not None:
+        tail = tail.next
+    tail.next = target
+    return head
+
+
 def from_list_node(node):
     out = []
     seen = set()
@@ -459,14 +488,29 @@ def syntax_error_record(err):
 # ---------------------------------------------------------------------------
 
 
-def run_function_test(module, entry, expect, args):
+def run_function_test(module, entry, expect, args, cycle=None):
     solution = module.Solution()
     method = getattr(solution, entry)
     annotations = annotation_names(method)
-    decoded = [
-        decode_argument(value, annotations[i] if i < len(annotations) else "")
-        for i, value in enumerate(args)
-    ]
+
+    if cycle is not None:
+        # One argument holds the values and another holds the position the tail
+        # links back to; the second is consumed here rather than passed on, so
+        # the signature the starter declares is the signature the solution gets
+        # (ROADMAP P2-15).
+        chain_at = cycle["chain"]
+        index_at = cycle["at"]
+        built = to_cyclic_list_node(args[chain_at], args[index_at])
+        decoded = [
+            built if i == chain_at else decode_argument(value, annotations[i] if i < len(annotations) else "")
+            for i, value in enumerate(args)
+            if i != index_at
+        ]
+    else:
+        decoded = [
+            decode_argument(value, annotations[i] if i < len(annotations) else "")
+            for i, value in enumerate(args)
+        ]
 
     returned = method(*decoded)
 
@@ -560,7 +604,11 @@ def run_tests(module, payload, results):
                     run_operations_test(module, entry, test["args"], test.get("ops", []))
                 )
             else:
-                record.update(run_function_test(module, entry, expect, test["args"]))
+                record.update(
+                    run_function_test(
+                        module, entry, expect, test["args"], payload.get("cycle")
+                    )
+                )
             record["status"] = "ok"
         except OperationError as err:
             # Which call failed, and what the sequence produced up to it

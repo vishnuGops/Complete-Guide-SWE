@@ -8,7 +8,7 @@
   "patterns": ["union find"],
   "tier": "Medium",
   "rating": 6,
-  "order": 8,
+  "order": 7,
   "mode": "function",
   "entry": "closingLink",
   "expect": "return",

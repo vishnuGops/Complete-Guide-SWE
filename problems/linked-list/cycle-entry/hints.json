@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Finding *whether* the chain loops is the easier half, and you already know how: two walkers at different speeds. The question is what their meeting place tells you.",
+    "Write down the lengths: the run-up before the loop, and how far into the loop the two pointers met. The relationship between them is the answer, and it falls out of the fact that one walker went exactly twice as far as the other.",
+    "After the meeting, put one pointer back at the head and step both one link at a time. They meet again at the start of the loop.",
+    "The distance from the head to the loop's start and the distance from the meeting point round to the loop's start are the same, which is why both pointers move at the same speed in the second phase. Count the steps in that phase to get the position."
+  ]
+}

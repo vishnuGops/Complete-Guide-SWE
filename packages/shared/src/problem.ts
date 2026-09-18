@@ -196,6 +196,40 @@ const problemMetaBase = z.strictObject({
   targetComplexity: z.object({ time: z.string().min(1), space: z.string().min(1) }).optional(),
 });
 
+/**
+ * A chain argument the harness closes into a cycle (ROADMAP P2-15).
+ *
+ * A linked list crosses the wire as the array of its values, which cannot say
+ * "the tail points back at index k" - so `chain-has-cycle` and `cycle-entry`
+ * were out of scope for v1 (docs/PROBLEM_FORMAT.md §5.2). This is the way in:
+ * the test carries one extra integer, and the harness *consumes* it while
+ * building the chain rather than passing it to the solution, which therefore
+ * sees exactly the signature the starter declares.
+ *
+ * `chain` is the argument index holding the values; `at` is the argument index
+ * holding the position the tail links back to, or -1 for no cycle. The
+ * encoding carries construction instructions, not object identity - which is
+ * the line this draws, and the reason a clone-the-graph problem still cannot
+ * be expressed: telling a copy from the original needs identity, and every
+ * value on this wire is a value.
+ */
+export const cycleSpecSchema = z
+  .object({
+    chain: z.int().min(0),
+    at: z.int().min(0),
+  })
+  .check((ctx) => {
+    if (ctx.value.chain === ctx.value.at) {
+      ctx.issues.push({
+        code: 'custom',
+        input: ctx.value,
+        path: ['at'],
+        message: 'the cycle index cannot be the chain itself',
+      });
+    }
+  });
+export type CycleSpec = z.infer<typeof cycleSpecSchema>;
+
 export const problemMetaSchema = z
   .discriminatedUnion('mode', [
     problemMetaBase.extend({
@@ -203,6 +237,8 @@ export const problemMetaSchema = z
       /** The method on `Solution` the harness calls. */
       entry: z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'must be an identifier'),
       expect: expectModeSchema,
+      /** Only for a problem about a cyclic chain (P2-15); see `cycleSpecSchema`. */
+      cycle: cycleSpecSchema.optional(),
     }),
     problemMetaBase.extend({
       mode: z.literal('operations'),
@@ -223,6 +259,19 @@ export const problemMetaSchema = z
         input: meta.rating,
         path: ['rating'],
         message: `rating ${meta.rating} is outside the ${meta.tier} band`,
+      });
+    }
+    if (meta.mode === 'function' && meta.cycle && meta.expect !== 'return') {
+      /*
+       * A cyclic chain and `mutatedArgs` cannot both be true of one problem:
+       * the harness would have to serialise the argument it just closed into a
+       * loop, and the encoder refuses a cycle rather than writing forever.
+       */
+      ctx.issues.push({
+        code: 'custom',
+        input: meta.expect,
+        path: ['expect'],
+        message: 'a problem with a cyclic chain must expect `return`',
       });
     }
     if (meta.related.includes(meta.slug)) {

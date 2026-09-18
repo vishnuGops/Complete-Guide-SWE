@@ -215,6 +215,7 @@ function payloadFor(
     timeoutMs: perTestMs,
     solutionPath: workspace.file(executor.solutionFile),
     resultsPath: workspace.file('results.jsonl'),
+    ...(meta.mode === 'function' && meta.cycle ? { cycle: meta.cycle } : {}),
     tests: indices.map((index) => {
       const test = tests[index]!.test;
       return {

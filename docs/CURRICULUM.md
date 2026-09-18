@@ -52,7 +52,7 @@ every case. Instead it takes a tree written in pre-order form and returns it in
 level-order form, which needs a genuine reader and a genuine writer and is the
 same exercise (P6-4).
 
-`is-search-tree` loses its trap flag: what it traps is *correctness* - a check
+`is-search-tree` loses its trap flag: what it traps is _correctness_ - a check
 that compares each node only with its two children accepts a tree that is not a
 search tree - and no input size defeats the obvious approach, which is already
 linear. Its second sample is the trap, and the statement says so (P6-4, D21).
@@ -233,8 +233,8 @@ and merging. Every problem here is **node**-flagged.
 | 1   | `middle-link`         | The Middle Link            | Easy   | 2      | function | fast and slow pointers                              | node       |
 | 2   | `merge-two-chains`    | Merge Two Ordered Chains   | Easy   | 3      | function | merge, dummy head, sorted input                     | node       |
 | 3   | `drop-nth-from-end`   | Drop The N-th From The End | Medium | 4      | function | fast and slow pointers, dummy head                  | node       |
-| 4   | `chain-has-cycle`     | Does The Chain Loop        | Medium | 4      | function | fast and slow pointers, invariant                   | node, blocked by P2-15 |
-| 5   | `cycle-entry`         | Where The Loop Begins      | Medium | 6      | function | fast and slow pointers, invariant                   | node, trap, blocked by P2-15 |
+| 4   | `chain-has-cycle`     | Does The Chain Loop        | Medium | 4      | function | fast and slow pointers, invariant                   | node       |
+| 5   | `cycle-entry`         | Where The Loop Begins      | Medium | 6      | function | fast and slow pointers, invariant                   | node, trap |
 | 6   | `remove-duplicates`   | Collapse Repeated Links    | Easy   | 3      | function | one pass, dummy head                                | node       |
 | 7   | `partition-around`    | Split The Chain Around     | Medium | 5      | function | dummy head, stable partition                        | node       |
 | 8   | `add-two-numbers`     | Add Two Digit Chains       | Medium | 5      | function | one pass, dummy head                                | node       |
@@ -243,11 +243,10 @@ and merging. Every problem here is **node**-flagged.
 | 11  | `merge-k-chains`      | Merge K Ordered Chains     | Hard   | 8      | function | k-way merge, heap, merge                            | node, trap |
 | 12  | `reverse-in-groups`   | Reverse Every K Links      | Hard   | 8      | function | linked list reversal, dummy head                    | node       |
 
-`chain-has-cycle` and `cycle-entry` cannot be written yet. A chain crosses the
-wire as the array of its values, and `docs/PROBLEM_FORMAT.md` §5.2 says a cycle
-is not expressible in that encoding — so both are blocked on ROADMAP **P2-15**,
-which adds a cycle argument the harness consumes when building the chain. The
-rest of the topic does not depend on it.
+`chain-has-cycle` and `cycle-entry` were blocked until P2-15 (2026-09-18), which
+added a cycle argument the harness consumes while building the chain: the test
+carries `[[3, 2, 0, -4], 1]` and the solution is handed a head, not an index.
+Both are written.
 
 ### Stack (`stack`) — 12 problems
 
@@ -300,24 +299,24 @@ rely on P2-12's decoding.
 Patterns to cover: the three traversals and when each is the natural one, BST
 invariants, construction from traversals, and serialisation.
 
-| #   | Slug                     | Title                         | Tier   | Rating | Mode       | Patterns                                         | Flags      |
-| --- | ------------------------ | ----------------------------- | ------ | ------ | ---------- | ------------------------------------------------ | ---------- |
-| 0   | `tree-depth`             | How Deep It Goes              | Easy   | 2      | function   | tree traversal, depth-first search               | node       |
-| 1   | `same-shape-trees`       | The Same Tree Twice           | Easy   | 2      | function   | tree traversal, depth-first search               | node       |
-| 2   | `mirror-tree`            | Its Own Reflection            | Easy   | 3      | function   | tree traversal, depth-first search               | node       |
-| 3   | `level-order-reading`    | Level By Level                | Medium | 4      | function   | tree traversal, breadth-first search             | node       |
-| 4   | `right-hand-view`        | Seen From The Right           | Medium | 5      | function   | tree traversal, breadth-first search             | node       |
-| 5   | `path-sum-exists`        | Is There A Path That Sums     | Easy   | 3      | function   | tree traversal, depth-first search               | node       |
-| 6   | `all-paths-summing`      | Every Path That Sums          | Medium | 5      | function   | tree traversal, depth-first search, backtracking | node       |
-| 7   | `is-search-tree`         | Is It A Search Tree           | Medium | 5      | function   | binary search tree, invariant                    | node       |
-| 8   | `kth-smallest-in-bst`    | The K-th Smallest In A BST    | Medium | 5      | function   | binary search tree, tree traversal               | node       |
-| 9   | `lowest-shared-ancestor` | Their Nearest Shared Ancestor | Medium | 6      | function   | lowest common ancestor, depth-first search       | node       |
-| 10  | `build-from-traversals`  | Rebuild From Two Readings     | Medium | 7      | function   | tree construction, hash map                      | node, trap |
-| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | function   | serialisation, tree traversal                    | node       |
-| 12  | `widest-level`           | The Widest Level              | Medium | 5      | function   | breadth-first search, tree traversal             | node       |
-| 13  | `flatten-to-chain`       | Flatten Into A Chain          | Medium | 6      | function   | tree traversal, in-place, mutated argument       | node       |
-| 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function   | tree traversal, depth-first search, invariant    | node, trap |
-| 15  | `count-good-nodes`       | Nodes Nothing Blocks          | Medium | 4      | function   | tree traversal, depth-first search               | node       |
+| #   | Slug                     | Title                         | Tier   | Rating | Mode     | Patterns                                         | Flags      |
+| --- | ------------------------ | ----------------------------- | ------ | ------ | -------- | ------------------------------------------------ | ---------- |
+| 0   | `tree-depth`             | How Deep It Goes              | Easy   | 2      | function | tree traversal, depth-first search               | node       |
+| 1   | `same-shape-trees`       | The Same Tree Twice           | Easy   | 2      | function | tree traversal, depth-first search               | node       |
+| 2   | `mirror-tree`            | Its Own Reflection            | Easy   | 3      | function | tree traversal, depth-first search               | node       |
+| 3   | `level-order-reading`    | Level By Level                | Medium | 4      | function | tree traversal, breadth-first search             | node       |
+| 4   | `right-hand-view`        | Seen From The Right           | Medium | 5      | function | tree traversal, breadth-first search             | node       |
+| 5   | `path-sum-exists`        | Is There A Path That Sums     | Easy   | 3      | function | tree traversal, depth-first search               | node       |
+| 6   | `all-paths-summing`      | Every Path That Sums          | Medium | 5      | function | tree traversal, depth-first search, backtracking | node       |
+| 7   | `is-search-tree`         | Is It A Search Tree           | Medium | 5      | function | binary search tree, invariant                    | node       |
+| 8   | `kth-smallest-in-bst`    | The K-th Smallest In A BST    | Medium | 5      | function | binary search tree, tree traversal               | node       |
+| 9   | `lowest-shared-ancestor` | Their Nearest Shared Ancestor | Medium | 6      | function | lowest common ancestor, depth-first search       | node       |
+| 10  | `build-from-traversals`  | Rebuild From Two Readings     | Medium | 7      | function | tree construction, hash map                      | node, trap |
+| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | function | serialisation, tree traversal                    | node       |
+| 12  | `widest-level`           | The Widest Level              | Medium | 5      | function | breadth-first search, tree traversal             | node       |
+| 13  | `flatten-to-chain`       | Flatten Into A Chain          | Medium | 6      | function | tree traversal, in-place, mutated argument       | node       |
+| 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function | tree traversal, depth-first search, invariant    | node, trap |
+| 15  | `count-good-nodes`       | Nodes Nothing Blocks          | Medium | 4      | function | tree traversal, depth-first search               | node       |
 
 ### Heap (`heap`) — 10 problems
 
@@ -337,32 +336,37 @@ which is where `operations` mode earns its place a second time.
 | 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       |       |
 | 9   | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
 
-### Graph (`graph`) — 14 problems, 13 writable
+### Graph (`graph`) — 13 problems
 
 Patterns to cover: both searches, cycle detection, topological order, union
 find, weighted shortest paths, and bipartiteness.
 
-`clone-the-graph` cannot be written yet, for the same reason as the two
-linked-list cycle problems: a graph crosses the wire as an edge list plus a
-vertex count, so a copy is indistinguishable from the original and "return a
-copy" has no observable answer. Blocked on ROADMAP **P2-15**.
+**`clone-the-graph` is dropped** (P2-15, 2026-09-18), which is why this topic is
+13 rather than 14. A graph crosses the wire as an edge list plus a vertex count,
+so a solution never holds a node to copy, and the answer comes back as an edge
+list where a genuine clone and the argument itself are the same bytes: returning
+the input passes. P2-15 made _construction_ expressible - a chain the harness
+closes into a cycle - and deliberately stopped short of identity, because
+telling a copy from an original would need a node type in the reflection table
+and an identity assertion inside both harnesses, a fourth `expect` mode serving
+one problem. The skill it teaches, a traversal carrying a map from old to new,
+is covered by the tree problems and by `count-components`.
 
 | #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                                 | Flags |
 | --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | ---------------------------------------- | ----- |
 | 0   | `count-components`      | How Many Separate Groups    | Medium | 4      | function   | depth-first search, union find           |       |
 | 1   | `path-exists`           | Can You Get There           | Easy   | 3      | function   | breadth-first search, depth-first search |       |
-| 2   | `course-order`          | An Order That Works         | Medium | 6      | function   | topological sort, depth-first search     | trap  |
-| 3   | `detect-cycle-directed` | Does It Loop Back           | Medium | 6      | function   | depth-first search, invariant            |       |
-| 4   | `clone-the-graph`       | Copy The Whole Graph        | Medium | 6      | function   | breadth-first search, hash map           | blocked by P2-15 |
-| 5   | `two-colour-graph`      | Two Colours, No Clashes     | Medium | 5      | function   | bipartite check, breadth-first search    |       |
-| 6   | `cheapest-route`        | Cheapest Route              | Medium | 7      | function   | shortest path, heap                      | trap  |
-| 7   | `network-delay`         | When The Last One Hears     | Medium | 7      | function   | shortest path, heap                      | trap  |
-| 8   | `redundant-link`        | The Link That Closes A Loop | Medium | 6      | function   | union find                               |       |
-| 9   | `accounts-merge`        | One Person, Many Addresses  | Medium | 7      | function   | union find, grouping                     |       |
-| 10  | `word-ladder`           | One Letter At A Time        | Hard   | 8      | function   | breadth-first search, hash set           | trap  |
-| 11  | `alien-order`           | The Order Of A New Alphabet | Hard   | 9      | function   | topological sort, strings                | trap  |
-| 12  | `minimum-spanning-cost` | Cheapest Way To Connect     | Hard   | 8      | function   | union find, sorted input, greedy         | trap  |
-| 13  | `graph-union-find`      | Connections, As They Come   | Medium | 6      | operations | design, union find, amortised O(1)       |       |
+| 2   | `course-order`          | An Order That Works         | Medium | 5      | function   | topological sort, depth-first search     | trap  |
+| 3   | `detect-cycle-directed` | Does It Loop Back           | Medium | 5      | function   | depth-first search, invariant            |       |
+| 4   | `two-colour-graph`      | Two Colours, No Clashes     | Medium | 4      | function   | bipartite check, breadth-first search    |       |
+| 5   | `cheapest-route`        | Cheapest Route              | Medium | 6      | function   | shortest path, heap                      | trap  |
+| 6   | `network-delay`         | When The Last One Hears     | Medium | 6      | function   | shortest path, heap                      | trap  |
+| 7   | `redundant-link`        | The Link That Closes A Loop | Medium | 5      | function   | union find                               |       |
+| 8   | `accounts-merge`        | One Person, Many Addresses  | Medium | 6      | function   | union find, grouping                     |       |
+| 9   | `word-ladder`           | One Letter At A Time        | Hard   | 7      | function   | breadth-first search, hash set           | trap  |
+| 10  | `alien-order`           | The Order Of A New Alphabet | Hard   | 8      | function   | topological sort, strings                | trap  |
+| 11  | `minimum-spanning-cost` | Cheapest Way To Connect     | Hard   | 7      | function   | union find, sorted input, greedy         | trap  |
+| 12  | `graph-union-find`      | Connections, As They Come   | Medium | 5      | operations | design, union find, amortised O(1)       |       |
 
 ---
 
@@ -419,17 +423,17 @@ and the classics that every interview draws from.
 
 Patterns to cover: XOR as cancellation, counting bits, masks as sets.
 
-| #   | Slug                   | Title                     | Tier   | Rating | Mode     | Patterns                         | Flags   |
-| --- | ---------------------- | ------------------------- | ------ | ------ | -------- | -------------------------------- | ------- |
-| 0   | `the-lonely-number`    | The One That Appears Once | Easy   | 2      | function | xor trick, one pass              |         |
-| 1   | `count-the-ones`       | How Many Bits Are Set     | Easy   | 2      | function | bit counting                     |         |
-| 2   | `bits-up-to-n`         | Set Bits Up To N          | Easy   | 3      | function | bit counting, one-dimensional dp |         |
-| 3   | `missing-from-range`   | The Missing Number        | Easy   | 3      | function | xor trick, counting              |         |
-| 4   | `single-among-triples` | The One Among Triples     | Medium | 6      | function | xor trick, bit counting          |         |
-| 5   | `two-lonely-numbers`   | The Two That Appear Once  | Medium | 7      | function | xor trick, bit masking           |         |
-| 6   | `power-of-two-check`   | Is It A Power Of Two      | Easy   | 2      | function | power of two, bit masking        |         |
-| 7   | `subsets-by-mask`      | Subsets Without Recursion | Medium | 5      | function | bit masking, subsets             |         |
-| 8   | `add-without-plus`     | Add Without Adding        | Medium | 6      | function | bit masking, xor trick           |         |
+| #   | Slug                   | Title                     | Tier   | Rating | Mode     | Patterns                         | Flags |
+| --- | ---------------------- | ------------------------- | ------ | ------ | -------- | -------------------------------- | ----- |
+| 0   | `the-lonely-number`    | The One That Appears Once | Easy   | 2      | function | xor trick, one pass              |       |
+| 1   | `count-the-ones`       | How Many Bits Are Set     | Easy   | 2      | function | bit counting                     |       |
+| 2   | `bits-up-to-n`         | Set Bits Up To N          | Easy   | 3      | function | bit counting, one-dimensional dp |       |
+| 3   | `missing-from-range`   | The Missing Number        | Easy   | 3      | function | xor trick, counting              |       |
+| 4   | `single-among-triples` | The One Among Triples     | Medium | 6      | function | xor trick, bit counting          |       |
+| 5   | `two-lonely-numbers`   | The Two That Appear Once  | Medium | 7      | function | xor trick, bit masking           |       |
+| 6   | `power-of-two-check`   | Is It A Power Of Two      | Easy   | 2      | function | power of two, bit masking        |       |
+| 7   | `subsets-by-mask`      | Subsets Without Recursion | Medium | 5      | function | bit masking, subsets             |       |
+| 8   | `add-without-plus`     | Add Without Adding        | Medium | 6      | function | bit masking, xor trick           |       |
 
 ---
 
@@ -441,20 +445,20 @@ than about one answer.
 `union-find-sizes` is gone: `graph-union-find` (Graph 13) is the same structure
 with the same contract, group sizes included. Batch E is 12 problems (P6-6).
 
-| #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                           | Flags   |
-| --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | ---------------------------------- | ------- |
-| 0   | `prefix-tree`           | A Tree Of Prefixes          | Medium | 6      | operations | design, trie, strings              |         |
-| 1   | `prefix-suggestions`    | Suggest As You Type         | Medium | 7      | operations | design, trie, top k                |         |
-| 2   | `wildcard-dictionary`   | A Dictionary With Blanks    | Medium | 7      | operations | design, trie, depth-first search   |         |
-| 3   | `least-recently-used`   | Keep The Recent Ones        | Medium | 7      | operations | design, cache eviction, hash map   | trap    |
-| 4   | `least-frequently-used` | Keep The Popular Ones       | Hard   | 9      | operations | design, cache eviction, two maps   | trap    |
-| 5   | `range-sum-mutable`     | Sums That Keep Changing     | Medium | 7      | operations | design, fenwick tree               | trap    |
-| 6   | `range-minimum`         | Smallest In Any Range       | Hard   | 8      | operations | design, segment tree               | trap    |
-| 7   | `window-maximum`        | Largest In Every Window     | Hard   | 8      | function   | monotonic deque, sliding window    | trap    |
-| 8   | `insert-delete-random`  | Add, Remove, Pick At Random | Medium | 6      | operations | design, hash map, randomisation    | checker |
-| 9   | `time-keyed-store`      | Values Through Time         | Medium | 6      | operations | design, binary search, hash map    |         |
-| 10  | `stream-checker`        | Does The Stream End With    | Hard   | 8      | operations | design, trie, reverse traversal    |         |
-| 11  | `rate-limiter`          | Allow, Then Refuse          | Medium | 5      | operations | design, queue                      |         |
+| #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                         | Flags   |
+| --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | -------------------------------- | ------- |
+| 0   | `prefix-tree`           | A Tree Of Prefixes          | Medium | 6      | operations | design, trie, strings            |         |
+| 1   | `prefix-suggestions`    | Suggest As You Type         | Medium | 7      | operations | design, trie, top k              |         |
+| 2   | `wildcard-dictionary`   | A Dictionary With Blanks    | Medium | 7      | operations | design, trie, depth-first search |         |
+| 3   | `least-recently-used`   | Keep The Recent Ones        | Medium | 7      | operations | design, cache eviction, hash map | trap    |
+| 4   | `least-frequently-used` | Keep The Popular Ones       | Hard   | 9      | operations | design, cache eviction, two maps | trap    |
+| 5   | `range-sum-mutable`     | Sums That Keep Changing     | Medium | 7      | operations | design, fenwick tree             | trap    |
+| 6   | `range-minimum`         | Smallest In Any Range       | Hard   | 8      | operations | design, segment tree             | trap    |
+| 7   | `window-maximum`        | Largest In Every Window     | Hard   | 8      | function   | monotonic deque, sliding window  | trap    |
+| 8   | `insert-delete-random`  | Add, Remove, Pick At Random | Medium | 6      | operations | design, hash map, randomisation  | checker |
+| 9   | `time-keyed-store`      | Values Through Time         | Medium | 6      | operations | design, binary search, hash map  |         |
+| 10  | `stream-checker`        | Does The Stream End With    | Hard   | 8      | operations | design, trie, reverse traversal  |         |
+| 11  | `rate-limiter`          | Allow, Then Refuse          | Medium | 5      | operations | design, queue                    |         |
 
 ---
 

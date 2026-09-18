@@ -8,7 +8,7 @@
   "patterns": ["breadth-first search", "hash set"],
   "tier": "Hard",
   "rating": 8,
-  "order": 10,
+  "order": 9,
   "mode": "function",
   "entry": "ladderLength",
   "expect": "return",

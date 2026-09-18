@@ -60,6 +60,21 @@ public class DevProMaxMain {
 
     private static Writer results;
 
+    /**
+     * A chain argument to close into a cycle, or null (ROADMAP P2-15).
+     *
+     * `cycleChain` is the argument index holding the values and `cycleAt` the
+     * one holding the position the tail links back to; the second is consumed
+     * while building the chain rather than passed to the solution, so the
+     * signature the starter declares is the signature that gets called.
+     *
+     * Static because it is a fact about the problem rather than about a test,
+     * and because the two places that need it - argument decoding and picking
+     * the overload by arity - are on opposite sides of the file.
+     */
+    private static int cycleChain = -1;
+    private static int cycleAt = -1;
+
     public static void main(String[] args) throws Exception {
         Map<String, Object> payload = (Map<String, Object>) DevProMaxJson.parse(
                 Files.readString(Path.of(args[0]), StandardCharsets.UTF_8));
@@ -72,6 +87,12 @@ public class DevProMaxMain {
         String expect = (String) payload.get("expect");
         long timeoutMs = ((Number) payload.get("timeoutMs")).longValue();
         List<Object> tests = (List<Object>) payload.get("tests");
+
+        Map<String, Object> cycle = (Map<String, Object>) payload.get("cycle");
+        if (cycle != null) {
+            cycleChain = ((Number) cycle.get("chain")).intValue();
+            cycleAt = ((Number) cycle.get("at")).intValue();
+        }
 
         Class<?> target;
         String wanted = mode.equals("operations") ? entry : "Solution";
@@ -232,8 +253,28 @@ public class DevProMaxMain {
         Type[] types = method.getGenericParameterTypes();
 
         Object[] args = new Object[types.length];
-        for (int i = 0; i < types.length; i++) {
-            args[i] = DevProMaxConvert.toJava(rawArgs.get(i), types[i]);
+        if (cycleAt >= 0) {
+            /*
+             * One argument holds the values and another holds the position the
+             * tail links back to (P2-15). The second never reaches the
+             * solution, so the wire list is one longer than the parameter list
+             * and the two are walked with separate cursors.
+             */
+            int at = 0;
+            for (int i = 0; i < rawArgs.size(); i++) {
+                if (i == cycleAt) {
+                    continue;
+                }
+                args[at] = i == cycleChain
+                        ? DevProMaxConvert.toCyclicListNode(
+                                rawArgs.get(i), ((Number) rawArgs.get(cycleAt)).intValue())
+                        : DevProMaxConvert.toJava(rawArgs.get(i), types[at]);
+                at++;
+            }
+        } else {
+            for (int i = 0; i < types.length; i++) {
+                args[i] = DevProMaxConvert.toJava(rawArgs.get(i), types[i]);
+            }
         }
 
         method.setAccessible(true);
@@ -327,6 +368,11 @@ public class DevProMaxMain {
         if (!tests.isEmpty()) {
             Map<String, Object> first = (Map<String, Object>) tests.get(0);
             arity = ((List<Object>) first.get("args")).size();
+            // The cycle index is not a parameter, so it does not count towards
+            // the arity the overload is chosen by (P2-15).
+            if (cycleAt >= 0) {
+                arity--;
+            }
         }
         Method fallback = null;
         for (Method m : target.getDeclaredMethods()) {
@@ -724,6 +770,38 @@ final class DevProMaxConvert {
         for (int i = values.size() - 1; i >= 0; i--) {
             head = new ListNode(((Number) values.get(i)).intValue(), head);
         }
+        return head;
+    }
+
+    /**
+     * A chain whose tail points back at index `at` (ROADMAP P2-15).
+     *
+     * `at` is -1 for no cycle, which is an ordinary chain. The index is into
+     * the values as given, so `([3, 2, 0, -4], 1)` is four nodes with the last
+     * pointing at the second. The solution is handed a chain that loops rather
+     * than being told that it does, which is the whole point of a problem
+     * about detecting one.
+     */
+    static Object toCyclicListNode(Object value, int at) {
+        Object head = toListNode(value);
+        if (head == null || at < 0) {
+            return head;
+        }
+        List<Object> values = (List<Object>) value;
+        if (at >= values.size()) {
+            throw new IllegalArgumentException(
+                    "cycle index " + at + " is past the end of a chain of " + values.size());
+        }
+
+        ListNode target = (ListNode) head;
+        for (int i = 0; i < at; i++) {
+            target = target.next;
+        }
+        ListNode tail = (ListNode) head;
+        while (tail.next != null) {
+            tail = tail.next;
+        }
+        tail.next = target;
         return head;
     }
 

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Following the links is the only thing you can do with a chain. What is different about following one that loops - not about the links themselves, but about what happens to you?",
+    "Two walkers going at different speeds through a loop must eventually be in the same place; through a chain that ends, the faster one runs out first. That is the whole of it.",
+    "Move one pointer one link at a time and another two links at a time. If the fast one reaches the end, there is no loop. If the two ever point at the same link, there is.",
+    "Compare the two pointers by identity rather than by value, and check the fast pointer *and* the link after it before stepping, or a chain of odd length walks off the end."
+  ]
+}

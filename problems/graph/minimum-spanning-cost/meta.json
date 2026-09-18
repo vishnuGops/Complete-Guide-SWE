@@ -8,7 +8,7 @@
   "patterns": ["union find", "sorted input", "greedy"],
   "tier": "Hard",
   "rating": 8,
-  "order": 12,
+  "order": 11,
   "mode": "function",
   "entry": "connectAll",
   "expect": "return",

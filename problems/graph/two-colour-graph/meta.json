@@ -8,7 +8,7 @@
   "patterns": ["bipartite check", "breadth-first search"],
   "tier": "Medium",
   "rating": 5,
-  "order": 5,
+  "order": 4,
   "mode": "function",
   "entry": "twoColourable",
   "expect": "return",

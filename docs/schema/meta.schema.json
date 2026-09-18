@@ -317,6 +317,25 @@
             "mutatedArgs",
             "both"
           ]
+        },
+        "cycle": {
+          "type": "object",
+          "properties": {
+            "chain": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "chain",
+            "at"
+          ]
         }
       },
       "required": [

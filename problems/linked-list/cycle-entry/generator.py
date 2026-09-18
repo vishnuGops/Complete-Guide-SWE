@@ -1,0 +1,40 @@
+import random
+
+
+def _chain(rng, length):
+    """Values for a chain of `length` nodes, with repeats allowed.
+
+    Repeats are the point: a solution that remembers *values* rather than nodes
+    passes on distinct data and fails here, which is the mistake this problem is
+    for.
+    """
+    return [rng.randint(-1000, 1000) for _ in range(length)]
+
+
+def generate(rng: random.Random):
+    yield {"args": [[], -1]}
+    yield {"args": [[5], -1]}
+    yield {"args": [[5], 0]}
+    # A run-up of one against a run-up of none: returning the meeting point
+    # passes the second and fails the first.
+    yield {"args": [[1, 2], 0]}
+    yield {"args": [[1, 2], 1]}
+    yield {"args": [[3, 2, 0, -4], 1]}
+    yield {"args": [[4, 4, 4, 4], 2]}
+    yield {"args": [[4, 4, 4, 4], -1]}
+
+    for _ in range(10):
+        length = rng.randint(2, 60)
+        values = _chain(rng, length)
+        at = rng.randint(0, length - 1) if rng.random() < 0.5 else -1
+        yield {"args": [values, at]}
+
+    # A long run-up into a short loop, and its mirror: the two shapes where
+    # returning the meeting point is furthest from right.
+    long_chain = _chain(rng, 500)
+    yield {"args": [long_chain, 497]}
+    yield {"args": [long_chain, 1]}
+
+    biggest = _chain(rng, 10000)
+    yield {"args": [biggest, -1]}
+    yield {"args": [biggest, 9999]}

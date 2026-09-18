@@ -8,7 +8,7 @@
   "patterns": ["topological sort", "strings"],
   "tier": "Hard",
   "rating": 9,
-  "order": 11,
+  "order": 10,
   "mode": "function",
   "entry": "alphabetOrder",
   "expect": "return",

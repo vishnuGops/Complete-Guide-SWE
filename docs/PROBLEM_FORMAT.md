@@ -285,10 +285,37 @@ integration test.
 ### 5.2 Linked lists
 
 A linked list is the array of its values, head first. `[]` is an empty list
-(`None` / `null` head). Cycles are not expressible; a problem that needs one must
-take the cycle position as a separate integer argument and build the cycle in the
-harness — which the current harness does not do, so such problems are out of
-scope for v1.
+(`None` / `null` head).
+
+**A cycle is declared, not encoded** (ROADMAP P2-15). The array cannot say "the
+tail points back at index k", so the problem says it instead: `meta.cycle` names
+two argument slots, and the harness closes the chain while building it.
+
+```json
+{ "entry": "hasCycle", "expect": "return", "cycle": { "chain": 0, "at": 1 } }
+```
+
+`chain` is the argument holding the values; `at` is the argument holding the
+position the tail links back to, or `-1` for an open chain. The index is
+**consumed by the harness** rather than passed on, so the solution is called with
+exactly the signature the starter declares - one parameter, the head of a chain
+that happens to loop:
+
+```json
+{ "args": [[3, 2, 0, -4], 1], "expected": true }
+```
+
+Four nodes, the last pointing at the second. `-1` builds an ordinary chain, and
+an index past the end is a generator bug: the validator says so, and the harness
+raises rather than linking to nothing.
+
+Two limits come with this. A problem with a cycle must `expect: "return"` - the
+encoder refuses to serialise a cyclic argument rather than writing forever, so
+`mutatedArgs` has nothing to compare - and the values still cross as values:
+this carries _construction instructions_, not object identity. That is why a
+clone-the-graph problem is still not expressible. Telling a copy from the
+original needs identity, and by the time a returned graph reaches the comparator
+it is an edge list, indistinguishable from the one that went in (see §5.4).
 
 ### 5.3 Binary trees
 
@@ -326,6 +353,19 @@ list alone cannot express isolated vertices:
 
 Weighted edges are `[u, v, w]`. Whether the graph is directed is a property of the
 problem statement, not of the encoding.
+
+**There is no graph node type, and a clone problem cannot be expressed** (ROADMAP
+P2-15). A vertex is an integer on this wire, so a solution never holds a node
+object to copy - and even if it did, the answer would come back as an edge list,
+where a genuine clone and the input itself are the same bytes. "Return a copy of
+this graph" has no observable answer here: returning the argument passes.
+
+Making it expressible would mean a node type in the reflection table (D5) _and_
+an identity assertion inside both harnesses - a fourth `expect` mode used by one
+problem. `clone-the-graph` was dropped instead (see `docs/CURRICULUM.md`); the
+skill it teaches, a traversal that carries a map from old to new, is covered by
+the tree and DFS problems that are expressible. A checker (D6) cannot rescue it:
+checkers see the wire values, which is exactly where the distinction is lost.
 
 ### 5.5 Edge cases every problem must cover
 

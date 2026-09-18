@@ -172,6 +172,45 @@ describe('test pools', () => {
     );
   });
 
+  it('checks the two argument slots a cyclic chain needs (P2-15)', () => {
+    const cyclic = { ...VALID_META, entry: 'hasCycle', cycle: { chain: 0, at: 1 } };
+    const testsWith = (args: unknown[], expected: unknown) =>
+      json({
+        samples: [{ name: 'a chain', args, expected, explanation: 'x' }],
+        hidden: [],
+      });
+
+    // The index is missing entirely. Left to the harness this is a runtime
+    // error on every test, which reads as the solution's fault rather than the
+    // author's.
+    expectError(
+      catalogue({ files: { 'meta.json': json(cyclic), 'tests.json': testsWith([[1, 2]], true) } }),
+      'a cyclic chain needs 2 argument(s)',
+    );
+
+    // Past the end of the chain: a generator bug, said once.
+    expectError(
+      catalogue({
+        files: { 'meta.json': json(cyclic), 'tests.json': testsWith([[1, 2], 5], true) },
+      }),
+      'cycle index 5 is past the end of a chain of 2',
+    );
+
+    // Not a whole number.
+    expectError(
+      catalogue({
+        files: { 'meta.json': json(cyclic), 'tests.json': testsWith([[1, 2], 'x'], true) },
+      }),
+      'must be a whole number, or -1 for no cycle',
+    );
+
+    // And -1 is the ordinary open chain, which must pass.
+    const open = catalogue({
+      files: { 'meta.json': json(cyclic), 'tests.json': testsWith([[1, 2], -1], false) },
+    });
+    expect(messages(errors(open))).not.toContain('cycle index');
+  });
+
   it('requires a name on every sample', () => {
     // Three of the seed problems had unnamed samples, so a failing one showed
     // in the results panel as its index and said nothing (P6-7).
@@ -743,10 +782,7 @@ describe('seed-catalogue rules (P6-0)', () => {
     // must not silence a size bound of ten thousand.
     const root = catalogue({
       files: {
-        'statement.md': makeStatement().replace(
-          '- `2 <= nums.length <= 3`',
-          '- `1 <= n <= 10000`',
-        ),
+        'statement.md': makeStatement().replace('- `2 <= nums.length <= 3`', '- `1 <= n <= 10000`'),
         'tests.json': json({
           samples: [{ name: 'a', args: [2, 1000000], expected: [0, 2] }],
           hidden: Array.from({ length: 10 }, (_, i) => ({

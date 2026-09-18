@@ -8,7 +8,7 @@
   "patterns": ["union find", "grouping"],
   "tier": "Medium",
   "rating": 7,
-  "order": 9,
+  "order": 8,
   "mode": "function",
   "entry": "mergeAccounts",
   "expect": "return",
