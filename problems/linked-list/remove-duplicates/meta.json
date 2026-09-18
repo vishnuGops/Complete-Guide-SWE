@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "remove-duplicates",
+  "slug": "remove-duplicates",
+  "title": "Collapse Repeated Links",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["one pass", "dummy head"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 6,
+  "mode": "function",
+  "entry": "collapseRepeats",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-two-chains", "drop-nth-from-end"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

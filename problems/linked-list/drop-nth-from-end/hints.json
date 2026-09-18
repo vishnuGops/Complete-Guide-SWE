@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Counting from the end is awkward because the chain only runs forwards. What fixed distance would you like to maintain between two walkers?",
+    "Exactly `n` links. Then when the leading walker reaches the end, the trailing one is `n` from the end.",
+    "To *remove* a link you need the one before it, so aim the trailing walker one link earlier - and give the leading walker an `n + 1` head start.",
+    "Removing the head has nothing in front of it. Start the trailing walker at a dummy link placed before the head, and that case disappears."
+  ]
+}

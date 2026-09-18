@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You want to stop at the halfway point without knowing the length. What could you run alongside the walk that tells you when half of it is done?",
+    "A second walker moving twice as fast. When the fast one reaches the end, the slow one is at the middle.",
+    "Step the fast walker two links at a time and the slow one a single link; return the slow one once the fast one can go no further.",
+    "The loop condition decides which middle you land on for an even chain: continue while `fast` and `fast.next` both exist, and you land on the second."
+  ]
+}

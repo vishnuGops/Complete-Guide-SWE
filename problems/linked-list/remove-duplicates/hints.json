@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "The chain is sorted, so equal values sit next to each other. What does that let you decide by looking only at a link and the one after it?",
+    "Whether a run has started. If `current.val == current.next.val`, the whole run of that value has to go - so skip forward past all of it.",
+    "Keep a reference to the last link you decided to *keep*. After skipping a run, point that link at whatever comes after the run.",
+    "The head can be removed, so the 'last kept link' has nowhere to live at the start. A dummy link in front of the head gives it one."
+  ]
+}

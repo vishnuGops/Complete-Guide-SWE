@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "drop-nth-from-end",
+  "slug": "drop-nth-from-end",
+  "title": "Drop The N-th From The End",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["fast and slow pointers", "dummy head"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 3,
+  "mode": "function",
+  "entry": "dropNthFromEnd",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["middle-link", "merge-two-chains"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

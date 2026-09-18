@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "merge-two-chains",
+  "slug": "merge-two-chains",
+  "title": "Merge Two Ordered Chains",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["merge", "dummy head", "sorted input"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 2,
+  "mode": "function",
+  "entry": "mergeChains",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["reverse-chain", "sparse-vector-dot"],
+  "targetComplexity": {
+    "time": "O(n + m)",
+    "space": "O(1)"
+  }
+}

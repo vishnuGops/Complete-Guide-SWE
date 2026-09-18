@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "At every step you are choosing between exactly two links: the smallest remaining one of each chain. Which do you take?",
+    "The smaller. Append it to what you have built, advance that chain, and repeat until one chain runs out - then the other chain's remainder is already sorted and can be attached whole.",
+    "Building the result needs a `tail` reference to append to. The head is awkward because there is nothing to append to yet.",
+    "A dummy link standing before the real head removes that special case: append to it like any other, and return `dummy.next` at the end."
+  ]
+}

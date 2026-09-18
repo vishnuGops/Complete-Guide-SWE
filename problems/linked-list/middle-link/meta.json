@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "middle-link",
+  "slug": "middle-link",
+  "title": "The Middle Link",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["fast and slow pointers"],
+  "tier": "Easy",
+  "rating": 2,
+  "order": 1,
+  "mode": "function",
+  "entry": "middleLink",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["reverse-chain"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

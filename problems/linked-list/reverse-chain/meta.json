@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "reverse-chain",
+  "slug": "reverse-chain",
+  "title": "Reverse The Chain",
+  "version": 1,
+  "topic": "linked-list",
+  "patterns": ["linked list reversal", "one pass"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 0,
+  "mode": "function",
+  "entry": "reverseChain",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["shift-right-in-place"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
+}

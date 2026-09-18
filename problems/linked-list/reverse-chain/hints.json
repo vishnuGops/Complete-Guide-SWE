@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Reversing means every link should point at the one before it. What do you need to have kept in order to make that change at a given link?",
+    "The link before it - which the chain does not give you, so you have to carry it yourself as you walk.",
+    "Carry two references: the link you are at, and the one you have already reversed. At each step, point the current link backwards, then move both forward.",
+    "Save `current.next` *before* overwriting it, or the rest of the chain is unreachable."
+  ]
+}
