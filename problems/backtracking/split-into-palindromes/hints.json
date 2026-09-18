@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Decide where the first cut goes, then ask the same question of what remains.",
+    "The first piece can be any prefix that reads the same both ways; for each such prefix, recurse on the rest of the word.",
+    "Check the prefix *before* recursing. A prefix that is not a palindrome makes every cutting below it invalid, so the whole branch is dead - that check is the pruning.",
+    "Without it you would build every one of the 2^(n-1) cuttings and filter afterwards, which is far more work than the answer is large."
+  ]
+}

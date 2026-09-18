@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "restore-addresses",
+  "slug": "restore-addresses",
+  "title": "Where The Dots Go",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "strings", "pruning"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 9,
+  "mode": "function",
+  "entry": "restoreAddresses",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["split-into-palindromes", "letter-arrangements"],
+  "targetComplexity": {
+    "time": "O(1)",
+    "space": "O(1)"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Decide the first number, then ask the same question of the rest with one fewer number to place.",
+    "A number is one, two or three digits - so three branches per level, and four levels. That is the whole search.",
+    "Reject a piece as soon as it is chosen: more than 255, or a leading zero on something longer than one digit.",
+    "Two counting prunes make most inputs finish immediately: the digits left must be at least the numbers left, and at most three times the numbers left."
+  ]
+}

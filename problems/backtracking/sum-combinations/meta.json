@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "sum-combinations",
+  "slug": "sum-combinations",
+  "title": "Ways To Reach The Total",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["combinations", "backtracking", "pruning"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 3,
+  "mode": "function",
+  "entry": "waysToTotal",
+  "expect": "return",
+  "comparator": "unorderedListOfLists",
+  "related": ["combinations-of-k", "all-subsets"],
+  "targetComplexity": {
+    "time": "O(answers \u00b7 target)",
+    "space": "O(target)"
+  }
+}

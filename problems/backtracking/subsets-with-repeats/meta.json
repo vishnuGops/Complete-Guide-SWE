@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "subsets-with-repeats",
+  "slug": "subsets-with-repeats",
+  "title": "Subsets Without Repeats",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["subsets", "backtracking", "sorted input"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 4,
+  "mode": "function",
+  "entry": "distinctSubsets",
+  "expect": "return",
+  "comparator": "unorderedListOfLists",
+  "related": ["all-subsets", "combinations-of-k"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 2^n)",
+    "space": "O(n)"
+  }
+}

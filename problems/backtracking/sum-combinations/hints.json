@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Build a combination by choosing values one at a time and subtracting from what is left. When is a combination finished, and when is a branch hopeless?",
+    "Finished when the remainder hits zero; hopeless when it goes below. Both are one comparison at the top of the recursion.",
+    "To stop [2,3] and [3,2] both appearing, never look back: a level may reuse the value it just chose, or move forward, but never return to an earlier one.",
+    "Sort the values first, and a value larger than the remainder means every later one is too - so the loop can stop rather than skip."
+  ]
+}

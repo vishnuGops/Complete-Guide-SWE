@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Start from the recursion that produces every subset. Where exactly does it produce the same subset twice?",
+    "When two equal values sit at different positions: taking the first and taking the second give the same subset.",
+    "Sort the values, so equal ones are adjacent. Then at each level, among a run of equal values, only allow the *first* of the run to be chosen.",
+    "'First of the run' means a value equal to the one immediately before it in the sorted list - but only when that predecessor was itself a choice at this same level, not merely earlier in the list. That distinction is the whole rule, and getting it the other way round makes whole subsets disappear."
+  ]
+}

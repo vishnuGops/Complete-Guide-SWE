@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "split-into-palindromes",
+  "slug": "split-into-palindromes",
+  "title": "Cut Into Palindromes",
+  "version": 1,
+  "topic": "backtracking",
+  "patterns": ["backtracking", "pruning", "strings"],
+  "tier": "Medium",
+  "rating": 7,
+  "order": 6,
+  "mode": "function",
+  "entry": "palindromeCuts",
+  "expect": "return",
+  "comparator": "unorderedList",
+  "related": ["is-palindrome-chain", "all-subsets"],
+  "targetComplexity": {
+    "time": "O(n \u00b7 2^n)",
+    "space": "O(n)"
+  }
+}
