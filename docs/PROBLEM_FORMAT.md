@@ -230,27 +230,44 @@ no JSON encoding and would silently become `null` inside a harness.
 
 ### 5.1 Type mapping
 
-| Concept                | JSON                                    | Python            | Java                               |
-| ---------------------- | --------------------------------------- | ----------------- | ---------------------------------- |
-| integer                | `5`                                     | `int`             | `int` / `long`                     |
-| float                  | `2.5`                                   | `float`           | `double`                           |
-| boolean                | `true`                                  | `bool`            | `boolean`                          |
-| character              | `"a"` (1-char string)                   | `str`             | `char`                             |
-| string                 | `"abc"`                                 | `str`             | `String`                           |
-| int array              | `[1, 2, 3]`                             | `list[int]`       | `int[]` or `List<Integer>`         |
-| 2-D int array / matrix | `[[1, 2], [3, 4]]`                      | `list[list[int]]` | `int[][]` or `List<List<Integer>>` |
-| char grid              | `[["a", "b"], ["c", "d"]]`              | `list[list[str]]` | `char[][]`                         |
-| string array           | `["a", "bc"]`                           | `list[str]`       | `String[]`                         |
-| linked list            | `[1, 2, 3]`                             | `ListNode`        | `ListNode`                         |
-| binary tree            | `[3, 9, 20, null, null, 15, 7]`         | `TreeNode`        | `TreeNode`                         |
-| graph                  | `[[0, 1], [1, 2]]` plus an `n` argument | `list[list[int]]` | `int[][]`                          |
-| absent / void          | `null`                                  | `None`            | `null`                             |
+| Concept                | JSON                                    | Python               | Java                               |
+| ---------------------- | --------------------------------------- | -------------------- | ---------------------------------- |
+| integer                | `5`                                     | `int`                | `int` / `long`                     |
+| float                  | `2.5`                                   | `float`              | `double`                           |
+| boolean                | `true`                                  | `bool`               | `boolean`                          |
+| character              | `"a"` (1-char string)                   | `str`                | `char`                             |
+| string                 | `"abc"`                                 | `str`                | `String`                           |
+| int array              | `[1, 2, 3]`                             | `list[int]`          | `int[]` or `List<Integer>`         |
+| 2-D int array / matrix | `[[1, 2], [3, 4]]`                      | `list[list[int]]`    | `int[][]` or `List<List<Integer>>` |
+| char grid              | `[["a", "b"], ["c", "d"]]`              | `list[list[str]]`    | `char[][]`                         |
+| string array           | `["a", "bc"]`                           | `list[str]`          | `String[]`                         |
+| linked list            | `[1, 2, 3]`                             | `Optional[ListNode]` | `ListNode`                         |
+| list of linked lists   | `[[1, 2], [3]]`                         | `List[ListNode]`     | `ListNode[]`                       |
+| binary tree            | `[3, 9, 20, null, null, 15, 7]`         | `Optional[TreeNode]` | `TreeNode`                         |
+| graph                  | `[[0, 1], [1, 2]]` plus an `n` argument | `list[list[int]]`    | `int[][]`                          |
+| absent / void          | `null`                                  | `None`               | `null`                             |
 
 Java picks the conversion from the **declared parameter type** by reflection
 (ROADMAP D5); Python deserialises JSON natively and applies a helper only for
 `ListNode`/`TreeNode` parameters. The starter's signature is therefore the source
 of truth for argument typing in both languages — if the two starters disagree
 about a parameter's type, the validator catches it when the references run.
+
+Python annotations are read **recursively**, so `Optional[ListNode]`,
+`List[ListNode]`, `ListNode | None` and `Optional[List[TreeNode]]` all decode
+(ROADMAP P2-12). A plain string annotation works too, which is what
+`from __future__ import annotations` and a quoted forward reference produce.
+
+**Integers on the wire are bounded to |n| ≤ 2^53 − 1** (ROADMAP D22). Every
+value crosses the boundary as JSON and is parsed into a double, so a larger
+integer is not the integer it was written as: two different 64-bit answers can
+compare equal, and Java's reader throws on a Node-stringified 2^63. The
+validator rejects any test value outside the range. A problem whose answer would
+exceed it is phrased modulo 10^9+7, as interview problems usually are.
+
+Java refuses rather than truncates: `2.5` for an `int` parameter is an error,
+not `2`, and a `char[]` element that is not exactly one character says which
+index it was.
 
 Supported Java types, exhaustively:
 

@@ -386,6 +386,11 @@ async function buildTestResult(args: BuildArgs): Promise<TestResult> {
       message: record.error
         ? `${record.error.type}: ${record.error.message}`
         : 'the solution raised',
+      // An operations sequence that raised halfway still produced the returns
+      // before it, and both harnesses now report them (ROADMAP P2-12). Being
+      // able to count the calls that worked is most of reading this: "the
+      // twentieth pop threw" is a different bug from "the first push did".
+      ...(record.returned !== undefined ? { actual: record.returned } : {}),
     };
   }
 

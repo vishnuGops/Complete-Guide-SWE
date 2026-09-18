@@ -731,3 +731,301 @@ describe('workspaces', () => {
     expect(fs.readdirSync(workspaceRoot).length).toBe(before);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Node types across the wire (ROADMAP P2-12)
+// ---------------------------------------------------------------------------
+
+/**
+ * The linked-list and tree paths, before the catalogue needs them.
+ *
+ * No seed problem uses `ListNode` or `TreeNode`, which is why the Python
+ * harness could render `Optional[ListNode]` as `"Union"` and hand the solution
+ * a raw list without a single test noticing. Every linked-list and tree starter
+ * in Batch B and C would have hit it (P6-3, P6-4), so the cases live here
+ * first.
+ */
+describe('node arguments', () => {
+  it.each(LANGUAGES)('%s: decodes an optional node argument', async (language) => {
+    const code =
+      language === 'python'
+        ? [
+            'from typing import List, Optional',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, head: Optional[ListNode]) -> List[int]:',
+            '        out = []',
+            '        while head is not None:',
+            '            out.append(head.val)',
+            '            head = head.next',
+            '        return out',
+            '',
+          ].join('\n')
+        : [
+            'import java.util.*;',
+            '',
+            'class Solution {',
+            '    public List<Integer> solve(ListNode head) {',
+            '        List<Integer> out = new ArrayList<>();',
+            '        for (ListNode at = head; at != null; at = at.next) {',
+            '            out.add(at.val);',
+            '        }',
+            '        return out;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      tests: [{ source: 'sample', test: { args: [[3, 1, 4]], expected: [3, 1, 4] } }],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+
+  it.each(LANGUAGES)('%s: decodes a tree argument', async (language) => {
+    const code =
+      language === 'python'
+        ? [
+            'from typing import Optional',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, root: Optional[TreeNode]) -> int:',
+            '        if root is None:',
+            '            return 0',
+            '        return root.val + self.solve(root.left) + self.solve(root.right)',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public int solve(TreeNode root) {',
+            '        if (root == null) {',
+            '            return 0;',
+            '        }',
+            '        return root.val + solve(root.left) + solve(root.right);',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      tests: [{ source: 'sample', test: { args: [[5, 3, 8, null, null, 1]], expected: 17 } }],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+
+  it.each(LANGUAGES)('%s: decodes a list of nodes', async (language) => {
+    // `List[ListNode]` in Python and `ListNode[]` in Java - merge-K's shape,
+    // and the annotation the old renderer flattened to `"List"`.
+    const code =
+      language === 'python'
+        ? [
+            'from typing import List',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, heads: List[ListNode]) -> int:',
+            '        total = 0',
+            '        for head in heads:',
+            '            at = head',
+            '            while at is not None:',
+            '                total += at.val',
+            '                at = at.next',
+            '        return total',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public int solve(ListNode[] heads) {',
+            '        int total = 0;',
+            '        for (ListNode head : heads) {',
+            '            for (ListNode at = head; at != null; at = at.next) {',
+            '                total += at.val;',
+            '            }',
+            '        }',
+            '        return total;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      tests: [
+        {
+          source: 'sample',
+          test: {
+            args: [[[1, 2], [3], []]],
+            expected: 6,
+          },
+        },
+      ],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+
+  it.each(LANGUAGES)('%s: encodes a returned node back to a list', async (language) => {
+    const code =
+      language === 'python'
+        ? [
+            'from typing import Optional',
+            '',
+            '',
+            'class Solution:',
+            '    def solve(self, head: Optional[ListNode]) -> Optional[ListNode]:',
+            '        previous = None',
+            '        while head is not None:',
+            '            head.next, previous, head = previous, head, head.next',
+            '        return previous',
+            '',
+          ].join('\n')
+        : [
+            'class Solution {',
+            '    public ListNode solve(ListNode head) {',
+            '        ListNode previous = null;',
+            '        while (head != null) {',
+            '            ListNode next = head.next;',
+            '            head.next = previous;',
+            '            previous = head;',
+            '            head = next;',
+            '        }',
+            '        return previous;',
+            '    }',
+            '}',
+            '',
+          ].join('\n');
+
+    const result = await runSynthetic(language, code, {
+      tests: [{ source: 'sample', test: { args: [[1, 2, 3]], expected: [3, 2, 1] } }],
+    });
+
+    expect(result.verdict).toBe('AC');
+  });
+});
+
+describe('java: argument conversion refuses what it cannot represent', () => {
+  it('will not truncate 2.5 into an int parameter', async () => {
+    // `intValue()` on 2.5 is 2, which made a test whose input was written as a
+    // float pass against an argument nobody chose (P2-12).
+    const code = 'class Solution {\n    public int solve(int n) {\n        return n;\n    }\n}\n';
+
+    const result = await runSynthetic('java', code, {
+      tests: [{ source: 'sample', test: { args: [2.5], expected: 2 } }],
+    });
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toMatch(/expected an integer/i);
+  });
+
+  it('names the element when a char[] gets something that is not one character', async () => {
+    // `charAt(0)` on "" threw StringIndexOutOfBounds from inside the harness,
+    // which reads as the judge being broken rather than the data being wrong.
+    const code =
+      'class Solution {\n    public int solve(char[] letters) {\n        return letters.length;\n    }\n}\n';
+
+    const result = await runSynthetic('java', code, {
+      tests: [{ source: 'sample', test: { args: [['a', '', 'c']], expected: 3 } }],
+    });
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toMatch(/index 1 of a char\[\]/);
+  });
+});
+
+describe('operations mode: which call failed', () => {
+  const META = {
+    mode: 'operations' as const,
+    entry: 'Counter',
+    expect: 'return' as const,
+  };
+
+  const CODE = {
+    python: [
+      'class Counter:',
+      '    def __init__(self):',
+      '        self.values = []',
+      '',
+      '    def push(self, value):',
+      '        self.values.append(value)',
+      '',
+      '    def pop(self):',
+      '        return self.values.pop()',
+      '',
+    ].join('\n'),
+    java: [
+      'import java.util.*;',
+      '',
+      'class Counter {',
+      '    private final Deque<Integer> values = new ArrayDeque<>();',
+      '',
+      '    void push(int value) {',
+      '        values.push(value);',
+      '    }',
+      '',
+      '    int pop() {',
+      '        return values.pop();',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  } as const;
+
+  it.each(LANGUAGES)(
+    '%s: names the operation and keeps the returns before it',
+    async (language) => {
+      const result = await run({
+        meta: syntheticMeta(META),
+        language,
+        code: CODE[language],
+        tests: [
+          {
+            source: 'sample',
+            test: {
+              args: [],
+              ops: [
+                { method: 'push', args: [7] },
+                { method: 'pop', args: [] },
+                // Nothing left to pop: the third call is the one that fails.
+                { method: 'pop', args: [] },
+              ],
+              expected: [null, 7, null],
+            },
+          },
+        ],
+      });
+
+      expect(result.verdict).toBe('RE');
+      // "It threw IndexError" with no index is a needle in twenty haystacks.
+      expect(result.tests[0]?.message).toMatch(/operation 2 \(pop\)/);
+      // And the calls that did work are still reported, so they can be counted.
+      expect(result.tests[0]?.actual).toEqual([null, 7]);
+    },
+  );
+
+  it.each(LANGUAGES)('%s: names a method that does not exist', async (language) => {
+    const result = await run({
+      meta: syntheticMeta(META),
+      language,
+      code: CODE[language],
+      tests: [
+        {
+          source: 'sample',
+          test: {
+            args: [],
+            ops: [
+              { method: 'push', args: [1] },
+              { method: 'peek', args: [] },
+            ],
+            expected: [null, 1],
+          },
+        },
+      ],
+    });
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toMatch(/operation 1 \(peek\)/);
+  });
+});

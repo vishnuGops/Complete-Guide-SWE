@@ -539,3 +539,39 @@ describe('slug filtering', () => {
     expect(scoped.ok).toBe(true);
   });
 });
+
+describe('wire integers (D22, P2-12)', () => {
+  /** The valid tests file with one value replaced. */
+  function testsWith(value: unknown, field: 'expected' | 'args' = 'expected'): string {
+    const tests = JSON.parse(json(makeTests())) as {
+      samples: { args: unknown[]; expected: unknown }[];
+      hidden: unknown[];
+    };
+    if (field === 'expected') tests.samples[0]!.expected = value;
+    else tests.samples[0]!.args = [value];
+    return json(tests);
+  }
+
+  it('rejects a test value too large to survive JSON', () => {
+    const root = catalogue({ files: { 'tests.json': testsWith(Number.MAX_SAFE_INTEGER + 2) } });
+
+    const issue = expectError(root, 'too large to survive JSON');
+    expect(issue.jsonPath).toBe('samples[0].expected');
+    // The message says what to do instead, because "use a smaller number" is
+    // not advice for a problem about large sums.
+    expect(issue.message).toMatch(/modulo 10\^9\+7/);
+  });
+
+  it('names the element inside an argument', () => {
+    const root = catalogue({ files: { 'tests.json': testsWith([1, 2 ** 53], 'args') } });
+
+    const issue = expectError(root, 'too large to survive JSON');
+    expect(issue.jsonPath).toBe('samples[0].args[0][1]');
+  });
+
+  it('accepts the boundary itself', () => {
+    const root = catalogue({ files: { 'tests.json': testsWith(Number.MAX_SAFE_INTEGER) } });
+
+    expect(errors(root).some((issue) => issue.message.includes('too large'))).toBe(false);
+  });
+});

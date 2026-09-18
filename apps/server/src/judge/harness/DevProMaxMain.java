@@ -166,9 +166,19 @@ public class DevProMaxMain {
             }
             record.put("status", "error");
             Map<String, Object> error = new LinkedHashMap<>();
-            error.put("type", err.getClass().getSimpleName());
-            error.put("message", err.getMessage() == null ? "" : err.getMessage());
-            error.put("traceback", stackTrace(err));
+
+            if (err instanceof DevProMaxOperationException failure) {
+                // The returns collected before the failure are kept: being able
+                // to count the calls that worked is most of reading this (P2-12).
+                record.put("returned", failure.returns);
+                error.put("type", failure.opCause.getClass().getSimpleName());
+                error.put("message", failure.getMessage());
+                error.put("traceback", stackTrace(failure.opCause));
+            } else {
+                error.put("type", err.getClass().getSimpleName());
+                error.put("message", err.getMessage() == null ? "" : err.getMessage());
+                error.put("traceback", stackTrace(err));
+            }
             record.put("error", error);
         } else {
             record.put("status", "ok");
@@ -244,27 +254,40 @@ public class DevProMaxMain {
         List<Object> ops = (List<Object>) test.get("ops");
         List<Object> returns = new ArrayList<>();
         if (ops != null) {
-            for (Object rawOp : ops) {
-                Map<String, Object> op = (Map<String, Object>) rawOp;
+            for (int opIndex = 0; opIndex < ops.size(); opIndex++) {
+                Map<String, Object> op = (Map<String, Object>) ops.get(opIndex);
                 String name = (String) op.get("method");
                 List<Object> opArgs = (List<Object>) op.get("args");
                 if (opArgs == null) {
                     opArgs = List.of();
                 }
-                Method m = findMethodByArity(target, name, opArgs.size());
-                if (m == null) {
-                    throw new NoSuchMethodException(
-                            entry + " has no method " + name + " taking " + opArgs.size()
-                                    + " argument(s)");
+                try {
+                    Method m = findMethodByArity(target, name, opArgs.size());
+                    if (m == null) {
+                        throw new NoSuchMethodException(
+                                entry + " has no method " + name + " taking " + opArgs.size()
+                                        + " argument(s)");
+                    }
+                    m.setAccessible(true);
+                    Type[] types = m.getGenericParameterTypes();
+                    Object[] args = new Object[types.length];
+                    for (int i = 0; i < types.length; i++) {
+                        args[i] = DevProMaxConvert.toJava(opArgs.get(i), types[i]);
+                    }
+                    Object returned = m.invoke(instance, args);
+                    returns.add(
+                            m.getReturnType() == void.class ? null : DevProMaxConvert.toJson(returned));
+                } catch (Throwable err) {
+                    // Which call failed, and what the sequence produced up to it
+                    // (ROADMAP P2-12). A design problem is a sequence of calls, and
+                    // "it threw IndexOutOfBounds" with no index is a needle in
+                    // twenty haystacks.
+                    Throwable cause =
+                            err instanceof InvocationTargetException && err.getCause() != null
+                                    ? err.getCause()
+                                    : err;
+                    throw new DevProMaxOperationException(opIndex, name, cause, returns);
                 }
-                m.setAccessible(true);
-                Type[] types = m.getGenericParameterTypes();
-                Object[] args = new Object[types.length];
-                for (int i = 0; i < types.length; i++) {
-                    args[i] = DevProMaxConvert.toJava(opArgs.get(i), types[i]);
-                }
-                Object returned = m.invoke(instance, args);
-                returns.add(m.getReturnType() == void.class ? null : DevProMaxConvert.toJson(returned));
             }
         }
         Map<String, Object> out = new LinkedHashMap<>();
@@ -361,6 +384,30 @@ public class DevProMaxMain {
     // =======================================================================
 }
 
+/** A failure during one call of an operations sequence (ROADMAP P2-12). */
+final class DevProMaxOperationException extends RuntimeException {
+
+    final int index;
+    final String method;
+    /** Named to avoid shadowing `Throwable.getCause()`, which is not set here. */
+    final transient Throwable opCause;
+    final transient List<Object> returns;
+
+    DevProMaxOperationException(int index, String method, Throwable cause, List<Object> returns) {
+        super("operation " + index + " (" + method + ") threw "
+                + cause.getClass().getSimpleName()
+                + (cause.getMessage() == null ? "" : ": " + cause.getMessage()));
+        this.index = index;
+        this.method = method;
+        this.opCause = cause;
+        // `new ArrayList<>` rather than `List.copyOf`: a void method
+        // contributes a null return, and `copyOf` throws on nulls - which
+        // turned every failing operation into a NullPointerException from
+        // inside the harness.
+        this.returns = new ArrayList<>(returns);
+    }
+}
+
 class ListNode {
     int val;
     ListNode next;
@@ -422,10 +469,10 @@ final class DevProMaxConvert {
 
     private static Object toJavaClass(Object value, Class<?> cls) {
         if (cls == int.class || cls == Integer.class) {
-            return ((Number) require(value, "an integer")).intValue();
+            return (int) requireIntegral(value, "an integer");
         }
         if (cls == long.class || cls == Long.class) {
-            return ((Number) require(value, "an integer")).longValue();
+            return requireIntegral(value, "an integer");
         }
         if (cls == double.class || cls == Double.class) {
             return ((Number) require(value, "a number")).doubleValue();
@@ -488,14 +535,14 @@ final class DevProMaxConvert {
         if (component == int.class) {
             int[] out = new int[n];
             for (int i = 0; i < n; i++) {
-                out[i] = ((Number) source.get(i)).intValue();
+                out[i] = (int) requireIntegral(source.get(i), "an integer");
             }
             return out;
         }
         if (component == long.class) {
             long[] out = new long[n];
             for (int i = 0; i < n; i++) {
-                out[i] = ((Number) source.get(i)).longValue();
+                out[i] = requireIntegral(source.get(i), "an integer");
             }
             return out;
         }
@@ -516,7 +563,7 @@ final class DevProMaxConvert {
         if (component == char.class) {
             char[] out = new char[n];
             for (int i = 0; i < n; i++) {
-                out[i] = ((String) source.get(i)).charAt(0);
+                out[i] = requireChar(source.get(i), i);
             }
             return out;
         }
@@ -551,6 +598,37 @@ final class DevProMaxConvert {
             throw new IllegalArgumentException("expected " + what + ", got null");
         }
         return value;
+    }
+
+    /**
+     * A whole number, refused rather than truncated (ROADMAP P2-12).
+     *
+     * `intValue()` on 2.5 is 2, which made a test whose input was written as a
+     * float pass against the wrong argument and left no trace of why. The wire
+     * format is JSON, where 2 and 2.0 are the same token, so an integral double
+     * is accepted and anything with a fractional part is not.
+     */
+    private static long requireIntegral(Object value, String what) {
+        Number number = (Number) require(value, what);
+        double asDouble = number.doubleValue();
+        if (asDouble != Math.rint(asDouble) || Double.isNaN(asDouble) || Double.isInfinite(asDouble)) {
+            throw new IllegalArgumentException(
+                    "expected " + what + " for this parameter, got " + number);
+        }
+        return number.longValue();
+    }
+
+    /** One character, and says which element was not (ROADMAP P2-12). */
+    private static char requireChar(Object value, int index) {
+        String text = (String) require(value, "a one-character string");
+        if (text.length() != 1) {
+            // `charAt(0)` on "" threw StringIndexOutOfBounds from inside the
+            // harness, which reads as the judge being broken rather than the
+            // test data being wrong.
+            throw new IllegalArgumentException(
+                    "expected a one-character string at index " + index + " of a char[], got \"" + text + "\"");
+        }
+        return text.charAt(0);
     }
 
     // --- node conversions -------------------------------------------------

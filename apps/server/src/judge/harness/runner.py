@@ -120,13 +120,46 @@ def from_tree_node(root):
     return out
 
 
+def render_annotation(annotation):
+    """One parameter annotation as text, generics and all.
+
+    The version this replaces used `getattr(annotation, "__name__", ...)`, which
+    on the installed Python renders `Optional[ListNode]` as `"Union"` and
+    `List[ListNode]` as `"List"` - so `decode_argument` saw no mention of
+    `ListNode` and handed the solution the raw wire value. No catalogue problem
+    hit it yet; every linked-list and tree starter in Batch B and C would
+    (ROADMAP P2-12).
+
+    Rendered rather than inspected structurally because half the annotations
+    arrive as *strings*: a starter with `from __future__ import annotations`, or
+    a quoted forward reference to a class defined below, gives text and nothing
+    else. Text is the only form both cases share.
+    """
+    import typing
+
+    if isinstance(annotation, str):
+        return annotation
+
+    args = typing.get_args(annotation)
+    if not args:
+        return getattr(annotation, "__name__", str(annotation))
+
+    origin = typing.get_origin(annotation)
+    base = getattr(origin, "__name__", None) or getattr(origin, "_name", None)
+    if base is None:
+        # `Optional[X]` and `X | None` both land here: their origin is
+        # `typing.Union`, which has no usable name in every supported version.
+        base = "Union"
+
+    return "%s[%s]" % (base, ", ".join(render_annotation(arg) for arg in args))
+
+
 def annotation_names(fn):
     """Parameter annotations as plain strings, in declaration order.
 
     Argument typing comes from the solution's own signature (ROADMAP D5) rather
     than from duplicated metadata, so the starter stays the single source of
-    truth. Annotations may already be strings under
-    `from __future__ import annotations`, so both forms are handled.
+    truth.
     """
     try:
         import inspect
@@ -138,20 +171,107 @@ def annotation_names(fn):
     for param in params:
         if param.name == "self":
             continue
-        annotation = param.annotation
-        if annotation is inspect.Parameter.empty:
+        if param.annotation is inspect.Parameter.empty:
             names.append("")
-        elif isinstance(annotation, str):
-            names.append(annotation)
         else:
-            names.append(getattr(annotation, "__name__", str(annotation)))
+            names.append(render_annotation(param.annotation))
     return names
 
 
+def _strip_optional(text):
+    """`Optional[X]` / `Union[X, None]` / `X | None` -> `X`.
+
+    Only the None-ness is removed. A union of two real types is left alone,
+    because there is no way to choose between them and guessing would decode
+    silently wrong.
+    """
+    for prefix in ("Optional[", "Union["):
+        if text.startswith(prefix) and text.endswith("]"):
+            members = _split_args(text[len(prefix) : -1])
+            members = [m for m in members if m not in ("None", "NoneType")]
+            if len(members) == 1:
+                return _strip_optional(members[0])
+            return text
+
+    if "|" in text:
+        members = [m.strip() for m in text.split("|")]
+        members = [m for m in members if m not in ("None", "NoneType")]
+        if len(members) == 1:
+            return _strip_optional(members[0])
+
+    return text
+
+
+def _split_args(text):
+    """Splits `A, B[C, D]` on the top-level commas only."""
+    parts = []
+    depth = 0
+    current = ""
+    for char in text:
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+        if char == "," and depth == 0:
+            parts.append(current.strip())
+            current = ""
+            continue
+        current += char
+    if current.strip():
+        parts.append(current.strip())
+    return parts
+
+
+SEQUENCE_NAMES = ("List", "list", "Sequence", "Iterable", "Tuple", "tuple")
+
+
+def _sequence_item(text):
+    """The element annotation of a sequence type, or None if it is not one.
+
+    Handles the Java spelling too (`ListNode[]`): the supported-type table in
+    docs/PROBLEM_FORMAT.md lists it, and a Python starter written from that
+    table would otherwise decode to a list of raw lists.
+    """
+    if text.endswith("[]"):
+        return text[:-2].strip()
+
+    for name in SEQUENCE_NAMES:
+        prefix = name + "["
+        if text.startswith(prefix) and text.endswith("]"):
+            members = _split_args(text[len(prefix) : -1])
+            # `Tuple[X, Y]` of mixed types is not something the table supports;
+            # a homogeneous tuple is, and so is `Tuple[X, ...]`.
+            members = [m for m in members if m != "..."]
+            if len(members) == 1:
+                return members[0]
+            return None
+    return None
+
+
 def decode_argument(value, annotation):
-    if "ListNode" in annotation:
+    """Turns a wire value into what the signature says the solution wants.
+
+    Only the two node types need this; everything else in the supported-type
+    table is already what JSON gives us. Recursive, so `Optional[ListNode]`,
+    `List[ListNode]` and `Optional[List[TreeNode]]` all decode - which is what
+    P2-12 fixed.
+    """
+    if "ListNode" not in annotation and "TreeNode" not in annotation:
+        return value
+
+    text = _strip_optional(annotation.strip())
+
+    item = _sequence_item(text)
+    if item is not None:
+        if not isinstance(value, list):
+            return value
+        return [decode_argument(entry, item) for entry in value]
+
+    if value is None:
+        return None
+    if "ListNode" in text:
         return to_list_node(value)
-    if "TreeNode" in annotation:
+    if "TreeNode" in text:
         return to_tree_node(value)
     return value
 
@@ -281,17 +401,41 @@ def run_function_test(module, entry, expect, args):
     return record
 
 
+class OperationError(Exception):
+    """A failure during one call of an operations sequence (ROADMAP P2-12).
+
+    Carries which call it was. Without that, a design problem's twentieth
+    `pop()` raising `IndexError` was reported as "IndexError" with no
+    indication of which of twenty calls it came from, and the returns collected
+    before it were discarded - so the user could not even count the successful
+    ones.
+    """
+
+    def __init__(self, index, method, cause, returns):
+        super().__init__("operation %d (%s) raised %s: %s" % (index, method, type(cause).__name__, cause))
+        self.index = index
+        self.method = method
+        self.cause = cause
+        self.returns = returns
+
+
 def run_operations_test(module, entry, args, ops):
     cls = getattr(module, entry)
     instance = cls(*args)
     returns = []
-    for op in ops:
+    for index, op in enumerate(ops):
         method = getattr(instance, op["method"], None)
         if method is None:
-            raise AttributeError(
-                "%s has no method named %r" % (entry, op["method"])
+            raise OperationError(
+                index,
+                op["method"],
+                AttributeError("%s has no method named %r" % (entry, op["method"])),
+                returns,
             )
-        returns.append(encode_value(method(*op.get("args", []))))
+        try:
+            returns.append(encode_value(method(*op.get("args", []))))
+        except Exception as error:  # noqa: BLE001 - reported, not handled
+            raise OperationError(index, op["method"], error, returns) from error
     return {"returned": returns}
 
 
@@ -339,6 +483,18 @@ def run_tests(module, payload, results):
             else:
                 record.update(run_function_test(module, entry, expect, test["args"]))
             record["status"] = "ok"
+        except OperationError as err:
+            # Which call failed, and what the sequence produced up to it
+            # (ROADMAP P2-12). A design problem is a sequence of calls; "it
+            # raised IndexError" with no index is a needle in twenty haystacks.
+            record["status"] = "error"
+            record["returned"] = err.returns
+            record["error"] = {
+                "type": type(err.cause).__name__,
+                "message": "operation %d (%s) raised %s: %s"
+                % (err.index, err.method, type(err.cause).__name__, err.cause),
+                "traceback": user_traceback(err.cause),
+            }
         except BaseException as err:  # noqa: BLE001 - user code can raise anything
             record["status"] = "error"
             record["error"] = {

@@ -1,8 +1,11 @@
 import {
+  MAX_SAFE_WIRE_INTEGER,
   MIN_HIDDEN_TESTS,
   MIN_SAMPLE_TESTS,
   expectsMutatedArgs,
   expectsReturn,
+  findUnsafeInteger,
+  type JsonValue,
   type ProblemMeta,
   type TestCase,
 } from '@devpromax/shared';
@@ -55,6 +58,43 @@ function checkLocation(pkg: ProblemPackage): ValidationIssue[] {
 // Rule: test pools are big enough and shaped correctly for the problem's mode
 // ---------------------------------------------------------------------------
 
+/**
+ * Every number in a test, checked against what the wire can carry (D22, P2-12).
+ *
+ * The judge parses results with `JSON.parse`, so an integer past 2^53 - 1 is
+ * not the integer it was written as: two different 64-bit answers can compare
+ * equal, and Java's reader throws on a Node-stringified 2^63. Rejected at
+ * authoring time, where it is a typo to fix, rather than at run time, where it
+ * is a verdict nobody can explain.
+ */
+function checkWireIntegers(
+  file: string,
+  pool: 'samples' | 'hidden',
+  index: number,
+  test: TestCase,
+): ValidationIssue[] {
+  const fields: [string, JsonValue | undefined][] = [
+    ['args', test.args],
+    ['expected', test.expected],
+    ['ops', test.ops as JsonValue | undefined],
+    ['expectedMutatedArgs', test.expectedMutatedArgs as JsonValue | undefined],
+  ];
+
+  return fields.flatMap(([field, value]) => {
+    if (value === undefined) return [];
+    const found = findUnsafeInteger(value);
+    if (!found) return [];
+    return [
+      error(
+        file,
+        `${String(found.value)} is too large to survive JSON (D22: |n| <= ${String(MAX_SAFE_WIRE_INTEGER)}); ` +
+          'phrase the problem modulo 10^9+7, or shrink the input',
+        testPath(pool, index, `${field}${found.path}`),
+      ),
+    ];
+  });
+}
+
 function checkTestCase(
   meta: ProblemMeta,
   file: string,
@@ -62,7 +102,7 @@ function checkTestCase(
   index: number,
   test: TestCase,
 ): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
+  const issues: ValidationIssue[] = checkWireIntegers(file, pool, index, test);
 
   if (pool === 'samples' && !test.explanation) {
     issues.push(

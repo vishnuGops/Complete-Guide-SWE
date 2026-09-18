@@ -63,7 +63,9 @@ export const pythonExecutor: Executor = {
       command: PYTHON_COMMAND,
       // -X utf8 forces UTF-8 regardless of the console code page, which on
       // Windows is otherwise cp1252 and mangles any non-ASCII source.
-      // -I isolates: no user site-packages, no PYTHON* env, cwd off sys.path.
+      // -I isolates: no user site-packages, no PYTHON* env, and neither the cwd
+      // nor the script's own directory on `sys.path` - which is why the harness
+      // loads `solution.py` by path rather than importing it by name (P2-12).
       args: ['-X', 'utf8', '-I', '-c', SYNTAX_CHECK, workspace.file(SOLUTION_FILE)],
       cwd: workspace.dir,
       timeoutMs: compileTimeoutMs,
