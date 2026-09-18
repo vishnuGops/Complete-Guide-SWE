@@ -19,7 +19,7 @@ The number of words in the shortest ladder, or `0`.
 
 ## Constraints
 
-- `1 <= word length <= 10`, and every word has the same length
+- `1 <= word length <= 10`, and `start`, `target` and every word in `words` are all that same length
 - `1 <= words.length <= 5000`
 - All words are lowercase, and the list has no repeats.
 

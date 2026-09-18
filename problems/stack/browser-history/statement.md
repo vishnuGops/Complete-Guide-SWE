@@ -27,7 +27,7 @@ changing it, and stops at whichever end it reaches.
 
 ## Constraints
 
-- `1 <= url.length <= 20`
+- `1 <= homepage.length <= 20` and `1 <= url.length <= 20`
 - `1 <= steps <= 100`
 - At most 2000 operations in total.
 
