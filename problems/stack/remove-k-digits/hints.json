@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Think about the leftmost place where the digits stop descending - a digit followed by a larger one. What happens to the number if you delete one of those two?",
+    "Deleting the smaller, later one shortens the number but keeps the big digit high up. Deleting the earlier, larger one lowers the most significant place that changes, which is always the better trade.",
+    "So: walk the digits, and while the digit you are holding is larger than the next one and you still have removals left, drop it. That is a stack that stays non-decreasing.",
+    "If removals are left over when the walk ends, the remaining digits are already non-decreasing, so the largest ones are at the back - drop them from the end."
+  ]
+}

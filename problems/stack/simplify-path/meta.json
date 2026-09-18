@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "simplify-path",
+  "slug": "simplify-path",
+  "title": "Tidy The Path",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["stack", "strings"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 4,
+  "mode": "function",
+  "entry": "tidyPath",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["evaluate-postfix", "bracket-balance"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

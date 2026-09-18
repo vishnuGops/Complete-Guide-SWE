@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "remove-k-digits",
+  "slug": "remove-k-digits",
+  "title": "Smallest After Removing",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["monotonic stack", "greedy", "strings"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 10,
+  "mode": "function",
+  "entry": "smallestAfterRemoving",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["next-greater-cycle", "largest-joined-number"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

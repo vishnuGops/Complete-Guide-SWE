@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "next-greater-cycle",
+  "slug": "next-greater-cycle",
+  "title": "Next Greater, Wrapping",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["monotonic stack", "next greater element"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 7,
+  "mode": "function",
+  "entry": "nextGreaterWrapping",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["days-until-warmer", "largest-run-sum"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

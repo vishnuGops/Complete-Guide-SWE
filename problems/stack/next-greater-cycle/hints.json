@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Forget the ring for a moment. Walking left to right, what do you know about the readings whose answer you have not found yet?",
+    "They are in decreasing order - if an earlier one were smaller than a later one, the later one would have answered it. So the waiting readings form a decreasing stack.",
+    "Each new reading answers every waiting reading it exceeds, popping them, and then waits itself. Every reading is pushed once and popped once, so the whole pass is linear.",
+    "For the ring, walk the readings twice and only push during the first lap: the second lap answers whatever is still waiting without adding anyone new."
+  ]
+}

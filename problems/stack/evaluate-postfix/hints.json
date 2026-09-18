@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "When you reach an operator, which two numbers does it apply to? What has to have happened to them already?",
+    "The two most recently produced values - which are exactly the two most recently *pushed*, if you keep produced values on a stack.",
+    "Push every number. On an operator, pop two, combine them, push the result. The line ends with one value on the stack, and that is the answer.",
+    "The order of the two pops matters for `-` and `/`: the first value popped is the right-hand operand."
+  ]
+}

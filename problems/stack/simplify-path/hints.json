@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Split the path on slashes first. What kinds of piece can come out, and what does each one do to the answer so far?",
+    "Empty pieces and `.` do nothing. A name is appended. `..` removes the most recently appended name - which is a pop.",
+    "So keep the names in a stack, and rebuild the answer by joining what is left with slashes and putting one at the front.",
+    "`..` at the root pops nothing rather than failing, and a name like `...` is not a `..` - it is just a folder."
+  ]
+}

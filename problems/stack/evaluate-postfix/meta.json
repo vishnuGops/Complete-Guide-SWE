@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "evaluate-postfix",
+  "slug": "evaluate-postfix",
+  "title": "Evaluate A Postfix Line",
+  "version": 1,
+  "topic": "stack",
+  "patterns": ["stack", "strings"],
+  "tier": "Medium",
+  "rating": 4,
+  "order": 3,
+  "mode": "function",
+  "entry": "evaluatePostfix",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["bracket-balance", "min-value-stack"],
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
+}

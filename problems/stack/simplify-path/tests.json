@@ -1,0 +1,67 @@
+{
+  "$schema": "../../../docs/schema/tests.schema.json",
+  "samples": [
+    {
+      "name": "doubled and trailing slashes",
+      "args": ["/home//user/"],
+      "expected": "/home/user",
+      "explanation": "Runs of slashes are one separator and the path does not end in one."
+    },
+    {
+      "name": "dots and double dots",
+      "args": ["/a/./b/../../c/"],
+      "expected": "/c",
+      "explanation": "`.` drops out, and two `..` undo `a` and `b`."
+    },
+    {
+      "name": "going above the root",
+      "args": ["/../"],
+      "expected": "/",
+      "explanation": "The root has no parent, so the `..` is discarded."
+    }
+  ],
+  "hidden": [
+    {"name":"the root itself","args":["/"],"expected":"/"},
+    {"name":"two slashes and nothing else","args":["//"],"expected":"/"},
+    {"name":"going above the root repeatedly","args":["/../../../"],"expected":"/"},
+    {"name":"three dots is an ordinary folder","args":["/..."],"expected":"/..."},
+    {"name":"the same folder entered and left twice","args":["/a/../a/../a"],"expected":"/a"},
+    {"args":["/home"],"expected":"/home"},
+    {"args":["//.."],"expected":"/"},
+    {"args":["/home///_///_//"],"expected":"/home/_/_"},
+    {"args":["///dir_2///home//.."],"expected":"/dir_2"},
+    {"args":["/home/...//a/b///..///user/home//a/"],"expected":"/home/.../a/user/home/a"},
+    {"args":["/....///home//.///x1/_///x1///../home"],"expected":"/..../home/x1/_/home"},
+    {
+      "args": [
+        "//a///..///.///a/c///x1//c/.././dir_2/home//home//../../...//c//_//..///c//...///a.b///home//..///..//..//user//a.b//_/x1///x1//"
+      ],
+      "expected": "/a/c/x1/dir_2/.../c/c/user/a.b/_/x1/x1"
+    },
+    {
+      "args": [
+        "///_///....//a/_///a///a.b//..///dir_2/a/.///a.b//..//b///.//home///home//c///..//_///dir_2///_/home/_/_/a//a.b//..///dir_2/home///x1"
+      ],
+      "expected": "/_/..../a/_/a/dir_2/a/b/home/home/_/dir_2/_/home/_/_/a/dir_2/home/x1"
+    },
+    {
+      "args": [
+        "//./a.b///.//x1/home//a.b//..//user///a.b/dir_2//..../..././//x1//home///user//a/a///b//....///.//...//...///....//.//.///b///dir_2/a/_///b/....//....//../a.b///./c/a/home//home/_/c//_/home///a.b/dir_2/a/../..///home//....///a.b///....///..//x1//b//..///./../a/c/a.b///a.b//home/..///x1/....///....//c/b/../dir_2/dir_2/a.b/b//_//x1//a///user/a///..../c/_///..//....///a.b/b/../a//a//a///....//b/..../_///...///b///_/..//a.b///.///....//.//_/dir_2//../c//....//....//..///.///user/user/.../..//..../a//a///..///x1"
+      ],
+      "expected": "/a.b/x1/home/user/a.b/dir_2/..../.../x1/home/user/a/a/b/..../.../.../..../b/dir_2/a/_/b/..../a.b/c/a/home/home/_/c/_/home/a.b/home/..../a.b/a/c/a.b/a.b/x1/..../..../c/dir_2/dir_2/a.b/b/_/x1/a/user/a/..../c/..../a.b/a/a/a/..../b/..../_/.../b/a.b/..../_/c/..../user/user/..../a/x1"
+    },
+    {
+      "args": [
+        "//....//home//././dir_2/user/x1///....///x1/....///dir_2//..//_//x1//user/_///user///b//home//user//_///a.b/a.b///..../c/...///x1/home/....//c/dir_2//home//..///user///c///dir_2/../home///user/home/dir_2/c//home//...//user//....///..///home//a///..//user//dir_2/...///../..//x1///./../b///././//../c///x1//.//dir_2//..///a/./..//user//c//c//..///x1///..//..//....///.//c///a/_///user///a.b///..//....//home/home///a.b///user//a//.../c/..//./..//user///..///home/./a/..//home//....///....//dir_2///.///user//home/a//.///home/...///x1///_//.///a/..///a.b///a.b/"
+      ],
+      "expected": "/..../home/dir_2/user/x1/..../x1/..../_/x1/user/_/user/b/home/user/_/a.b/a.b/..../c/.../x1/home/..../c/dir_2/user/c/home/user/home/dir_2/c/home/.../user/home/user/c/x1/user/..../c/a/_/user/..../home/home/a.b/user/a/home/home/..../..../dir_2/user/home/a/home/.../x1/_/a.b/a.b"
+    },
+    {
+      "name": "the stated maximum length",
+      "args": [
+        "/x1/x1/..../../.../x1/b/c/home/./../a.b/b/b/home/../_/home/c/x1/user/.../dir_2/user/home/dir_2/./.../user/dir_2/c/a.b/a.b/a.b/a.b/user/./user/./_/x1/..../user/a/...././user/_/c/a/a.b/home/dir_2/b/a/user/c/a.b/../..../x1/a/b/user/.../user/dir_2/../_/.././../a.b/x1/x1/c/c/../_/../...././a.b/user/x1/..../home/x1/b/.../.../_/b/.../user/user/a.b/a/home/.././../a.b/_/.../../.../.../a/b/user/a/user/a/a.b/_/x1/dir_2/...././..../a/user/x1/_/..../.../a/dir_2/a/./_/c/a/_/../a/a/a.b/c/.../../home/user/x1/..../home/a.b/a/_/home/.../_/_/b/c/.../.../x1/../_/x1/c/c/./_/user/a/./dir_2/../b/a/dir_2/..../b/a.b/a/user/dir_2/a/a/dir_2/..././..../dir_2/../_/x1/home/c/c/a/_/user/.../home/././..../a.b/a.b/user/a/_/.../c/b/_/x1/_/.../a/..../home/a.b/.../.../a/home/../home/c/home/dir_2/././../b/./a/a/...././../.../b/a.b/b/x1/b/../user/.../..../a.b/user/./user/dir_2/a/dir_2/home/x1/../a.b/.../..../../.../.../home/a/user/a/..../dir_2/_/a/a.b/..../a.b/dir_2/_/a.b/_/b/user/../_/a/_/_/../a/x1/dir_2/.../x1/c/x1/home/../b/.../dir_2/home/b/x1/a/a.b/home/a/dir_2/b/_/..../..../.././../a/x1/a/_/home/./../a/user/dir_2/a/..../_/dir_2/dir_2/b/..../user/x1/_/x1/dir_2/b/../b/a.b/b/user/a/./_/a/user/.../user/.../dir_2/x1/a/dir_2/b/dir_2/.../dir_2/a/dir_2/c/..../c/a/user/../c/x1/a.b/.../c/a/a.b/_/dir_2/...././dir_2/home/./_/a.b/_/./../x1/./x1/.../dir_2/dir_2/x1/a.b/../../..../a.b/home/_/c/b/_/dir_2/_/home/../x1/c/c/a.b/home/.../_/home/c/.../x1/b/./b/_/..../_/home/../x1/_/b/home/c/_/c/a/user/user/x1/c/.../dir_2/a/x1/dir_2/a.b/.../.../..../a.b/user/user/c/_/a/a/b/user/x1/x1/c/c/a.b/../b/./_/dir_2/x1/_/a.b/a.b/c/./dir_2/..../x1/a.b/.../../dir_2/x1/a.b/a/..../a.b/x1/a.b/a.b/user/c/.../.../dir_2/x1/../.../c/user/././dir_2/user/_/user/..../user/_/_/x1/..../c/.../../_/a/home/.../x1/user/../x1/_/_/home/dir_2/a/..././dir_2/user/home/_/a/a/user/c/home/./user/b/home/..../a.b/user/_/dir_2/c/a/../b/..../user/dir_2/home/../home/.../dir_2/b/c/b/c/..../..../user/./user/..../a/../x1/c/a/a.b/user/x1/./x1/../x1/b/./user/c/a.b/b/user/../b/user/..../..../home/a/a.b/home/dir_2/_/.././..../user/b/a/..../a.b/home/..../c/_/x1/./user/dir_2/x1/dir_2/..../a/dir_2/./../a.b/a.b/home/c/a.b/..../_/x1/x1/home/a.b/../_/..../_/..../a/user/_/b/x1/c/a.b/.../.../x1/user/user/home/.../user/..../x1/x1/x1/a/../home/user/b/../a/b/_/.../dir_2/dir_2/b/_/b/../c/user/x1/.././x1/user/home/dir_2/..../a.b/a/.../b/x1/_/..../x1/dir_2/b/dir_2/x1/b/../_/.../.../home/..../b/user/x1/../_/a.b/a.b/../a/home/..../c/a.b/a.b/./b/../../..../dir_2/b/a/x1/./c/user/..../user/..../.../dir_2/.././b/user/home/dir_2/b/c/.../b/b/user/x1/b/..../b/c/../a/./a/../../b/a/dir_2/b/b/user/c/user/_/c/user/..../.../a/./b/dir_2/b/..../b/c/.../home/user/user/a.b/_/.../../a/../dir_2/home/b/b/b/dir_2/x1/../.../a.b/b/b/c/./_/_/_/../_/a.b/a.b/c/.../x1/user/.../c/home/user/x1/b/..../home/./a.b/home/./../c/home/b/x1/./home/user/b/user/x1/.../user/b/..../user/_/c/..../a.b/dir_2/./_/a.b/c/../x1/dir_2/./a/../x1/c/../dir_2/c/b/.../home/b/../home/.../home/a/user/a/home/a.b"
+      ],
+      "expected": "/x1/x1/.../x1/b/c/a.b/b/b/_/home/c/x1/user/.../dir_2/user/home/dir_2/.../user/dir_2/c/a.b/a.b/a.b/a.b/user/user/_/x1/..../user/a/..../user/_/c/a/a.b/home/dir_2/b/a/user/c/..../x1/a/b/user/.../a.b/x1/x1/c/..../a.b/user/x1/..../home/x1/b/.../.../_/b/.../user/user/a.b/a.b/_/.../.../a/b/user/a/user/a/a.b/_/x1/dir_2/..../..../a/user/x1/_/..../.../a/dir_2/a/_/c/a/a/a/a.b/c/home/user/x1/..../home/a.b/a/_/home/.../_/_/b/c/.../.../_/x1/c/c/_/user/a/b/a/dir_2/..../b/a.b/a/user/dir_2/a/a/dir_2/.../..../_/x1/home/c/c/a/_/user/.../home/..../a.b/a.b/user/a/_/.../c/b/_/x1/_/.../a/..../home/a.b/.../.../a/home/c/home/b/a/a/.../b/a.b/b/x1/user/.../..../a.b/user/user/dir_2/a/dir_2/home/a.b/.../.../.../home/a/user/a/..../dir_2/_/a/a.b/..../a.b/dir_2/_/a.b/_/b/_/a/_/a/x1/dir_2/.../x1/c/x1/b/.../dir_2/home/b/x1/a/a.b/home/a/dir_2/b/_/a/x1/a/_/a/user/dir_2/a/..../_/dir_2/dir_2/b/..../user/x1/_/x1/dir_2/b/a.b/b/user/a/_/a/user/.../user/.../dir_2/x1/a/dir_2/b/dir_2/.../dir_2/a/dir_2/c/..../c/a/c/x1/a.b/.../c/a/a.b/_/dir_2/..../dir_2/home/_/a.b/x1/x1/.../dir_2/dir_2/..../a.b/home/_/c/b/_/dir_2/_/x1/c/c/a.b/home/.../_/home/c/.../x1/b/b/_/..../_/x1/_/b/home/c/_/c/a/user/user/x1/c/.../dir_2/a/x1/dir_2/a.b/.../.../..../a.b/user/user/c/_/a/a/b/user/x1/x1/c/c/b/_/dir_2/x1/_/a.b/a.b/c/dir_2/..../x1/a.b/dir_2/x1/a.b/a/..../a.b/x1/a.b/a.b/user/c/.../.../dir_2/.../c/user/dir_2/user/_/user/..../user/_/_/x1/..../c/_/a/home/.../x1/x1/_/_/home/dir_2/a/.../dir_2/user/home/_/a/a/user/c/home/user/b/home/..../a.b/user/_/dir_2/c/b/..../user/dir_2/home/.../dir_2/b/c/b/c/..../..../user/user/..../x1/c/a/a.b/user/x1/x1/b/user/c/a.b/b/b/user/..../..../home/a/a.b/home/dir_2/..../user/b/a/..../a.b/home/..../c/_/x1/user/dir_2/x1/dir_2/..../a/a.b/a.b/home/c/a.b/..../_/x1/x1/home/_/..../_/..../a/user/_/b/x1/c/a.b/.../.../x1/user/user/home/.../user/..../x1/x1/x1/home/user/a/b/_/.../dir_2/dir_2/b/_/c/user/x1/user/home/dir_2/..../a.b/a/.../b/x1/_/..../x1/dir_2/b/dir_2/x1/_/.../.../home/..../b/user/_/a.b/a/home/..../c/a.b/..../dir_2/b/a/x1/c/user/..../user/..../.../b/user/home/dir_2/b/c/.../b/b/user/x1/b/..../b/b/a/dir_2/b/b/user/c/user/_/c/user/..../.../a/b/dir_2/b/..../b/c/.../home/user/user/a.b/_/dir_2/home/b/b/b/dir_2/.../a.b/b/b/c/_/_/_/a.b/a.b/c/.../x1/user/.../c/home/user/x1/b/..../home/a.b/c/home/b/x1/home/user/b/user/x1/.../user/b/..../user/_/c/..../a.b/dir_2/_/a.b/x1/dir_2/x1/dir_2/c/b/.../home/home/.../home/a/user/a/home/a.b"
+    }
+  ]
+}
