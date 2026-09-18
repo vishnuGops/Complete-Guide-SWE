@@ -186,9 +186,15 @@ runs hidden tests — including the validator, which turns it off deliberately.
 
 `node:sqlite` with hand-written SQL and checked-in migrations applied at startup
 (D14). The database is a single file at `data/devpromax.db`, which is gitignored
-along with the judge workspaces. There is no ORM: eight tables do not justify
+along with the judge workspaces. There is no ORM: nine tables do not justify
 one, and removing the last native module from the stack removes the most common
 Windows install failure.
+
+**Where it lives is configurable** (P8-3). `DEVPROMAX_DATA` moves the whole
+directory - the database, the judge's workspaces, a backup written beside them -
+which is what someone with a checkout on a synced drive wants. `DEVPROMAX_DB`
+moves only the database file and wins over it, being the narrower of the two; it
+exists because the end-to-end suite needs exactly that and nothing else.
 
 **Migrations** are `.sql` files in `apps/server/src/db/migrations/`, named
 `NNN_snake_case.sql` and numbered contiguously from `001`. The runner compares
@@ -200,7 +206,7 @@ guards against is two branches each adding an `002_`, where whichever merged
 second would never run on a database that already recorded version 2.
 
 **Tables**: `submissions`, `drafts`, `problem_progress`, `coach_sessions`,
-`coach_messages`, `notes`, `settings`, `events`. Timestamps are ISO-8601 UTC
+`coach_messages`, `notes`, `bookmarks`, `settings`, `events`. Timestamps are ISO-8601 UTC
 strings, which is exactly what the zod schemas in `@devpromax/shared` carry, so
 no value is converted on the way in or out and string ordering is chronological
 ordering. Closed enumerations (language, verdict, status) carry CHECK
@@ -214,6 +220,25 @@ They store and retrieve; they do not decide. In particular `problem_progress`
 rows are written exactly as given, because the rule that a later Wrong Answer
 never demotes Solved belongs to the status engine (P3-3), and a rule implemented
 in two places is a rule that will disagree with itself.
+
+**Four things are derived rather than stored**, and the pattern is deliberate
+(P7-1, P7-2, P7-8, P7-9). How many hint rungs are open is `MAX(rung)` over the
+`hint_revealed` events; whether the editorial is unlocked is "solved, or an
+`editorial_revealed` event exists"; the review queue is a count of accepted
+submissions plus arithmetic; and version drift is the newest accepted
+`problem_version` against the one on disk. Each could have been a column, and
+each column would have held exactly what another table already said - including
+through reset-all-progress, which clears the activity log and would otherwise
+leave a user with no history and four hints still open.
+
+**Backup and restore** (`db/backup.ts`, `npm run db:backup` / `db:restore`) use
+SQLite's `VACUUM INTO` rather than copying the file. A live database is three
+files - the database, the write-ahead log and its shared-memory index - so a
+copy of the first one is missing whatever is still in the log; `VACUUM INTO`
+asks SQLite for a consistent copy, which is correct while the app is running. A
+restore inspects the candidate before it moves anything (is it SQLite, does it
+carry our schema version, is that version one this build understands) and moves
+the displaced database aside rather than deleting it.
 
 ---
 
@@ -235,11 +260,22 @@ lives in `apps/server/src/api/routes/`, is thin, and delegates to a service in
 | `PUT /api/progress/:slug/:lang`          | The manual override — the only thing that may move a status down (D11)                              |
 | `GET` · `PUT /api/settings`              | Settings, with the coach API key write-only (below)                                                 |
 | `POST /api/settings/test-connection`     | One authenticated call to the configured provider                                                   |
-| `POST /api/settings/reset-progress`      | Wipes practice, keeps notes and settings                                                            |
+| `POST /api/settings/reset-progress`      | Wipes practice, keeps notes, bookmarks and settings                                                 |
+| `GET /api/settings/doctor`               | Spawns `python`, `java` and `javac` and reports versions and problems (P8-3)                        |
+| `POST /api/problems/:slug/hints`         | Opens a hint rung; the body names the rung, so a doubled request is idempotent (P7-1)               |
+| `POST /api/problems/:slug/editorial`     | Unlocks the editorial early, recorded and permanent (P7-2)                                          |
+| `POST /api/problems/:slug/re-verify`     | Re-submits the last accepted code against the tests as they stand (P7-9)                            |
+| `PUT` · `DELETE /api/notes/:slug`        | Per-problem notes; a blank body deletes the row (P7-4)                                              |
+| `PUT` · `DELETE /api/bookmarks/:slug`    | Starred problems (P7-7)                                                                             |
+| `GET /api/next?mode=`                    | What to do next: `recommended`, `random` or `review` - with the reason (P7-7, P7-8)                 |
+| `GET /api/dashboard`                     | Streak, recent activity, rubric averages per topic, the review queue (P7-5, P7-8)                   |
+| `GET /api/dashboard/report?format=`      | The skills report as JSON, markdown or one self-contained HTML file (P7-5)                          |
+| `POST /api/coach/feedback` · `/chat`     | The coach, as a server-sent event stream (P5-3)                                                     |
 
-The coach routes (`POST /api/coach/feedback`, `POST /api/coach/chat`) are not
-here yet: they stream a provider's response and arrive with the provider's
-streaming half in P5-1.
+Two routes in that table answer with something other than JSON: the coach pair
+stream, because the whole point is showing an answer while it is still being
+written, and the report is an attachment - a file to keep rather than a page to
+look at.
 
 **Validation.** Requests are parsed with the zod schemas in
 `packages/shared/src/api.ts` — the same file the web client imports, so a shape
@@ -261,10 +297,14 @@ directories per keystroke. A package that does not parse is logged and skipped:
 `npm run problems:validate` is the gate for correctness, and one problem being
 mid-edit must not take the list page down.
 
-**Two things are withheld by the server rather than by the UI.** Hidden tests
-never leave the judge except for the first failing one (section 3.5), and the
-editorial is `null` until the problem is solved — a locked editorial that was
-already in the payload is not locked.
+**Three things are withheld by the server rather than by the UI.** Hidden tests
+never leave the judge except for the first failing one (section 3.5); the
+editorial is `null` until the problem is solved or explicitly revealed — a locked
+editorial that was already in the payload is not locked — and the reference
+solutions ride with it, absent from the payload rather than sent and hidden.
+The coach is given one hint rung the user has _not_ opened (P7-1), marked secret
+in its context beside the editorial, so that its nudge points where the problem's
+author was pointing; it is told never to hand it over.
 
 **The coach API key is write-only across this boundary.** `GET /api/settings`
 returns a `SettingsView`, which has no `apiKey` field at all: the UI sees
@@ -288,9 +328,18 @@ only place that knows which vendor is configured.
 | Components                          | React Testing Library                 | UI behaviour.                                                                                                            |
 | Golden paths                        | Playwright                            | The flows a user actually performs.                                                                                      |
 | LLM adapters                        | Recorded fixtures                     | No network in CI.                                                                                                        |
+| Accessibility                       | axe over every screen, both themes    | No serious or critical violation, in a real browser rather than from a linter.                                           |
+| Performance                         | Playwright budgets, Lighthouse        | A 500-row list, a cold start, a burst of submissions; and ≥ 90 on the built app in both themes.                          |
 
 Mocking the judge's subprocesses would test nothing that matters: nearly every
 bug this layer can have lives in exactly the things a mock removes.
+
+**Retries are a CI-only affordance, and they are counted** (P8-1). Locally
+`retries` is 0, because a flake has to be seen to be fixed; in CI a test gets
+two more attempts, and `apps/web/scripts/flake-budget.mjs` fails the job when
+more than two tests passed only on a retry. A suite that quietly retries its way
+to green is a suite nobody trusts, and a budget of zero is one that gets deleted
+the first time a shared runner hiccups.
 
 ---
 

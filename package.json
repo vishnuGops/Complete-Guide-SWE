@@ -23,6 +23,7 @@
     "test:integration": "vitest run --project server integration.test",
     "test:e2e": "npm run test:e2e -w @devpromax/web",
     "perf:lighthouse": "npm run perf:lighthouse -w @devpromax/web",
+    "screenshots": "npm run screenshots -w @devpromax/web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

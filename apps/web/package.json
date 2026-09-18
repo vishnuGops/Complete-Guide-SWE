@@ -10,6 +10,7 @@
     "test:e2e": "playwright test",
     "test:e2e:flake-budget": "node scripts/flake-budget.mjs",
     "perf:lighthouse": "node scripts/lighthouse.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {

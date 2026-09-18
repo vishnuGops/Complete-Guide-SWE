@@ -4,9 +4,11 @@ Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` fi
 
 ## What this project is
 
-DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists ~200 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
+DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists 169 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **M2.1 reached (2026-09-18)** — the vertical slice works (20 validated problems, judge, API, web UI in both languages and from the keyboard alone; `apps/web/e2e/flows.spec.ts` walks it, `e2e/a11y.spec.ts` audits it in both themes), the coach streams rubric feedback into the Coach panel, and the 2026-09-17 audit's findings are closed. Next is **M3**, the catalogue: P6-1 (the curriculum map), P2-14 (the pipeline at 200 problems), then the content batches. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Current state: **M4 reached (2026-09-18)**, and M5 all but done. The catalogue is 169 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5 has P8-1 (76 end-to-end tests with a flake budget), P8-2 (performance budgets and Lighthouse ≥ 90) and P8-3 (doctor, welcome, movable `data/`, backup and restore) done; P8-4 documentation is the last open one.
+
+Three tasks cannot be finished here and say so in their rows: **P7-10** needs measured human solving times, **P2-15** needs an owner decision about expressing cycles and graph node references on the wire, and **P8-5** (retire `temp/`) is blocked by the owner. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
 ## Stack (decided, see ROADMAP D1–D17)
 
@@ -37,6 +39,7 @@ npm run test:unit           # everything except *.integration.test.ts (seconds, 
 npm run test:integration    # only *.integration.test.ts (spawns real python/java)
 npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db)
 npm run perf:lighthouse     # Lighthouse over the built app in both themes; run `npm run build` first
+npm run screenshots         # retake the README's screenshots from the built app
 npm run lint && npm run typecheck           # lint:fix, format and format:check also exist
 npm run problems:validate [--static] [--changed <ref>] [slug]   # schema (and both references pass)
 npm run problems:new <topic> <slug>
