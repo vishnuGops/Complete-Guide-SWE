@@ -11,6 +11,7 @@ import type {
   DraftResponse,
   HintRevealResponse,
   Language,
+  NoteResponse,
   ProblemDetail,
   ProblemListQuery,
   ProblemListResponse,
@@ -233,6 +234,41 @@ export function useRevealHint(): UseMutationResult<
       queryClient.setQueryData<ProblemDetail>(keys.problem(slug), (previous) =>
         previous ? { ...previous, revealedHints: result.revealed } : previous,
       );
+    },
+  });
+}
+
+/**
+ * Autosaving a note (ROADMAP P7-4).
+ *
+ * Write-through rather than an invalidation, like a draft: the answer already
+ * says what the note became, and refetching the problem after every debounce
+ * would replace the payload the user is looking at to learn one string.
+ *
+ * `['problems']` is invalidated too, but only when the note appears or
+ * disappears - the list shows a marker on problems that have one, and the
+ * search looks inside them. Every keystroke would be a list refetch for nothing.
+ */
+export function useSaveNote(): UseMutationResult<
+  NoteResponse,
+  Error,
+  { slug: string; body: string }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug, body }) => api.saveNote(slug, body),
+    onSuccess: (result, { slug }) => {
+      let appeared = false;
+      queryClient.setQueryData<ProblemDetail>(keys.problem(slug), (previous) => {
+        if (!previous) return previous;
+        appeared = (previous.note === null) !== (result.note === null);
+        return {
+          ...previous,
+          note: result.note?.body ?? null,
+          summary: { ...previous.summary, hasNote: result.note !== null },
+        };
+      });
+      if (appeared) void queryClient.invalidateQueries({ queryKey: keys.problems });
     },
   });
 }

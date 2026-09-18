@@ -115,6 +115,22 @@ function serve(
         return aRunResult({ kind: 'submit' });
       },
     },
+    {
+      // Stateful too: the note the detail answers with has to move, or "it is
+      // still there after a reload" cannot be tested.
+      match: (url) => url.pathname.startsWith('/api/notes/'),
+      body: (_url, init) => {
+        const { body } = JSON.parse(String(init?.body ?? '{}')) as { body?: string };
+        const note = body === undefined || body.trim() === '' ? null : body;
+        current = { ...current, note, summary: { ...current.summary, hasNote: note !== null } };
+        return {
+          note:
+            note === null
+              ? null
+              : { slug: SLUG, body: note, updatedAt: '2026-09-18T00:00:00.000Z' },
+        };
+      },
+    },
     { match: (url) => url.pathname.startsWith('/api/drafts/'), body: () => ({ draft: null }) },
   ]);
 }
@@ -445,6 +461,80 @@ describe('the submissions tab (P7-3)', () => {
     await user.click(screen.getByRole('button', { name: 'Compare with my code' }));
 
     expect(screen.getByText(/nothing line-for-line to compare/)).toBeInTheDocument();
+  });
+});
+
+describe('the notes tab (P7-4)', () => {
+  it('autosaves what is typed, and does not save what is not', async () => {
+    const server = serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+
+    // Nothing typed, nothing written: opening the tab is not an edit.
+    expect(server.requests.some((request) => request.url.pathname.startsWith('/api/notes/'))).toBe(
+      false,
+    );
+
+    await user.type(screen.getByLabelText('Your notes on this problem'), 'the window shrinks left');
+
+    await waitFor(() => {
+      const written = server.requests.filter((request) =>
+        request.url.pathname.startsWith('/api/notes/'),
+      );
+      expect(written.at(-1)?.body).toEqual({ body: 'the window shrinks left' });
+    });
+  });
+
+  it('writes the last few keystrokes on the way out rather than dropping them', async () => {
+    const server = serve();
+    const first = open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+    await user.type(screen.getByLabelText('Your notes on this problem'), 'half a thought');
+
+    // Leaving immediately, inside the debounce. Before the flush, this was the
+    // sentence that vanished.
+    first.unmount();
+
+    await waitFor(() => {
+      const written = server.requests.filter((request) =>
+        request.url.pathname.startsWith('/api/notes/'),
+      );
+      expect(written.at(-1)?.body).toEqual({ body: 'half a thought' });
+    });
+  });
+
+  it('keeps what was typed when another tab is looked at', async () => {
+    serve();
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+    await user.type(screen.getByLabelText('Your notes on this problem'), 'mid-sentence');
+
+    // Radix unmounts an inactive panel, which used to throw away everything
+    // half-typed in it (P4-12). The notes panel is kept mounted for that.
+    await user.click(screen.getByRole('tab', { name: 'Description' }));
+    await user.click(screen.getByRole('tab', { name: 'Notes' }));
+
+    expect(screen.getByLabelText('Your notes on this problem')).toHaveValue('mid-sentence');
+  });
+
+  it('renders the note as markdown in the preview', async () => {
+    serve(aProblemDetail({ note: '## What I missed\n\nThe empty case.' }));
+    open();
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+    expect(screen.getByLabelText('Your notes on this problem')).toHaveValue(
+      '## What I missed\n\nThe empty case.',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(screen.getByRole('heading', { name: 'What I missed' })).toBeInTheDocument();
   });
 });
 

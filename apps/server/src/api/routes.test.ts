@@ -613,6 +613,83 @@ describe('drafts', () => {
   });
 });
 
+describe('notes (P7-4)', () => {
+  it('saves a note, and sends it back with the problem', async () => {
+    const response = await api('PUT', `/api/notes/${EASY}`, { body: 'The window shrinks left.' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().note.body).toBe('The window shrinks left.');
+
+    const detail = (await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail;
+    expect(detail.note).toBe('The window shrinks left.');
+    expect(detail.summary.hasNote).toBe(true);
+  });
+
+  it('treats a blank body as no note at all', async () => {
+    await api('PUT', `/api/notes/${EASY}`, { body: 'something' });
+    const cleared = await api('PUT', `/api/notes/${EASY}`, { body: '   ' });
+
+    expect(cleared.json()).toEqual({ note: null });
+    expect(((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).note).toBeNull();
+  });
+
+  it('changes no progress row - writing something down is not an attempt', async () => {
+    await api('PUT', `/api/notes/${EASY}`, { body: 'note' });
+
+    expect(repos.progress.listByProblem(EASY)).toEqual([]);
+    expect(repos.events.list({ slug: EASY })).toEqual([]);
+  });
+
+  it('deletes one', async () => {
+    await api('PUT', `/api/notes/${EASY}`, { body: 'note' });
+    expect((await api('DELETE', `/api/notes/${EASY}`)).json()).toEqual({ note: null });
+    expect(((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).note).toBeNull();
+  });
+
+  it('404s an unknown problem and 400s an oversized note', async () => {
+    expect((await api('PUT', '/api/notes/no-such-problem', { body: 'x' })).statusCode).toBe(404);
+    expect((await api('PUT', `/api/notes/${EASY}`, { body: 'x'.repeat(100_001) })).statusCode).toBe(
+      400,
+    );
+  });
+
+  it('finds a problem by what was written about it', async () => {
+    await api('PUT', `/api/notes/${MEDIUM}`, { body: 'the one where the window shrinks left' });
+
+    const found = (
+      await api('GET', '/api/problems?q=window%20shrinks')
+    ).json() as ProblemListResponse;
+
+    // The title and patterns say nothing of the sort; the note is the only
+    // reason this row matched.
+    expect(found.items.map((item) => item.slug)).toEqual([MEDIUM]);
+    expect(found.items[0]?.hasNote).toBe(true);
+  });
+
+  it('reads the search term as text, not as a LIKE pattern', async () => {
+    await api('PUT', `/api/notes/${MEDIUM}`, { body: 'the one that shrinks' });
+
+    // Through LIKE these would match every note there is. They match none.
+    for (const pattern of ['%25', '_']) {
+      const response = (
+        await api('GET', `/api/problems?q=${pattern}`)
+      ).json() as ProblemListResponse;
+      expect(response.items, `q=${pattern}`).toEqual([]);
+    }
+  });
+
+  it('survives a progress reset, unlike the record of practice around it', async () => {
+    // Deliberate, and older than this task: reset-all-progress clears what the
+    // app recorded about the user, not what the user wrote. The hint count and
+    // the editorial unlock are derived from events and do go (P7-1, P7-2); a
+    // note is the user's own writing and stays.
+    await api('PUT', `/api/notes/${EASY}`, { body: 'note' });
+    await api('POST', '/api/settings/reset-progress');
+
+    expect(((await api('GET', `/api/problems/${EASY}`)).json() as ProblemDetail).note).toBe('note');
+  });
+});
+
 describe('settings', () => {
   it('returns settings with the key masked and never present', async () => {
     await api('PUT', '/api/settings', { coach: { apiKey: 'sk-ant-api03-abcdefghijklmnop' } });

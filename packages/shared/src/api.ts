@@ -10,7 +10,9 @@ import {
   testModeSchema,
 } from './problem.js';
 import {
+  MAX_NOTE_BYTES,
   draftSchema,
+  noteSchema,
   problemProgressSchema,
   progressStatusSchema,
   submissionSchema,
@@ -132,6 +134,13 @@ export const problemSummarySchema = z.object({
   attempts: z.int().min(0),
   lastAttemptedAt: z.iso.datetime().nullable(),
   solvedAt: z.iso.datetime().nullable(),
+  /**
+   * Whether this problem has a note (P7-4). The body is not sent with a list
+   * row - that would be the whole point of the summary being small - but
+   * without this a search that matched a note shows a row with nothing on it
+   * saying why.
+   */
+  hasNote: z.boolean(),
 });
 export type ProblemSummary = z.infer<typeof problemSummarySchema>;
 
@@ -302,6 +311,21 @@ export const draftResponseSchema = z.object({
   draft: draftSchema.nullable(),
 });
 export type DraftResponse = z.infer<typeof draftResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// PUT /api/notes/:slug
+// ---------------------------------------------------------------------------
+
+export const noteUpdateSchema = z.object({
+  body: z.string().max(MAX_NOTE_BYTES),
+});
+export type NoteUpdate = z.infer<typeof noteUpdateSchema>;
+
+/** `note` is null once the body is blank: an empty note is no note (P7-4). */
+export const noteResponseSchema = z.object({
+  note: noteSchema.nullable(),
+});
+export type NoteResponse = z.infer<typeof noteResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // Run and Submit

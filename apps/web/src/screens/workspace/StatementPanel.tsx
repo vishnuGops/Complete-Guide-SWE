@@ -1,14 +1,15 @@
-import { memo, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
+  MAX_NOTE_BYTES,
   TOPIC_LABEL,
   VERDICT_LABEL,
   type Language,
   type ProblemDetail,
   type Submission,
 } from '@devpromax/shared';
-import { useRevealEditorial, useSubmissions } from '../../api/hooks.js';
+import { useRevealEditorial, useSaveNote, useSubmissions } from '../../api/hooks.js';
 import { Markdown } from '../../markdown/Markdown.js';
 import {
   Button,
@@ -35,8 +36,9 @@ import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
  * that is its place on the ladder from "a nudge" to "the whole answer", and the
  * tab order is the only thing on screen that says so.
  *
- * Notes is still absent - there is no notes route in the API until P7-4, and a
- * tab that cannot save what you type into it is worse than no tab.
+ * Notes arrived with P7-4, after the Editorial: it is the one tab that is the
+ * user's own writing rather than something handed to them, and it sits at the
+ * end of the ladder because that is usually when there is something to write.
  */
 
 function Hints({
@@ -254,6 +256,117 @@ function Editorial({
 
 function when(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** How long after the last keystroke a note is written. Matches the editor's. */
+const NOTE_AUTOSAVE_MS = 800;
+
+/**
+ * Per-problem notes (ROADMAP P7-4).
+ *
+ * A textarea and a preview, not a rich editor: notes are markdown because the
+ * statement and the editorial are, and because the thing people actually write
+ * here is a list with a code fence in it.
+ *
+ * Autosaved on the same debounce as the editor, and flushed on the way out -
+ * the panel is kept mounted (`StickyTabsContent`) so a glance at the statement
+ * does not lose the last sentence, but leaving the problem entirely still has
+ * to write it.
+ */
+function Notes({ slug, note }: { slug: string; note: string | null }) {
+  const save = useSaveNote();
+  const [body, setBody] = useState(note ?? '');
+  const [loadedFrom, setLoadedFrom] = useState(slug);
+  const [previewing, setPreviewing] = useState(false);
+
+  // Same render-phase reset the editor uses: an effect would show the previous
+  // problem's note for one frame.
+  if (loadedFrom !== slug) {
+    setLoadedFrom(slug);
+    setBody(note ?? '');
+    setPreviewing(false);
+  }
+
+  const saved = note ?? '';
+  // What is unsaved, in a ref so that the flush below is not a reason to
+  // re-run anything - the same three-effect split the editor's autosave uses.
+  const pending = useRef<{ slug: string; body: string } | null>(null);
+  useEffect(() => {
+    pending.current = body === saved ? null : { slug, body };
+  }, [body, saved, slug]);
+
+  const write = save.mutate;
+  const flush = useCallback(() => {
+    const next = pending.current;
+    if (next === null) return;
+    pending.current = null;
+    write(next);
+  }, [write]);
+
+  useEffect(() => {
+    if (body === saved) return;
+    const timer = setTimeout(flush, NOTE_AUTOSAVE_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [body, saved, flush]);
+
+  // Leaving the problem. The cleanup is the only thing that means "we are
+  // going", so it is the only place the last few hundred milliseconds of
+  // typing can still be written.
+  useEffect(
+    () => () => {
+      flush();
+    },
+    [slug, flush],
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-col p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <p className="text-fg-subtle text-xs">
+          Markdown, saved as you type. Notes are searchable from the problem list.
+        </p>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto"
+          aria-pressed={previewing}
+          onClick={() => {
+            setPreviewing(!previewing);
+          }}
+        >
+          {previewing ? 'Edit' : 'Preview'}
+        </Button>
+      </div>
+
+      {previewing ? (
+        body.trim() === '' ? (
+          <p className="text-fg-muted text-sm">Nothing written down for this problem yet.</p>
+        ) : (
+          <Markdown className="min-h-0 flex-1 overflow-y-auto" content={body} trust="coach" />
+        )
+      ) : (
+        <textarea
+          aria-label="Your notes on this problem"
+          value={body}
+          maxLength={MAX_NOTE_BYTES}
+          spellCheck
+          onChange={(event) => {
+            setBody(event.target.value);
+          }}
+          placeholder="What tripped you up, what to remember next time."
+          className="focus-ring border-border bg-surface text-fg min-h-0 flex-1 resize-none rounded-md border p-2 font-mono text-xs"
+        />
+      )}
+
+      {save.error && (
+        <p className="text-danger-fg mt-2 text-sm" role="alert">
+          {save.error.message}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function SubmissionRow({
@@ -526,6 +639,12 @@ function StatementPanelBody({
         <TabsTrigger value="hints">Hints</TabsTrigger>
         <TabsTrigger value="coach">Coach</TabsTrigger>
         <TabsTrigger value="editorial">Editorial</TabsTrigger>
+        <TabsTrigger value="notes">
+          Notes
+          {problem.note !== null && (
+            <span aria-hidden className="bg-accent ml-1 size-1.5 rounded-full" />
+          )}
+        </TabsTrigger>
         <TabsTrigger value="submissions">
           Submissions
           {problem.submissionCount > 0 && (
@@ -562,6 +681,14 @@ function StatementPanelBody({
       <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
         <Editorial problem={problem} language={language} code={code} />
       </TabsContent>
+
+      {/*
+        Kept mounted, like the coach: it holds something the user typed, and
+        Radix unmounts an inactive panel (P4-12).
+      */}
+      <StickyTabsContent value="notes" className="min-h-0 flex-1 pt-0">
+        <Notes slug={summary.slug} note={problem.note} />
+      </StickyTabsContent>
 
       <TabsContent value="submissions" className="min-h-0 flex-1 overflow-y-auto pt-0">
         <Submissions slug={summary.slug} code={code} language={language} onRestore={onRestore} />

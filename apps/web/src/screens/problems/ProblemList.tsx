@@ -81,6 +81,17 @@ function Row({ problem }: { problem: ProblemSummary }) {
         >
           {problem.title}
         </Link>
+        {/*
+          A marker, not the note (P7-4). Without it a search that matched
+          something the user wrote shows a row with nothing on it saying why -
+          and the note itself has no business in a list row.
+        */}
+        {problem.hasNote && (
+          <span className="text-fg-subtle ml-1.5 text-2xs" title="You have a note on this problem">
+            <span aria-hidden>note</span>
+            <span className="sr-only">Has a note</span>
+          </span>
+        )}
       </td>
       <td className="text-fg-muted px-3 py-1.5 text-xs">{TOPIC_LABEL[problem.topic]}</td>
       <td
@@ -221,7 +232,7 @@ export function ProblemList() {
             type="search"
             value={search}
             aria-label="Search problems"
-            placeholder="Search titles and patterns"
+            placeholder="Search titles, patterns and notes"
             className="max-w-64"
             onChange={(event) => {
               setTyping(true);

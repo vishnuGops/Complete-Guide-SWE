@@ -4,6 +4,7 @@ import type {
   DraftResponse,
   HintRevealResponse,
   Language,
+  NoteResponse,
   ProblemDetail,
   ProblemListQuery,
   ProblemListResponse,
@@ -124,6 +125,11 @@ export const api = {
   submissions: (slug: string): Promise<SubmissionListResponse> =>
     request(`/api/problems/${encodeURIComponent(slug)}/submissions`),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
+  saveNote: (slug: string, body: string): Promise<NoteResponse> =>
+    request(`/api/notes/${encodeURIComponent(slug)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ body }),
+    }),
   revealEditorial: (slug: string): Promise<ProblemDetail> =>
     request(`/api/problems/${encodeURIComponent(slug)}/editorial`, { method: 'POST' }),
   revealHint: (slug: string, revealed: number): Promise<HintRevealResponse> =>

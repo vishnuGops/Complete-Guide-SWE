@@ -229,3 +229,23 @@ export const draftSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 export type Draft = z.infer<typeof draftSchema>;
+
+/**
+ * A note is per problem, not per language (ROADMAP P7-4).
+ *
+ * What someone writes down about a problem is about the problem - the trick,
+ * the case they keep forgetting - and someone who solves it twice should not
+ * have to remember which language they wrote it under.
+ */
+export const noteSchema = z.object({
+  slug: slugSchema,
+  body: z.string(),
+  updatedAt: z.iso.datetime(),
+});
+export type Note = z.infer<typeof noteSchema>;
+
+/**
+ * A cap on a note, so a pasted article cannot become a row the list has to
+ * search on every keystroke. Generous: this is roughly forty pages of prose.
+ */
+export const MAX_NOTE_BYTES = 100_000;

@@ -74,6 +74,7 @@ export function summarise(
   meta: ProblemMeta,
   rows: readonly ProblemProgress[],
   language?: Language,
+  hasNote = false,
 ): ProblemSummary {
   const relevant = language ? rows.filter((row) => row.language === language) : rows;
 
@@ -100,15 +101,20 @@ export function summarise(
       null,
     ),
     solvedAt: relevant.reduce<string | null>((acc, row) => earliest(acc, row.solvedAt), null),
+    hasNote,
   };
 }
 
-function matchesQuery(summary: ProblemSummary, q: string): boolean {
+function matchesQuery(summary: ProblemSummary, q: string, inNotes: ReadonlySet<string>): boolean {
   const needle = q.toLowerCase();
   return (
     summary.title.toLowerCase().includes(needle) ||
     summary.slug.includes(needle) ||
-    summary.patterns.some((pattern) => pattern.toLowerCase().includes(needle))
+    summary.patterns.some((pattern) => pattern.toLowerCase().includes(needle)) ||
+    // What the user wrote down about a problem is a way of finding it again
+    // (P7-4) - often the only way, because a note says "the one where the
+    // window shrinks from the left" and the title says nothing of the sort.
+    inNotes.has(summary.slug)
   );
 }
 
@@ -168,17 +174,30 @@ export function listProblems(
   deps: ProblemServiceDeps,
 ): ProblemListResponse {
   const grouped = progressBySlug(deps.repos);
+  const noted = new Set(deps.repos.notes.list().map((note) => note.slug));
   // Metadata only (ROADMAP P2-14): a title, a tier and a topic do not need the
   // statement, the editorial or a megabyte of tests.
   const all = deps.catalogue
     .listMeta()
-    .map(({ meta }) => summarise(meta, grouped.get(meta.slug) ?? [], query.language));
+    .map(({ meta }) =>
+      summarise(meta, grouped.get(meta.slug) ?? [], query.language, noted.has(meta.slug)),
+    );
+
+  // Searched in the database rather than by reading every note into memory: it
+  // is the one query here that is not answerable from metadata, and `instr`
+  // treats the term as text rather than as a LIKE pattern.
+  const inNotes =
+    query.q !== undefined && query.q !== ''
+      ? new Set(deps.repos.notes.search(query.q).map((note) => note.slug))
+      : new Set<string>();
 
   const matched = all.filter((summary) => {
     if (query.topic.length > 0 && !query.topic.includes(summary.topic)) return false;
     if (query.tier.length > 0 && !query.tier.includes(summary.tier)) return false;
     if (query.status.length > 0 && !query.status.includes(summary.status)) return false;
-    if (query.q !== undefined && query.q !== '' && !matchesQuery(summary, query.q)) return false;
+    if (query.q !== undefined && query.q !== '' && !matchesQuery(summary, query.q, inNotes)) {
+      return false;
+    }
     return true;
   });
 
@@ -231,7 +250,8 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
 
   const { repos } = deps;
   const rows = repos.progress.listByProblem(slug);
-  const summary = summarise(pkg.meta, rows);
+  const note = repos.notes.get(slug);
+  const summary = summarise(pkg.meta, rows, undefined, note !== null);
   const settings = repos.settings.get();
 
   // Solved in *any* language unlocks the editorial: the approach is the same
@@ -278,7 +298,7 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
     progress: rows,
     submissionCount: repos.submissions.countByProblem(slug),
     assets: pkg.assets,
-    note: repos.notes.get(slug)?.body ?? null,
+    note: note?.body ?? null,
     related: relatedTo(pkg.meta, deps.catalogue),
   };
 }
