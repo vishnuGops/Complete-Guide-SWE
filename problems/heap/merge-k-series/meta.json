@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "merge-k-series",
+  "slug": "merge-k-series",
+  "title": "Merge K Ordered Series",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["k-way merge", "heap"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 4,
+  "mode": "function",
+  "entry": "mergeSeries",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["merge-k-chains", "kth-largest-stream"],
+  "targetComplexity": {
+    "time": "O(N log k)",
+    "space": "O(k)"
+  }
+}

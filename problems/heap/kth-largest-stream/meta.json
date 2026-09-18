@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "kth-largest-stream",
+  "slug": "kth-largest-stream",
+  "title": "K-th Largest, As It Arrives",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["design", "heap", "top k"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 0,
+  "mode": "operations",
+  "entry": "RunningKthLargest",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["kth-largest-value", "running-median"],
+  "targetComplexity": {
+    "time": "O(log k) per reading",
+    "space": "O(k)"
+  }
+}

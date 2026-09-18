@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "k-closest-to-origin",
+  "slug": "k-closest-to-origin",
+  "title": "The K Nearest Points",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap", "top k"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 2,
+  "mode": "function",
+  "entry": "nearestPoints",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["k-most-frequent", "closest-k-values"],
+  "targetComplexity": {
+    "time": "O(n log k)",
+    "space": "O(k)"
+  }
+}

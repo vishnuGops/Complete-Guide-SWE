@@ -31,6 +31,19 @@ written:
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
 
+Two heap rows are gone, both because the problem was already in the catalogue
+under another name. `meeting-rooms-heap` is `meeting-room-count` (Sorting 3) and
+`median-maintenance` is `window-median-stream` (Arrays 12) - the same question,
+the same answer, the same editorial. The rule in section 3 applies: a problem
+that teaches nothing the one before it did not is worse than no problem. Heap is
+10 problems (P6-4).
+
+`k-most-frequent` loses its trap flag. Its obvious answer - count, then sort the
+distinct values - is `O(m log m)` with `m` at most 10^5, which finishes easily;
+there is no input size at which it does not. The heap is better asymptotically
+and the bucket answer is better still, and the editorial says so without
+pretending the sort times out (D21).
+
 `serialise-tree` is a `function` problem rather than an `operations` one. A codec
 class would have to take a tree as an operation argument, and operations mode
 hands arguments to the method untouched - Python would receive a raw list where
@@ -295,7 +308,7 @@ invariants, construction from traversals, and serialisation.
 | 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function   | tree traversal, depth-first search, invariant    | node, trap |
 | 15  | `count-good-nodes`       | Nodes Nothing Blocks          | Medium | 4      | function   | tree traversal, depth-first search               | node       |
 
-### Heap (`heap`) — 12 problems
+### Heap (`heap`) — 10 problems
 
 Patterns to cover: top-k, the two-heap median trick, k-way merges, and streams —
 which is where `operations` mode earns its place a second time.
@@ -303,7 +316,7 @@ which is where `operations` mode earns its place a second time.
 | #   | Slug                  | Title                       | Tier   | Rating | Mode       | Patterns                          | Flags |
 | --- | --------------------- | --------------------------- | ------ | ------ | ---------- | --------------------------------- | ----- |
 | 0   | `kth-largest-stream`  | K-th Largest, As It Arrives | Easy   | 3      | operations | design, heap, top k               |       |
-| 1   | `k-most-frequent`     | The K Most Common           | Medium | 5      | function   | frequency map, heap, top k        | trap  |
+| 1   | `k-most-frequent`     | The K Most Common           | Medium | 5      | function   | frequency map, heap, top k        |       |
 | 2   | `k-closest-to-origin` | The K Nearest Points        | Medium | 5      | function   | heap, top k                       |       |
 | 3   | `running-median`      | The Median So Far           | Hard   | 8      | operations | design, two heaps                 | trap  |
 | 4   | `merge-k-series`      | Merge K Ordered Series      | Hard   | 8      | function   | k-way merge, heap                 | trap  |
@@ -311,8 +324,6 @@ which is where `operations` mode earns its place a second time.
 | 6   | `task-cooldown`       | Tasks With A Cooldown       | Medium | 7      | function   | heap, greedy, counting            | trap  |
 | 7   | `cheapest-k-sums`     | K Cheapest Pairings         | Medium | 7      | function   | heap, k-way merge                 | trap  |
 | 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       |       |
-| 9   | `meeting-rooms-heap`  | Rooms Booked At Once        | Medium | 6      | function   | intervals, heap, sweep            |       |
-| 10  | `median-maintenance`  | Median Of A Sliding Window  | Hard   | 9      | function   | sliding window, two heaps         | trap  |
 | 11  | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
 
 ### Graph (`graph`) — 14 problems

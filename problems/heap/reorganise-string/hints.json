@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Which letter is the hardest to place, and what happens if you leave it until last?",
+    "The most frequent one. Placing it late leaves its copies with nowhere to go, so place it first - and then the next most frequent, and so on.",
+    "At each step take the most common letter that is not the one you just placed. A max-heap keyed on the remaining count gives it in O(log 26).",
+    "Keep the letter you just used aside for exactly one step, then put it back with its count reduced - that is what stops it being chosen twice in a row."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Each round needs the two heaviest stones, and then puts a new stone back. What structure answers 'what is the heaviest' and accepts a new item cheaply?",
+    "A max-heap. Pop twice, push the difference when it is not zero, and repeat.",
+    "Re-sorting the pile every round is correct and costs O(n log n) per round, so O(n^2 log n) overall. The heap costs O(log n) per round.",
+    "Pushing a zero back is harmless but pointless - it can never be one of the two heaviest unless everything else is gone, in which case the answer is zero anyway."
+  ]
+}

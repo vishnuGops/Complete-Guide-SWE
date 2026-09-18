@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You are ordering points by distance. Is the square root doing any work in that comparison?",
+    "None: `sqrt` is increasing, so comparing `x\u00b2 + y\u00b2` gives the same order - in exact integers, with no rounding to worry about.",
+    "Now it is a top-k question. A max-heap holding the `k` best so far lets each new point be compared against the worst kept one in O(log k).",
+    "Sorting everything is O(n log n) and correct. Quickselect averages O(n). The heap is the one that works when the points arrive as a stream."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "At any moment the next reading of the answer is the smallest among the series' current heads. How much does that set change when you take one?",
+    "By one: the series you took from advances. So you want a structure that gives the smallest of `k` things and accepts a replacement cheaply.",
+    "A min-heap of `(value, which series, how far along)`. Pop the smallest, append it, and push the next reading of that same series.",
+    "Concatenating everything and sorting is O(N log N) and is often the right answer in practice. The heap is O(N log k) and it never needs all the readings at once - which is what matters when the series are files or network streams."
+  ]
+}

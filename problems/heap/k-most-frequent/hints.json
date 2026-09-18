@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "Two questions, in order: how often does each value occur, and which `k` of those counts are largest?",
+    "The first is a frequency map in one pass. The second is a top-k question over the map's entries, not over the readings.",
+    "Sorting the entries is O(m log m) and is a perfectly good answer. A min-heap of size `k` over the entries is O(m log k) and is the one the topic is about.",
+    "Whatever you use, the ordering rule has to be the full one - frequency descending, then value ascending - or ties come out in whatever order the map happened to produce, which differs between languages and between runs."
+  ]
+}

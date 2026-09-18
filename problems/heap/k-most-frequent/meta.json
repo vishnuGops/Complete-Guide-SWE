@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "k-most-frequent",
+  "slug": "k-most-frequent",
+  "title": "The K Most Common",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["frequency map", "heap", "top k"],
+  "tier": "Medium",
+  "rating": 5,
+  "order": 1,
+  "mode": "function",
+  "entry": "mostCommon",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["frequency-order", "kth-largest-value"],
+  "targetComplexity": {
+    "time": "O(n + m log k)",
+    "space": "O(m)"
+  }
+}

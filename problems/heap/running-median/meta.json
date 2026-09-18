@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "running-median",
+  "slug": "running-median",
+  "title": "The Median So Far",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["design", "two heaps"],
+  "tier": "Hard",
+  "rating": 8,
+  "order": 3,
+  "mode": "operations",
+  "entry": "MedianStream",
+  "expect": "return",
+  "comparator": {
+    "kind": "floatTolerance",
+    "eps": 1e-06
+  },
+  "related": ["window-median-stream", "kth-largest-stream"],
+  "targetComplexity": {
+    "time": "O(log n) per reading",
+    "space": "O(n)"
+  }
+}

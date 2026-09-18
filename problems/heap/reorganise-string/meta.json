@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "reorganise-string",
+  "slug": "reorganise-string",
+  "title": "No Two The Same In A Row",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap", "frequency map", "greedy"],
+  "tier": "Medium",
+  "rating": 6,
+  "order": 8,
+  "mode": "function",
+  "entry": "reorganise",
+  "expect": "return",
+  "comparator": "checker",
+  "related": ["k-most-frequent", "same-letters"],
+  "targetComplexity": {
+    "time": "O(n log 26)",
+    "space": "O(26)"
+  }
+}

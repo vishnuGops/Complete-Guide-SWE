@@ -1,0 +1,21 @@
+{
+  "$schema": "../../../docs/schema/meta.schema.json",
+  "id": "last-stone-standing",
+  "slug": "last-stone-standing",
+  "title": "What Is Left Of The Stones",
+  "version": 1,
+  "topic": "heap",
+  "patterns": ["heap"],
+  "tier": "Easy",
+  "rating": 3,
+  "order": 5,
+  "mode": "function",
+  "entry": "lastStone",
+  "expect": "return",
+  "comparator": "exact",
+  "related": ["kth-largest-stream", "k-most-frequent"],
+  "targetComplexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  }
+}

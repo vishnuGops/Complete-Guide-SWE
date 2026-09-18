@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You are asked the same question after every reading. What is the smallest amount of the stream you could keep and still answer it?",
+    "The `k` largest readings so far - and of those, only the smallest one is ever the answer.",
+    "A min-heap holding exactly `k` readings. Its root is the answer; a new reading either beats the root and replaces it, or is dropped forever.",
+    "Sorting after every reading is correct and costs O(n log n) per call. The heap costs O(log k), and nothing about it grows as the stream does."
+  ]
+}

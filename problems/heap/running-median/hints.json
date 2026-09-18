@@ -1,0 +1,8 @@
+{
+  "hints": [
+    "You need the middle of a growing collection. What would you have to be able to see, at any moment, to name it immediately?",
+    "The largest of the smaller half and the smallest of the larger half. Those are the roots of a max-heap and a min-heap.",
+    "Keep the two halves' sizes within one of each other. Then the median is one root, or the average of both.",
+    "Adding is two steps: push onto the side the reading belongs to, then move one element across if the sizes drifted apart."
+  ]
+}
