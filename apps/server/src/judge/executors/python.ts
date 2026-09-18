@@ -6,6 +6,7 @@ import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
 import { parseResultLines } from '../protocol.js';
 import type { HarnessPayload } from '../protocol.js';
 import { runProcess } from '../process.js';
+import { PYTHON_COMMAND } from './commands.js';
 import { compileTimeoutMessage } from './compileErrors.js';
 import type { Workspace } from '../workspace.js';
 import type { Executor, HarnessRun, PrepareResult } from './types.js';
@@ -14,7 +15,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 /** src/judge/executors -> src/judge/harness (and the same shape under dist/). */
 const HARNESS_SOURCE = path.resolve(HERE, '..', 'harness', 'runner.py');
 
-export const PYTHON_COMMAND = process.env['DEVPROMAX_PYTHON'] ?? 'python';
+export { PYTHON_COMMAND } from './commands.js';
 
 export const RESULTS_FILE = 'results.jsonl';
 const PAYLOAD_FILE = 'payload.json';

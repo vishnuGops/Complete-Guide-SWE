@@ -11,7 +11,7 @@ Current state: **M2.1 reached (2026-09-18)** — the vertical slice works (20 va
 ## Stack (decided, see ROADMAP D1–D17)
 
 - TypeScript everywhere. npm workspaces: `apps/web` (React 19, Vite, React Router, TanStack Query, Monaco, Tailwind v4 tokens, Radix primitives), `apps/server` (Fastify; `judge/`, `problems/`, `coach/`, `db/`, `api/` folders inside), `packages/shared` (zod schemas + types). No other workspaces.
-- Persistence is `node:sqlite` with hand-written SQL and checked-in migrations. No ORM. `better-sqlite3` only as a documented fallback.
+- Persistence is `node:sqlite` with hand-written SQL and checked-in migrations. No ORM. `better-sqlite3` only as a documented fallback. Everything the app writes lives under `data/`; `DEVPROMAX_DATA` moves that directory and `DEVPROMAX_DB` moves just the database file (P8-3).
 - Judge runs `python` and `javac`/`java` as local subprocesses with a harness. All tests of a run execute in one process with a per-test watchdog; isolation per test only after a timeout. Two test modes (`function`, `operations`) and three expect modes (`return`, `mutatedArgs`, `both`). Java arguments are typed by reflection from a fixed supported-type table. Custom checkers are TypeScript run in-process.
 - The API binds to `127.0.0.1`, checks the `Host` header, and requires the `X-DevProMax-Client` header on every `/api` request. Do not loosen this.
 - Problems are directories under `problems/<topic>/<slug>/`, validated by `npm run problems:validate`. Hidden tests come from each problem's `generator.py` with the reference solution as oracle.
@@ -43,6 +43,9 @@ npm run problems:new <topic> <slug>
 npm run problems:gen <slug>                   # regenerate hidden tests from generator.py
 npm run problems:gen -- --check [slug]        # fail if tests no longer match their generator
 npm run problems:schema [--check]             # regenerate docs/schema/*.json from the zod schemas
+npm run doctor                                # check python/java/javac and their versions (P8-3)
+npm run db:backup [-- <file>]                 # consistent copy of the practice database (VACUUM INTO)
+npm run db:restore -- <file>                  # put a backup back; the displaced one is kept beside it
 ```
 
 Do not invent others without adding them here.

@@ -22,6 +22,7 @@ import type {
   NextProblemResponse,
   ProgressResponse,
   ReportFormat,
+  RuntimeReport,
   ResetProgressResponse,
   RunResult,
   SettingsUpdate,
@@ -52,6 +53,7 @@ export const keys = {
   progress: ['progress'] as const,
   dashboard: ['dashboard'] as const,
   settings: ['settings'] as const,
+  runtimeCheck: ['runtime-check'] as const,
 };
 
 export function useProblems(query: Partial<ProblemListQuery> = {}, enabled = true) {
@@ -181,6 +183,25 @@ export function useDownloadReport(): UseMutationResult<void, Error, ReportFormat
 
 export function useSettings() {
   return useQuery<SettingsView>({ queryKey: keys.settings, queryFn: api.settings });
+}
+
+/**
+ * The runtime check (ROADMAP P8-3).
+ *
+ * `enabled: false` so it runs only when asked: it spawns a JVM, and nobody
+ * opening Settings to change the font size should wait for that. `refetch` is
+ * the button.
+ */
+export function useRuntimeCheck() {
+  return useQuery<RuntimeReport>({
+    queryKey: keys.runtimeCheck,
+    queryFn: api.runtimeCheck,
+    enabled: false,
+    // Never from cache: the point is that someone who has just installed a JDK
+    // presses the button and finds out.
+    staleTime: 0,
+    gcTime: 0,
+  });
 }
 
 export function useUpdateSettings(): UseMutationResult<SettingsView, Error, SettingsUpdate> {

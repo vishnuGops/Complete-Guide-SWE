@@ -8,6 +8,7 @@ import { registerRoutes } from './api/routes/index.js';
 import type { JudgeFn } from './api/runService.js';
 import { applyRuntimeSettings } from './api/settingsService.js';
 import { serverConfig } from './config.js';
+import { doctorSummary, runDoctor } from './doctor.js';
 import { createDatabase, type Repositories } from './db/index.js';
 import { logger } from './logger.js';
 import { killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
@@ -191,6 +192,24 @@ export async function start() {
         'No web build found - run `npm run build` to serve the app from here.',
       ];
   process.stdout.write(['', ...lines, '', ''].join('\n'));
+
+  /*
+   * The runtime check (ROADMAP P8-3), after the address and not before it.
+   *
+   * It spawns a JVM, which costs a few hundred milliseconds, and nothing about
+   * it should delay the line that tells the user where to go. It also prints
+   * only when something is wrong: a start-up that reports three runtimes being
+   * fine every time is a start-up nobody reads, and then the once it matters
+   * the bad news is in the same place as the noise.
+   */
+  if (process.env['DEVPROMAX_NO_DOCTOR'] !== '1') void runDoctor()
+    .then((report) => {
+      const summary = doctorSummary(report);
+      if (summary !== null) process.stdout.write(summary);
+    })
+    .catch((error: unknown) => {
+      logger.warn({ err: error }, 'the runtime check could not be run');
+    });
 }
 
 const isEntrypoint =

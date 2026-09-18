@@ -3,8 +3,10 @@ import {
   settingsUpdateSchema,
   type ConnectionTestResponse,
   type ResetProgressResponse,
+  type RuntimeReport,
   type SettingsView,
 } from '@devpromax/shared';
+import { runDoctor } from '../../doctor.js';
 import { parseInput } from '../errors.js';
 import { readSettings, resetProgress, testConnection, updateSettings } from '../settingsService.js';
 import type { ApiDeps } from './types.js';
@@ -25,6 +27,16 @@ export function registerSettingsRoutes(app: FastifyInstance, deps: ApiDeps): voi
   };
 
   app.get('/api/settings', async (): Promise<SettingsView> => readSettings(serviceDeps));
+
+  /**
+   * The runtime check, on demand (ROADMAP P8-3).
+   *
+   * Under `/api/settings` because Settings is where it is shown and where it is
+   * acted on. Not cached: the whole point is that someone who has just
+   * installed a JDK can press the button and find out, and a cached answer
+   * would tell them it is still missing.
+   */
+  app.get('/api/settings/doctor', async (): Promise<RuntimeReport> => runDoctor());
 
   app.put('/api/settings', async (request): Promise<SettingsView> => {
     const patch = parseInput(settingsUpdateSchema, request.body, 'body');

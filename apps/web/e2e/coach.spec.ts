@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { setEditorContents } from './helpers.js';
 
 /**
  * AI Help through the real stack (ROADMAP P5-7, P5-3).
@@ -191,13 +192,24 @@ test.describe('AI Help', () => {
     await expect(page.getByRole('heading', { name: TYPING_PROBLEM.title })).toBeVisible();
     await page.getByRole('button', { name: 'Python', exact: true }).click();
 
-    await page.locator('[data-testid="editor"] .view-lines').click();
-    await page.keyboard.press('ControlOrMeta+a');
-    await page.keyboard.type(
-      ['class Solution:', '    def countPairs(self, weights, limit):', '        total = 0'].join(
-        '\n',
-      ),
-      { delay: 10 },
+    /*
+     * Pasted rather than typed (ROADMAP P8-1's flake budget).
+     *
+     * This used to send the three lines as keystrokes, and under the full suite
+     * - a machine also running judges for several other workers - Monaco
+     * dropped characters: the run that prompted this had "class Soltion" and
+     * "totl = 0" in the editor. What this test is about is the coach's answer
+     * to a fake key; the fidelity of Monaco's keyboard handling is not its
+     * subject, and every other spec pastes for exactly that reason.
+     */
+    await setEditorContents(
+      page,
+      [
+        'class Solution:',
+        '    def countPairs(self, weights, limit):',
+        '        total = 0',
+        '',
+      ].join('\n'),
     );
     await expect(page.locator('[data-testid="editor"]')).toContainText('total = 0');
 

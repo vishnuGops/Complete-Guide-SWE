@@ -14,6 +14,7 @@ import type {
   NextProblemResponse,
   ProgressResponse,
   ReportFormat,
+  RuntimeReport,
   ResetProgressResponse,
   RunResult,
   SettingsUpdate,
@@ -201,6 +202,7 @@ export const api = {
     }),
 
   settings: (): Promise<SettingsView> => request('/api/settings'),
+  runtimeCheck: (): Promise<RuntimeReport> => request('/api/settings/doctor'),
   updateSettings: (patch: SettingsUpdate): Promise<SettingsView> =>
     request('/api/settings', { method: 'PUT', body: JSON.stringify(patch) }),
   /**

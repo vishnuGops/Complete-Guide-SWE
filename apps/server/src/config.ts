@@ -9,24 +9,30 @@ export const repoRoot = (() => {
 })();
 
 /**
- * Where the practice database lives.
+ * Where everything the app writes lives.
  *
- * `DEVPROMAX_DB` overrides it, and the reason it exists is the end-to-end
- * suite (ROADMAP P4-9): those tests submit real solutions through the real
- * judge, and without an override they write that into the developer's own
- * practice history - and a suite that wants a known starting state would have
- * to delete it. Playwright points this at `data/e2e.db` instead. P8-3 makes the
- * whole `data/` directory configurable; this is the part of it the tests need
- * now.
+ * `DEVPROMAX_DATA` moves the whole directory (ROADMAP P8-3) - the database, the
+ * judge's workspaces, a backup written next to them. The case it is for is a
+ * checkout on a synced drive: practice history belongs with the user, and
+ * judge workspaces belong on a disk nobody is backing up every ten minutes.
+ *
+ * `DEVPROMAX_DB` moves only the database file, and stays because the
+ * end-to-end suite needs exactly that (ROADMAP P4-9): those tests submit real
+ * solutions through the real judge, and without an override they write that
+ * into the developer's own practice history. It wins over `DEVPROMAX_DATA`
+ * when both are set, being the narrower of the two.
  */
-const dbFile = process.env.DEVPROMAX_DB ?? path.join(repoRoot, 'data', 'devpromax.db');
+const dataDir = process.env.DEVPROMAX_DATA
+  ? path.resolve(process.env.DEVPROMAX_DATA)
+  : path.join(repoRoot, 'data');
+const dbFile = process.env.DEVPROMAX_DB ?? path.join(dataDir, 'devpromax.db');
 
 export const paths = {
   repoRoot,
   problems: path.join(repoRoot, 'problems'),
-  data: path.join(repoRoot, 'data'),
+  data: dataDir,
   db: dbFile,
-  judgeWorkspaces: path.join(repoRoot, 'data', 'judge'),
+  judgeWorkspaces: path.join(dataDir, 'judge'),
   /** The built web app, served by the same process in production (D24, P3-6). */
   webDist: path.join(repoRoot, 'apps', 'web', 'dist'),
 } as const;

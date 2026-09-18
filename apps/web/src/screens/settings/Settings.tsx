@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { editorPrefsSchema, judgePrefsSchema, type ResetProgressResponse } from '@devpromax/shared';
 import { useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
 import { ThemeToggle } from '../../app/ThemeToggle.js';
+import { RuntimeSection } from './RuntimeSection.js';
 import { useAppTheme } from '../../app/useAppTheme.js';
 import { Button, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
 import { CoachSection } from './CoachSection.js';
@@ -91,6 +92,8 @@ export function Settings() {
             update.mutate(patch);
           }}
         />
+
+        <RuntimeSection />
 
         <Section title="Appearance" description="Applies to the whole app, including the editor.">
           <Row label="Theme" hint="System follows your operating system.">

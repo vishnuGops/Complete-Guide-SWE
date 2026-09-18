@@ -5,6 +5,7 @@ import { useProgress } from '../api/hooks.js';
 import { useShortcut } from '../shortcuts/ShortcutProvider.js';
 import { ErrorBoundary, cn } from '../ui/index.js';
 import { CommandPalette } from './CommandPalette.js';
+import { Welcome } from './Welcome.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { useAppTheme } from './useAppTheme.js';
 
@@ -136,7 +137,17 @@ export function AppShell() {
           that cleared itself on render would flash the broken screen again.
         */}
         <ErrorBoundary title="This screen stopped working.">
-          <Outlet />
+          {/*
+            Inside the shell and above the outlet (P8-3): the welcome is about
+            the app rather than about one screen, and it takes itself off the
+            page for good once it has been read.
+          */}
+          <div className="flex h-full min-h-0 flex-col">
+            <Welcome />
+            <div className="min-h-0 flex-1">
+              <Outlet />
+            </div>
+          </div>
         </ErrorBoundary>
       </main>
 

@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ConnectionTestResponse, SettingsUpdate, SettingsView } from '@devpromax/shared';
+import type {
+  ConnectionTestResponse,
+  RuntimeReport,
+  SettingsUpdate,
+  SettingsView,
+} from '@devpromax/shared';
 import { Settings } from './Settings.js';
 import { fakeServer, path, renderApp, someSettings } from '../../test/harness.js';
 
@@ -19,6 +24,36 @@ import { fakeServer, path, renderApp, someSettings } from '../../test/harness.js
 function settingsServer(initial: SettingsView = someSettings()) {
   const state = { view: initial };
   const writes: SettingsUpdate[] = [];
+  const runtimes: RuntimeReport = {
+    checks: [
+      {
+        name: 'python',
+        command: 'python',
+        ok: true,
+        version: '3.12',
+        problem: null,
+        guidance: null,
+      },
+      {
+        name: 'java',
+        command: 'java',
+        ok: false,
+        version: null,
+        problem: 'it is not on your PATH.',
+        guidance: 'Install a JDK 21 or newer.',
+      },
+      {
+        name: 'javac',
+        command: 'javac',
+        ok: false,
+        version: null,
+        problem: 'it is not on your PATH.',
+        guidance: 'Install a JDK 21 or newer.',
+      },
+    ],
+    ok: false,
+    checkedAt: '2026-09-18T09:00:00.000Z',
+  };
   let connection: ConnectionTestResponse = {
     ok: false,
     provider: 'anthropic',
@@ -53,6 +88,13 @@ function settingsServer(initial: SettingsView = someSettings()) {
     {
       match: path('/api/settings/test-connection'),
       body: () => connection,
+    },
+    {
+      // The runtime check (P8-3). Answered from here rather than left to 404,
+      // because the section fetches it only when asked and a test that presses
+      // the button should see an answer rather than an error.
+      match: path('/api/settings/doctor'),
+      body: () => runtimes,
     },
   ]);
 
@@ -267,5 +309,27 @@ describe('Settings, number fields', () => {
     await waitFor(() => {
       expect(writes).toEqual([{ judge: { concurrency: 4 } }]);
     });
+  });
+});
+
+describe('the runtime check (P8-3)', () => {
+  it('says nothing until it is asked, then names the problem and the fix', async () => {
+    settingsServer();
+    renderApp(<Settings />);
+
+    // Not fetched with the rest of Settings: it spawns a JVM, and nobody
+    // changing the font size should wait for that.
+    expect(await screen.findByText(/Python and a JDK 21 or newer/)).toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Check now' }));
+
+    // Both `java` and `javac` are missing here, which is the usual shape of
+    // "no JDK", so each message appears twice.
+    expect(await screen.findAllByText('it is not on your PATH.')).toHaveLength(2);
+    expect(screen.getAllByText('Install a JDK 21 or newer.')).toHaveLength(2);
+    // The escape hatch, because "install a JDK" is not the answer for someone
+    // who has three of them.
+    expect(screen.getAllByText('DEVPROMAX_JAVA').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Runs and submissions will fail/)).toBeInTheDocument();
   });
 });

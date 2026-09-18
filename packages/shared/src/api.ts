@@ -380,6 +380,40 @@ export const nextProblemResponseSchema = z.object({
 export type NextProblemResponse = z.infer<typeof nextProblemResponseSchema>;
 
 // ---------------------------------------------------------------------------
+// GET /api/doctor
+// ---------------------------------------------------------------------------
+
+export const RUNTIME_NAMES = ['python', 'java', 'javac'] as const;
+export const runtimeNameSchema = z.enum(RUNTIME_NAMES);
+export type RuntimeName = z.infer<typeof runtimeNameSchema>;
+
+/**
+ * One runtime the judge shells out to (ROADMAP P8-3).
+ *
+ * `problem` and `guidance` are a pair: what is wrong, and the one sentence that
+ * fixes it. A check that says "python: not found" and stops has told the user
+ * something they already suspected.
+ */
+export const runtimeCheckSchema = z.object({
+  name: runtimeNameSchema,
+  /** What was actually run, including a `DEVPROMAX_*` override if one is set. */
+  command: z.string(),
+  ok: z.boolean(),
+  /** As the runtime reported it - "3.14", "21" - or null when it did not answer. */
+  version: z.string().nullable(),
+  problem: z.string().nullable(),
+  guidance: z.string().nullable(),
+});
+export type RuntimeCheck = z.infer<typeof runtimeCheckSchema>;
+
+export const runtimeReportSchema = z.object({
+  checks: z.array(runtimeCheckSchema),
+  ok: z.boolean(),
+  checkedAt: z.iso.datetime(),
+});
+export type RuntimeReport = z.infer<typeof runtimeReportSchema>;
+
+// ---------------------------------------------------------------------------
 // GET /api/dashboard
 // ---------------------------------------------------------------------------
 

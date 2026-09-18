@@ -43,6 +43,15 @@ export const settingsSchema = z.object({
   judge: judgePrefsSchema.prefault({}),
   theme: themeSchema.default('system'),
   lastLanguage: languageSchema.default('python'),
+  /**
+   * Whether the first-run welcome has been dismissed (ROADMAP P8-3).
+   *
+   * A setting rather than something in the browser: the welcome explains Run,
+   * Submit and AI Help, and someone who has read it once has read it - clearing
+   * site data or opening the app in another browser should not start the tour
+   * again.
+   */
+  welcomeDismissed: z.boolean().default(false),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -53,6 +62,7 @@ export const settingsUpdateSchema = z.object({
   judge: judgePrefsSchema.partial().optional(),
   theme: themeSchema.optional(),
   lastLanguage: languageSchema.optional(),
+  welcomeDismissed: z.boolean().optional(),
 });
 export type SettingsUpdate = z.infer<typeof settingsUpdateSchema>;
 

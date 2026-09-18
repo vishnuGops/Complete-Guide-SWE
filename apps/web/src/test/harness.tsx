@@ -192,6 +192,9 @@ export function someSettings(overrides: Partial<SettingsView> = {}): SettingsVie
     judge: { timeoutMultiplier: 1, concurrency: 2 },
     theme: 'system',
     lastLanguage: 'python',
+    // Dismissed by default in tests: the welcome is a first-run thing, and
+    // every other spec would otherwise be written behind it (P8-3).
+    welcomeDismissed: true,
     ...overrides,
   };
 }

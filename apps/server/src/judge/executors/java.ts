@@ -8,6 +8,7 @@ import type { HarnessPayload } from '../protocol.js';
 import { runProcess } from '../process.js';
 import type { Workspace } from '../workspace.js';
 import type { Executor, HarnessRun, PrepareResult } from './types.js';
+import { JAVA_COMMAND, JAVAC_COMMAND } from './commands.js';
 import {
   compileTimeoutMessage,
   parseJavacOutput,
@@ -17,8 +18,7 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HARNESS_SOURCE = path.resolve(HERE, '..', 'harness', 'DevProMaxMain.java');
 
-export const JAVAC_COMMAND = process.env['DEVPROMAX_JAVAC'] ?? 'javac';
-export const JAVA_COMMAND = process.env['DEVPROMAX_JAVA'] ?? 'java';
+export { JAVA_COMMAND, JAVAC_COMMAND } from './commands.js';
 
 const SOLUTION_FILE = 'Solution.java';
 /**

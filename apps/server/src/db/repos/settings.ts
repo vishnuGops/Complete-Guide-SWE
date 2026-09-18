@@ -3,7 +3,14 @@ import { transaction, type Database } from '../open.js';
 import { text, type Row } from './rows.js';
 
 /** One row per top-level section of `Settings`. */
-const SETTINGS_KEYS = ['coach', 'editor', 'judge', 'theme', 'lastLanguage'] as const;
+const SETTINGS_KEYS = [
+  'coach',
+  'editor',
+  'judge',
+  'theme',
+  'lastLanguage',
+  'welcomeDismissed',
+] as const;
 type SettingsKey = (typeof SETTINGS_KEYS)[number];
 
 /**
@@ -65,6 +72,9 @@ export function createSettingsRepo(db: Database): SettingsRepo {
           ...(patch.judge ? { judge: { ...current.judge, ...patch.judge } } : {}),
           ...(patch.theme !== undefined ? { theme: patch.theme } : {}),
           ...(patch.lastLanguage !== undefined ? { lastLanguage: patch.lastLanguage } : {}),
+          ...(patch.welcomeDismissed !== undefined
+            ? { welcomeDismissed: patch.welcomeDismissed }
+            : {}),
         };
         const next = settingsSchema.parse(merged);
 

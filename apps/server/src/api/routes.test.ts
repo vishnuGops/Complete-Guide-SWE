@@ -7,6 +7,7 @@ import {
   type DashboardResponse,
   type NextProblemResponse,
   type ProblemListResponse,
+  type RuntimeReport,
   type ProgressResponse,
   type RunResult,
   type SettingsView,
@@ -1034,6 +1035,38 @@ describe('the dashboard (P7-5)', () => {
     expect(response.body).toContain('# DSA practice report');
 
     expect((await api('GET', '/api/dashboard/report?format=pdf')).statusCode).toBe(400);
+  });
+});
+
+describe('the runtime check (P8-3)', () => {
+  it('reports all three runtimes, with the command each one used', async () => {
+    const body = (await api('GET', '/api/settings/doctor')).json() as RuntimeReport;
+
+    expect(body.checks.map((check) => check.name)).toEqual(['python', 'java', 'javac']);
+    // Whatever this machine has, the answer has to be actionable: either a
+    // version, or a problem and the sentence that fixes it.
+    for (const check of body.checks) {
+      expect(check.command.length).toBeGreaterThan(0);
+      if (check.ok) expect(check.version).not.toBeNull();
+      else expect(check.guidance).not.toBeNull();
+    }
+    expect(body.ok).toBe(body.checks.every((check) => check.ok));
+  }, 60_000);
+});
+
+describe('the welcome (P8-3)', () => {
+  it('starts undismissed and stays dismissed', async () => {
+    expect(((await api('GET', '/api/settings')).json() as SettingsView).welcomeDismissed).toBe(
+      false,
+    );
+
+    await api('PUT', '/api/settings', { welcomeDismissed: true });
+
+    // In the database rather than in the browser: clearing site data or opening
+    // the app somewhere else should not start the tour again.
+    expect(((await api('GET', '/api/settings')).json() as SettingsView).welcomeDismissed).toBe(
+      true,
+    );
   });
 });
 
