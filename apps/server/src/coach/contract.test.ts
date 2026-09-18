@@ -305,5 +305,27 @@ for (const vendor of VENDORS) {
       expect(result.message).toMatch(vendor.label);
       expect(result.message).toMatch(/key/i);
     });
+
+    it('refuses to call a 200 that is not a model list a connection', async () => {
+      /*
+       * Found by an end-to-end test whose stand-in vendor answered with an HTML
+       * page (ROADMAP P5-10): the body parsed into an object with no model
+       * array, the list came out empty, and an empty list used to mean
+       * "connected, model unverified". A proxy, a captive portal or a mistyped
+       * base URL all reported a working key.
+       */
+      const { provider } = make(
+        () =>
+          new Response('<!doctype html><title>not a vendor</title>', {
+            status: 200,
+            headers: { 'content-type': 'text/html' },
+          }),
+      );
+
+      const result = await provider.testConnection({ apiKey: 'sk-whatever', model: null });
+
+      expect(result.ok).toBe(false);
+      expect(result.message).toMatch(/not with a model list/i);
+    });
   });
 }

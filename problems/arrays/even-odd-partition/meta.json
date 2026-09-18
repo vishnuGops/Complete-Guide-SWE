@@ -5,7 +5,7 @@
   "title": "Even Readings First",
   "version": 1,
   "topic": "arrays",
-  "patterns": ["in-place", "stable partition", "two passes"],
+  "patterns": ["mutated argument", "stable partition", "two passes"],
   "tier": "Easy",
   "rating": 3,
   "order": 2,

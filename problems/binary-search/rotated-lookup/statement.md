@@ -24,6 +24,7 @@ The index of `target` in `values`, or `-1`.
 ### Example 1
 
 Input: `values = [6, 7, 9, 1, 3, 5]`, `target = 1`
+
 Output: `3`
 
 The series was rotated so that it starts at `6`; `1` sits at index 3.
@@ -31,6 +32,7 @@ The series was rotated so that it starts at `6`; `1` sits at index 3.
 ### Example 2
 
 Input: `values = [6, 7, 9, 1, 3, 5]`, `target = 4`
+
 Output: `-1`
 
 `4` is not in the series.
@@ -38,6 +40,7 @@ Output: `-1`
 ### Example 3
 
 Input: `values = [3]`, `target = 3`
+
 Output: `0`
 
 A single reading is a rotation of itself.

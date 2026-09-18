@@ -65,15 +65,19 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
         return { ok: false, message: describeStatus('gemini', response.status), model: wanted };
       }
 
-      let available: string[] = [];
+      // `null` until a model list is actually read: a 200 carrying something
+      // else is not a connection to Gemini (ROADMAP P5-10).
+      let available: string[] | null = null;
       try {
         const body = (await response.json()) as ModelsResponse;
-        available = (body.models ?? [])
+        const names = (Array.isArray(body.models) ? body.models : [])
           .map((entry) => entry.name)
           .filter((name): name is string => typeof name === 'string')
           .map(stripPrefix);
+        // Empty means unreadable, for the reason the Anthropic adapter gives.
+        available = names.length > 0 ? names : null;
       } catch {
-        available = [];
+        available = null;
       }
 
       return judgeModel('gemini', wanted, available);

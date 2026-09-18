@@ -32,9 +32,15 @@ complement up **before** inserting the current value. Insert first and
 - **Sorting first.** Sorting to use two pointers is `O(n log n)` and, worse,
   destroys the indices you were asked to return. If you sort, you have to carry
   the original positions along, which is more code for a worse bound.
-- **Integer overflow in Java.** `target - values[i]` stays inside `int` for the
-  stated ranges, but `values[i] + values[j]` in a brute force does not — that
-  sum can reach `2 * 10^9`, past `Integer.MAX_VALUE`.
+- **Integer overflow in Java.** `target - values[i]` does _not_ always fit in an
+  `int`: with `target` and `values[i]` of opposite signs it reaches `2 * 10^9`,
+  past `Integer.MAX_VALUE`. The lookup still behaves, and it is worth knowing
+  why — a wrapped complement lands outside `[-10^9, 10^9]`, so it cannot collide
+  with a key that is really in the map, and the lookup misses exactly as it
+  should. The brute force has no such luck: `values[i] + values[j]` wrapping can
+  equal `target` and report a pair that does not exist. If you want the
+  arithmetic to be honest rather than merely lucky, compute the complement as a
+  `long`.
 
 ## Why the naive approach is not enough
 

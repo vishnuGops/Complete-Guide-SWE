@@ -21,7 +21,6 @@
     }
   ],
   "hidden": [
-    {"name":"empty log","args":[[]],"expected":[]},
     {"name":"one entry","args":[[9]],"expected":[9]},
     {"name":"one value repeated","args":[[2,2,2,2]],"expected":[2]},
     {"name":"every count ties at one","args":[[3,1,2]],"expected":[1,2,3]},

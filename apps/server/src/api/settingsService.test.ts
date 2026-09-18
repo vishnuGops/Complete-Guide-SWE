@@ -37,7 +37,13 @@ function stubFetch(seen: { apiKey?: string } = {}): FetchLike {
       ).map(([name, value]) => [name.toLowerCase(), String(value)]),
     );
     seen.apiKey = headers['x-api-key'] ?? headers['x-goog-api-key'];
-    return new Response(JSON.stringify({ data: [{ id: 'claude-opus-5' }] }), { status: 200 });
+    // The content type matters: without it the SDK does not parse the body,
+    // the model list comes back unreadable, and P5-10 says that is not a
+    // successful connection - correctly.
+    return new Response(JSON.stringify({ data: [{ id: 'claude-opus-5' }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
   }) as FetchLike;
 }
 

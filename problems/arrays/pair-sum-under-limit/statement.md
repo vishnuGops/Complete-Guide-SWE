@@ -28,6 +28,7 @@ The number of pairs whose weights sum to `limit` or less.
 ### Example 1
 
 Input: `weights = [1, 2, 3, 4]`, `limit = 5`
+
 Output: `4`
 
 `1+2`, `1+3`, `1+4` and `2+3` all fit. `2+4` and `3+4` do not.
@@ -35,6 +36,7 @@ Output: `4`
 ### Example 2
 
 Input: `weights = [-3, 0, 2]`, `limit = 0`
+
 Output: `2`
 
 `-3+0` and `-3+2` fit; `0+2` does not.
@@ -42,6 +44,7 @@ Output: `2`
 ### Example 3
 
 Input: `weights = [5, 5]`, `limit = 9`
+
 Output: `0`
 
 The only pair weighs 10, which is over the limit.

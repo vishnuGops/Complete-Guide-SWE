@@ -28,5 +28,12 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         values = [rng.randint(-10**9, 10**9) for _ in range(n)]
         yield {"args": [values, rng.randint(0, 10**9)]}
 
-    n = 2000
-    yield {"args": [[rng.randint(-10**9, 10**9) for _ in range(n)], rng.randint(0, 10**9)]}
+    # The stated maximum (D21, P6-0). This problem's trap is space rather than
+    # time - an O(n) copy passes any size - so the statement was lowered to
+    # 10^4 to match what a reviewable tests.json can carry, and the largest case
+    # now reaches it.
+    n = 10**4
+    yield {
+        "args": [[rng.randint(-(10**9), 10**9) for _ in range(n)], rng.randint(0, 10**9)],
+        "name": "the stated maximum",
+    }

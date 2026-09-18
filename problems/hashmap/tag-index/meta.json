@@ -7,7 +7,7 @@
   "topic": "hashmap",
   "patterns": ["design", "two maps", "invariant"],
   "tier": "Medium",
-  "rating": 6,
+  "rating": 5,
   "order": 5,
   "mode": "operations",
   "entry": "TagIndex",

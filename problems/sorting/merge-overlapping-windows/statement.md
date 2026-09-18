@@ -25,6 +25,7 @@ touch.
 ### Example 1
 
 Input: `windows = [[1, 3], [2, 6], [8, 10], [15, 18]]`
+
 Output: `[[1, 6], [8, 10], [15, 18]]`
 
 `[1, 3]` and `[2, 6]` overlap and become `[1, 6]`. The other two touch nothing.
@@ -32,6 +33,7 @@ Output: `[[1, 6], [8, 10], [15, 18]]`
 ### Example 2
 
 Input: `windows = [[1, 4], [4, 5]]`
+
 Output: `[[1, 5]]`
 
 They share the instant `4`, which is enough to make them one outage.
@@ -39,6 +41,7 @@ They share the instant `4`, which is enough to make them one outage.
 ### Example 3
 
 Input: `windows = []`
+
 Output: `[]`
 
 Nothing booked, nothing to merge.

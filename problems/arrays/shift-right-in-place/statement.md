@@ -19,7 +19,7 @@ Nothing is returned. After the call, `values[(i + shift) % n]` must hold whateve
 
 ## Constraints
 
-- `1 <= values.length <= 10^5`
+- `1 <= values.length <= 10^4`
 - `-10^9 <= values[i] <= 10^9`
 - `0 <= shift <= 10^9`
 - You may use only `O(1)` extra space.

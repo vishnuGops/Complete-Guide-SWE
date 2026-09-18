@@ -110,18 +110,24 @@ export function createAnthropicProvider(options: ProviderOptions = {}): CoachPro
       const wanted = model ?? ANTHROPIC_DEFAULT_MODEL;
       const client = createClient(apiKey, options);
 
-      let available: string[] = [];
+      // `null` until a model list is actually read: a 200 carrying something
+      // else is not a connection to Anthropic (P5-10).
+      let available: string[] | null = null;
       try {
         const page = await client.models.list(
           { limit: 100 },
           { signal, timeout: TEST_CONNECTION_TIMEOUT_MS },
         );
-        // A 200 already proves the key works; a body we cannot read only costs
-        // the model check, which is not worth failing the whole test over.
         const body = page as unknown as ModelsResponse;
-        available = (body.data ?? [])
+        const ids = (Array.isArray(body.data) ? body.data : [])
           .map((entry) => entry.id)
           .filter((id): id is string => typeof id === 'string');
+        // An *empty* list counts as unreadable here, not as "connected but
+        // unverified": the SDK's page object defaults `data` to `[]`, so a 200
+        // carrying an HTML page is indistinguishable from one carrying no
+        // models - and the real endpoint never answers with no models for a
+        // valid key (P5-10).
+        available = ids.length > 0 ? ids : null;
       } catch (error) {
         const mapped = toCoachError(error);
         return { ok: false, message: mapped.message, model: wanted };

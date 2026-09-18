@@ -105,14 +105,23 @@ describe('Anthropic connection test', () => {
     expect(result.message).toContain('claude-opus-5');
   });
 
-  it('passes when the model list is unreadable: the 200 already proved the key', async () => {
+  it('fails when the model list is unreadable, whatever the status said', async () => {
+    /*
+     * This assertion used to be the opposite - "the 200 already proved the
+     * key" - and P5-10 reversed it after an end-to-end test pointed the client
+     * at a stand-in vendor that answered with an HTML page: the body parsed
+     * into a page with no models, and "connected, model unverified" was
+     * reported for something that was not the vendor at all. A proxy, a captive
+     * portal or a mistyped base URL all looked like a working key.
+     */
     const { fetch } = stubFetch(() => new Response('not json at all', { status: 200 }));
     const result = await createAnthropicProvider({ fetch }).testConnection({
       apiKey: 'sk-ant-secret',
       model: 'claude-opus-5',
     });
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/not with a model list/i);
   });
 
   it('reports a rate limit and a server error as the vendor’s problem', async () => {

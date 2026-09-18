@@ -9,7 +9,7 @@ happen to be equal.</p>
 <h2>Input</h2>
 <ul>
 <li><code>values</code> — a list of integers, <code>2 &lt;= values.length &lt;= 10^5</code></li>
-<li><code>target</code> — an integer, <code>-2 * 10^9 &lt;= target &lt;= 2 * 10^9</code></li>
+<li><code>target</code> — an integer, <code>-10^9 &lt;= target &lt;= 10^9</code></li>
 </ul>
 <h2>Output</h2>
 <p>A list of two integers: the indices of the pair, in ascending order.</p>
@@ -17,20 +17,21 @@ happen to be equal.</p>
 <ul>
 <li><code>2 &lt;= values.length &lt;= 10^5</code></li>
 <li><code>-10^9 &lt;= values[i] &lt;= 10^9</code></li>
+<li><code>-10^9 &lt;= target &lt;= 10^9</code></li>
 <li>Exactly one pair of distinct indices sums to <code>target</code>.</li>
 </ul>
 <h2>Examples</h2>
 <h3>Example 1</h3>
-<p>Input: <code>values = [4, 9]</code>, <code>target = 13</code>
-Output: <code>[0, 1]</code></p>
+<p>Input: <code>values = [4, 9]</code>, <code>target = 13</code></p>
+<p>Output: <code>[0, 1]</code></p>
 <p>There is only one pair to consider, and <code>4 + 9 == 13</code>.</p>
 <h3>Example 2</h3>
-<p>Input: <code>values = [-8, -3, 5, 11]</code>, <code>target = -11</code>
-Output: <code>[0, 1]</code></p>
+<p>Input: <code>values = [-8, -3, 5, 11]</code>, <code>target = -11</code></p>
+<p>Output: <code>[0, 1]</code></p>
 <p><code>values[0] + values[1] == -8 + -3 == -11</code>. No other pair reaches <code>-11</code>.</p>
 <h3>Example 3</h3>
-<p>Input: <code>values = [7, 7, 2]</code>, <code>target = 14</code>
-Output: <code>[0, 1]</code></p>
+<p>Input: <code>values = [7, 7, 2]</code>, <code>target = 14</code></p>
+<p>Output: <code>[0, 1]</code></p>
 <p>The two sevens are at different positions, so they form a legal pair even though
 their values are equal. Pairing index 0 with itself would not be allowed.</p></div>"
 `;
@@ -53,7 +54,7 @@ parameter to a new list, which leaves the caller's array untouched.</p>
 <code>values[i]</code> held before it, where <code>n</code> is the length of the row.</p>
 <h2>Constraints</h2>
 <ul>
-<li><code>1 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>1 &lt;= values.length &lt;= 10^4</code></li>
 <li><code>-10^9 &lt;= values[i] &lt;= 10^9</code></li>
 <li><code>0 &lt;= shift &lt;= 10^9</code></li>
 <li>You may use only <code>O(1)</code> extra space.</li>

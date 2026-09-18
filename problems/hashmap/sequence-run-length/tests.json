@@ -21,7 +21,6 @@
     }
   ],
   "hidden": [
-    {"name":"empty pile","args":[[]],"expected":0},
     {"name":"one number","args":[[5]],"expected":1},
     {"name":"one number repeated","args":[[5,5,5,5]],"expected":1},
     {"name":"the whole pile is one run","args":[[1,2,3,4,5,6]],"expected":6},

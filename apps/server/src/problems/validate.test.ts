@@ -210,9 +210,11 @@ describe('expect modes', () => {
         expectedMutatedArgs: [{ index: 0, value: [3, 1, 2] }],
         explanation: 'rotated',
       })),
-      hidden: Array.from({ length: 10 }, () => ({
-        args: [[1, 2, 3], 1],
-        expectedMutatedArgs: [{ index: 0, value: [3, 1, 2] }],
+      // Distinct from the samples: a hidden test that repeats one runs twice
+      // on Submit, which the P6-0 check rejects.
+      hidden: Array.from({ length: 10 }, (_, i) => ({
+        args: [[1, 2, 3, i], 1],
+        expectedMutatedArgs: [{ index: 0, value: [i, 1, 2, 3] }],
       })),
     };
     const root = catalogue({
@@ -282,25 +284,93 @@ describe('operations mode', () => {
     expect: 'return',
   };
 
+  /*
+   * Both starters declare every method the tests call (P6-0).
+   *
+   * A design problem whose starter is missing one fails every test with a "no
+   * method named" from inside the harness, which reads as a judge bug - so the
+   * validator checks it, and this fixture has to satisfy it.
+   */
   const opsSources = {
-    'starter.py': 'class MinStack:\n    def __init__(self):\n        pass\n',
-    'reference.py': 'class MinStack:\n    def __init__(self):\n        self.s = []\n',
-    'starter.java': 'import java.util.*;\n\nclass MinStack {\n    MinStack() {}\n}\n',
-    'reference.java': 'import java.util.*;\n\nclass MinStack {\n    MinStack() {}\n}\n',
+    'starter.py': [
+      'class MinStack:',
+      '    def __init__(self):',
+      '        pass',
+      '',
+      '    def push(self, value):',
+      '        pass',
+      '',
+      '    def getMin(self):',
+      '        pass',
+      '',
+    ].join('\n'),
+    'reference.py': [
+      'class MinStack:',
+      '    def __init__(self):',
+      '        self.s = []',
+      '',
+      '    def push(self, value):',
+      '        self.s.append(value)',
+      '',
+      '    def getMin(self):',
+      '        return min(self.s)',
+      '',
+    ].join('\n'),
+    'starter.java': [
+      'import java.util.*;',
+      '',
+      'class MinStack {',
+      '    MinStack() {}',
+      '',
+      '    void push(int value) {}',
+      '',
+      '    int getMin() {',
+      '        return 0;',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+    'reference.java': [
+      'import java.util.*;',
+      '',
+      'class MinStack {',
+      '    private final List<Integer> s = new ArrayList<>();',
+      '',
+      '    MinStack() {}',
+      '',
+      '    void push(int value) {',
+      '        s.add(value);',
+      '    }',
+      '',
+      '    int getMin() {',
+      '        return Collections.min(s);',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
   };
 
-  function opsTests(expected?: unknown[]) {
-    const one = {
+  /** One design test: push a value, read the minimum. */
+  function opsCase(value: number, expected?: unknown[]) {
+    return {
       args: [],
       ops: [
-        { method: 'push', args: [1] },
+        { method: 'push', args: [value] },
         { method: 'getMin', args: [] },
       ],
-      expected: expected ?? [null, 1],
+      expected: expected ?? [null, value],
     };
+  }
+
+  function opsTests(expected?: unknown[]) {
     return {
-      samples: Array.from({ length: 3 }, () => ({ ...one, explanation: 'push then read min' })),
-      hidden: Array.from({ length: 10 }, () => ({ ...one })),
+      samples: Array.from({ length: 3 }, (_, i) => ({
+        ...opsCase(i + 1, expected),
+        explanation: 'push then read min',
+      })),
+      // Distinct sequences: in operations mode a test's identity is its `ops`,
+      // and a hidden test that repeats a sample runs twice on Submit (P6-0).
+      hidden: Array.from({ length: 10 }, (_, i) => opsCase(100 + i)),
     };
   }
 
@@ -573,5 +643,149 @@ describe('wire integers (D22, P2-12)', () => {
     const root = catalogue({ files: { 'tests.json': testsWith(Number.MAX_SAFE_INTEGER) } });
 
     expect(errors(root).some((issue) => issue.message.includes('too large'))).toBe(false);
+  });
+});
+
+/**
+ * The rules the seed catalogue taught us (ROADMAP P6-0).
+ *
+ * Each of these shipped in twenty problems before anyone looked, which is the
+ * argument for checking them mechanically rather than in review.
+ */
+describe('seed-catalogue rules (P6-0)', () => {
+  it('warns when the hidden tests never reach a stated size bound (D21)', () => {
+    // The defect: three problems claimed 10^5 and generated a thousand, so the
+    // quadratic solution their own editorials said would time out passed.
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replace(
+          '2 <= nums.length <= 3',
+          '2 <= nums.length <= 10^5',
+        ),
+      },
+    });
+
+    const issue = issuesFor(root).find((i) => i.message.includes('the statement allows up to'));
+    expect(issue?.severity).toBe('warning');
+    expect(issue?.message).toContain('100000');
+  });
+
+  it('ignores a value range, which bounds the numbers rather than the work', () => {
+    // `-10^9 <= nums[i] <= 10^9` does not ask for a billion of anything, and an
+    // earlier version of this check flagged every problem that had one.
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replace(
+          '- `2 <= nums.length <= 3`',
+          '- `2 <= nums.length <= 3`\n- `-10^9 <= nums[i] <= 10^9`',
+        ),
+      },
+    });
+
+    expect(issuesFor(root).some((i) => i.message.includes('the statement allows up to'))).toBe(
+      false,
+    );
+  });
+
+  it('rejects code in a hint, structurally', () => {
+    for (const hint of [
+      'Use `sorted(counts, key=lambda v: -counts[v])`.',
+      'Write `values[:] = result` rather than rebinding.',
+      'Then call `map.get(target - value)`.',
+      'for (int i = 0; i < n; i++) { ... }',
+    ]) {
+      const root = catalogue({
+        files: { 'hints.json': json({ hints: [hint, 'b', 'c', 'd'] }) },
+      });
+      const issue = expectError(root, 'must not contain code');
+      expect(issue.jsonPath, hint).toBe('hints[0]');
+    }
+  });
+
+  it('leaves prose alone, including a sentence that ends in a colon', () => {
+    // The first version matched `\bfor\b.*:` and rejected "being asked for:
+    // how often each value occurs", which is a sentence.
+    const root = catalogue({
+      files: {
+        'hints.json': json({
+          hints: [
+            'Two things are being asked for: how often each value occurs, and an order over them.',
+            'A map from value to count answers the first.',
+            'Sort the distinct values, comparing counts before values.',
+            'Insert after checking, so a value cannot pair with itself.',
+          ],
+        }),
+      },
+    });
+
+    expect(issuesFor(root).some((i) => i.message.includes('must not contain code'))).toBe(false);
+  });
+
+  it('warns when a hint ladder is not four rungs', () => {
+    const root = catalogue({ files: { 'hints.json': json({ hints: ['only one'] }) } });
+    const issue = issuesFor(root).find((i) => i.message.includes('rung(s)'));
+    expect(issue?.severity).toBe('warning');
+  });
+
+  it('rejects an example whose Input and Output share a paragraph', () => {
+    const root = catalogue({
+      files: {
+        'statement.md': makeStatement().replaceAll(
+          '`target = 4`\n\nOutput:',
+          '`target = 4`\nOutput:',
+        ),
+      },
+    });
+
+    expectError(root, 'Input and Output in one paragraph');
+  });
+
+  it('requires the editorial to have an approach and a complexity', () => {
+    const root = catalogue({
+      files: { 'editorial.md': '## Approach\n\nOne pass with a hash map.\n' },
+    });
+    expectError(root, 'missing required section "## Complexity"');
+  });
+
+  it('rejects an operations test calling a method the starters do not declare', () => {
+    // It would fail every test with a "no method named" from inside the
+    // harness, which reads as a judge bug rather than a problem bug.
+    const root = catalogue({
+      topic: 'stack',
+      slug: 'min-stack',
+      files: {
+        'meta.json': json({
+          ...VALID_META,
+          id: 'min-stack',
+          slug: 'min-stack',
+          topic: 'stack',
+          title: 'Min Stack',
+          mode: 'operations',
+          entry: 'MinStack',
+          expect: 'return',
+          rating: 4,
+          tier: 'Medium',
+        }),
+        'tests.json': json({
+          samples: Array.from({ length: 3 }, (_, i) => ({
+            args: [],
+            ops: [{ method: 'peek', args: [i] }],
+            expected: [i],
+            explanation: 'peek',
+          })),
+          hidden: Array.from({ length: 10 }, (_, i) => ({
+            args: [],
+            ops: [{ method: 'peek', args: [100 + i] }],
+            expected: [100 + i],
+          })),
+        }),
+        'starter.py': 'class MinStack:\n    def __init__(self):\n        pass\n',
+        'reference.py': 'class MinStack:\n    def __init__(self):\n        pass\n',
+        'starter.java': 'import java.util.*;\n\nclass MinStack {\n    MinStack() {}\n}\n',
+        'reference.java': 'import java.util.*;\n\nclass MinStack {\n    MinStack() {}\n}\n',
+      },
+    });
+
+    expectError(root, /tests call "peek", which starter\.py and starter\.java does not declare/);
   });
 });

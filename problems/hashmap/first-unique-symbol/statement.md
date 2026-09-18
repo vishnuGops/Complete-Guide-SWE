@@ -22,6 +22,7 @@ The index of the first letter that appears exactly once, or `-1`.
 ### Example 1
 
 Input: `text = "swiss"`
+
 Output: `1`
 
 `s` appears three times, so the first letter that stands alone is `w` at index 1.
@@ -29,6 +30,7 @@ Output: `1`
 ### Example 2
 
 Input: `text = "aabb"`
+
 Output: `-1`
 
 Every letter appears twice.
@@ -36,6 +38,7 @@ Every letter appears twice.
 ### Example 3
 
 Input: `text = "z"`
+
 Output: `0`
 
 A single letter is by definition alone.

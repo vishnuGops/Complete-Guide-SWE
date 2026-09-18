@@ -16,7 +16,6 @@
     {"name":"empty log","args":[[]],"expected":[],"explanation":"There are no days to report on."}
   ],
   "hidden": [
-    {"name":"empty log","args":[[]],"expected":[]},
     {"name":"one day","args":[[12]],"expected":[0]},
     {"name":"strictly cooling, nothing answered","args":[[5,4,3,2,1]],"expected":[0,0,0,0,0]},
     {"name":"strictly warming, every wait is one","args":[[1,2,3,4,5]],"expected":[1,1,1,1,0]},

@@ -16,7 +16,6 @@
     {"name":"no words","args":[[]],"expected":[],"explanation":"There is nothing to group."}
   ],
   "hidden": [
-    {"name":"no words","args":[[]],"expected":[]},
     {"name":"one word, one group","args":[["solo"]],"expected":[["solo"]]},
     {"name":"empty words group together","args":[["","","a"]],"expected":[["",""],["a"]]},
     {

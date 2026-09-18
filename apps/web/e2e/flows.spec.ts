@@ -229,47 +229,63 @@ test.describe('the golden path', () => {
  * Its own problem, so it cannot disturb the golden path, and it never submits.
  */
 test.describe('drafts', () => {
+  /*
+   * Serial, and a problem each.
+   *
+   * These two both write drafts and both choose a language, and `lastLanguage`
+   * is a *setting* - global to the database the suite shares. Run in parallel
+   * they typed into each other's editors, which showed up as a draft with both
+   * tests' text in it.
+   */
+  test.describe.configure({ mode: 'serial' });
+
   const PROBLEM = { slug: 'sequence-run-length', title: 'Longest Consecutive Run' };
+  /** A second problem, so the flush test cannot disturb the round-trip one. */
+  const FLUSH_PROBLEM = { slug: 'first-unique-symbol', title: 'First Symbol That Stands Alone' };
 
   const PYTHON_MARK = '# python draft P4-11';
   const JAVA_MARK = '// java draft P4-11';
 
   const CLIENT = { 'X-DevProMax-Client': 'devpromax-web' };
 
-  /** Resolves when a draft PUT for this language carries `text`. */
-  function draftSaved(page: Page, language: 'python' | 'java', text: string) {
+  /** Resolves when a draft PUT for this problem and language carries `text`. */
+  function draftSaved(page: Page, slug: string, language: 'python' | 'java', text: string) {
     return page.waitForResponse((response) => {
       const request = response.request();
       if (request.method() !== 'PUT') return false;
-      if (!response.url().endsWith(`/api/drafts/${PROBLEM.slug}/${language}`)) return false;
+      if (!response.url().endsWith(`/api/drafts/${slug}/${language}`)) return false;
       return (request.postData() ?? '').includes(text);
     });
   }
 
-  async function clearDrafts(page: Page): Promise<void> {
+  async function clearDrafts(page: Page, slug: string): Promise<void> {
     for (const language of ['python', 'java'] as const) {
-      const response = await page.request.delete(`/api/drafts/${PROBLEM.slug}/${language}`, {
+      const response = await page.request.delete(`/api/drafts/${slug}/${language}`, {
         headers: CLIENT,
       });
       expect(response.ok(), 'the draft delete that resets this problem').toBe(true);
     }
   }
 
-  /** Opens the problem on a known language with no drafts behind it. */
-  async function openOnPython(page: Page): Promise<void> {
-    await clearDrafts(page);
-    await page.goto(`/problems/${PROBLEM.slug}`);
-    await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
+  /** Opens a problem on a known language with no drafts behind it. */
+  async function openOnPython(
+    page: Page,
+    problem: { slug: string; title: string },
+    starterMarker: string,
+  ): Promise<void> {
+    await clearDrafts(page, problem.slug);
+    await page.goto(`/problems/${problem.slug}`);
+    await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
     await page.getByRole('button', { name: 'Python', exact: true }).click();
-    await expect(page.locator('[data-testid="editor"]')).toContainText('def longestRun');
+    await expect(page.locator('[data-testid="editor"]')).toContainText(starterMarker);
   }
 
   test('survive switching language twice and reloading', async ({ page }) => {
-    await openOnPython(page);
+    await openOnPython(page, PROBLEM, 'def longestRun');
     const editor = page.locator('[data-testid="editor"]');
 
     // Python first, and not a step further until the server has it.
-    const pythonSaved = draftSaved(page, 'python', PYTHON_MARK);
+    const pythonSaved = draftSaved(page, PROBLEM.slug, 'python', PYTHON_MARK);
     await setEditorContents(
       page,
       `${PYTHON_MARK}
@@ -281,7 +297,7 @@ class Solution:
     await pythonSaved;
 
     await page.getByRole('button', { name: 'Java' }).click();
-    const javaSaved = draftSaved(page, 'java', JAVA_MARK);
+    const javaSaved = draftSaved(page, PROBLEM.slug, 'java', JAVA_MARK);
     await setEditorContents(
       page,
       `${JAVA_MARK}
@@ -306,7 +322,7 @@ class Solution {}
     await page.getByRole('button', { name: 'Java' }).click();
     await expect(editor).toContainText(JAVA_MARK);
 
-    await clearDrafts(page);
+    await clearDrafts(page, PROBLEM.slug);
   });
 
   test('a draft typed a moment before leaving is still written', async ({ page }) => {
@@ -314,10 +330,10 @@ class Solution {}
     // 800 ms of typing died with the language click. Typed rather than pasted:
     // a keystroke reaches React on its own, where a paste goes through Monaco's
     // clipboard path and lands when it lands.
-    await openOnPython(page);
+    await openOnPython(page, FLUSH_PROBLEM, 'class Solution');
 
     const flushed = '# flushed';
-    const saved = draftSaved(page, 'python', flushed);
+    const saved = draftSaved(page, FLUSH_PROBLEM.slug, 'python', flushed);
 
     await page.locator('[data-testid="editor"] .view-lines').click();
     await page.keyboard.type(
@@ -329,6 +345,6 @@ class Solution {}
     await page.getByRole('button', { name: 'Java' }).click();
 
     await saved;
-    await clearDrafts(page);
+    await clearDrafts(page, FLUSH_PROBLEM.slug);
   });
 });

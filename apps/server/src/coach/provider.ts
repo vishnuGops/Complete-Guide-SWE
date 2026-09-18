@@ -198,9 +198,32 @@ export function describeNetworkError(id: CoachProviderId, error: unknown): strin
 export function judgeModel(
   id: CoachProviderId,
   model: string,
-  available: readonly string[],
+  available: readonly string[] | null,
 ): ConnectionResult {
   const vendor = COACH_PROVIDER_LABEL[id];
+
+  /*
+   * `null` means the answer was not a model list at all (ROADMAP P5-10).
+   *
+   * Found by an end-to-end test pointed at a stand-in vendor: the response was
+   * an HTML page, the SDK parsed it into an object with no `data`, the model
+   * list came out empty - and an empty list used to be read as "connected, but
+   * we could not check the model". So a proxy, a captive portal or a mistyped
+   * base URL all reported a working key. An unreadable answer is not a
+   * successful connection.
+   */
+  if (available === null) {
+    return {
+      ok: false,
+      message: `${vendor} answered, but not with a model list. Check the network between here and the vendor.`,
+      model,
+    };
+  }
+
+  // The empty case is unreachable through either adapter - both map an empty
+  // list to `null` above, since neither vendor answers with no models for a
+  // valid key - and is kept as the harmless reading of "connected, model
+  // unverified" for any future provider that legitimately can.
   if (available.length === 0 || available.includes(model)) {
     return { ok: true, message: `Connected to ${vendor} using ${model}.`, model };
   }

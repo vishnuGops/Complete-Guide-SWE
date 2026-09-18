@@ -457,6 +457,288 @@ function checkPlaceholders(pkg: ProblemPackage): ValidationIssue[] {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Rules the seed catalogue taught us (ROADMAP P6-0)
+// ---------------------------------------------------------------------------
+
+/** Rungs the ladder expects: nudge, concept, approach, pseudocode. */
+const EXPECTED_HINT_RUNGS = 4;
+
+/**
+ * `tests.json` past this is a file nobody can review in a diff.
+ *
+ * Two megabytes rather than a tighter figure, because D21 asks for a case at
+ * the stated maximum and one array of 10^5 integers is about a megabyte of
+ * JSON on its own. Past two, something other than "one big case" is going on -
+ * usually two hundred small ones that prove the same thing.
+ */
+const MAX_TESTS_BYTES = 2 * 1024 * 1024;
+
+/** `<= 10^5`, `≤ 100000`, `up to 10^5` - a bound as a statement writes one. */
+const STATED_BOUND = /(?:<=|≤|up to|at most)\s*`?\s*(?:10\^(\d+)|10\*\*(\d+)|([\d][\d_,]*))/i;
+
+/**
+ * Names that mean "how much input", as opposed to "how big a value".
+ *
+ * The distinction is the whole check: `-10^9 <= values[i] <= 10^9` bounds the
+ * numbers, and a problem is not expected to test a billion of anything because
+ * of it. `values.length <= 10^5` bounds the work, and that is the claim D21 is
+ * about.
+ */
+const SIZE_NAMES =
+  /\b(?:n|m|k|q|len|length|size|count|calls|operations|words|rows|cols)\b|\.length/i;
+
+/** A constraint line about the *contents* of the input rather than its size. */
+const ELEMENT_NAMES = /\[\s*i\s*\]|\[\s*j\s*\]|\bvalue\b|\bvalues\[|\btarget\b|\bnums\[/i;
+
+/**
+ * The largest input any test actually carries, as a count.
+ *
+ * Lengths and call counts only - deliberately not numeric magnitude, which is a
+ * different claim and the reason an earlier version of this check flagged every
+ * problem with a `10^9` value range.
+ */
+function largestInputSize(tests: readonly TestCase[]): number {
+  let largest = 0;
+
+  const consider = (value: JsonValue): void => {
+    if (Array.isArray(value)) {
+      largest = Math.max(largest, value.length);
+      for (const entry of value) consider(entry);
+    } else if (typeof value === 'string') {
+      largest = Math.max(largest, value.length);
+    }
+  };
+
+  for (const test of tests) {
+    for (const arg of test.args) consider(arg);
+    // In operations mode the constructor usually takes nothing, and the size of
+    // the problem is the sequence: how many calls, and what is in them.
+    if (test.ops) {
+      largest = Math.max(largest, test.ops.length);
+      for (const op of test.ops) {
+        for (const arg of op.args ?? []) consider(arg);
+      }
+    }
+  }
+
+  return largest;
+}
+
+/** The biggest size bound the Constraints section claims, or null. */
+function statedSizeBound(statement: string): number | null {
+  const afterHeading = statement.split(/^##\s+Constraints\s*$/m)[1];
+  if (afterHeading === undefined) return null;
+
+  const section = afterHeading.split(/^##\s/m)[0] ?? '';
+  let largest: number | null = null;
+
+  for (const line of section.split('\n')) {
+    if (!SIZE_NAMES.test(line) || ELEMENT_NAMES.test(line)) continue;
+
+    const match = STATED_BOUND.exec(line);
+    if (!match) continue;
+
+    const [, power, doubleStarPower, literal] = match;
+    const value =
+      power !== undefined
+        ? 10 ** Number(power)
+        : doubleStarPower !== undefined
+          ? 10 ** Number(doubleStarPower)
+          : Number((literal ?? '').replace(/[_,]/g, ''));
+
+    if (Number.isFinite(value) && value > 1 && (largest === null || value > largest)) {
+      largest = value;
+    }
+  }
+
+  return largest;
+}
+
+/**
+ * A stated constraint is a tested constraint (D21, ROADMAP P6-0).
+ *
+ * Three seed problems claimed 10^5 and generated a thousand, so the quadratic
+ * solution their own editorials said would time out passed comfortably - and
+ * Solved stopped meaning what the statement claims. A warning rather than an
+ * error: the honest fix is sometimes to lower the constraint, and a validator
+ * that refused to run until someone had rewritten a generator would be a
+ * validator people stop running.
+ */
+function checkStatedConstraints(pkg: ProblemPackage): ValidationIssue[] {
+  const bound = statedSizeBound(pkg.statement);
+  if (bound === null) return [];
+
+  const largest = largestInputSize(pkg.tests.hidden);
+  if (largest >= bound / 2) return [];
+
+  return [
+    warning(
+      relFile(pkg.location, 'tests.json'),
+      `the statement allows up to ${String(bound)} but the largest hidden input is ${String(largest)}; ` +
+        'generate at the stated maximum or lower the constraint (D21)',
+      'hidden',
+    ),
+  ];
+}
+
+/**
+ * The hint ladder is four rungs, and none of them is the answer (P6-0).
+ *
+ * Rung 4 was the full solution in about half the seed catalogue - one case was
+ * the reference's own line - which makes the ladder a formality and the
+ * editorial redundant. Detected by looking for what only a solution has: the
+ * language's own keywords in the shape of code.
+ */
+const CODE_IN_HINT: [RegExp, string][] = [
+  [/```/, 'a fenced code block'],
+  [/\blambda\b/, 'a lambda'],
+  [/\.[A-Za-z_]\w*\s*\(/, 'a method call'],
+  [/[A-Za-z_]\w*\s*\[[^\]]*\]\s*=/, 'an assignment to an element'],
+  [/[A-Za-z_]\w*\s*\([^)]*=[^)=]*\)/, 'a call with named arguments'],
+  [/\b(?:for|while|if)\s*\(/, 'a control structure'],
+  [/\b(?:def|class)\s+[A-Za-z_]/, 'a declaration'],
+  [/;\s*$/m, 'a statement terminator'],
+  [/=>|->/, 'an arrow function'],
+];
+
+function checkHints(pkg: ProblemPackage): ValidationIssue[] {
+  const file = relFile(pkg.location, 'hints.json');
+  const issues: ValidationIssue[] = [];
+  const { hints } = pkg.hints;
+
+  if (hints.length !== EXPECTED_HINT_RUNGS) {
+    issues.push(
+      warning(
+        file,
+        `has ${hints.length} rung(s); the ladder is ${EXPECTED_HINT_RUNGS} (nudge, concept, approach, pseudocode)`,
+        'hints',
+      ),
+    );
+  }
+
+  hints.forEach((hint, index) => {
+    // Structural markers rather than English keywords: an earlier version
+    // matched `\bfor\b.*:` and flagged "being asked for: how often each value
+    // occurs", which is a sentence.
+    const found = CODE_IN_HINT.find(([pattern]) => pattern.test(hint));
+    if (found) {
+      issues.push(
+        error(
+          file,
+          `a hint must not contain code (found ${found[1]}); the editorial is where the solution lives`,
+          `hints[${String(index)}]`,
+        ),
+      );
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * `Input:` and `Output:` on their own lines (P6-0).
+ *
+ * Every seed statement joined them with a single newline, which markdown
+ * renders as one paragraph - "Input: nums = [1, 2] Output: [0, 1]" - so every
+ * example in the catalogue read as a run-on sentence. The scaffold did it too,
+ * which is how all twenty got it.
+ */
+const RUN_ON_EXAMPLE = /^Input:.*\n(?!\n)(?=Output:)/gim;
+
+function checkExampleLayout(pkg: ProblemPackage): ValidationIssue[] {
+  const count = pkg.statement.match(RUN_ON_EXAMPLE)?.length ?? 0;
+  if (count === 0) return [];
+
+  return [
+    error(
+      relFile(pkg.location, 'statement.md'),
+      `${String(count)} example(s) put Input and Output in one paragraph; separate them with a blank line`,
+    ),
+  ];
+}
+
+/** The editorial is the one file a user reads instead of thinking (P6-0). */
+const EDITORIAL_SECTIONS = ['## Approach', '## Complexity'];
+
+function checkEditorial(pkg: ProblemPackage): ValidationIssue[] {
+  const file = relFile(pkg.location, 'editorial.md');
+
+  return EDITORIAL_SECTIONS.filter((heading) => !pkg.editorial.includes(heading)).map((heading) =>
+    error(file, `missing required section "${heading}"`),
+  );
+}
+
+/**
+ * A sample is not a hidden test (P6-0).
+ *
+ * `pair-sum-index` had its three samples copied into `hidden[]`, so Submit ran
+ * them twice and the hidden count was three higher than the number of cases
+ * anyone had actually generated.
+ */
+function checkNoDuplicateTests(pkg: ProblemPackage): ValidationIssue[] {
+  const file = relFile(pkg.location, 'tests.json');
+
+  // Args *and* ops: in operations mode the constructor arguments are usually
+  // empty, so args alone would call every test in a design problem a duplicate
+  // of the first sample.
+  const identity = (test: TestCase): string => JSON.stringify([test.args, test.ops ?? []]);
+  const samples = new Set(pkg.tests.samples.map(identity));
+
+  const duplicated = pkg.tests.hidden
+    .map((test, index) => ({ index, key: identity(test) }))
+    .filter((entry) => samples.has(entry.key));
+
+  return duplicated.map((entry) =>
+    error(
+      file,
+      'this hidden test has the same arguments as a sample, so Submit runs it twice',
+      testPath('hidden', entry.index, 'args'),
+    ),
+  );
+}
+
+/** Every `ops[].method` has to exist in both starters (P6-0). */
+function checkOpsMethods(pkg: ProblemPackage): ValidationIssue[] {
+  if (pkg.meta.mode !== 'operations') return [];
+
+  const file = relFile(pkg.location, 'tests.json');
+  const named = new Set(
+    [...pkg.tests.samples, ...pkg.tests.hidden].flatMap((test) =>
+      (test.ops ?? []).map((op) => op.method),
+    ),
+  );
+
+  return [...named].flatMap((method) => {
+    const inPython = new RegExp(`\\bdef\\s+${method}\\s*\\(`).test(pkg.sources.starterPython);
+    const inJava = new RegExp(`\\b${method}\\s*\\(`).test(pkg.sources.starterJava);
+    if (inPython && inJava) return [];
+
+    const missing = [!inPython && 'starter.py', !inJava && 'starter.java'].filter(Boolean);
+    return [
+      error(
+        file,
+        `tests call "${method}", which ${missing.join(' and ')} does not declare; the harness would fail every test`,
+        'samples',
+      ),
+    ];
+  });
+}
+
+/** A `tests.json` too big to review is a file nobody reads (P6-0). */
+function checkTestsSize(pkg: ProblemPackage): ValidationIssue[] {
+  const bytes = Buffer.byteLength(JSON.stringify(pkg.tests), 'utf8');
+  if (bytes <= MAX_TESTS_BYTES) return [];
+
+  return [
+    warning(
+      relFile(pkg.location, 'tests.json'),
+      `is ${String(Math.round(bytes / 1024))} KB; past ${String(MAX_TESTS_BYTES / 1024)} KB a diff is unreviewable - ` +
+        'generate fewer, larger cases rather than more of them',
+    ),
+  ];
+}
+
 /** Every rule that needs only one problem package. */
 export function validateProblemPackage(pkg: ProblemPackage): ValidationIssue[] {
   return [
@@ -466,6 +748,15 @@ export function validateProblemPackage(pkg: ProblemPackage): ValidationIssue[] {
     ...checkProse(pkg),
     ...checkSources(pkg),
     ...checkPlaceholders(pkg),
+    // The rules the seed catalogue taught us (P6-0). Each one is a defect that
+    // shipped in twenty problems before anybody looked.
+    ...checkStatedConstraints(pkg),
+    ...checkHints(pkg),
+    ...checkExampleLayout(pkg),
+    ...checkEditorial(pkg),
+    ...checkNoDuplicateTests(pkg),
+    ...checkOpsMethods(pkg),
+    ...checkTestsSize(pkg),
   ];
 }
 

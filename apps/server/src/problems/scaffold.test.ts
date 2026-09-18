@@ -126,6 +126,24 @@ describe('a mutatedArgs scaffold', () => {
       expect(sample.expected).toBeUndefined();
     }
   });
+
+  it('writes a signature that returns nothing (P6-0)', () => {
+    // The scaffold used to emit `-> int` and `return 0` whatever the expect
+    // mode was, so the first thing an author of an in-place problem had to do
+    // was correct the signature the tool had just written - and in Java a
+    // non-void method invites returning the answer instead of mutating.
+    const { pkg } = scaffoldAndLoad({
+      topic: 'arrays',
+      slug: 'rotate-in-place',
+      mode: 'function',
+      expect: 'mutatedArgs',
+    });
+
+    expect(pkg?.sources.starterPython).toContain('-> None:');
+    expect(pkg?.sources.starterPython).not.toContain('-> int:');
+    expect(pkg?.sources.starterJava).toMatch(/public void \w+\(int\[\] nums\)/);
+    expect(pkg?.sources.starterJava).not.toContain('return 0;');
+  });
 });
 
 describe('writing', () => {

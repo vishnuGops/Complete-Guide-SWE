@@ -8,7 +8,7 @@ happen to be equal.
 ## Input
 
 - `values` — a list of integers, `2 <= values.length <= 10^5`
-- `target` — an integer, `-2 * 10^9 <= target <= 2 * 10^9`
+- `target` — an integer, `-10^9 <= target <= 10^9`
 
 ## Output
 
@@ -18,6 +18,7 @@ A list of two integers: the indices of the pair, in ascending order.
 
 - `2 <= values.length <= 10^5`
 - `-10^9 <= values[i] <= 10^9`
+- `-10^9 <= target <= 10^9`
 - Exactly one pair of distinct indices sums to `target`.
 
 ## Examples
@@ -25,6 +26,7 @@ A list of two integers: the indices of the pair, in ascending order.
 ### Example 1
 
 Input: `values = [4, 9]`, `target = 13`
+
 Output: `[0, 1]`
 
 There is only one pair to consider, and `4 + 9 == 13`.
@@ -32,6 +34,7 @@ There is only one pair to consider, and `4 + 9 == 13`.
 ### Example 2
 
 Input: `values = [-8, -3, 5, 11]`, `target = -11`
+
 Output: `[0, 1]`
 
 `values[0] + values[1] == -8 + -3 == -11`. No other pair reaches `-11`.
@@ -39,6 +42,7 @@ Output: `[0, 1]`
 ### Example 3
 
 Input: `values = [7, 7, 2]`, `target = 14`
+
 Output: `[0, 1]`
 
 The two sevens are at different positions, so they form a legal pair even though

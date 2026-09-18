@@ -183,7 +183,10 @@ function statementMd(o: Resolved): string {
     { length: SAMPLE_COUNT },
     (_, i) =>
       `### Example ${i + 1}\n\n` +
-      'Input: `TODO`\n' +
+      // A blank line between them, or markdown renders "Input: ... Output: ..."
+      // as one run-on paragraph - which is how all twenty seed statements got
+      // it wrong (ROADMAP P6-0).
+      'Input: `TODO`\n\n' +
       'Output: `TODO`\n\n' +
       'TODO: the explanation from tests.json, in prose.\n',
   ).join('\n');
@@ -245,6 +248,28 @@ function starterPy(o: Resolved): string {
       '',
     ].join('\n');
   }
+  /*
+   * A `mutatedArgs` problem returns nothing (ROADMAP P6-0).
+   *
+   * The scaffold emitted `-> int` and `return 0` whatever the expect mode was,
+   * so the first thing an author of an in-place problem had to do was correct
+   * the signature the tool had just written for them - and in Java a non-void
+   * method whose result is ignored is an invitation to return the answer
+   * instead of mutating the argument.
+   */
+  if (o.expect === 'mutatedArgs') {
+    return [
+      'from typing import List',
+      '',
+      '',
+      'class Solution:',
+      `    def ${o.entry}(self, nums: List[int]) -> None:`,
+      '        # Change `nums` in place; nothing is returned.',
+      '        pass',
+      '',
+    ].join('\n');
+  }
+
   return [
     'from typing import List',
     '',
@@ -279,17 +304,17 @@ function starterJava(o: Resolved): string {
       '',
     ].join('\n');
   }
-  return [
-    'import java.util.*;',
-    '',
-    'class Solution {',
-    '',
-    `    public int ${o.entry}(int[] nums) {`,
-    '        return 0;',
-    '    }',
-    '}',
-    '',
-  ].join('\n');
+  // Void for `mutatedArgs`, for the reason `starterPy` gives (P6-0).
+  const body =
+    o.expect === 'mutatedArgs'
+      ? [
+          `    public void ${o.entry}(int[] nums) {`,
+          '        // Change `nums` in place; nothing is returned.',
+          '    }',
+        ]
+      : [`    public int ${o.entry}(int[] nums) {`, '        return 0;', '    }'];
+
+  return ['import java.util.*;', '', 'class Solution {', '', ...body, '}', ''].join('\n');
 }
 
 function referenceJava(o: Resolved): string {

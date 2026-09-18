@@ -70,6 +70,10 @@ function fakeJudge() {
 const stubFetch: FetchLike = (async () =>
   new Response(JSON.stringify({ data: [{ id: 'claude-opus-5' }] }), {
     status: 200,
+    // The content type matters: without it the SDK does not parse the body, the
+    // model list comes back unreadable, and P5-10 says that is not a successful
+    // connection - correctly.
+    headers: { 'content-type': 'application/json' },
   })) as FetchLike;
 
 /** Every /api call the UI makes carries these two headers; so does every test. */

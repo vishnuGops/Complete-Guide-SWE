@@ -28,6 +28,7 @@ The smallest balancing index, or `-1` when there is none.
 ### Example 1
 
 Input: `values = [2, 3, -1, 8, 4]`
+
 Output: `3`
 
 Left of index 3: `2 + 3 - 1 = 4`. Right of it: `4`. Indices 0, 1 and 2 do not
@@ -36,6 +37,7 @@ balance, so 3 is the smallest that does.
 ### Example 2
 
 Input: `values = [1, 2, 3]`
+
 Output: `-1`
 
 The three splits are `0 | 2 + 3`, `1 | 3` and `1 + 2 | 0`, and none of them match.
@@ -43,6 +45,7 @@ The three splits are `0 | 2 + 3`, `1 | 3` and `1 + 2 | 0`, and none of them matc
 ### Example 3
 
 Input: `values = [0]`
+
 Output: `0`
 
 Both sides are empty, and empty weighs nothing.

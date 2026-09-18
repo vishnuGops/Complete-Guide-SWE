@@ -76,6 +76,30 @@ async function openCoach(page: Page, slug = PROBLEM.slug, title = PROBLEM.title)
 test.describe.configure({ mode: 'serial' });
 
 test.describe('AI Help', () => {
+  /*
+   * A leftover key breaks every test below it (ROADMAP P5-8).
+   *
+   * The key lives in the settings row, which is global to the database these
+   * tests share, and a run interrupted inside the test that pastes one leaves
+   * it there - so the next run's "someone with no key" is looking at a
+   * configured coach. Cleared before and after the whole file, in hooks that
+   * run even when a test fails.
+   */
+  test.beforeAll(async ({ request }) => {
+    const response = await request.put('/api/settings', {
+      headers: API_HEADERS,
+      data: { coach: { apiKey: '' } },
+    });
+    expect(response.ok(), 'clearing any key left by an earlier run').toBe(true);
+  });
+
+  test.afterAll(async ({ request }) => {
+    await request.put('/api/settings', {
+      headers: API_HEADERS,
+      data: { coach: { apiKey: '' } },
+    });
+  });
+
   test('explains itself, and promises not to hand over the solution', async ({ page }) => {
     await openCoach(page);
 
@@ -141,6 +165,14 @@ test.describe('AI Help', () => {
     const testButton = page.getByRole('button', { name: 'Test connection' });
     await expect(testButton).toBeEnabled();
     await testButton.click();
+    // The stand-in vendor (DEVPROMAX_COACH_BASE_URL in playwright.config) sits
+    // under this app's own `/api` prefix, where the client-header rule answers
+    // 403 - which the provider maps to "rejected that API key". Honest for a
+    // fake key, and reached without a packet leaving the machine.
+    //
+    // Worth knowing if this ever fails again: a *reused* dev server started
+    // without that variable sends the request to the real vendor instead, and
+    // the failure looks like a different bug entirely.
     await expect(page.getByText(/rejected that API key/i)).toBeVisible();
 
     // And the coach no longer sends this user to Settings: with a key present

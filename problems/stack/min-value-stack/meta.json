@@ -3,7 +3,7 @@
   "id": "min-value-stack",
   "slug": "min-value-stack",
   "title": "Min Value Stack",
-  "version": 1,
+  "version": 3,
   "topic": "stack",
   "patterns": ["design", "auxiliary stack", "amortised O(1)"],
   "tier": "Medium",
@@ -14,5 +14,8 @@
   "expect": "return",
   "comparator": "exact",
   "related": ["pair-sum-index"],
-  "targetComplexity": { "time": "O(1) per operation", "space": "O(n)" }
+  "targetComplexity": {
+    "time": "O(1) per operation",
+    "space": "O(n)"
+  }
 }

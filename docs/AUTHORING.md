@@ -91,7 +91,18 @@ Four rungs in `hints.json`, and they must actually be a ladder:
 4. **Shape** — the loop or recursion, close to pseudocode.
 
 Rung 4 must not be the solution. A user who reads all four should still have to
-write it.
+write it. The validator enforces the shape of that rule rather than its spirit:
+**no rung may contain code** — no fenced block, no `lambda`, no `map.get(...)`,
+no `values[i] = ...`, no trailing semicolon. If a rung needs an expression to
+make sense, it is describing the answer rather than pointing at it.
+
+Half the seed catalogue failed this on rung 4, one of them with the reference's
+own line (ROADMAP P6-0), which is what turned it into a validator rule.
+
+And a constraint you state is a constraint you test (**D21**): the largest
+hidden input must reach at least half of any size bound the statement claims, or
+the validator warns. A problem whose editorial says the quadratic approach times
+out has to have a test where it does.
 
 ## 5. Both references
 

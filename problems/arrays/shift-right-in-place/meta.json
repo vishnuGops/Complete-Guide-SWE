@@ -3,7 +3,7 @@
   "id": "shift-right-in-place",
   "slug": "shift-right-in-place",
   "title": "Shift Right In Place",
-  "version": 1,
+  "version": 2,
   "topic": "arrays",
   "patterns": ["in-place", "reversal", "cyclic shift"],
   "tier": "Medium",
@@ -14,5 +14,8 @@
   "expect": "mutatedArgs",
   "comparator": "exact",
   "related": ["pair-sum-index"],
-  "targetComplexity": { "time": "O(n)", "space": "O(1)" }
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  }
 }

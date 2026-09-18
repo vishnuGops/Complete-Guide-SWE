@@ -28,6 +28,7 @@ The smallest capacity that suffices.
 ### Example 1
 
 Input: `weights = [1, 2, 3, 4, 5]`, `days = 2`
+
 Output: `9`
 
 With capacity 9 the days are `1 2 3` and `4 5`. Capacity 8 forces three days.
@@ -35,6 +36,7 @@ With capacity 9 the days are `1 2 3` and `4 5`. Capacity 8 forces three days.
 ### Example 2
 
 Input: `weights = [7]`, `days = 1`
+
 Output: `7`
 
 One parcel, one day, so the capacity is the parcel.
@@ -42,6 +44,7 @@ One parcel, one day, so the capacity is the parcel.
 ### Example 3
 
 Input: `weights = [3, 3, 3]`, `days = 3`
+
 Output: `3`
 
 Three days for three parcels means one parcel each, and the capacity only has to

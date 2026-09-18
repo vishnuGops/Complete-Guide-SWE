@@ -17,6 +17,39 @@ def _pair_count(values: List[int], target: int) -> int:
     return count
 
 
+def _unique_case_at_scale(rng: random.Random, n: int) -> Dict[str, Any]:
+    """A case of `n` values with exactly one valid pair, built in O(n).
+
+    `_unique_case` below rejects and retries with a quadratic check, which is
+    why this problem's largest hidden test used to be a thousand values while
+    the statement promised 10^5 - and so the quadratic solution the editorial
+    says will time out passed comfortably (ROADMAP D21, P6-0).
+
+    Constructed rather than searched. Every filler is strictly greater than
+    `target / 2`, so no two fillers can sum to the target; the planted pair is
+    `x` and `target - x`, both outside the filler range, so the only pair that
+    sums to the target is that one. No search, no retry, one pass.
+    """
+    target = 0
+    x = -rng.randint(1, 10**9 // 2)
+    y = target - x  # = -x, which is positive and excluded from the fillers
+
+    fillers = set()
+    while len(fillers) < n - 2:
+        value = rng.randint(1, 10**9)
+        if value != y:
+            fillers.add(value)
+
+    values = list(fillers)
+    rng.shuffle(values)
+    # Planted at two random positions, so the answer is not always at the ends.
+    first, second = sorted(rng.sample(range(n), 2))
+    values.insert(first, x)
+    values.insert(second, y)
+
+    return {"args": [values, target]}
+
+
 def _unique_case(rng: random.Random, n: int, lo: int, hi: int) -> Dict[str, Any]:
     while True:
         values = [rng.randint(lo, hi) for _ in range(n)]
@@ -37,4 +70,10 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         yield _unique_case(rng, n, -50, 50)
     for _ in range(4):
         yield _unique_case(rng, rng.randint(50, 200), -10**6, 10**6)
-    yield _unique_case(rng, 1000, -10**9, 10**9)
+
+    # The stated maximum, which is the only size at which the quadratic
+    # solution the editorial warns about actually times out (D21).
+    yield {
+        **_unique_case_at_scale(rng, 10**5),
+        "name": "the stated maximum, where a quadratic scan cannot finish",
+    }

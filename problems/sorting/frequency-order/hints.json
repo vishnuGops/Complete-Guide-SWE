@@ -3,6 +3,6 @@
     "Two different things are being asked for: how often each value occurs, and an order over the distinct values.",
     "Count first with a map from value to occurrences. The result is then just the map's keys, arranged.",
     "Sort the distinct values with a comparison that looks at the count first and falls back to the value itself.",
-    "In Python: sorted(counts, key=lambda value: (-counts[value], value)). In Java a Comparator that compares counts descending and then values ascending does the same. Sorting the whole list rather than the distinct values is both slower and wrong."
+    "Sort the distinct values, not the log: the key is the count descending, then the value ascending, and every language's sort takes a comparator or key of exactly that shape. Sorting the whole log instead is both slower and wrong."
   ]
 }

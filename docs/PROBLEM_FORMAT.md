@@ -542,6 +542,20 @@ Static checks (P1-2):
 8. In `operations` mode every test has `ops`, and `expected.length === ops.length`.
 9. `related` slugs resolve to problems that exist.
 10. Assets referenced from `statement.md` and `editorial.md` exist in `assets/`.
+11. No file still contains a `TODO` from the scaffold.
+12. Every integer on the wire is inside |n| ≤ 2^53 − 1 (D22).
+13. `hints.json` has four rungs and none of them contains code — detected
+    structurally (a fenced block, a method call, an assignment to an element, a
+    lambda, a statement terminator), not by looking for English keywords.
+14. Each example puts `Input:` and `Output:` in separate paragraphs, because a
+    single newline renders as one run-on line.
+15. `editorial.md` has `## Approach` and `## Complexity`.
+16. No hidden test repeats a sample — same `args` _and_ same `ops` — since
+    Submit would then run it twice.
+17. In `operations` mode every `ops[].method` is declared in both starters.
+18. The largest hidden input reaches at least half of any size bound the
+    Constraints section states (D21, a warning), and `tests.json` is under 2 MB
+    (also a warning).
 
 Full checks add (P2-7): both references pass every sample and hidden test in both
 languages, and both starters compile (Java) or import (Python).

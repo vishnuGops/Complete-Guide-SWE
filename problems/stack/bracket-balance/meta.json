@@ -3,7 +3,7 @@
   "id": "bracket-balance",
   "slug": "bracket-balance",
   "title": "Balanced Brackets",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["stack", "matching pairs", "strings"],
   "tier": "Easy",

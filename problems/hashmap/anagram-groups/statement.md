@@ -28,6 +28,7 @@ A list of groups, each a list of the words built from the same letters.
 ### Example 1
 
 Input: `words = ["listen", "silent", "enlist", "google"]`
+
 Output: `[["listen", "silent", "enlist"], ["google"]]`
 
 The first three use one `l`, one `i`, one `s`, one `t`, one `e` and one `n`.
@@ -36,6 +37,7 @@ The first three use one `l`, one `i`, one `s`, one `t`, one `e` and one `n`.
 ### Example 2
 
 Input: `words = ["ab", "ba", "ab"]`
+
 Output: `[["ab", "ba", "ab"]]`
 
 A repeated word is still a separate entry, and all three use one `a` and one `b`.
@@ -43,6 +45,7 @@ A repeated word is still a separate entry, and all three use one `a` and one `b`
 ### Example 3
 
 Input: `words = []`
+
 Output: `[]`
 
 No words, no groups.

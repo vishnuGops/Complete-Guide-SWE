@@ -3,6 +3,6 @@
     "Walk the list once and ask what you would do with each reading if you already knew where the evens end.",
     "Two groups have to keep their internal order. That is exactly what you get by reading the list twice and appending to two collections.",
     "Collect the evens in one pass and the odds in another, then write the two back over the original list, evens first.",
-    "Build the result, then copy it back into `values` rather than rebinding: in Python `values[:] = result`, in Java `System.arraycopy`."
+    "Build the answer in order, then write it back over the argument's own elements rather than rebinding the name - the caller only sees changes made in place, and each language has one idiom for that."
   ]
 }

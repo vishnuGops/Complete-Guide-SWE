@@ -23,6 +23,7 @@ first later day that is strictly warmer, or `0` if there is none.
 ### Example 1
 
 Input: `temperatures = [30, 40, 35, 50]`
+
 Output: `[1, 2, 1, 0]`
 
 Day 0 waits one day for `40`. Day 1 waits two for `50`. Day 2 waits one for `50`.
@@ -31,6 +32,7 @@ Day 3 never gets warmer.
 ### Example 2
 
 Input: `temperatures = [5, 5, 5]`
+
 Output: `[0, 0, 0]`
 
 Equal is not warmer, so no day is ever answered.
@@ -38,6 +40,7 @@ Equal is not warmer, so no day is ever answered.
 ### Example 3
 
 Input: `temperatures = []`
+
 Output: `[]`
 
 No days, no waits.

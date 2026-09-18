@@ -3,7 +3,7 @@
   "id": "anagram-groups",
   "slug": "anagram-groups",
   "title": "Words Built From The Same Letters",
-  "version": 1,
+  "version": 2,
   "topic": "hashmap",
   "patterns": ["frequency map", "grouping", "canonical key"],
   "tier": "Medium",

@@ -36,3 +36,10 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         yield {"args": [[rng.randint(-(10**6), 10**6) for _ in range(n)]]}
 
     yield {"args": [_balanced(rng, 2000, -1000, 1000)], "name": "large row that balances"}
+
+    # The stated maximum (D21, P6-0): the statement allows 10^4 and the largest
+    # case here used to be 4001, so nothing tested what the constraint claims.
+    yield {
+        "args": [_balanced(rng, 10**4, -(10**6), 10**6)],
+        "name": "the stated maximum, balancing",
+    }

@@ -24,6 +24,7 @@ Return whether the fragment is balanced.
 ### Example 1
 
 Input: `text = "([]{})"`
+
 Output: `true`
 
 Every bracket closes in the reverse order it opened.
@@ -31,6 +32,7 @@ Every bracket closes in the reverse order it opened.
 ### Example 2
 
 Input: `text = "(]"`
+
 Output: `false`
 
 The round bracket is closed by a square one.
@@ -38,6 +40,7 @@ The round bracket is closed by a square one.
 ### Example 3
 
 Input: `text = ""`
+
 Output: `true`
 
 Nothing is open, so nothing is left unclosed.

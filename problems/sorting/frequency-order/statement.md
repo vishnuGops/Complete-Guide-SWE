@@ -22,6 +22,7 @@ The distinct values, ordered by descending count and then by ascending value.
 ### Example 1
 
 Input: `values = [4, 4, 1, 2, 2, 2]`
+
 Output: `[2, 4, 1]`
 
 `2` occurs three times, `4` twice, `1` once.
@@ -29,6 +30,7 @@ Output: `[2, 4, 1]`
 ### Example 2
 
 Input: `values = [5, 5, 3, 3]`
+
 Output: `[3, 5]`
 
 Both occur twice, so the smaller value leads.
@@ -36,6 +38,7 @@ Both occur twice, so the smaller value leads.
 ### Example 3
 
 Input: `values = []`
+
 Output: `[]`
 
 An empty log has no distinct values.

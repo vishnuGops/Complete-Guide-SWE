@@ -48,7 +48,9 @@ function makeStatement(exampleCount = 3): string {
   const examples = Array.from(
     { length: exampleCount },
     (_, i) =>
-      `### Example ${i + 1}\n\nInput: \`nums = [1, 2, 3]\`, \`target = 4\`\nOutput: \`[0, 2]\`\n`,
+      // A blank line between Input and Output, or markdown renders them as one
+      // paragraph and the P6-0 check rejects it - as it should.
+      `### Example ${i + 1}\n\nInput: \`nums = [1, 2, 3]\`, \`target = 4\`\n\nOutput: \`[0, 2]\`\n`,
   ).join('\n');
   return [
     'You are given a list of integers and a target.',
@@ -64,7 +66,10 @@ function makeStatement(exampleCount = 3): string {
     '',
     '## Constraints',
     '',
-    '- `2 <= nums.length <= 10^5`',
+    // Small enough that the fixture's own two-element tests reach it, so the
+    // D21 check passes on a fixture that is not pretending to be a real
+    // problem (P6-0).
+    '- `2 <= nums.length <= 3`',
     '',
     '## Examples',
     '',
@@ -75,7 +80,19 @@ function makeStatement(exampleCount = 3): string {
 const VALID_FILES: Record<string, string> = {
   'meta.json': `${JSON.stringify(VALID_META, null, 2)}\n`,
   'tests.json': `${JSON.stringify(makeTests(), null, 2)}\n`,
-  'hints.json': `${JSON.stringify({ hints: ['Think about complements.', 'Use a map.'] }, null, 2)}\n`,
+  // Four rungs, because that is the ladder the format asks for (P6-0).
+  'hints.json': `${JSON.stringify(
+    {
+      hints: [
+        'Look again at what you have already walked past.',
+        'A hash map from value to index answers "have I seen the complement" in constant time.',
+        'Scan once, checking for the complement before inserting the current value.',
+        'Insert after checking, so a value cannot pair with itself.',
+      ],
+    },
+    null,
+    2,
+  )}\n`,
   'statement.md': makeStatement(),
   'editorial.md': '## Approach\n\nOne pass with a hash map.\n\n## Complexity\n\n- Time: `O(n)`\n',
   'starter.py':

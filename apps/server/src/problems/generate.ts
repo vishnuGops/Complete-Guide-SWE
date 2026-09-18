@@ -337,7 +337,16 @@ export async function generateHiddenTests(
   options.onProgress?.(`${pkg.meta.slug}: running generator.py (seed ${seed})`);
   const generated = await runGenerator(pkg, { ...options, seed });
 
-  const seen = new Set<string>();
+  /*
+   * Duplicates go, and so do cases the samples already cover (ROADMAP P6-0).
+   *
+   * Nine of the twenty seed problems had their first named edge case in both
+   * pools, because that case is a good sample *and* a good generated case - so
+   * Submit ran it twice and the hidden count was higher than the number of
+   * distinct cases anyone had written. The samples are already run by Run and
+   * by Submit; a hidden copy adds nothing but a second execution.
+   */
+  const seen = new Set(pkg.tests.samples.map(caseKey));
   const unique = generated.filter((test) => {
     const key = caseKey(test);
     if (seen.has(key)) return false;

@@ -203,8 +203,11 @@ describe('streamFeedback', () => {
     const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
     await collect(streamFeedback(feedbackRequest({ revealedHints: 1 }), deps(fetch)));
 
-    expect(requests[0]).toContain('Think about complements.');
-    expect(requests[0]).not.toContain('Use a map.');
+    // The fixture's ladder, first rung only. It changed with P6-0 (four rungs,
+    // no code in any of them), so this names the rung rather than quoting a
+    // sentence that happened to be there.
+    expect(requests[0]).toContain('Look again at what you have already walked past.');
+    expect(requests[0]).not.toContain('A hash map from value to index');
   });
 
   it('turns a refused key into an error event, not a crash', async () => {

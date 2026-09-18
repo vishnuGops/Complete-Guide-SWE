@@ -3,7 +3,7 @@
   "id": "frequency-order",
   "slug": "frequency-order",
   "title": "Order By How Often",
-  "version": 1,
+  "version": 2,
   "topic": "sorting",
   "patterns": ["frequency map", "custom sort", "tie breaking"],
   "tier": "Medium",

@@ -89,4 +89,10 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         yield _sequence(rng, length, -50, 50)
     for _ in range(3):
         yield _sequence(rng, rng.randint(100, 400), -10**9, 10**9)
-    yield _sequence(rng, 2000, -10**6, 10**6)
+    # The stated maximum: "at most 10^4 calls in total" (D21, P6-0). Every
+    # operation is meant to be O(1), and a sequence at the stated length is the
+    # only test that would notice one that is not.
+    yield {
+        **_sequence(rng, 10**4, -(10**6), 10**6),
+        "name": "the stated maximum number of calls",
+    }

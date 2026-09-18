@@ -19,6 +19,15 @@ import sys
 import traceback
 
 
+# No `__pycache__` beside a problem (ROADMAP P6-0).
+#
+# Importing `generator.py` by path writes a `.pyc` next to it, inside the
+# problem package - and two of those were committed before anyone noticed.
+# Turning it off here costs a few milliseconds per generation and keeps the
+# catalogue a directory of text.
+sys.dont_write_bytecode = True
+
+
 def fail(message):
     sys.stderr.write(message + "\n")
     sys.exit(1)

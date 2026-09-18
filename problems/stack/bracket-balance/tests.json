@@ -21,7 +21,6 @@
     }
   ],
   "hidden": [
-    {"name":"empty fragment","args":[""],"expected":true},
     {"name":"one pair","args":["()"],"expected":true},
     {"name":"closed before opened","args":[")("],"expected":false},
     {"name":"never closed","args":["((("],"expected":false},

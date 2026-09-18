@@ -26,6 +26,7 @@ is none.
 ### Example 1
 
 Input: `values = [1, 3, 5, 7]`, `threshold = 4`
+
 Output: `2`
 
 `5` is the first reading that is not below `4`.
@@ -33,6 +34,7 @@ Output: `2`
 ### Example 2
 
 Input: `values = [1, 3, 5, 7]`, `threshold = 8`
+
 Output: `4`
 
 Nothing meets the threshold, so the answer is the length of the list.
@@ -40,6 +42,7 @@ Nothing meets the threshold, so the answer is the length of the list.
 ### Example 3
 
 Input: `values = [2, 2, 2]`, `threshold = 2`
+
 Output: `0`
 
 Equal counts as meeting the threshold, and the **first** such index is wanted.

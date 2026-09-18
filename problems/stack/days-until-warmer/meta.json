@@ -3,7 +3,7 @@
   "id": "days-until-warmer",
   "slug": "days-until-warmer",
   "title": "Days Until Warmer",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["monotonic stack", "next greater element", "single pass"],
   "tier": "Medium",

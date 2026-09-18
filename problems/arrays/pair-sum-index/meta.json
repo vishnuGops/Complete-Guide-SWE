@@ -3,7 +3,7 @@
   "id": "pair-sum-index",
   "slug": "pair-sum-index",
   "title": "Pair Sum Index",
-  "version": 1,
+  "version": 3,
   "topic": "arrays",
   "patterns": ["hash map", "complement lookup", "one pass"],
   "tier": "Easy",
@@ -14,5 +14,8 @@
   "expect": "return",
   "comparator": "exact",
   "related": ["shift-right-in-place"],
-  "targetComplexity": { "time": "O(n)", "space": "O(n)" }
+  "targetComplexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  }
 }

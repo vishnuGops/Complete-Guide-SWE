@@ -21,7 +21,6 @@
     }
   ],
   "hidden": [
-    {"name":"nothing booked","args":[[]],"expected":[]},
     {"name":"a single instant","args":[[[5,5]]],"expected":[[5,5]]},
     {"name":"one window inside another","args":[[[1,9],[2,3]]],"expected":[[1,9]]},
     {"name":"touching, given out of order","args":[[[4,5],[1,4]]],"expected":[[1,5]]},

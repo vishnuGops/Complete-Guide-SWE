@@ -27,6 +27,7 @@ The length of the longest stretch containing at most `limit` distinct values.
 ### Example 1
 
 Input: `values = [1, 2, 1, 3, 4]`, `limit = 2`
+
 Output: `3`
 
 `[1, 2, 1]` uses two distinct values and is three long. Extending it to include
@@ -35,6 +36,7 @@ Output: `3`
 ### Example 2
 
 Input: `values = [5, 5, 5]`, `limit = 1`
+
 Output: `3`
 
 Every reading is the same, so one distinct value covers the whole list.
@@ -42,6 +44,7 @@ Every reading is the same, so one distinct value covers the whole list.
 ### Example 3
 
 Input: `values = [1, 2, 3]`, `limit = 5`
+
 Output: `3`
 
 The allowance is larger than the number of distinct values, so nothing is
