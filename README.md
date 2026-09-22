@@ -1,7 +1,7 @@
 # DevProMax
 
 A local-first, LeetCode-style trainer for data-structures and algorithms interview prep, in
-**Python and Java**. 169 original problems, a judge that runs your code on your own machine, and an
+**Python and Java**. 171 original problems, a judge that runs your code on your own machine, and an
 on-demand LLM coach that reviews what you have written rather than handing you the answer.
 
 Nothing leaves the machine except a coach request you asked for, with a key you supplied.

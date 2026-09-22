@@ -1,16 +1,16 @@
 # CLAUDE.md — DevProMax
 
-Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` first; it holds the goals, the architecture decisions (D1–D18) and the prioritised task table.
+Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` first; it holds the goals, the architecture decisions (D1–D25) and the prioritised task table.
 
 ## What this project is
 
-DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists 169 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
+DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists 171 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **M4 reached (2026-09-18)**, and M5 all but done. The catalogue is 169 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5 has P8-1 (76 end-to-end tests with a flake budget), P8-2 (performance budgets and Lighthouse ≥ 90) and P8-3 (doctor, welcome, movable `data/`, backup and restore) done; P8-4 documentation is the last open one.
+Current state: **M4 reached (2026-09-18)**, and M5 complete apart from retiring `temp/`. The catalogue is 171 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5's P8-1 … P8-4 are done: end-to-end tests with a flake budget, performance budgets and Lighthouse ≥ 90, the doctor, welcome, movable `data/` and backups, and the README and CHANGELOG. Beyond v1, P9-1 (mock interview) and P9-4 (OpenAI-compatible provider) are done.
 
-Three tasks cannot be finished here and say so in their rows: **P7-10** needs measured human solving times, **P2-15** needs an owner decision about expressing cycles and graph node references on the wire, and **P8-5** (retire `temp/`) is blocked by the owner. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+Two tasks cannot be finished here and say so in their rows: **P7-10** needs measured human solving times, and **P8-5** (retire `temp/`) is blocked by the owner. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
 
-## Stack (decided, see ROADMAP D1–D17)
+## Stack (decided, see ROADMAP D1–D25)
 
 - TypeScript everywhere. npm workspaces: `apps/web` (React 19, Vite, React Router, TanStack Query, Monaco, Tailwind v4 tokens, Radix primitives), `apps/server` (Fastify; `judge/`, `problems/`, `coach/`, `db/`, `api/` folders inside), `packages/shared` (zod schemas + types). No other workspaces.
 - Persistence is `node:sqlite` with hand-written SQL and checked-in migrations. No ORM. `better-sqlite3` only as a documented fallback. Everything the app writes lives under `data/`; `DEVPROMAX_DATA` moves that directory and `DEVPROMAX_DB` moves just the database file (P8-3).
@@ -24,7 +24,8 @@ Three tasks cannot be finished here and say so in their rows: **P7-10** needs me
 ## Environment
 
 - Windows 11, PowerShell primary shell. Paths may contain spaces; always quote.
-- Installed: Node 24, npm 11, Python 3.14, OpenJDK 25. Not installed: Docker, pnpm, uv.
+- The project is worked on from two Windows 11 PCs. Both have Node 24, npm 11, Python 3.14 and a JDK 25. On the second (the home server, 4-core 2017 Xeon) the default `python` is 3.11 and must stay so, so Python 3.14 is uv-managed and the judge reaches it through the user env var `DEVPROMAX_PYTHON`; that machine also has uv and Docker Desktop. Not installed anywhere: pnpm. `npm run doctor` says what a machine is missing.
+- Keep timing assumptions honest for the slower machine: a reference solution that needs most of its time limit there is a problem to fix (P2-16), not a flake.
 - Supported user runtimes: Python ≥ 3.10, Java ≥ 21. Compile Java with `--release 21`; the harness must not use features newer than Python 3.10.
 - Judge and tests must work on both Windows and Linux; CI runs judge integration on both. Use `path.join`, spawn without `shell: true`, pass UTF-8 flags, kill process trees explicitly.
 
