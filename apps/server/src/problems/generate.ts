@@ -14,6 +14,7 @@ import {
 } from '@devpromax/shared';
 import { runProblemUnqueued, type JudgeTest } from '../judge/index.js';
 import { PYTHON_COMMAND } from '../judge/executors/python.js';
+import { childEnv } from '../judge/childEnv.js';
 import { runProcess } from '../judge/process.js';
 import type { ProblemPackage } from './types.js';
 
@@ -113,13 +114,21 @@ export async function runGenerator(
   try {
     const result = await runProcess({
       command: PYTHON_COMMAND,
-      // Same flags as the judge: UTF-8 whatever the console code page is, and
-      // isolated from the author's site-packages so a generator that works here
-      // works in CI.
+      // UTF-8 whatever the console code page is, and isolated from the author's
+      // site-packages so a generator that works here works in CI.
+      //
+      // Not `-I`, which the judge uses: `-I` implies `-E`, and `-E` ignores
+      // PYTHONHASHSEED. String hashing is randomised per process, so a
+      // generator that iterates a set of strings - `list({...})`, then
+      // `rng.choice` from it - produced different tests on every run and
+      // `problems:gen --check` could never pass for it. Pinning the seed makes
+      // set order part of the generator's deterministic output. `-s` keeps the
+      // user site-packages out, and `childEnv()` already drops every inherited
+      // `PYTHON*` variable, which is the rest of what `-E` was for.
       args: [
         '-X',
         'utf8',
-        '-I',
+        '-s',
         RUNNER,
         path.join(pkg.location.dir, 'generator.py'),
         String(seed),
@@ -127,6 +136,7 @@ export async function runGenerator(
         out,
       ],
       cwd: dir,
+      env: childEnv(process.env, { PYTHONHASHSEED: '0' }),
       timeoutMs: GENERATOR_TIMEOUT_MS,
     });
 
@@ -468,10 +478,26 @@ export function writeHiddenTests(
   if (!changed || previous.length === 0 || options.bumpVersion === false) return result;
 
   const metaPath = path.join(pkg.location.dir, 'meta.json');
-  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as Record<string, unknown>;
+  const raw = fs.readFileSync(metaPath, 'utf8');
+  const meta = JSON.parse(raw) as Record<string, unknown>;
   const version = (typeof meta['version'] === 'number' ? meta['version'] : 0) + 1;
-  meta['version'] = version;
-  fs.writeFileSync(metaPath, `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(metaPath, withVersion(raw, meta, version), 'utf8');
   result.version = version;
   return result;
+}
+
+/**
+ * `meta.json` with only its version changed.
+ *
+ * The file is hand-formatted - short arrays on one line, escapes as the author
+ * wrote them - and a re-serialised copy turns a one-number bump into a
+ * fifteen-line diff. So the number is replaced where it stands, and the file is
+ * re-serialised only when there is no `"version"` to replace.
+ */
+function withVersion(raw: string, meta: Record<string, unknown>, version: number): string {
+  const pattern = /("version"\s*:\s*)-?\d+/;
+  if (typeof meta['version'] === 'number' && pattern.test(raw)) {
+    return raw.replace(pattern, `$1${version}`);
+  }
+  return `${JSON.stringify({ ...meta, version }, null, 2)}\n`;
 }

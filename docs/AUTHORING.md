@@ -136,7 +136,10 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
 
 - Use the `rng` you are handed and nothing else. It is seeded from the slug, so
   a regeneration with no changes produces a byte-identical `tests.json` and a
-  diff only ever shows real change.
+  diff only ever shows real change. Iterating a `set` or `dict` of strings is
+  safe: generators run with `PYTHONHASHSEED=0`, so that order is fixed too
+  (P2-16). Anything else from outside the `rng` - the clock, `os.urandom`, the
+  global `random` module - breaks `problems:gen --check`.
 - **Never yield `expected`.** The reference is the oracle; a generator that
   asserted an answer would be a second source of truth, and the two would
   eventually disagree.

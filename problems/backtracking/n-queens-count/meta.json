@@ -13,6 +13,7 @@
   "entry": "queenPlacements",
   "expect": "return",
   "comparator": "exact",
+  "limits": { "timeoutMs": { "python": 15000 } },
   "related": ["all-permutations", "solve-the-grid"],
   "targetComplexity": {
     "time": "O(n!) with heavy pruning",

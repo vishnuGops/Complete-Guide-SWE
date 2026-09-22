@@ -90,6 +90,31 @@ describe('running the generator', () => {
     expect(JSON.stringify(second.hidden)).toBe(JSON.stringify(first.hidden));
   });
 
+  it('is deterministic even when the generator iterates a set of strings', async () => {
+    // String hashing is randomised per process unless PYTHONHASHSEED is fixed,
+    // so without it the order of this set - and therefore every case built from
+    // it - changes between two runs with the same seed. Twenty-six words make an
+    // accidental match between two random orders vanishingly unlikely.
+    const pkg = withGenerator(
+      [
+        'import random',
+        'from typing import Any, Dict, Iterator',
+        '',
+        '',
+        'def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:',
+        '    words = list({letter * 3 for letter in "abcdefghijklmnopqrstuvwxyz"})',
+        '    for index in range(4):',
+        '        values = [len(word) * (index + 1) + i for i, word in enumerate(words[index:index + 3])]',
+        '        yield {"args": [values + [ord(words[index][0])], values[0] + values[1]]}',
+      ].join('\n'),
+    );
+
+    const first = await generateHiddenTests(pkg, { seed: 7, crossCheck: false, workspaceRoot });
+    const second = await generateHiddenTests(pkg, { seed: 7, crossCheck: false, workspaceRoot });
+
+    expect(JSON.stringify(second.hidden)).toBe(JSON.stringify(first.hidden));
+  });
+
   it('defaults to a seed derived from the slug, so a rerun changes nothing', async () => {
     const pkg = withGenerator(UNIQUE_PAIRS);
     const result = await generateHiddenTests(pkg, { crossCheck: false, workspaceRoot });
@@ -274,5 +299,22 @@ describe('writing the result back', () => {
     expect(second.changed).toBe(false);
     expect(second.version).toBeUndefined();
     expect(loadProblem(pkg.location).pkg?.meta.version).toBe(first.version);
+  });
+
+  it('changes nothing in meta.json but the version number', async () => {
+    const pkg = withGenerator(UNIQUE_PAIRS);
+    const metaPath = path.join(pkg.location.dir, 'meta.json');
+    // Hand formatting of the kind a re-serialise destroys: an inline array and
+    // an escape the author chose to write.
+    const authored = fs
+      .readFileSync(metaPath, 'utf8')
+      .replace(/"version":\s*\d+/, '"version": 1')
+      .replace(/\n\}\s*$/, ',\n  "note": "O(n \\u00b7 m)", "tags": ["a", "b"]\n}\n');
+    fs.writeFileSync(metaPath, authored, 'utf8');
+    const result = await generateHiddenTests(pkg, { crossCheck: false, workspaceRoot });
+
+    writeHiddenTests(pkg, result.hidden);
+
+    expect(fs.readFileSync(metaPath, 'utf8')).toBe(authored.replace('"version": 1', '"version": 2'));
   });
 });

@@ -3,7 +3,7 @@
   "id": "word-break-possible",
   "slug": "word-break-possible",
   "title": "Can It Be Read At All",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["one-dimensional dp", "memoisation", "strings"],
   "tier": "Medium",

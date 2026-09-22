@@ -136,7 +136,11 @@ describe('validateCatalogueFull', () => {
     const report = await validateCatalogueFull({ workspaceRoot });
     expect(report.ok).toBe(true);
     expect(report.errorCount).toBe(0);
-  }, 180_000);
+    // Not a speed budget - P8-2 owns those - just long enough for 171 problems
+    // in two languages. Measured at 278 s on a 4-core 2017 Xeon, which the
+    // earlier 180 s did not survive; a timeout here also leaves judge children
+    // running, which is what then fails the cleanup with EPERM on Windows.
+  }, 600_000);
 
   it('skips reference execution for a problem that is already statically broken', async () => {
     // Spawning six interpreters to confirm that a package missing its tests.json

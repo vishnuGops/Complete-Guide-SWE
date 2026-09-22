@@ -3,7 +3,7 @@
   "id": "word-break-all",
   "slug": "word-break-all",
   "title": "Every Way To Read It",
-  "version": 1,
+  "version": 2,
   "topic": "backtracking",
   "patterns": ["backtracking", "memoisation", "strings"],
   "tier": "Hard",

@@ -1338,12 +1338,19 @@ describe('output and result bounds', () => {
      * The *bound* is asserted in `process.test.ts`, where a fake progress
      * function makes it deterministic. What matters here is that a real
      * uninterruptible call is reported as a timeout rather than as a crash.
+     *
+     * The call must hold the GIL without needing memory. It used to be
+     * `len([0] * 10**10)`, which asks for 80 GB in one allocation: on a machine
+     * whose commit limit is lower than that, Windows refuses at once, and the
+     * test saw a MemoryError (RE) in half a second instead of a hang. Summing a
+     * range runs entirely inside C, allocates nothing, and would take days.
      */
     const code = [
       'class Solution:',
       '    def solve(self, n):',
-      '        # Allocating a gigantic list holds the GIL inside C.',
-      '        return len([0] * (10 ** 10))',
+      '        # One C call that never returns to the eval loop, so the',
+      "        # harness's timer thread never gets the GIL.",
+      '        return sum(range(10 ** 15))',
       '',
     ].join('\n');
 

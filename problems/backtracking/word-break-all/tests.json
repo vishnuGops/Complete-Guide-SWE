@@ -30,28 +30,33 @@
       "expected": ["a b cd","a bcd"]
     },
     {
-      "args": ["aaaaab",["aa","b","abb","a"]],
+      "args": ["abbaaabba",["abb","a","b","aa"]],
       "expected": [
-        "a a a a a b",
-        "a a a aa b",
-        "a a aa a b",
-        "a aa a a b",
-        "a aa aa b",
-        "aa a a a b",
-        "aa a aa b",
-        "aa aa a b"
+        "a b b a a a b b a",
+        "a b b a a abb a",
+        "a b b a aa b b a",
+        "a b b aa a b b a",
+        "a b b aa abb a",
+        "abb a a a b b a",
+        "abb a a abb a",
+        "abb a aa b b a",
+        "abb aa a b b a",
+        "abb aa abb a"
       ]
     },
     {
-      "args": ["baaaa",["aa","b","abb","a"]],
+      "args": ["baaaa",["abb","a","b","aa"]],
       "expected": ["b a a a a","b a a aa","b a aa a","b aa a a","b aa aa"]
     },
-    {"args":["ccaabccab",["ab","aab","cc","a"]],"expected":["cc a ab cc ab","cc aab cc ab"]},
-    {"args":["baaabaab",["ab","aab","cc","a"]],"expected":[]},
-    {"args":["caabbabbbaa",["acc","abb","a","c","baa","bbc"]],"expected":["c a abb abb baa"]},
-    {"args":["caaaababacc",["acc","abb","a","c","baa","bbc"]],"expected":[]},
-    {"args":["bbbbaaaaaa",["dca","ca","bb","aaa","bd"]],"expected":["bb bb aaa aaa"]},
-    {"args":["ccddccbcdbaaab",["dca","ca","bb","aaa","bd"]],"expected":[]},
+    {"args":["ccaccaab",["aab","a","cc","ab"]],"expected":["cc a cc a ab","cc a cc aab"]},
+    {"args":["baaabaab",["aab","a","cc","ab"]],"expected":[]},
+    {
+      "args": ["acbbcbbcacc",["abb","bbc","c","a","acc","baa"]],
+      "expected": ["a c bbc bbc a c c","a c bbc bbc acc"]
+    },
+    {"args":["caaaababacc",["abb","bbc","c","a","acc","baa"]],"expected":[]},
+    {"args":["bbbbcaca",["bd","aaa","bb","ca","dca"]],"expected":["bb bb ca ca"]},
+    {"args":["ccddccbcdbaaab",["bd","aaa","bb","ca","dca"]],"expected":[]},
     {
       "name": "nineteen a's and a b, which no reading reaches",
       "args": ["aaaaaaaaaaaaaaaaaaab",["a","aa"]],
