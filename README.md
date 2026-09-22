@@ -32,6 +32,21 @@ It names what is missing, what to install, and the environment variable to set i
 point at a runtime you already have (`DEVPROMAX_PYTHON`, `DEVPROMAX_JAVA`, `DEVPROMAX_JAVAC`).
 Settings › Runtimes runs the same check from inside the app.
 
+### Running code in Docker instead
+
+If Docker is installed, the judge can run every step in a throwaway container with no network, a
+read-only filesystem and memory and process limits, and then needs no local Python or JDK:
+
+```
+docker pull python:3.14-slim
+docker pull eclipse-temurin:21-jdk
+DEVPROMAX_EXECUTOR=docker npm start       # PowerShell: $env:DEVPROMAX_EXECUTOR='docker'; npm start
+```
+
+It costs about a second per Run for the container starts. `npm run doctor` checks Docker and both
+images when the variable is set. The containers carry the label `devpromax.judge=1`, if something
+watching your Docker daemon should ignore them.
+
 ## The loop
 
 ![A problem, a solution, and the judge's verdict](docs/screenshots/workspace.png)

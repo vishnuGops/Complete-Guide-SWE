@@ -14,6 +14,12 @@ import { doctorSummary, runDoctor } from '../doctor.js';
  */
 const report = await runDoctor();
 
+process.stdout.write(
+  report.executor === 'docker'
+    ? '  The judge runs in Docker (DEVPROMAX_EXECUTOR=docker).\n\n'
+    : '  The judge runs on this machine.\n\n',
+);
+
 for (const check of report.checks) {
   const state = check.ok ? 'ok  ' : 'FAIL';
   const version = check.version === null ? 'no version' : check.version;
@@ -27,7 +33,11 @@ for (const check of report.checks) {
 }
 
 if (report.ok) {
-  process.stdout.write('\nBoth runtimes are usable; the judge will work.\n');
+  process.stdout.write(
+    report.executor === 'docker'
+      ? '\nDocker is running and both images are here; the judge will work.\n'
+      : '\nBoth runtimes are usable; the judge will work.\n',
+  );
 } else {
   process.stdout.write(`${doctorSummary(report) ?? ''}`);
   process.exitCode = 1;

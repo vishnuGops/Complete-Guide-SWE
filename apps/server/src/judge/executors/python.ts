@@ -5,8 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
 import { parseResultLines } from '../protocol.js';
 import type { HarnessPayload } from '../protocol.js';
-import { runProcess } from '../process.js';
-import { PYTHON_COMMAND } from './commands.js';
+import { localLauncher, type Launcher } from './launcher.js';
 import { compileTimeoutMessage } from './compileErrors.js';
 import type { Workspace } from '../workspace.js';
 import type { Executor, HarnessRun, PrepareResult } from './types.js';
@@ -48,96 +47,122 @@ except Exception as err:
 sys.exit(0)
 `.trim();
 
-export const pythonExecutor: Executor = {
-  language: 'python',
-  solutionFile: SOLUTION_FILE,
+/**
+ * The Python executor, over whichever launcher decides where it runs (P9-2).
+ * Every path a program is handed goes through `launcher.path`, because inside a
+ * container the workspace is not where this process created it.
+ */
+export function createPythonExecutor(launcher: Launcher): Executor {
+  return {
+    language: 'python',
+    solutionFile: SOLUTION_FILE,
+    startupMs: launcher.startupMs,
 
-  async prepare(
-    workspace: Workspace,
-    code: string,
-    compileTimeoutMs: number,
-  ): Promise<PrepareResult> {
-    const started = Date.now();
-    await workspace.write(SOLUTION_FILE, code);
-    await fs.copyFile(HARNESS_SOURCE, workspace.file(HARNESS_FILE));
+    async prepare(
+      workspace: Workspace,
+      code: string,
+      compileTimeoutMs: number,
+    ): Promise<PrepareResult> {
+      const started = Date.now();
+      await workspace.write(SOLUTION_FILE, code);
+      await fs.copyFile(HARNESS_SOURCE, workspace.file(HARNESS_FILE));
 
-    const result = await runProcess({
-      command: PYTHON_COMMAND,
-      // -X utf8 forces UTF-8 regardless of the console code page, which on
-      // Windows is otherwise cp1252 and mangles any non-ASCII source.
-      // -I isolates: no user site-packages, no PYTHON* env, and neither the cwd
-      // nor the script's own directory on `sys.path` - which is why the harness
-      // loads `solution.py` by path rather than importing it by name (P2-12).
-      args: ['-X', 'utf8', '-I', '-c', SYNTAX_CHECK, workspace.file(SOLUTION_FILE)],
-      cwd: workspace.dir,
-      timeoutMs: compileTimeoutMs,
-      outputCap: 16 * 1024,
-    });
+      const result = await launcher.run(
+        'python',
+        // -X utf8 forces UTF-8 regardless of the console code page, which on
+        // Windows is otherwise cp1252 and mangles any non-ASCII source.
+        // -I isolates: no user site-packages, no PYTHON* env, and neither the cwd
+        // nor the script's own directory on `sys.path` - which is why the harness
+        // loads `solution.py` by path rather than importing it by name (P2-12).
+        ['-X', 'utf8', '-I', '-c', SYNTAX_CHECK, launcher.path(workspace, SOLUTION_FILE)],
+        workspace,
+        { timeoutMs: compileTimeoutMs, outputCap: 16 * 1024 },
+      );
 
-    const timeMs = Date.now() - started;
-    if (result.code === 0) return { ok: true, timeMs };
+      const timeMs = Date.now() - started;
+      if (result.code === 0) return { ok: true, timeMs };
 
-    if (result.killed) {
+      if (result.killed) {
+        return {
+          ok: false,
+          timeMs,
+          errors: [{ message: compileTimeoutMessage(compileTimeoutMs), severity: 'error' }],
+          stderr: result.stderr,
+        };
+      }
+
+      const diagnostic = parseSyntaxDiagnostic(result.stdout);
       return {
         ok: false,
         timeMs,
-        errors: [{ message: compileTimeoutMessage(compileTimeoutMs), severity: 'error' }],
+        errors: diagnostic
+          ? [diagnostic]
+          : [
+              {
+                message: result.stderr.trim() || 'the solution could not be parsed',
+                severity: 'error',
+              },
+            ],
         stderr: result.stderr,
       };
-    }
+    },
 
-    const diagnostic = parseSyntaxDiagnostic(result.stdout);
-    return {
-      ok: false,
-      timeMs,
-      errors: diagnostic
-        ? [diagnostic]
-        : [
-            {
-              message: result.stderr.trim() || 'the solution could not be parsed',
-              severity: 'error',
-            },
-          ],
-      stderr: result.stderr,
-    };
-  },
+    async run(
+      workspace: Workspace,
+      payload: HarnessPayload,
+      wallClockMs: number,
+      stallMs?: number,
+    ): Promise<HarnessRun> {
+      // The harness opens these two by the paths in the payload, so they are
+      // named as the harness will see them.
+      const located: HarnessPayload = {
+        ...payload,
+        solutionPath: launcher.path(workspace, SOLUTION_FILE),
+        resultsPath: launcher.path(workspace, RESULTS_FILE),
+      };
+      await workspace.write(PAYLOAD_FILE, JSON.stringify(located));
+      await fs.rm(workspace.file(RESULTS_FILE), { force: true });
 
-  async run(
-    workspace: Workspace,
-    payload: HarnessPayload,
-    wallClockMs: number,
-    stallMs?: number,
-  ): Promise<HarnessRun> {
-    await workspace.write(PAYLOAD_FILE, JSON.stringify(payload));
-    await fs.rm(workspace.file(RESULTS_FILE), { force: true });
+      const result = await launcher.run(
+        'python',
+        [
+          '-X',
+          'utf8',
+          '-I',
+          launcher.path(workspace, HARNESS_FILE),
+          launcher.path(workspace, PAYLOAD_FILE),
+        ],
+        workspace,
+        {
+          timeoutMs: wallClockMs,
+          outputCap: OUTPUT_CAP_BYTES,
+          // Progress is the results file growing, which happens once per
+          // completed test (ROADMAP P2-13). Read on this side, at the real path.
+          ...(stallMs === undefined
+            ? {}
+            : {
+                stall: { ms: stallMs, progress: () => resultsSizeOf(workspace.file(RESULTS_FILE)) },
+              }),
+        },
+      );
 
-    const result = await runProcess({
-      command: PYTHON_COMMAND,
-      args: ['-X', 'utf8', '-I', workspace.file(HARNESS_FILE), workspace.file(PAYLOAD_FILE)],
-      cwd: workspace.dir,
-      timeoutMs: wallClockMs,
-      outputCap: OUTPUT_CAP_BYTES,
-      // Progress is the results file growing, which happens once per completed
-      // test (ROADMAP P2-13).
-      ...(stallMs === undefined
-        ? {}
-        : { stall: { ms: stallMs, progress: () => resultsSizeOf(workspace.file(RESULTS_FILE)) } }),
-    });
+      const records = parseResultLines(await workspace.read(RESULTS_FILE));
 
-    const records = parseResultLines(await workspace.read(RESULTS_FILE));
+      return {
+        records,
+        exitCode: result.code,
+        signal: result.signal,
+        killed: result.killed,
+        stdout: result.stdout,
+        stderr: result.stderr,
+        outputTruncated: result.outputTruncated,
+        elapsedMs: result.elapsedMs,
+      };
+    },
+  };
+}
 
-    return {
-      records,
-      exitCode: result.code,
-      signal: result.signal,
-      killed: result.killed,
-      stdout: result.stdout,
-      stderr: result.stderr,
-      outputTruncated: result.outputTruncated,
-      elapsedMs: result.elapsedMs,
-    };
-  },
-};
+export const pythonExecutor: Executor = createPythonExecutor(localLauncher);
 
 function parseSyntaxDiagnostic(
   stdout: string,

@@ -384,7 +384,8 @@ export type NextProblemResponse = z.infer<typeof nextProblemResponseSchema>;
 // GET /api/doctor
 // ---------------------------------------------------------------------------
 
-export const RUNTIME_NAMES = ['python', 'java', 'javac'] as const;
+/** `docker` is the daemon, checked only when the judge runs in containers (P9-2). */
+export const RUNTIME_NAMES = ['python', 'java', 'javac', 'docker'] as const;
 export const runtimeNameSchema = z.enum(RUNTIME_NAMES);
 export type RuntimeName = z.infer<typeof runtimeNameSchema>;
 
@@ -397,7 +398,10 @@ export type RuntimeName = z.infer<typeof runtimeNameSchema>;
  */
 export const runtimeCheckSchema = z.object({
   name: runtimeNameSchema,
-  /** What was actually run, including a `DEVPROMAX_*` override if one is set. */
+  /**
+   * What was actually run, including a `DEVPROMAX_*` override if one is set -
+   * or, for a runtime inside a Docker image, the image.
+   */
   command: z.string(),
   ok: z.boolean(),
   /** As the runtime reported it - "3.14", "21" - or null when it did not answer. */
@@ -407,7 +411,14 @@ export const runtimeCheckSchema = z.object({
 });
 export type RuntimeCheck = z.infer<typeof runtimeCheckSchema>;
 
+/** Where the judge runs code (ROADMAP P9-2), set by `DEVPROMAX_EXECUTOR`. */
+export const EXECUTOR_KINDS = ['local', 'docker'] as const;
+export const executorKindSchema = z.enum(EXECUTOR_KINDS);
+export type ExecutorKind = z.infer<typeof executorKindSchema>;
+
 export const runtimeReportSchema = z.object({
+  /** Which set of checks this is: the runtimes here, or Docker and its images. */
+  executor: executorKindSchema,
   checks: z.array(runtimeCheckSchema),
   ok: z.boolean(),
   checkedAt: z.iso.datetime(),

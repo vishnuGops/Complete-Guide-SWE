@@ -21,10 +21,11 @@ import { fakeServer, path, renderApp, someSettings } from '../../test/harness.js
  */
 
 /** A fake `PUT /api/settings` that merges like the real one, so the view updates. */
-function settingsServer(initial: SettingsView = someSettings()) {
+function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: RuntimeReport) {
   const state = { view: initial };
   const writes: SettingsUpdate[] = [];
-  const runtimes: RuntimeReport = {
+  const runtimes: RuntimeReport = runtimeReport ?? {
+    executor: 'local',
     checks: [
       {
         name: 'python',
@@ -331,5 +332,51 @@ describe('the runtime check (P8-3)', () => {
     // who has three of them.
     expect(screen.getAllByText('DEVPROMAX_JAVA').length).toBeGreaterThan(0);
     expect(screen.getByText(/Runs and submissions will fail/)).toBeInTheDocument();
+  });
+});
+
+describe('the runtime check in Docker mode (P9-2)', () => {
+  it('names images rather than interpreters, and the variables that change them', async () => {
+    settingsServer(someSettings(), {
+      executor: 'docker',
+      checks: [
+        {
+          name: 'docker',
+          command: 'docker',
+          ok: true,
+          version: '29.8.0',
+          problem: null,
+          guidance: null,
+        },
+        {
+          name: 'python',
+          command: 'python:3.14-slim',
+          ok: true,
+          version: '3.14',
+          problem: null,
+          guidance: null,
+        },
+        {
+          name: 'java',
+          command: 'eclipse-temurin:21-jdk',
+          ok: false,
+          version: null,
+          problem: 'The image eclipse-temurin:21-jdk is not on this machine.',
+          guidance: 'Run: docker pull eclipse-temurin:21-jdk',
+        },
+      ],
+      ok: false,
+      checkedAt: '2026-09-22T09:00:00.000Z',
+    });
+    renderApp(<Settings />);
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Check now' }));
+
+    expect(await screen.findByText(/runs your code in Docker containers/)).toBeInTheDocument();
+    expect(screen.getByText('Java image')).toBeInTheDocument();
+    expect(screen.getByText('Run: docker pull eclipse-temurin:21-jdk')).toBeInTheDocument();
+    // The escape hatch in Docker mode is another image, not another JDK.
+    expect(screen.getByText('DEVPROMAX_DOCKER_JAVA_IMAGE')).toBeInTheDocument();
+    expect(screen.queryByText('DEVPROMAX_JAVA')).not.toBeInTheDocument();
   });
 });

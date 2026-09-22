@@ -1,4 +1,4 @@
-import type { RuntimeCheck, RuntimeName } from '@devpromax/shared';
+import type { ExecutorKind, RuntimeCheck, RuntimeName } from '@devpromax/shared';
 import { useRuntimeCheck } from '../../api/hooks.js';
 import { Button, cn } from '../../ui/index.js';
 import { Section } from './fields.js';
@@ -15,19 +15,32 @@ import { Section } from './fields.js';
  * nobody opening Settings to change the font size should wait for that.
  */
 
-const LABEL: Record<RuntimeName, string> = {
-  python: 'Python',
-  java: 'Java',
-  javac: 'Java compiler',
+/*
+ * Per executor (ROADMAP P9-2): run locally, "python" is an interpreter on this
+ * machine and the escape hatch is the path to another one; run in Docker, it
+ * is an image, and the escape hatch is a different image.
+ */
+const LABEL: Record<ExecutorKind, Record<RuntimeName, string>> = {
+  local: { python: 'Python', java: 'Java', javac: 'Java compiler', docker: 'Docker' },
+  docker: { python: 'Python image', java: 'Java image', javac: 'Java image', docker: 'Docker' },
 };
 
-const OVERRIDE: Record<RuntimeName, string> = {
-  python: 'DEVPROMAX_PYTHON',
-  java: 'DEVPROMAX_JAVA',
-  javac: 'DEVPROMAX_JAVAC',
+const OVERRIDE: Record<ExecutorKind, Record<RuntimeName, string>> = {
+  local: {
+    python: 'DEVPROMAX_PYTHON',
+    java: 'DEVPROMAX_JAVA',
+    javac: 'DEVPROMAX_JAVAC',
+    docker: 'DEVPROMAX_DOCKER',
+  },
+  docker: {
+    python: 'DEVPROMAX_DOCKER_PYTHON_IMAGE',
+    java: 'DEVPROMAX_DOCKER_JAVA_IMAGE',
+    javac: 'DEVPROMAX_DOCKER_JAVA_IMAGE',
+    docker: 'DEVPROMAX_DOCKER',
+  },
 };
 
-function CheckRow({ check }: { check: RuntimeCheck }) {
+function CheckRow({ check, executor }: { check: RuntimeCheck; executor: ExecutorKind }) {
   return (
     <li className="border-border border-b py-2 last:border-b-0">
       <p className="flex items-baseline gap-2 text-sm">
@@ -35,7 +48,7 @@ function CheckRow({ check }: { check: RuntimeCheck }) {
           aria-hidden
           className={cn('size-1.5 shrink-0 rounded-full', check.ok ? 'bg-success' : 'bg-danger')}
         />
-        <span className="font-medium">{LABEL[check.name]}</span>
+        <span className="font-medium">{LABEL[executor][check.name]}</span>
         <span className="sr-only">{check.ok ? 'is usable' : 'has a problem'}</span>
         {check.version !== null && <span className="text-fg-muted tnum">{check.version}</span>}
         <code className="text-fg-subtle ml-auto font-mono text-2xs">{check.command}</code>
@@ -48,8 +61,8 @@ function CheckRow({ check }: { check: RuntimeCheck }) {
             <p className="text-fg-muted mt-1 text-xs">{check.guidance}</p>
           )}
           <p className="text-fg-subtle mt-1 text-2xs">
-            Or set <code className="font-mono">{OVERRIDE[check.name]}</code> and start the app
-            again.
+            Or set <code className="font-mono">{OVERRIDE[executor][check.name]}</code> and start the
+            app again.
           </p>
         </>
       )}
@@ -73,15 +86,23 @@ export function RuntimeSection() {
         </p>
       ) : (
         <>
+          {check.data.executor === 'docker' && (
+            <p className="text-fg-muted mb-1 text-xs">
+              The judge runs your code in Docker containers, so only Docker and its two images are
+              checked.
+            </p>
+          )}
           <ul>
             {check.data.checks.map((entry) => (
-              <CheckRow key={entry.name} check={entry} />
+              <CheckRow key={entry.name} check={entry} executor={check.data.executor} />
             ))}
           </ul>
           <p className="text-fg-subtle mt-2 text-2xs" role="status">
-            {check.data.ok
-              ? 'Both runtimes are usable.'
-              : 'Runs and submissions will fail until this is fixed.'}
+            {!check.data.ok
+              ? 'Runs and submissions will fail until this is fixed.'
+              : check.data.executor === 'docker'
+                ? 'Docker and both images are ready.'
+                : 'Both runtimes are usable.'}
           </p>
         </>
       )}

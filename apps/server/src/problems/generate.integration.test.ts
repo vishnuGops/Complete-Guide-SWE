@@ -315,6 +315,8 @@ describe('writing the result back', () => {
 
     writeHiddenTests(pkg, result.hidden);
 
-    expect(fs.readFileSync(metaPath, 'utf8')).toBe(authored.replace('"version": 1', '"version": 2'));
+    expect(fs.readFileSync(metaPath, 'utf8')).toBe(
+      authored.replace('"version": 1', '"version": 2'),
+    );
   });
 });

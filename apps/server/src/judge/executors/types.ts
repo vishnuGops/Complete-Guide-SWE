@@ -44,6 +44,13 @@ export interface Executor {
   readonly solutionFile: string;
 
   /**
+   * Extra time a step needs before it can produce anything - a container start
+   * (ROADMAP P9-2). The judge adds it to its own slack, never to the budget
+   * the user's code is timed against.
+   */
+  readonly startupMs: number;
+
+  /**
    * Writes the harness and compiles if the language needs it. Runs once per
    * judge run, never per test.
    */

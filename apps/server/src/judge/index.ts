@@ -19,8 +19,10 @@ import {
   type Verdict,
 } from '@devpromax/shared';
 import { compareValues, loadChecker, type CompareResult } from './comparators.js';
-import { javaExecutor } from './executors/java.js';
-import { pythonExecutor } from './executors/python.js';
+import { EXECUTOR_KIND, type ExecutorKind } from './executors/commands.js';
+import { dockerLauncher } from './executors/docker.js';
+import { createJavaExecutor, javaExecutor } from './executors/java.js';
+import { createPythonExecutor, pythonExecutor } from './executors/python.js';
 import type { Executor } from './executors/types.js';
 import {
   HARNESS_EXIT,
@@ -35,12 +37,26 @@ import { createWorkspace, type Workspace } from './workspace.js';
 
 export { RunQueue } from './queue.js';
 export { killLiveChildren } from './process.js';
+export { JudgeUnavailableError } from './executors/launcher.js';
+export { EXECUTOR_KIND, type ExecutorKind } from './executors/commands.js';
 export { sweepStaleWorkspaces } from './workspace.js';
 
-const EXECUTORS: Record<Language, Executor> = {
-  python: pythonExecutor,
-  java: javaExecutor,
+/**
+ * The executors, by where they run (ROADMAP P9-2). The same two languages
+ * either way; only the launcher underneath differs, which is the whole reason
+ * the executor interface was kept this small.
+ */
+const EXECUTORS: Record<ExecutorKind, Record<Language, Executor>> = {
+  local: { python: pythonExecutor, java: javaExecutor },
+  docker: {
+    python: createPythonExecutor(dockerLauncher),
+    java: createJavaExecutor(dockerLauncher),
+  },
 };
+
+function executorFor(language: Language, kind: ExecutorKind = EXECUTOR_KIND): Executor {
+  return EXECUTORS[kind][language];
+}
 
 /**
  * Slack added to the sum of the per-test budgets before the judge's own
@@ -76,6 +92,11 @@ export interface RunProblemOptions {
   /** Overridden by tests so runs do not touch `data/`. */
   workspaceRoot?: string;
   /**
+   * Where the code runs. Defaults to `DEVPROMAX_EXECUTOR`; the Docker suite
+   * sets it so one process can exercise both.
+   */
+  executor?: ExecutorKind;
+  /**
    * Reveal every hidden test's input and expectation. Off by default: only the
    * first failing hidden test is revealed (ROADMAP P2-6). The validator turns it
    * on, because an author debugging their own problem needs to see everything.
@@ -105,7 +126,7 @@ export async function runProblem(options: RunProblemOptions): Promise<RunResult>
 
 export async function runProblemUnqueued(options: RunProblemOptions): Promise<RunResult> {
   const { meta, language, code, tests, kind } = options;
-  const executor = EXECUTORS[language];
+  const executor = executorFor(language, options.executor);
   const multiplier = options.timeoutMultiplier ?? 1;
   const perTestMs = Math.round(timeoutFor(meta.limits, language) * multiplier);
   const started = Date.now();
@@ -246,7 +267,7 @@ async function executeAll(
     // without this a single hang costs the batch's whole wall clock - over a
     // minute for twenty hidden tests - before the isolation fallback re-runs
     // them one at a time.
-    perTestMs + STALL_SLACK_MS,
+    perTestMs + STALL_SLACK_MS + executor.startupMs,
   );
 
   let outputTruncated = batch.outputTruncated;
@@ -543,9 +564,9 @@ export { OUTPUT_CAP_BYTES };
 export async function checkCompiles(
   language: Language,
   code: string,
-  options: { workspaceRoot?: string; timeoutMultiplier?: number } = {},
+  options: { workspaceRoot?: string; timeoutMultiplier?: number; executor?: ExecutorKind } = {},
 ): Promise<{ ok: boolean; errors: CompileError[]; timeMs: number }> {
-  const executor = EXECUTORS[language];
+  const executor = executorFor(language, options.executor);
   const workspace = await createWorkspace(options.workspaceRoot);
   try {
     const prepared = await executor.prepare(

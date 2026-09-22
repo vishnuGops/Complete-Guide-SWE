@@ -1,6 +1,14 @@
 import { spawn } from 'node:child_process';
 import type { RuntimeCheck, RuntimeReport } from '@devpromax/shared';
-import { JAVAC_COMMAND, JAVA_COMMAND, PYTHON_COMMAND } from './judge/executors/commands.js';
+import {
+  DOCKER_COMMAND,
+  DOCKER_IMAGES,
+  EXECUTOR_KIND,
+  JAVAC_COMMAND,
+  JAVA_COMMAND,
+  PYTHON_COMMAND,
+  type ExecutorKind,
+} from './judge/executors/commands.js';
 
 /**
  * The first-run doctor (ROADMAP P8-3).
@@ -222,21 +230,133 @@ async function checkJava(
   return { ...base, ok: true, version: String(version), problem: null, guidance: null };
 }
 
+// ---------------------------------------------------------------------------
+// Docker (ROADMAP P9-2)
+// ---------------------------------------------------------------------------
+
 /**
- * Checks all three, concurrently.
+ * The language version an image was built with, from the variables the
+ * official images set: `PYTHON_VERSION=3.14.0` in `python:*`, and
+ * `JAVA_VERSION=jdk-21.0.8+9` in `eclipse-temurin:*`.
  *
- * Java and Python are independent, and doing them in series puts two JVM
- * start-ups in the way of the first page load.
+ * Read from the image's configuration rather than by running it, because
+ * running it means starting a container - which is slower, and which anything
+ * watching the daemon would see as a service starting.
  */
-export async function runDoctor(): Promise<RuntimeReport> {
-  const [python, java, javac] = await Promise.all([
-    checkPython(),
-    checkJava('java', JAVA_COMMAND, ['-version']),
-    checkJava('javac', JAVAC_COMMAND, ['-version']),
+export function parseImageVersion(env: string, language: 'python' | 'java'): string | null {
+  if (language === 'python') {
+    const match = /^PYTHON_VERSION=(\d+)\.(\d+)/m.exec(env);
+    return match ? `${match[1]!}.${match[2]!}` : null;
+  }
+  const match = /^JAVA_VERSION=(?:jdk-?)?(\d+)/m.exec(env);
+  return match ? match[1]! : null;
+}
+
+async function checkDockerDaemon(): Promise<RuntimeCheck> {
+  const result = await probe(DOCKER_COMMAND, ['version', '--format', '{{.Server.Version}}']);
+  const base = { name: 'docker' as const, command: DOCKER_COMMAND };
+  const version = result.stdout.trim();
+
+  if (result.failure !== undefined) {
+    return {
+      ...base,
+      ok: false,
+      version: null,
+      problem: `\`${DOCKER_COMMAND} version\` failed: ${result.failure}.`,
+      guidance:
+        'Install Docker (Docker Desktop on Windows and macOS), set DEVPROMAX_DOCKER to its full path, or unset DEVPROMAX_EXECUTOR to run the judge locally.',
+    };
+  }
+  if (result.code !== 0 || version === '') {
+    return {
+      ...base,
+      ok: false,
+      version: null,
+      problem: 'Docker is installed, and its daemon is not running.',
+      guidance:
+        'Start Docker Desktop (or the Docker service), or unset DEVPROMAX_EXECUTOR to run the judge locally.',
+    };
+  }
+  return { ...base, ok: true, version, problem: null, guidance: null };
+}
+
+async function checkImage(language: 'python' | 'java'): Promise<RuntimeCheck> {
+  const image = DOCKER_IMAGES[language];
+  const variable =
+    language === 'python' ? 'DEVPROMAX_DOCKER_PYTHON_IMAGE' : 'DEVPROMAX_DOCKER_JAVA_IMAGE';
+  const base = { name: language, command: image };
+  const result = await probe(DOCKER_COMMAND, [
+    'image',
+    'inspect',
+    '--format',
+    '{{range .Config.Env}}{{println .}}{{end}}',
+    image,
   ]);
 
-  const checks = [python, java, javac];
+  if (result.failure !== undefined || result.code !== 0) {
+    return {
+      ...base,
+      ok: false,
+      version: null,
+      problem: `The image ${image} is not on this machine.`,
+      guidance: `Run: docker pull ${image} - or set ${variable} to an image you have.`,
+    };
+  }
+
+  const version = parseImageVersion(result.stdout, language);
+  if (version === null) {
+    return {
+      ...base,
+      ok: false,
+      version: null,
+      problem: `${image} does not say which ${language === 'python' ? 'Python' : 'Java'} it has.`,
+      guidance: `Set ${variable} to an official ${language === 'python' ? 'python' : 'eclipse-temurin JDK'} image.`,
+    };
+  }
+
+  const recent =
+    language === 'python'
+      ? (() => {
+          const [major, minor] = version.split('.').map(Number) as [number, number];
+          return (
+            major > MINIMUM_PYTHON.major ||
+            (major === MINIMUM_PYTHON.major && minor >= MINIMUM_PYTHON.minor)
+          );
+        })()
+      : Number(version) >= MINIMUM_JAVA;
+
+  if (!recent) {
+    return {
+      ...base,
+      ok: false,
+      version,
+      problem: `${image} has ${language === 'python' ? 'Python' : 'Java'} ${version}, older than the judge needs.`,
+      guidance: `Set ${variable} to an image with ${language === 'python' ? 'Python 3.10' : 'a JDK 21'} or newer.`,
+    };
+  }
+  return { ...base, ok: true, version, problem: null, guidance: null };
+}
+
+/**
+ * Checks everything the configured executor needs, concurrently.
+ *
+ * Locally that is the three runtimes: Java and Python are independent, and
+ * doing them in series puts two JVM start-ups in the way of the first page
+ * load. In Docker it is the daemon and the two images - and not the local
+ * runtimes, which the judge then never touches.
+ */
+export async function runDoctor(executor: ExecutorKind = EXECUTOR_KIND): Promise<RuntimeReport> {
+  const checks =
+    executor === 'docker'
+      ? await Promise.all([checkDockerDaemon(), checkImage('python'), checkImage('java')])
+      : await Promise.all([
+          checkPython(),
+          checkJava('java', JAVA_COMMAND, ['-version']),
+          checkJava('javac', JAVAC_COMMAND, ['-version']),
+        ]);
+
   return {
+    executor,
     checks,
     ok: checks.every((check) => check.ok),
     checkedAt: new Date().toISOString(),

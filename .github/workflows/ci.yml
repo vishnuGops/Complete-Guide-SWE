@@ -156,6 +156,42 @@ jobs:
       - name: Tests still match their generators
         run: npm run problems:gen -- --check
 
+  # The Docker executor (P9-2) against a real daemon. Linux only: the hosted
+  # Windows runners have Docker, but only for Windows containers, and the judge
+  # images are Linux ones. Nothing here needs a local Python or JDK - which is
+  # the point of the executor - so neither setup action runs.
+  docker:
+    name: docker executor (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The executor never pulls during a run (`--pull never`), so the images
+      # have to be here first. Keep in step with DOCKER_IMAGES in
+      # apps/server/src/judge/executors/commands.ts.
+      - name: Pull the judge images
+        run: |
+          docker pull python:3.14-slim
+          docker pull eclipse-temurin:21-jdk
+
+      - run: npm ci
+
+      - name: Doctor, in Docker mode
+        run: npm run doctor
+        env:
+          DEVPROMAX_EXECUTOR: docker
+
+      - name: Docker executor integration tests
+        run: npx vitest run --project server docker.integration.test
+        env:
+          DEVPROMAX_DOCKER_TESTS: '1'
+
   e2e:
     name: e2e (ubuntu-latest)
     runs-on: ubuntu-latest

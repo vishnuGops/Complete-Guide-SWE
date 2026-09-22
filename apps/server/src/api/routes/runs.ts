@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { runBodySchema, type Language, type RunKind, type RunResult } from '@devpromax/shared';
 import { HttpError, badRequest, notFound, parseInput } from '../errors.js';
+import { JudgeUnavailableError } from '../../judge/executors/launcher.js';
 import { CustomTestError, ProblemNotFoundError, executeRun } from '../runService.js';
 import type { ApiDeps } from './types.js';
 
@@ -51,6 +52,7 @@ export function registerRunRoutes(app: FastifyInstance, deps: ApiDeps): void {
         );
       }
       if (error instanceof HttpError) throw error;
+      if (error instanceof JudgeUnavailableError) throw error;
 
       /*
        * Anything else - a missing interpreter, an unreadable problem package -

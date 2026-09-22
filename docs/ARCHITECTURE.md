@@ -39,10 +39,13 @@ paranoid or inadequate.
 
 **Not in scope.** Protecting the user from their own solutions. It is their code,
 their machine, their account. A solution that deletes a file or opens a socket is
-doing something the user could have done in a terminal a moment earlier. There is
-no sandbox on this machine to provide one with (no Docker — see D3), and
-pretending otherwise would be worse than being clear about it. The `data/judge/`
-workspace is isolation for _tidiness_, not for security.
+doing something the user could have done in a terminal a moment earlier. By
+default there is no sandbox, and pretending otherwise would be worse than being
+clear about it: the `data/judge/` workspace is isolation for _tidiness_, not for
+security. Where Docker is installed, `DEVPROMAX_EXECUTOR=docker` runs every judge
+step in a locked-down container instead (§3.6, D3) — for someone pasting in code
+they did not write, or who simply wants the line drawn. It is an option, not the
+baseline this model relies on.
 
 **In scope, and the reason the hardening exists.** Stopping anything else on the
 machine — above all, a web page in another browser tab — from reaching the
@@ -181,6 +184,56 @@ the judge rather than in the service, because it has to apply to everything that
 runs hidden tests — including the validator, which turns it off deliberately.
 
 ---
+
+### 3.6 The Docker executor (optional)
+
+`DEVPROMAX_EXECUTOR=docker` swaps _where_ code runs and nothing else (P9-2). The
+executor interface was kept small for exactly this: the Python and Java
+executors are built over a `Launcher` (`judge/executors/launcher.ts`), which
+answers two questions — what a workspace file is called from the program's
+side, and how to start a program — and the Docker launcher answers them with
+`/ws/...` and `docker run`. Harness, protocol, verdicts, comparators and the
+isolation fallback are the same code in both modes; the integration suite runs
+the pilots through containers and expects the local executor's verdicts.
+
+Every judge step (syntax check, compile, a batch of tests) is one
+`docker run --rm` of a stock image — `python:3.14-slim` and
+`eclipse-temurin:21-jdk` by default, overridable with
+`DEVPROMAX_DOCKER_PYTHON_IMAGE` / `DEVPROMAX_DOCKER_JAVA_IMAGE` — with the
+workspace bind-mounted at `/ws`. One container per step rather than a long-lived
+one per run, because the judge kills steps (stall, timeout, isolation) and a
+killed container is gone, where a killed `docker exec` is not.
+
+What each container is denied:
+
+| Flag                                                    | Stops                                                          |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| `--network none`                                        | exfiltration, downloads, reaching this API on 127.0.0.1        |
+| `--read-only`, tmpfs `/tmp` (64 MB)                     | writes anywhere but the workspace the judge deletes            |
+| `--cap-drop ALL`, `no-new-privileges`, non-root         | escalation inside the container                                |
+| `--memory 1g` (no swap), `--pids-limit 256`, `--cpus 2` | a fork bomb or allocation storm reaching the machine           |
+| only `HOME` and `LANG` via `--env`                      | the server's environment — P2-11's allow-list, made structural |
+| `timeout -s KILL` around the program                    | a container outliving a server that died without killing it    |
+| `--pull never`                                          | a 200 MB download disguised as a compile timeout               |
+
+The user is the server's own `uid:gid` on Linux, where bind mounts keep real
+ownership and a root-written `.class` file would be undeletable, and `nobody`
+under Docker Desktop, whose file sharing ignores ownership.
+
+Killing the `docker` client does not stop its container, so `runProcess` takes an
+`onKill` hook that every kill path calls — the wall clock, the stall watchdog and
+Ctrl+C — and the launcher uses it to `docker kill` the container by name. A
+failure of Docker itself (daemon down, image missing, an image without `javac`)
+is a `JudgeUnavailableError`, answered as `503 JudgeUnavailable` with the fix in
+the message; a solution's own failure, including one that exits 125 or prints
+the daemon's words, is never mistaken for one. The doctor checks the daemon and
+reads each image's language version from its configuration, so checking never
+starts a container.
+
+Every container carries the label `devpromax.judge=1`, so anything watching the
+daemon can tell a judge step from a service. It costs about a second per Run on
+Docker Desktop (two container starts): measured 2026-09-22 on a 4-core Xeon,
+Python 0.26 s → 1.2 s and Java 1.2 s → 2.1 s.
 
 ## 4. Persistence
 
@@ -365,6 +418,7 @@ Two workflows, both in `.github/workflows/`.
 | `static` | `ubuntu-latest`, `windows-latest` | `lint`, `format:check`, `typecheck`, and `build` on Ubuntu only |
 | `test`   | `ubuntu-latest`, `windows-latest` | `test:unit`, `test:integration`, `problems:validate`            |
 | `e2e`    | `ubuntu-latest`                   | Playwright golden paths, report uploaded as an artifact         |
+| `docker` | `ubuntu-latest`                   | pulls the judge images, `doctor` and the Docker executor suite  |
 
 `nightly-e2e.yml` runs the Playwright suite on `windows-latest` at 06:00 UTC and
 on demand. Windows E2E is slow and the flakiest lane we have, so it does not

@@ -11,7 +11,7 @@ import { serverConfig } from './config.js';
 import { doctorSummary, runDoctor } from './doctor.js';
 import { createDatabase, type Repositories } from './db/index.js';
 import { logger } from './logger.js';
-import { killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
+import { EXECUTOR_KIND, killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
 import { hasWebBuild, registerWeb } from './api/web.js';
 
 export interface BuildOptions {
@@ -191,6 +191,9 @@ export async function start() {
         `DevProMax API is running at ${url}`,
         'No web build found - run `npm run build` to serve the app from here.',
       ];
+  // Said only when it is not the default: someone who set DEVPROMAX_EXECUTOR
+  // wants to see that it took, and nobody else needs a line about it.
+  if (EXECUTOR_KIND === 'docker') lines.push('The judge runs code in Docker containers.');
   process.stdout.write(['', ...lines, '', ''].join('\n'));
 
   /*
@@ -202,14 +205,15 @@ export async function start() {
    * fine every time is a start-up nobody reads, and then the once it matters
    * the bad news is in the same place as the noise.
    */
-  if (process.env['DEVPROMAX_NO_DOCTOR'] !== '1') void runDoctor()
-    .then((report) => {
-      const summary = doctorSummary(report);
-      if (summary !== null) process.stdout.write(summary);
-    })
-    .catch((error: unknown) => {
-      logger.warn({ err: error }, 'the runtime check could not be run');
-    });
+  if (process.env['DEVPROMAX_NO_DOCTOR'] !== '1')
+    void runDoctor()
+      .then((report) => {
+        const summary = doctorSummary(report);
+        if (summary !== null) process.stdout.write(summary);
+      })
+      .catch((error: unknown) => {
+        logger.warn({ err: error }, 'the runtime check could not be run');
+      });
 }
 
 const isEntrypoint =

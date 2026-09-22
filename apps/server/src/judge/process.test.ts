@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runProcess } from './process.js';
+import { killLiveChildren, runProcess } from './process.js';
 
 const NODE = process.execPath;
 
@@ -233,5 +233,75 @@ describe('runProcess stall detection', () => {
 
     expect(result.killed).toBe(false);
     expect(result.stdout).toBe('ok');
+  });
+});
+
+describe('runProcess onKill (P9-2)', () => {
+  /*
+   * Killing the `docker` client does not stop the container it started, so the
+   * Docker executor hangs the real kill on this hook. Every path that kills a
+   * child has to call it, or that path leaves a container running.
+   */
+  it('is called when the wall clock kills the child', async () => {
+    let calls = 0;
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      cwd: process.cwd(),
+      timeoutMs: 400,
+      onKill: () => {
+        calls += 1;
+      },
+    });
+    expect(result.killed).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  it('is called when the stall watchdog kills the child', async () => {
+    let calls = 0;
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+      stall: { ms: 400, progress: () => 0 },
+      onKill: () => {
+        calls += 1;
+      },
+    });
+    expect(result.killed).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  it('is called by killLiveChildren, which is what Ctrl+C runs', async () => {
+    let calls = 0;
+    const running = runProcess({
+      command: NODE,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+      onKill: () => {
+        calls += 1;
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(killLiveChildren()).toBeGreaterThanOrEqual(1);
+    await running;
+    expect(calls).toBe(1);
+  });
+
+  it('is not called for a child that exits by itself', async () => {
+    let calls = 0;
+    await runProcess({
+      command: NODE,
+      args: ['-e', 'process.exit(0)'],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      onKill: () => {
+        calls += 1;
+      },
+    });
+    expect(calls).toBe(0);
   });
 });

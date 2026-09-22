@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { ApiError, ApiIssue } from '@devpromax/shared';
+import { JudgeUnavailableError } from '../judge/executors/launcher.js';
 
 /**
  * One error shape for the whole API (`ApiError` in `packages/shared`).
@@ -113,6 +114,18 @@ export function applyErrorHandling(app: FastifyInstance): void {
       // cannot bury a real error in the same stream.
       request.log.debug({ err: error, url: request.url }, 'request rejected');
       await reply.code(error.statusCode).send(error.toBody());
+      return;
+    }
+
+    // The machine cannot run code right now - Docker stopped, an image not
+    // pulled (ROADMAP P9-2). Not a bug, so not a 500, and the message is
+    // written for the user: it names the fix.
+    if (error instanceof JudgeUnavailableError) {
+      request.log.warn({ err: error, url: request.url }, 'judge unavailable');
+      await reply.code(503).send({
+        error: 'JudgeUnavailable',
+        message: error.message,
+      } satisfies ApiError);
       return;
     }
 

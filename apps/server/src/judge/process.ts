@@ -30,6 +30,15 @@ export interface SpawnOptions {
    * results file, which grows once per completed test.
    */
   stall?: { ms: number; progress: () => number };
+  /**
+   * Called whenever the judge kills this child - its watchdog, the stall
+   * watchdog, or Ctrl+C - after the process tree is killed (ROADMAP P9-2).
+   *
+   * For children whose tree is not the whole story: killing the `docker`
+   * client does not stop the container it started, so the Docker executor
+   * uses this to `docker kill` the container by name. Must not throw.
+   */
+  onKill?: () => void;
 }
 
 export interface SpawnResult {
@@ -52,12 +61,15 @@ export interface SpawnResult {
  * task list. The set is small by construction (the queue is two wide by
  * default) and entries remove themselves when the child exits.
  */
-const live = new Set<ChildProcess>();
+const live = new Map<ChildProcess, (() => void) | undefined>();
 
-/** Kills every judge child and everything they started. */
+/** Kills every judge child and everything they started, containers included. */
 export function killLiveChildren(): number {
   const count = live.size;
-  for (const child of live) killTree(child);
+  for (const [child, onKill] of live) {
+    killTree(child);
+    onKill?.();
+  }
   live.clear();
   return count;
 }
@@ -137,13 +149,23 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       windowsHide: true,
     });
 
-    live.add(child);
+    live.set(child, options.onKill);
 
     let stdout = '';
     let stderr = '';
     let outputTruncated = false;
     let killed = false;
     let settled = false;
+
+    // Once. The stall timer keeps ticking between the kill and the child's
+    // `close`, and every tick past the budget would otherwise kill again - for
+    // the Docker executor, one more `docker kill` process per tick.
+    const kill = (): void => {
+      if (killed) return;
+      killed = true;
+      killTree(child);
+      options.onKill?.();
+    };
 
     const append = (current: string, chunk: string): string => {
       if (current.length >= cap) {
@@ -167,10 +189,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       stderr = append(stderr, chunk);
     });
 
-    const watchdog = setTimeout(() => {
-      killed = true;
-      killTree(child);
-    }, options.timeoutMs);
+    const watchdog = setTimeout(kill, options.timeoutMs);
 
     /*
      * The stall watchdog (P2-13).
@@ -193,10 +212,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
             return;
           }
           sinceProgress += stallTick;
-          if (sinceProgress >= stall.ms) {
-            killed = true;
-            killTree(child);
-          }
+          if (sinceProgress >= stall.ms) kill();
         }, stallTick)
       : undefined;
 
