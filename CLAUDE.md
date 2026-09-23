@@ -6,9 +6,9 @@ Working agreement for AI-assisted development on this repo. Read `ROADMAP.md` fi
 
 DevProMax is a local-first, LeetCode-style DSA training app for **Python and Java**. A React web UI lists 171 original problems across 14 topics, sorted by difficulty; users run and submit code against hidden tests in a local judge; an on-demand **AI Help** button sends the current code to an LLM coach (user-supplied Anthropic or Gemini key) that responds with rubric feedback and hints until the solution is Mastered.
 
-Current state: **M4 reached (2026-09-18)**, and M5 complete apart from retiring `temp/`. The catalogue is 171 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5's P8-1 … P8-4 are done: end-to-end tests with a flake budget, performance budgets and Lighthouse ≥ 90, the doctor, welcome, movable `data/` and backups, and the README and CHANGELOG. Beyond v1, P9-1 (mock interview), P9-2 (Docker executor) and P9-4 (OpenAI-compatible provider) are done.
+Current state: **M5 reached (2026-09-22)** — release 1.0; M4 was reached 2026-09-18. The catalogue is 171 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5's P8-1 … P8-5 are done: end-to-end tests with a flake budget, performance budgets and Lighthouse ≥ 90, the doctor, welcome, movable `data/` and backups, the README and CHANGELOG, and the legacy `temp/` archive retired (git history keeps it; last at `2c01d25`). Beyond v1, P9-1 (mock interview), P9-2 (Docker executor) and P9-4 (OpenAI-compatible provider) are done.
 
-Two tasks cannot be finished here and say so in their rows: **P7-10** needs measured human solving times, and **P8-5** (retire `temp/`) is blocked by the owner. Legacy content is archived in `temp/`, kept until the app is built out, and must not be edited.
+One task cannot be finished here and says so in its row: **P7-10** needs measured human solving times.
 
 ## Stack (decided, see ROADMAP D1–D25)
 
@@ -75,7 +75,6 @@ Do not invent others without adding them here.
 
 ## Do not
 
-- Edit or delete anything in `temp/` (owner wants it kept until the app is built out, see P8-5).
 - Add a UI component library (shadcn, MUI, Chakra, Ant). Radix primitives + our tokens only.
 - Add a second backend language, a second package manager, an ORM, or OpenAPI generation.
 - Run user-submitted code outside the judge's workspace/limit machinery, or expose the server beyond `127.0.0.1`.

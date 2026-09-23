@@ -127,4 +127,3 @@ npm run perf:lighthouse    # performance and accessibility, both themes, on the 
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — the catalogue, topic by topic
 - [docs/DESIGN.md](docs/DESIGN.md) — the design system and its review checklist
 - [docs/COACH_PROMPTS.md](docs/COACH_PROMPTS.md) — how the coach is instructed
-- [temp/](temp/) — archived content from the previous version of this repo; not used by the app
