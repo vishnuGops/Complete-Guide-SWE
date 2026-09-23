@@ -6,7 +6,7 @@
 together to the first position where they differ: that pair of letters is an
 ordering fact, and **nothing after that position tells you anything**. If they
 never differ within the shorter word's length, the pair says nothing about
-letters at all — but if the longer word comes *first*, the dictionary is
+letters at all — but if the longer word comes _first_, the dictionary is
 impossible, because no alphabet puts a word before its own prefix.
 
 That second case is the one that is skipped, which is why Example 3 exists.
@@ -19,7 +19,7 @@ letters means a cycle, so the answer is `""`.
 
 Two things worth noticing about the cost. Collecting the facts is `O(total
 letters)`, and the ordering afterwards is `O(1)` in the input — 26 vertices and
-at most 650 edges no matter how large the dictionary is. And only *neighbouring*
+at most 650 edges no matter how large the dictionary is. And only _neighbouring_
 pairs need comparing: if `a < b` and `b < c` in the dictionary's order then
 `a < c` follows, so comparing every pair of words adds no facts and costs
 `O(words²)` — the trap.

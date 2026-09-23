@@ -1,5 +1,5 @@
 Two price lists are each sorted from cheapest to dearest, and all the prices
-within a list are different. A *pairing* takes one price from each list and costs
+within a list are different. A _pairing_ takes one price from each list and costs
 their sum.
 
 Report the `k` cheapest pairings, cheapest first. Two pairings that cost the same

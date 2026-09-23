@@ -27,7 +27,7 @@ popped once: `O(N log k)` time, `O(k)` space.
 - **The heap.** `O(N log k)` and `O(k)` space. The reason to prefer it is that it
   never needs more than one reading per series at a time, so it works when the
   series are files, database cursors or network streams too large to hold. That
-  is what a k-way merge is *for*, and why external sorting is built on it.
+  is what a k-way merge is _for_, and why external sorting is built on it.
 - **A tournament of pairwise merges.** `O(N log k)` with no heap, and the shape
   merge sort itself uses.
 

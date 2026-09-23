@@ -19,7 +19,7 @@ is `O(n log n)` — the same as the initial heapify, which can be done in `O(n)`
 it matters.
 
 The alternative — keep the stones in a sorted list and re-sort after each round —
-is `O(n log n)` *per round*. Inserting the new stone into its place in a sorted
+is `O(n log n)` _per round_. Inserting the new stone into its place in a sorted
 list is better, `O(n)` per round from the shifting, and still worse than the
 heap.
 

@@ -1,7 +1,7 @@
 A binary tree is a **search tree** when, for every node, every value in its left
 subtree is smaller than it and every value in its right subtree is larger.
 
-Note the words *every value in the subtree* — not just the two children.
+Note the words _every value in the subtree_ — not just the two children.
 
 Report whether the given tree is a search tree. All values are distinct, so
 there is no question about equality.

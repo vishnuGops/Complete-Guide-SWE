@@ -14,7 +14,7 @@ cancelling stretches.
 
 Counting the pairs as you go is simpler than counting them at the end. Walk the
 changes keeping the running total and a map from total to how many times it has
-been seen. At each moment, the number of cancelling stretches *ending here* is
+been seen. At each moment, the number of cancelling stretches _ending here_ is
 exactly the count already recorded for the current total; add it to the answer,
 then record this moment.
 

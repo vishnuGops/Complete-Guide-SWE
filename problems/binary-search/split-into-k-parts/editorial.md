@@ -5,8 +5,8 @@
 Optimising directly is hard; **checking a candidate is easy**. That inversion is
 the whole pattern.
 
-Ask instead: *given a cap `c`, can the queue be split into at most `k` runs whose
-totals all stay within `c`?* The answer is computed greedily and the greed is
+Ask instead: _given a cap `c`, can the queue be split into at most `k` runs whose
+totals all stay within `c`?_ The answer is computed greedily and the greed is
 provably right: walk the jobs, add each to the current run while the total stays
 within `c`, and start a new run the moment it would not. Any other assignment
 uses at least as many runs — pushing a job into the next run can never let you
@@ -35,7 +35,7 @@ return low
 That is `O(n log S)` where `S` is the total — about 34 passes at the stated
 maximum, against the `O(n^2 k)` table the problem is usually first attacked with.
 
-Note what the answer is *not*: it is not `ceil(sum / k)`. That value ignores the
+Note what the answer is _not_: it is not `ceil(sum / k)`. That value ignores the
 requirement that runs be unbroken, and `[7, 2, 5, 10, 8]` with `k = 2` gives 16
 rather than the true 18.
 

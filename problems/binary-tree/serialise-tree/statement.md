@@ -12,7 +12,7 @@ Both are values separated by commas, with `#` standing for a missing node.
 
 - **Pre-order**: the node, then its whole left subtree, then its whole right
   subtree. Every absent child is written as `#`, so the form is complete: `[1,
-  2, 3]` is `1,2,#,#,3,#,#`.
+2, 3]` is `1,2,#,#,3,#,#`.
 - **Level-order**: the levels top to bottom, left to right, with `#` for a
   missing child, and trailing `#`s dropped. `[1, 2, 3]` is `1,2,3`.
 

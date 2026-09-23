@@ -18,7 +18,7 @@ return pop()
 ```
 
 The only place to go wrong is the order of the pops. The stack gives the values
-back in reverse, so the *first* pop is the right-hand operand. `+` and `*` do not
+back in reverse, so the _first_ pop is the right-hand operand. `+` and `*` do not
 care; `-` and `/` do, and `["3","4","-"]` is 3 - 4 = -1, not 1.
 
 **Truncation towards zero** is worth a paragraph because the two languages

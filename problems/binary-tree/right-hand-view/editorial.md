@@ -25,7 +25,7 @@ the number of entries. Reversing the visiting order — left first — gives the
 hand view from the same code.
 
 **The misreading to avoid** is "follow the right child from the root". That gives
-the right *spine*, not the right view, and the two differ the moment a right
+the right _spine_, not the right view, and the two differ the moment a right
 child is missing while a left child is not — Example 2, where the answer has two
 entries and the spine has one.
 

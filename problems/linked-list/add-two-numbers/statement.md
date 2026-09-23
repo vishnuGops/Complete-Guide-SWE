@@ -16,7 +16,7 @@ The sum, as a chain of digits, least significant first.
 
 - `1 <= digits in each chain <= 10^4`
 - `0 <= digit <= 9`
-- Neither number has a leading zero — that is, the *last* link of each chain is
+- Neither number has a leading zero — that is, the _last_ link of each chain is
   not `0` unless the chain is exactly `[0]`.
 
 ## Examples

@@ -28,7 +28,7 @@ thirty-one.
 compile to a single instruction on any modern processor. Knowing that is part of
 the answer; knowing why the trick works is the part that transfers, because
 `value & (value - 1) == 0` is also the power-of-two test, and the same borrowing
-argument explains `value & -value`, which *isolates* the lowest set bit rather
+argument explains `value & -value`, which _isolates_ the lowest set bit rather
 than clearing it.
 
 ## Complexity

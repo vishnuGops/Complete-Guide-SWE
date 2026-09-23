@@ -23,7 +23,7 @@ one costs a single step.
 
 Either fills the table in `O(n)` — one array read and one addition per number —
 and both rest on the same observation: a number's bit count is reachable from a
-*smaller* number's, which is what makes a single forward pass possible.
+_smaller_ number's, which is what makes a single forward pass possible.
 
 This is a one-dimensional table like `stair-ways`, with the difference that the
 subproblem is not `i - 1` but a number reached by a bit operation. Recognising

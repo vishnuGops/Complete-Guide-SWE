@@ -9,7 +9,7 @@ score across the gap. The subproblems overlap, and the recursion does not
 decompose.
 
 **Deciding what to burst last does work.** Fix a range and ask which balloon in
-it is burst *last*. At that moment everything else in the range is gone, so its
+it is burst _last_. At that moment everything else in the range is gone, so its
 two neighbours are exactly the balloons just outside the range — which are, by
 construction, still intact. And everything to its left inside the range was burst
 without ever touching anything to its right, and vice versa. The two sides are

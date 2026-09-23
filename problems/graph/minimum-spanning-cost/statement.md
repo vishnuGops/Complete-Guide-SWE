@@ -51,4 +51,4 @@ One machine is already connected to everything it needs to be.
 ## Notes
 
 `n - 1` cables are always enough and always necessary, so the question is only
-*which* `n - 1`.
+_which_ `n - 1`.

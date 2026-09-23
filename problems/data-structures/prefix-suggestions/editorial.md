@@ -37,7 +37,7 @@ cost of `O(3 · total letters)` space and slower adds.
 
 Which is right depends on the ratio of adds to suggestions, and a real
 type-ahead has vastly more suggestions than adds — which is why the stored
-version is what production autocompletes use. Saying *why* one design wins is
+version is what production autocompletes use. Saying _why_ one design wins is
 more of the answer here than either implementation.
 
 **Adding a word twice changes nothing**, since it only sets an end-marker that

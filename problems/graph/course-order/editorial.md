@@ -26,7 +26,7 @@ depend on each other in a cycle. No separate cycle check is needed.
 **The smallest order** is a one-word change: keep `available` in a **min-heap**
 instead of a queue, so the lowest-numbered available course is always taken.
 That is what makes the answer unique, and it costs `O(n log n)`. A plain queue
-gives *a* valid order, which is what the problem would ask for if any answer were
+gives _a_ valid order, which is what the problem would ask for if any answer were
 accepted; here it usually gives the wrong one.
 
 **The trap** is scanning all `n` courses at each step to find an available one.
@@ -35,7 +35,7 @@ something the `waiting` counts already say.
 
 Depth-first search is the other standard answer: post-order, reversed, gives a
 topological order, and grey/black colouring detects the cycle. It cannot easily
-be made to produce the *smallest* order, which is why this problem is stated for
+be made to produce the _smallest_ order, which is why this problem is stated for
 Kahn's.
 
 ## Complexity

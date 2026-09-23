@@ -11,7 +11,7 @@ Each operation on its own is easy and the three together are the problem:
   hole shifts down.
 
 The resolution is that **the array's order does not matter**. Nothing about the
-problem depends on it, so a removal need not shift anything: move the *last*
+problem depends on it, so a removal need not shift anything: move the _last_
 element into the hole and drop the last slot.
 
 ```
@@ -32,12 +32,12 @@ pick():    return values[random index]
 
 **The two structures have to be kept in step.** `where[last] = hole` is the line
 that is forgotten, and forgetting it leaves the map pointing at where the moved
-element *used* to be — which corrupts the next removal rather than the current
+element _used_ to be — which corrupts the next removal rather than the current
 one, and is therefore hard to find. Two structures describing the same thing is
 the recurring hazard of this kind of design, and keeping their update in one
 place is the defence.
 
-**Removing the last element** is the case worth tracing by hand: the hole *is*
+**Removing the last element** is the case worth tracing by hand: the hole _is_
 the last slot, the "move" copies the element onto itself, and the order of the
 pop and the map deletion decides whether it works. Doing the array write first
 and the map delete last is safe.

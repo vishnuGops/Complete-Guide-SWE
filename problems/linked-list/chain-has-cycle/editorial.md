@@ -23,7 +23,7 @@ chain is.
 
 - **Remembering values instead of links.** A set of the values seen reports a
   loop the moment a value repeats, and values are allowed to repeat. Identity is
-  what matters: is this the same *link*, not the same number.
+  what matters: is this the same _link_, not the same number.
 - **Stepping the fast pointer without checking twice.** `fast.next.next` needs
   both `fast` and `fast.next` to exist, or an odd-length open chain raises
   instead of answering `false`.

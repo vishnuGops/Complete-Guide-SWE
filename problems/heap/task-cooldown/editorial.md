@@ -31,7 +31,7 @@ answer = max(tasks.length, skeleton)
 One pass to count, then arithmetic: `O(n)` time and `O(1)` space.
 
 **The heap version**, which is what this topic is about, computes the same
-number by simulating *rounds* rather than ticks: each round takes up to
+number by simulating _rounds_ rather than ticks: each round takes up to
 `cooldown + 1` of the most frequent remaining tasks, runs them, and pushes back
 whatever still has runs left. There are at most `n` rounds, so it is
 `O(n log 26)` — and it has the advantage of producing an actual schedule, which
@@ -51,7 +51,7 @@ ticks, and it does not finish.
 - **Forgetting the tasks tied for most frequent.** `"aabb"` with a cooldown of 2
   is 5, not 4: the second `b` has to follow the second `a`.
 - **Forgetting the `max`.** With many different tasks the gaps overflow and there
-  is no idling; the skeleton then *underestimates*.
+  is no idling; the skeleton then _underestimates_.
 - **A cooldown of 0.** The answer is the number of tasks, which the formula gives
   because `cooldown + 1` is 1.
 - **Simulating tick by tick.**

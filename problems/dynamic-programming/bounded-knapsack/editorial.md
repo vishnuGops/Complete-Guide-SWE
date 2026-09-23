@@ -23,14 +23,14 @@ for i in items:
         best[c] = max(best[c], best[c - weight[i]] + worth[i])
 ```
 
-Downwards, `best[c - weight[i]]` still holds the value from *before* this item
+Downwards, `best[c - weight[i]]` still holds the value from _before_ this item
 was considered, so the item is used at most once. Upwards, it would already
 include this item, and the item could be taken repeatedly — which is the
-*unbounded* knapsack, the same table as `coin-ways`. One loop direction, two
+_unbounded_ knapsack, the same table as `coin-ways`. One loop direction, two
 different problems; that pairing is the thing to remember.
 
 **Why greedy fails.** Sorting by worth per unit weight and taking greedily is
-optimal for the *fractional* problem, where an item can be cut. It is not optimal
+optimal for the _fractional_ problem, where an item can be cut. It is not optimal
 here: in Example 1 the weight-1 item has the best ratio and is not in the answer,
 because taking it leaves a capacity that nothing fills well. The moment items are
 indivisible, exchange arguments stop working and the table is needed.

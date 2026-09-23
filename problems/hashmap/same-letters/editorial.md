@@ -3,7 +3,7 @@
 ## Approach
 
 Rearranging a word changes the order of its letters and nothing else, so
-anything that ignores order is a *canonical key*: the same for every
+anything that ignores order is a _canonical key_: the same for every
 rearrangement, different for anything else. The letter tally — how many times
 each letter appears — is such a key, and it is the cheapest one.
 

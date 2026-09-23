@@ -6,7 +6,7 @@ Start without the ring. Walking left to right and keeping the positions whose
 answer is still unknown, those positions are always in **decreasing** order of
 value — because if a waiting position held a smaller value than a later waiting
 one, the later one would already have answered it. That is the monotonic stack,
-and the invariant *is* the algorithm:
+and the invariant _is_ the algorithm:
 
 ```
 for each position j:

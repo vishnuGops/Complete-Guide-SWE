@@ -43,7 +43,7 @@ problem gives you.
 
 - **Comparing with `abs`.** `abs(target - readings[left]) > abs(readings[left+k]
   - target)` gets the tie wrong when the target is below the whole row: both
-  sides are distances and the tie must go to the smaller reading.
+    sides are distances and the tie must go to the smaller reading.
 - **Searching over `0 .. n`.** The left end cannot exceed `n - k`, or the run
   runs off the end.
 - **Sorting by distance.** It discards the ordering the answer has to be

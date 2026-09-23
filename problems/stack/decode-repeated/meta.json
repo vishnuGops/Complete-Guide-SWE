@@ -13,10 +13,7 @@
   "entry": "expand",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "simplify-path",
-    "bracket-balance"
-  ],
+  "related": ["simplify-path", "bracket-balance"],
   "targetComplexity": {
     "time": "O(length of the answer)",
     "space": "O(length of the answer)"

@@ -3,7 +3,7 @@ groups keeping the order they arrived in.
 
 This is the same rule as `even-odd-partition`, asked the other way round: there,
 you rearranged the row in place; here you build a new one, and the interesting
-question is what a *sort* has to promise for this to work.
+question is what a _sort_ has to promise for this to work.
 
 Zero is even. `-4` is even and `-7` is odd.
 

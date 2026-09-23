@@ -21,7 +21,7 @@ as it was — a bug that shows up as "my rotation does nothing" and is invisible
 a 1×1 grid.
 
 For an anticlockwise turn, the same two steps with the second one changed to
-reversing each *column* — or transpose after reversing the rows. Deriving it that
+reversing each _column_ — or transpose after reversing the rows. Deriving it that
 way is easier than re-deriving the index arithmetic.
 
 ## Complexity

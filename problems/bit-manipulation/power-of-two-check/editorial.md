@@ -20,7 +20,7 @@ return value > 0 and (value & (value - 1)) == 0
   set and correctly fails — but `-2147483648` is a single set bit (the sign bit),
   and the bit test alone would accept it. It is not a power of two either.
 
-So the test is really two claims: the value is positive, *and* it has one bit.
+So the test is really two claims: the value is positive, _and_ it has one bit.
 
 **The other one-liner**, `value & -value == value`, isolates the lowest set bit
 and asks whether that is the whole value. It has exactly the same two edge cases

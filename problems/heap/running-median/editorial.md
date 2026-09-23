@@ -43,6 +43,6 @@ easier version first is the point of its place in this topic.
   root to compare against; on the very first reading there is none, which is the
   case to handle.
 - **Allowing the halves to drift by two.** Then neither root is the middle.
-- **Integer overflow when averaging**, and integer *division* when averaging —
+- **Integer overflow when averaging**, and integer _division_ when averaging —
   `(a + b) / 2` on two integers truncates.
 - **Sorting the readings on every call.** Correct, and `O(n log n)` per reading.

@@ -47,5 +47,5 @@ The second connection joins nothing new.
 
 ## Notes
 
-The questions are asked *between* the connections, which is the whole point: a
+The questions are asked _between_ the connections, which is the whole point: a
 traversal answers each one in `O(n)` and there is no traversal here at all.

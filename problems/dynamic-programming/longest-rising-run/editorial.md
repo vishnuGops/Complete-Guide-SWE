@@ -32,7 +32,7 @@ return tails.length
 
 `O(n log n)`, and the binary search is `insert-position` exactly.
 
-**`tails` is not the answer.** Its *length* is correct at every moment; its
+**`tails` is not the answer.** Its _length_ is correct at every moment; its
 contents are usually not a run that appears in the input. Reconstructing an
 actual run needs a parallel array of predecessors — worth knowing, and not what
 this problem asks for.

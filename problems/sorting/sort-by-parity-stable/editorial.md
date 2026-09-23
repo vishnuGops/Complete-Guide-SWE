@@ -14,8 +14,8 @@ Nothing is ever reordered inside a group, so the order is preserved by
 construction. One pass with two output lists is the same thing.
 
 The reason this problem lives in the sorting topic is the other way of seeing
-it: it is a **sort by the key `reading % 2`**, and it is correct *only because
-the sort is stable*. A stable sort keeps equal keys in their original relative
+it: it is a **sort by the key `reading % 2`**, and it is correct _only because
+the sort is stable_. A stable sort keeps equal keys in their original relative
 order, which is exactly the promise the statement makes. Written that way:
 
 - Python: `sorted(readings, key=lambda r: r % 2)` — `sorted` is stable, so this
@@ -23,7 +23,7 @@ order, which is exactly the promise the statement makes. Written that way:
   convenience the next language does not share.)
 - Java: `Arrays.sort(int[])` takes no comparator and is a dual-pivot quicksort —
   not stable. Sorting by a key means boxing to `Integer[]` and using
-  `Arrays.sort(T[], Comparator)`, which *is* stable (a merge sort). That is a
+  `Arrays.sort(T[], Comparator)`, which _is_ stable (a merge sort). That is a
   real allocation for every element, which is why the two-pass version is the
   better answer here even though the sort reads more clearly.
 

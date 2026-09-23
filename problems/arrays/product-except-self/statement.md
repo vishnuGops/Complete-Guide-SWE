@@ -1,4 +1,4 @@
-For each reading in a row, report the product of every *other* reading.
+For each reading in a row, report the product of every _other_ reading.
 
 Do it without division — a single zero anywhere in the row would make that
 approach a special case, and two zeroes would make it useless.
@@ -19,7 +19,7 @@ except `readings[i]`.
 - At most 12 readings have an absolute value of 2 or more, so every product
   involved fits comfortably in a signed 64-bit integer.
 - The output does not count towards your space budget; `O(1)` means `O(1)`
-  *besides* the list you return.
+  _besides_ the list you return.
 
 ## Examples
 

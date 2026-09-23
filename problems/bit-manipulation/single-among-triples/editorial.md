@@ -2,7 +2,7 @@
 
 ## Approach
 
-Exclusive-or is the wrong tool on its own: it cancels in *pairs*, and three
+Exclusive-or is the wrong tool on its own: it cancels in _pairs_, and three
 copies of a value xor together to that value rather than to zero. What is needed
 is cancellation in **threes**, done per bit.
 

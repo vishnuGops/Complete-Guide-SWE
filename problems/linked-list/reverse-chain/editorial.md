@@ -16,8 +16,8 @@ while current is not null:
 return previous
 ```
 
-The invariant: *everything from `previous` back to the original head is already
-reversed, and `current` is the head of what is left*. When `current` runs off the
+The invariant: _everything from `previous` back to the original head is already
+reversed, and `current` is the head of what is left_. When `current` runs off the
 end, `previous` is the new head — which is also why the empty chain needs no
 special case: the loop never runs and `previous` is still null.
 
@@ -33,7 +33,7 @@ the constraint rules out.
 ## Pitfalls
 
 - **Overwriting `current.next` before saving it.** The rest of the chain is then
-  unreachable and the walk ends after one link. This is *the* linked-list bug.
+  unreachable and the walk ends after one link. This is _the_ linked-list bug.
 - **Returning `head`.** After the reversal the original head is the last link and
   its `next` is null; the new head is `previous`.
 - **Starting `previous` at `head`.** It must start at null, or the old head keeps

@@ -38,7 +38,7 @@ was. Every position is visited once.
 - **Simulating selection sort.** It does produce the minimum, and finding each
   minimum is `O(n)`, so the whole thing is `O(n^2)` and does not finish at the
   stated maximum.
-- **Counting inversions instead.** That is the answer for *adjacent* swaps, a
+- **Counting inversions instead.** That is the answer for _adjacent_ swaps, a
   different and much larger number: `[4,3,2,1]` needs 6 adjacent swaps and 2
   arbitrary ones.
 - **Off by one on the cycle length.** A fixed point is a cycle of length 1 and

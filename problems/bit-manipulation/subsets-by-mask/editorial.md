@@ -22,7 +22,7 @@ no working list to undo.
 
 **Why this is worth having alongside `all-subsets`.** The recursive version is
 the one to reach for when the subsets need pruning, or when the choices are not
-independent. This one is the one to reach for when the subsets are *data*: it
+independent. This one is the one to reach for when the subsets are _data_: it
 gives each subset a number, which means subsets can be stored in an array,
 compared, used as keys, and — most importantly — used as indices into a table.
 That last use is what `travel-all-cities` is built on, where "the set of cities

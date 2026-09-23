@@ -9,7 +9,7 @@ node, once".
 For a node, two different quantities matter and they are not the same:
 
 - **The answer it contributes**: `node.val + best downward on the left + best
-  downward on the right`. This path turns around here, so it may use both sides.
+downward on the right`. This path turns around here, so it may use both sides.
 - **What it reports to its parent**: `node.val + max(left, right)`. A path
   continuing upwards through the parent can pass through only one of the
   node's sides, or the path would visit the node twice.

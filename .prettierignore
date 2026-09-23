@@ -22,3 +22,9 @@ problems/*/*/tests.json
 # `npm run format` put the files back out of step with their own generator and
 # `problems:schema --check` reported them stale for good.
 docs/schema/*.schema.json
+
+# Coach prompts are versioned bytes, not prose to tidy (docs/COACH_PROMPTS.md):
+# they are what `cache_control` points at, every change to one is a new version,
+# and Prettier re-marking an emphasis would silently change what the model is
+# told under a version number that says it did not change.
+apps/server/src/coach/prompts/**/*.md

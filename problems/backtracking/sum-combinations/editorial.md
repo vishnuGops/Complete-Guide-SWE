@@ -30,7 +30,7 @@ the running time.
 
 There is no separate "remaining < 0" case: the `break` means it never happens.
 
-**Against `coin-ways`.** That problem asks *how many* combinations there are and
+**Against `coin-ways`.** That problem asks _how many_ combinations there are and
 answers it with dynamic programming in `O(values · target)`. This one asks for
 the combinations themselves, and there can be exponentially many, so no clever
 table helps — enumerating them is the job. Knowing which of the two a question is

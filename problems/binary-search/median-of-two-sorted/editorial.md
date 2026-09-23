@@ -2,12 +2,12 @@
 
 ## Approach
 
-The median is defined by a *position* in the combined order, so aim at the cut
+The median is defined by a _position_ in the combined order, so aim at the cut
 rather than at the value.
 
 Cut `first` after `i` readings and `second` after `j`, with `i + j` fixed at
 `half = (n + m + 1) / 2` rounded up. That fixes the sizes; what remains is
-whether the cut is in the right *place*. It is exactly when nothing on the left
+whether the cut is in the right _place_. It is exactly when nothing on the left
 exceeds anything on the right, and because both series are sorted that is just
 two comparisons:
 
@@ -27,7 +27,7 @@ comparison says which way to move it:
 When both hold, the left parts hold the smaller half of all the readings. The
 median is then `max(first[i-1], second[j-1])` for an odd total, or the average of
 that and `min(first[i], second[j])` for an even one — which is why `half` rounds
-*up*: it puts the extra reading on the left, where the odd-case answer is.
+_up_: it puts the extra reading on the left, where the odd-case answer is.
 
 Two details make the whole thing safe:
 
@@ -47,7 +47,7 @@ Two details make the whole thing safe:
   sentinels stop protecting you.
 - **Rounding `half` down.** The odd case then reads its answer from the right
   parts, and the two branches stop agreeing.
-- **Using the middle *values* instead of the middle *positions*.** The average of
+- **Using the middle _values_ instead of the middle _positions_.** The average of
   the two medians is not the median of the union.
 - **Overflow when averaging.** Two readings at the extremes sum outside a 32-bit
   `int` in the general version of this problem; add as `long` or `double`.

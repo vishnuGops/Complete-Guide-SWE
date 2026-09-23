@@ -6,7 +6,7 @@ Sorting the row and taking `readings[n - k]` is correct, costs `O(n log n)`, and
 is the right first answer. Everything below is about doing less work than that.
 
 The observation is that you never need the ordering of the readings below the
-top `k`, and you never need the ordering *within* the top `k` either — only its
+top `k`, and you never need the ordering _within_ the top `k` either — only its
 smallest member. A min-heap of size `k` holds exactly that:
 
 - While the heap holds fewer than `k` readings, push.
@@ -14,8 +14,8 @@ smallest member. A min-heap of size `k` holds exactly that:
   it belongs in the top `k` and the root is evicted, or it is not, in which case
   it can be dropped and never looked at again.
 
-The invariant is the whole proof: *the heap always holds the `k` largest
-readings seen so far*. When the row runs out, the root is the `k`-th largest.
+The invariant is the whole proof: _the heap always holds the `k` largest
+readings seen so far_. When the row runs out, the root is the `k`-th largest.
 
 Cost: `O(n log k)`, and `O(k)` space — which matters when `k` is small and the
 row is enormous, or when the readings arrive one at a time and cannot all be

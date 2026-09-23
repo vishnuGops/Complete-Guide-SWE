@@ -20,7 +20,7 @@ there are two nested loops.
 
 The part that is easy to get wrong is the cover test. Re-checking the whole
 tally at each step puts the alphabet back into the inner loop. Instead keep a
-single counter, `short`, of how many *distinct* needed letters are still below
+single counter, `short`, of how many _distinct_ needed letters are still below
 their quota. A letter's contribution changes only when its tally crosses exactly
 its quota: on the way up, `tally == quota` means one fewer letter is short; on
 the way down, leaving `tally == quota` means one more is. `short == 0` is the

@@ -4,8 +4,8 @@
 
 A rotated ascending series is two ascending runs laid end to end, and everything
 in the first run is larger than everything in the second. The smallest reading is
-the first element of the second run, so the question at each step is only: *is
-`mid` in the first run or the second?*
+the first element of the second run, so the question at each step is only: _is
+`mid` in the first run or the second?_
 
 Comparing `readings[mid]` against `readings[high]` — the last reading still in
 the range — answers it:
@@ -18,7 +18,7 @@ the range — answers it:
 
 Equality cannot happen, because the readings are distinct and `mid < high`.
 
-The invariant is *the turning point is always inside `[low, high]`*, and the loop
+The invariant is _the turning point is always inside `[low, high]`_, and the loop
 ends with `low == high`.
 
 Comparing against `readings[low]` instead is the classic mistake. On an

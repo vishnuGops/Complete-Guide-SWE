@@ -14,7 +14,7 @@ constant time — and the islands can be measured once, up front.
    already taken.
 2. **Try each water cell.** For a cell holding 0, look at its four neighbours,
    collect their **distinct** labels, and the result is `1 + the sum of those
-   islands' sizes`.
+islands' sizes`.
 
 The answer is the largest value seen in pass 2 — or, if there is no water at all,
 the largest island from pass 1.
@@ -25,7 +25,7 @@ size twice is the natural wrong answer. Collecting the labels into a small set
 first (at most four elements) fixes it.
 
 Union-find is the other standard way to get the labels and sizes, and is the
-better tool when land is being *added* repeatedly rather than measured once. Here
+better tool when land is being _added_ repeatedly rather than measured once. Here
 a single flood fill is simpler and has the same cost.
 
 **Why not fill and re-measure.** Trying each water cell and flood-filling around

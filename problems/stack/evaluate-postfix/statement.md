@@ -1,4 +1,4 @@
-In postfix notation the operator comes *after* its two operands, so `3 4 +`
+In postfix notation the operator comes _after_ its two operands, so `3 4 +`
 means 3 + 4, and `5 1 2 + 4 * + 3 -` means `5 + ((1 + 2) * 4) - 3`. No brackets
 are needed, and none appear.
 

@@ -3,7 +3,7 @@
 ## Approach
 
 **One queen per row**, because two queens in a row always attack. So the search
-is not over squares but over *which column* each row's queen takes: `n` levels,
+is not over squares but over _which column_ each row's queen takes: `n` levels,
 at most `n` branches each, and a permutation at the bottom.
 
 That alone is `n!` rather than `n^n` — 6.2 billion against 300 billion at
@@ -16,7 +16,7 @@ That alone is `n!` rather than `n^n` — 6.2 billion against 300 billion at
 - **The `↙` diagonal** — every square on it has the same `row + column`.
 
 Keeping a set of used columns and one per diagonal family makes each check
-`O(1)`, and checking *before* recursing means an attacked square is never
+`O(1)`, and checking _before_ recursing means an attacked square is never
 explored at all. That is the whole difference between a search that finishes at
 `n = 13` and one that does not.
 
@@ -40,8 +40,7 @@ available columns and nothing else — no scan over occupied ones. This is the
 standard formulation, and the shift is what replaces the `row ± column`
 bookkeeping.
 
-The counts, for reference: 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200,
-73712.
+The counts, for reference: 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712.
 
 ## Complexity
 

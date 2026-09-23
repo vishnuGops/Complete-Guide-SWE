@@ -23,7 +23,7 @@ return reachable[half]
 
 **The inner loop runs downwards, and that is the whole trick.** Each value may be
 used at most once, and `reachable[t - value]` must therefore describe totals
-built *without* this value. Going downwards means that cell has not yet been
+built _without_ this value. Going downwards means that cell has not yet been
 touched this round; going upwards would let a value be spent twice — which is
 `coin-ways`'s unlimited-supply loop, a different problem.
 

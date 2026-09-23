@@ -5,7 +5,7 @@
 The candidates are the integers `0 .. 46340` (because `46341^2` already exceeds
 the largest allowed `value`), and the predicate `r * r <= value` is true for a
 prefix of them and false for the rest. So this is a boundary search over the
-*answer*, not over any input array — the "binary search on the answer" pattern in
+_answer_, not over any input array — the "binary search on the answer" pattern in
 its smallest form.
 
 ```
@@ -28,7 +28,7 @@ one branch assigns `low = mid`, round up; if a branch assigns `high = mid`, roun
 down.
 
 **Why not `sqrt`.** `Math.sqrt` returns a `double`, which has 53 bits of
-mantissa — enough for every value here, but the *conversion back* is where it
+mantissa — enough for every value here, but the _conversion back_ is where it
 goes wrong: `(int) Math.sqrt(2147395600)` can land on 46339 or 46341 depending
 on the platform's rounding, and the usual fix is a correction step that ends up
 being this search's last iteration anyway. Integer arithmetic is exact and

@@ -33,7 +33,7 @@ function and is at most 4 for any `n` that fits in this universe.
 check whether `b` is already reachable from `a`. That is correct and `O(n)` per
 link, so `O(n^2)` overall — fine at these sizes and the wrong instinct to build,
 because the whole point of union find is that connectivity questions asked
-*incrementally* do not need a traversal each time.
+_incrementally_ do not need a traversal each time.
 
 ## Complexity
 

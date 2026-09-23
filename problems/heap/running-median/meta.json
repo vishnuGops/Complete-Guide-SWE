@@ -14,7 +14,7 @@
   "expect": "return",
   "comparator": {
     "kind": "floatTolerance",
-    "eps": 1e-06
+    "eps": 1e-6
   },
   "related": ["window-median-stream", "kth-largest-stream"],
   "targetComplexity": {

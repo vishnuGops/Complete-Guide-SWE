@@ -20,7 +20,7 @@ best(-1) = 0,  best(-2) = 0
 ```
 
 That is `stair-ways` with a maximum in place of a sum, which is worth seeing:
-the *shape* of a one-dimensional recurrence is the reusable part, and what the
+the _shape_ of a one-dimensional recurrence is the reusable part, and what the
 combining operation is varies with the problem.
 
 Only two previous values are ever read, so the table collapses to two variables

@@ -48,7 +48,7 @@ Nothing spells the `c`.
 
 ## Notes
 
-The dangerous shape is letters that *almost* work — twenty `a`s followed by a
+The dangerous shape is letters that _almost_ work — twenty `a`s followed by a
 `b`, with `a` and `aa` in the dictionary. There are no sentences at all, and a
 search that re-explores the same suffix once per way of reaching it does
 exponential work to discover that.

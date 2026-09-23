@@ -4,12 +4,12 @@
 
 Add two single bits by hand and write down what happens:
 
-| a | b | result | carry |
-|---|---|--------|-------|
-| 0 | 0 | 0      | 0     |
-| 0 | 1 | 1      | 0     |
-| 1 | 0 | 1      | 0     |
-| 1 | 1 | 0      | 1     |
+| a   | b   | result | carry |
+| --- | --- | ------ | ----- |
+| 0   | 0   | 0      | 0     |
+| 0   | 1   | 1      | 0     |
+| 1   | 0   | 1      | 0     |
+| 1   | 1   | 0      | 1     |
 
 The result column is exclusive-or. The carry column is `and`. And a carry belongs
 one place to the left. Those three observations, applied to every bit position at

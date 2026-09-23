@@ -29,7 +29,7 @@ return false
 ```
 
 **When the rows are not related.** If the grid is only sorted along each row and
-each column — the more common shape — the flattened sequence is *not* ascending
+each column — the more common shape — the flattened sequence is _not_ ascending
 and this search is wrong. The answer there is the staircase: start at the top
 right corner, move left when the value is too large and down when it is too
 small, and either find the target or walk off the grid in `O(rows + columns)`.
@@ -45,7 +45,7 @@ Knowing which of the two a problem gives you is most of the work.
 - **Binary searching for the row, then within it.** Correct, and two searches
   where one will do; it also needs care when the target falls between rows.
 - **Dividing by the wrong dimension.** The position-to-cell conversion divides by
-  the number of *columns*.
+  the number of _columns_.
 - **Searching every row.** `O(rows · columns)`, which ignores the structure the
   problem hands you.
 - **Applying this to a merely row-and-column sorted grid.** A different problem

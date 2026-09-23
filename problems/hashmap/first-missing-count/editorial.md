@@ -2,7 +2,7 @@
 
 ## Approach
 
-The key observation is about the *range* of the answer, not about the values.
+The key observation is about the _range_ of the answer, not about the values.
 With `n` counts in hand, the values `1 .. n + 1` are `n + 1` candidates and only
 `n` of them can be present, so the answer is always in `1 .. n + 1`. Everything
 outside that range — negatives, zeroes, anything above `n` — cannot be the
@@ -26,7 +26,7 @@ whole run — amortised `O(n)`.
 
 The condition to swap on is `counts[counts[i] - 1] != counts[i]`, not
 `counts[i] != i + 1`. The difference is duplicates: with two 3s the second one
-has nowhere to go, and comparing against the *destination* stops immediately
+has nowhere to go, and comparing against the _destination_ stops immediately
 instead of swapping forever.
 
 A hash set of the in-range values is the same algorithm with the table made
@@ -41,7 +41,7 @@ version is not yet obvious.
 ## Pitfalls
 
 - **Scanning for each candidate.** `for candidate in 1..n+1: if candidate in
-  counts` is `O(n^2)` and does not finish at the stated maximum.
+counts` is `O(n^2)` and does not finish at the stated maximum.
 - **Sorting first.** `O(n log n)` and correct, but it gives up the linear target
   and still needs care with duplicates and junk.
 - **Looping forever on duplicates.** Swapping while `counts[i] != i + 1` never

@@ -1,4 +1,4 @@
-A *reading* of a word is what is left after deleting some of its letters, keeping
+A _reading_ of a word is what is left after deleting some of its letters, keeping
 the rest in order. `ace` is a reading of `abcde`.
 
 Report the length of the longest reading that both words share.

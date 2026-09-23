@@ -2,8 +2,8 @@
 
 ## Approach
 
-The trick is to ask a smaller question: what is the best run that *ends at minute
-`i`*? There are only two candidates. Either it is the best run ending at `i - 1`
+The trick is to ask a smaller question: what is the best run that _ends at minute
+`i`_? There are only two candidates. Either it is the best run ending at `i - 1`
 with `values[i]` appended, or it is `values[i]` alone — because any longer run
 ending at `i` contains a run ending at `i - 1`, and if that one had a negative
 total it was worth dropping.
@@ -30,6 +30,6 @@ any run ending at or before `i`.
 - **Summing every slice.** Two nested loops with a running sum is `O(n^2)`; at
   the stated maximum that is a hundred million additions, which does not finish
   inside the time limit here.
-- **Resetting on any negative value.** The rule is to drop the *running total*
+- **Resetting on any negative value.** The rule is to drop the _running total_
   when it goes negative, not to drop negative values: `[4, -1, 2]` is a better
   run than either `[4]` or `[2]`.

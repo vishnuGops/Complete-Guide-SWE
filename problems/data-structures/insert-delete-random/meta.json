@@ -5,11 +5,7 @@
   "title": "Add, Remove, Pick At Random",
   "version": 1,
   "topic": "data-structures",
-  "patterns": [
-    "design",
-    "hash map",
-    "randomisation"
-  ],
+  "patterns": ["design", "hash map", "randomisation"],
   "tier": "Medium",
   "rating": 6,
   "order": 8,
@@ -17,10 +13,7 @@
   "entry": "RandomSet",
   "expect": "return",
   "comparator": "checker",
-  "related": [
-    "graph-union-find",
-    "time-keyed-store"
-  ],
+  "related": ["graph-union-find", "time-keyed-store"],
   "targetComplexity": {
     "time": "O(1) per operation",
     "space": "O(n)"

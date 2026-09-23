@@ -39,5 +39,5 @@ the other. Both are `O(1)` amortised per operation; the truncation in `visit` is
 - **Failing when `steps` exceeds the history.** Both directions clamp.
 - **Off by one on the cursor.** The home page is a real entry at index 0, not a
   special case before the list starts.
-- **Returning the page you moved *from*.** Both `back` and `forward` return the
+- **Returning the page you moved _from_.** Both `back` and `forward` return the
   page now shown.

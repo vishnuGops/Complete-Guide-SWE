@@ -52,5 +52,5 @@ The reference replaces the recursion with an explicit stack of
   wrong rather than obviously broken.
 - **Rebuilding the map per call.** That is the scan again, wearing a hash.
 - **Assuming in-order plus post-order works the same way.** It does — with the
-  root at the *end* of the post-order piece — but pre-order plus post-order does
+  root at the _end_ of the post-order piece — but pre-order plus post-order does
   not determine the tree at all.

@@ -49,6 +49,6 @@ inner loop.
 - **Forgetting the sentinel.** A row that only increases — `[1,2,3]` — leaves
   everything on the stack and answers 0.
 - **Getting the width wrong.** It is `i - left`, where `left` is one past the
-  position below on the stack, *not* `i - poppedPosition`.
+  position below on the stack, _not_ `i - poppedPosition`.
 - **Zero heights.** They are allowed, they settle everything before them, and
   their own area is zero.

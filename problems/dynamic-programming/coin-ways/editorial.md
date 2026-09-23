@@ -43,7 +43,7 @@ recurrence.
 
 - **Looping amounts outside coins.** Counts orderings, not combinations.
 - **`ways[0] = 0`.** The table never starts and every answer is zero.
-- **Iterating the inner loop downwards.** That is the *bounded* knapsack, where
+- **Iterating the inner loop downwards.** That is the _bounded_ knapsack, where
   each coin may be used once; here the supply is unlimited and the loop runs
   upwards.
 - **Enumerating the combinations.** Exponential for a polynomial question.

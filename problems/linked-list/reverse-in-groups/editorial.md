@@ -2,7 +2,7 @@
 
 ## Approach
 
-Reversing a whole chain needs two references. Reversing a *segment* in place
+Reversing a whole chain needs two references. Reversing a _segment_ in place
 needs two more: the link before the segment, so the reversed piece can be
 reattached at the front, and the link after it, so it can be reattached at the
 back.
@@ -32,7 +32,7 @@ loop:
 
 Two tricks are carrying this.
 
-**Look before you leap.** Walking `k` links ahead *before* touching anything is
+**Look before you leap.** Walking `k` links ahead _before_ touching anything is
 what makes the incomplete tail free: if the walk falls off the end, there is
 nothing to do and the chain is already correct behind you.
 

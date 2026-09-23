@@ -26,7 +26,7 @@ same place also has one, so nothing longer can work. And if a three-character
 window already exceeds 255... that one is not monotone in general — `1000` is
 longer than `100` but the loop only runs to 3 — so `break` on the value is safe
 only because the loop stops at three digits. Writing `continue` is also correct
-and costs nothing measurable here; knowing *why* each is safe is the exercise.
+and costs nothing measurable here; knowing _why_ each is safe is the exercise.
 
 **The counting prunes** are what make a long input cheap:
 

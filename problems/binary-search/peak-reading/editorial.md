@@ -13,7 +13,7 @@ out half the remaining candidates, and the climb log's shape provides one:
 - **No** — the row is falling from `mid` to `mid + 1`, so the peak is at `mid` or
   to its left. The peak is in `[low, mid]`.
 
-The invariant is *the peak is always inside `[low, high]`*, and each step halves
+The invariant is _the peak is always inside `[low, high]`_, and each step halves
 the range without ever excluding it. When `low == high` the range holds one
 position, which must therefore be the peak. There is no "found it" test and no
 case where the loop can fail to terminate: `mid` is rounded down, so `low` always

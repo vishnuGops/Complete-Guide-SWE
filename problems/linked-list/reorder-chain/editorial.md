@@ -23,7 +23,7 @@ while second is not null:
     first, second = afterFirst, afterSecond
 ```
 
-Both successors are saved *before* either pointer is overwritten — the same
+Both successors are saved _before_ either pointer is overwritten — the same
 discipline as reversing, and for the same reason.
 
 The loop ends when the second half runs out, which is why the cut had to leave

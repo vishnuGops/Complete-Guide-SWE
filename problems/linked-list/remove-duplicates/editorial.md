@@ -27,7 +27,7 @@ return dummy.next
 
 Two details carry it.
 
-**The dummy head.** Both the head and *every* link can be removed, so `previous`
+**The dummy head.** Both the head and _every_ link can be removed, so `previous`
 must exist before the first link does. With a dummy, `previous.next = current`
 works identically whether the run started at the head or in the middle, and the
 answer is `dummy.next`.
@@ -36,7 +36,7 @@ answer is `dummy.next`.
 not known in advance; assigning once at the end splices out however much was
 skipped in one step.
 
-The neighbouring problem — keep *one* copy of each value rather than none — is
+The neighbouring problem — keep _one_ copy of each value rather than none — is
 strictly easier: it never removes the head, so it needs no dummy and no
 `previous`. Which of the two is being asked is worth reading twice.
 
@@ -52,6 +52,6 @@ strictly easier: it never removes the head, so it needs no dummy and no
 - **No dummy head.** `[1,1,1,2]` changes the head and `[1,1]` empties the chain;
   both need a branch without one.
 - **Advancing `previous` inside the skip.** `previous` must stay on the last
-  *kept* link; moving it into the run links the duplicates back in.
+  _kept_ link; moving it into the run links the duplicates back in.
 - **Comparing against `previous.val` instead of looking ahead.** It works only if
   you also remember whether the previous link was itself part of a run.

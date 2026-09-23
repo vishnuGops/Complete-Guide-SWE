@@ -8,7 +8,7 @@ The two obvious designs each fail one operation:
 - **Running totals** — `total` is `O(1)`, `set` is `O(n)`, because every running
   total after the changed position is wrong.
 
-What is needed is something between: partial sums over *blocks*, so that a change
+What is needed is something between: partial sums over _blocks_, so that a change
 touches few blocks and a total is assembled from few blocks.
 
 **A Fenwick tree** (a binary indexed tree) does it with one array and no explicit
@@ -35,7 +35,7 @@ subtraction from `balance-point`, applied to a structure that can also be
 changed.
 
 **`set` is not `add`.** The tree stores sums, so replacing a reading means adding
-the *difference* — which is why the original values have to be kept alongside the
+the _difference_ — which is why the original values have to be kept alongside the
 tree.
 
 **The one-based indexing is not decoration.** `at & -at` is zero at index 0, so

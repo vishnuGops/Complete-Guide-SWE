@@ -27,7 +27,7 @@ and the log is long.
 
 - **Comparing every pair within reach.** `O(n·k)`, which at the stated maxima is
   a hundred million comparisons and does not finish.
-- **`k = 0`.** Two *distinct* positions cannot be zero apart, so the answer is
+- **`k = 0`.** Two _distinct_ positions cannot be zero apart, so the answer is
   always `false`. A window implementation that adds the current value before
   testing it will report `true`.
 - **Recording the position before testing it.** The current position is not a

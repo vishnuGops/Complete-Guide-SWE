@@ -2,7 +2,7 @@
 
 ## Approach
 
-The schedule being sorted *and* merged is the whole gift. It means the windows
+The schedule being sorted _and_ merged is the whole gift. It means the windows
 that can possibly meet the new one form a single unbroken run: everything before
 that run ends strictly before the new window starts, and everything after it
 starts strictly after the new window ends. So one pass in three phases:

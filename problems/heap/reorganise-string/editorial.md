@@ -29,7 +29,7 @@ which is exactly the impossible case, and lets the construction detect it
 without checking the counting rule up front.
 
 **Why greedy works.** Placing anything other than the most frequent letter leaves
-it *relatively* more frequent among what remains, which can only make the rest
+it _relatively_ more frequent among what remains, which can only make the rest
 harder. Placing the most frequent one first never does that.
 
 The heap holds at most 26 entries, so each step is `O(log 26)` — effectively

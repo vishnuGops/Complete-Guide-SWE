@@ -18,7 +18,7 @@ allow(at):
 ```
 
 **Refused requests are not recorded.** The statement says the allowance counts
-requests already *allowed*, so a refusal leaves the state untouched — which is
+requests already _allowed_, so a refusal leaves the state untouched — which is
 what makes a burst of refusals cost nothing and is the usual reading of a rate
 limit.
 
@@ -34,9 +34,9 @@ can pop many — the same argument as `queue-from-stacks`.
 **Space is `O(limit)`**, not `O(calls)`: the queue never holds more than `limit`
 entries, because nothing is pushed once it is full.
 
-**The alternative designs** are worth knowing about. A *fixed window* — count
+**The alternative designs** are worth knowing about. A _fixed window_ — count
 requests per aligned block of `window` ticks — is `O(1)` space and allows up to
-twice the limit across a block boundary. A *token bucket* refills at a steady
+twice the limit across a block boundary. A _token bucket_ refills at a steady
 rate and is `O(1)` space with smoother behaviour, at the cost of not being
 exactly "at most `limit` in any window". This problem specifies the sliding
 window, which is the strict one, and the queue is what implements it exactly.
@@ -51,7 +51,7 @@ window, which is the strict one, and the queue is what implements it exactly.
 - **Recording refused requests.** A burst of refusals then keeps the limiter
   refusing forever.
 - **`<` instead of `<=` when aging out.** Off by one tick.
-- **Comparing against the window's *start* rather than the request's time.** The
+- **Comparing against the window's _start_ rather than the request's time.** The
   window moves with the request.
 - **Keeping every request ever seen.** The queue only needs the ones inside the
   window.

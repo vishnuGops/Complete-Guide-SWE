@@ -37,7 +37,7 @@ the nodes directly avoids the question.
 
 ## Pitfalls
 
-- **Comparing left with left.** That tests whether the subtrees are *equal*, not
+- **Comparing left with left.** That tests whether the subtrees are _equal_, not
   mirrored — and on a symmetric tree the two happen to agree, so it passes
   Example 1 and fails elsewhere.
 - **Forgetting the empty tree**, which is its own reflection.

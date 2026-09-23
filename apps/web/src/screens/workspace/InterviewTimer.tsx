@@ -142,11 +142,7 @@ export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
   }
 
   return (
-    <div
-      role="group"
-      aria-label="Start interview mode"
-      className="flex items-center gap-1"
-    >
+    <div role="group" aria-label="Start interview mode" className="flex items-center gap-1">
       <Button
         size="sm"
         variant="secondary"

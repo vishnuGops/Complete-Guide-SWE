@@ -28,7 +28,7 @@ is never better than not having bought.
 saved copy rather than in place — updating `holding` first and then using the new
 value in `sold` sells an item bought the same day, which the rules forbid.
 
-**Where the cooldown lives.** `free` takes `sold` from the day *before*, not from
+**Where the cooldown lives.** `free` takes `sold` from the day _before_, not from
 today — which is exactly one idle day. Remove that lag and the problem becomes
 "buy and sell as often as you like", whose answer is the sum of every rise.
 

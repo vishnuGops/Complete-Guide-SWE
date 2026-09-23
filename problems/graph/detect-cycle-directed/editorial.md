@@ -4,7 +4,7 @@
 
 The instinct — walk forwards and stop when you reach a place you have seen — is
 wrong, and Example 2 is why: reaching a place twice by two different routes is
-not a loop. What *is* a loop is reaching a place that is still on the route you
+not a loop. What _is_ a loop is reaching a place that is still on the route you
 are standing on.
 
 So a place has **three** states rather than two:
@@ -43,4 +43,4 @@ when there is no loop.
 - **Starting only from place 0.** The graph need not be connected; every
   untouched place has to be tried.
 - **Missing the self-road.** `[0, 0]` is a loop, and a walk that skips `to ==
-  from` silently misses it.
+from` silently misses it.

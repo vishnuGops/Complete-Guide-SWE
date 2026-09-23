@@ -1,4 +1,4 @@
-A meter reports a signed change every minute. A stretch of minutes *cancels out*
+A meter reports a signed change every minute. A stretch of minutes _cancels out_
 when its changes add up to exactly zero.
 
 Count the stretches that cancel out. A stretch is an unbroken run of at least

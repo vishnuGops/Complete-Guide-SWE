@@ -30,6 +30,7 @@ Input: `readings = [1, 3, -1, -3, 5, 3, 6, 7]`, `k = 3`
 Output: `[1, -1, -1, 3, 5, 6]`
 
 The first window is `[1, 3, -1]`, which sorts to `[-1, 1, 3]`, so its median is
+
 1. The second is `[3, -1, -3]`, sorting to `[-3, -1, 3]`, median -1.
 
 ### Example 2

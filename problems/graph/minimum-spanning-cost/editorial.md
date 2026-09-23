@@ -22,7 +22,7 @@ cable `e` joining two groups were left out of some cheapest connected set. That
 set still connects the two groups somehow, so it contains a different cable `f`
 crossing between them; `f` costs at least as much as `e`, so swapping `f` for `e`
 keeps everything connected and costs no more. The greedy choice is therefore
-never wrong — that is the *cut property*, and it is the whole justification.
+never wrong — that is the _cut property_, and it is the whole justification.
 
 **Union find does the connectivity check** as the cables arrive, which is the
 same incremental question as `redundant-link`. Sorting dominates the cost:

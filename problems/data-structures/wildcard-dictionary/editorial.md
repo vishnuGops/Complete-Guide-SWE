@@ -29,7 +29,7 @@ explicitly.
 
 **The cost.** A dot multiplies the branches by the number of children at that
 node — at most 26. With `d` dots the search is `O(26^d · length)` in the worst
-case, which is why the statement caps dots at three. A dot in the *first*
+case, which is why the statement caps dots at three. A dot in the _first_
 position is the expensive one, since the whole dictionary is below the root; a
 dot deep in the word costs almost nothing because few nodes are that deep.
 

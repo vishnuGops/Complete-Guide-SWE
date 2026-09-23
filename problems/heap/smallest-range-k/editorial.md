@@ -11,7 +11,7 @@ Keep one reading from each series — a **pointer per series** — with those
 readings in a min-heap, and the largest of them tracked separately. The current
 range is `[heap root, largest]`, and it covers everything by construction.
 
-To improve it, the *only* useful move is to advance the series whose reading is
+To improve it, the _only_ useful move is to advance the series whose reading is
 the current low: every other series' reading is already at or above the low, so
 advancing it can only push the high further out. So:
 

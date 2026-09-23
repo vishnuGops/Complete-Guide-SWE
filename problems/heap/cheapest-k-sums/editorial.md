@@ -48,7 +48,7 @@ ordering by `(cost, i, j)` is exactly ordering by `(cost, a, b)`.
 - **Enumerating every pairing.**
 - **Pushing both neighbours without a visited set.** Cell `(i, j)` is then taken
   twice.
-- **Seeding the first *row* instead of the first column**, then pushing
+- **Seeding the first _row_ instead of the first column**, then pushing
   downwards. That works too — it is the mirror image — but mixing the two does
   not.
 - **Stopping when the heap empties rather than at `k`.** Both conditions are

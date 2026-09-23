@@ -3,7 +3,7 @@
 ## Approach
 
 Put somebody in room A. Everybody they dislike must be in room B, everybody
-*those* people dislike must be back in A, and so on: **one choice forces the
+_those_ people dislike must be back in A, and so on: **one choice forces the
 whole connected group**. So the algorithm is a walk that assigns the opposite
 room to every neighbour and checks for a contradiction:
 
@@ -42,7 +42,7 @@ way.
 
 - **Starting only from person 0.** Other groups are never checked.
 - **Checking only unassigned neighbours.** The contradiction is found on an
-  *assigned* one; skipping those finds nothing.
+  _assigned_ one; skipping those finds nothing.
 - **Three states where two will do.** Assigned-A, assigned-B and unassigned is
   all that is needed — often written as 1, -1 and 0.
 - **Assuming a disconnected person breaks it.** Somebody nobody dislikes goes in

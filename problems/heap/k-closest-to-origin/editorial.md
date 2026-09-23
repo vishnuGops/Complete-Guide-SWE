@@ -36,5 +36,5 @@ answer everywhere.
 - **A min-heap of all `n` points, popping `k`.** Correct, `O(n + k log n)`, and
   it holds everything.
 - **Comparing the wrong way round in the heap.** The heap of the `k` best must
-  give up its *worst* element, so it is ordered opposite to the answer.
+  give up its _worst_ element, so it is ordered opposite to the answer.
 - **Forgetting the tie rule.**

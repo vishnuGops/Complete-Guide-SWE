@@ -6,7 +6,7 @@
 by subtracting one prefix from another, which works because addition has an
 inverse. Minimum does not: knowing the smallest of `readings[0..to]` and of
 `readings[0..from-1]` tells you nothing about the stretch in between. The
-structure has to *cover* the queried stretch rather than reconstruct it by
+structure has to _cover_ the queried stretch rather than reconstruct it by
 cancellation.
 
 **A segment tree** does that. Each node covers a stretch and stores its smallest
@@ -38,7 +38,7 @@ on the right. Everything else is absorbed into a parent. At most two nodes are
 taken per level, so a query is `O(log n)`.
 
 **The bottom-up form has no recursion and no lazy machinery**, which makes it the
-one worth memorising for point updates. Range *updates* — "add 5 to everything
+one worth memorising for point updates. Range _updates_ — "add 5 to everything
 between here and there" — need the recursive form with lazy propagation, and that
 is the next thing to learn after this.
 

@@ -7,7 +7,7 @@ memorising, because every other version can be written in terms of it.
 
 The row is sorted, so the predicate `readings[i] < target` is true for a prefix
 of the positions and false for the rest. The answer is the first position where
-it turns false. Searching for a *boundary* rather than for a value means there
+it turns false. Searching for a _boundary_ rather than for a value means there
 is no "not found" case to handle: the boundary always exists, and it is `n` when
 the predicate never turns false.
 
@@ -48,6 +48,6 @@ terminates with `low == high` at the boundary.
 - **`high = mid - 1` with `high` inclusive.** It works, but it needs a separate
   variable to remember the best candidate seen, and it is where off-by-one bugs
   live.
-- **Returning the last occurrence.** With duplicates the answer is the *first*
+- **Returning the last occurrence.** With duplicates the answer is the _first_
   position not below the target.
 - **The empty row.** `n = 0` answers 0, and the loop body never runs.

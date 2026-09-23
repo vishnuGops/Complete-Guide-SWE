@@ -56,5 +56,5 @@ quadratic walk is a millisecond.
 - **`>=` on the length.** The last longest run is reported rather than the first.
 - **Checking every substring from scratch.** `O(n³)`, which is a billion
   character comparisons at `n = 1000`.
-- **Confusing this with the longest palindromic *subsequence*.** That one allows
+- **Confusing this with the longest palindromic _subsequence_.** That one allows
   gaps and is a different table entirely.

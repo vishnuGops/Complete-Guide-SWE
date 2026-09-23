@@ -25,7 +25,7 @@ best profit starts at `0`, and a market that only falls never beats it.
 - **Trying every pair.** The two nested loops read like the definition and are
   `O(n^2)`; at `n = 10^4` that is a hundred million comparisons for an answer
   available in ten thousand.
-- **Selling on the buying day.** Updating the running minimum *before* computing
+- **Selling on the buying day.** Updating the running minimum _before_ computing
   the day's profit allows a zero-length trade. It happens to be harmless here
   (the profit is 0, which the answer already allows), but the same slip in the
   variants that require a real trade is a wrong answer.

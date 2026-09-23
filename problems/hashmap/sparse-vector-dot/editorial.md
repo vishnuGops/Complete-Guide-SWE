@@ -10,10 +10,10 @@ value, or a list of `(position, value)` pairs sorted by position. Both are
 point: a row of ten thousand slots with six readings costs six entries.
 
 **How to multiply.** A position contributes to the dot product only if it is
-non-zero in *both* rows, so the work is proportional to the overlap, not to the
+non-zero in _both_ rows, so the work is proportional to the overlap, not to the
 rows' length.
 
-- With maps: walk the *smaller* map and look each position up in the larger. The
+- With maps: walk the _smaller_ map and look each position up in the larger. The
   cost is `O(min(k1, k2))`. Walking the larger one works too and is needlessly
   slower.
 - With sorted pair lists: two pointers, one per row. Whichever position is

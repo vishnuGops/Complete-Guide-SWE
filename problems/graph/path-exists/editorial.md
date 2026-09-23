@@ -12,7 +12,7 @@ neighbours-per-place, and the walk then costs `O(1)` per step.
 finish or run out of places to try.
 
 Depth-first or breadth-first — it genuinely does not matter here, because the
-question is *whether* the finish is reachable, not how far away it is. Swap the
+question is _whether_ the finish is reachable, not how far away it is. Swap the
 stack for a queue and the same code answers "how many roads at least", which is
 `shortest-grid-path` on a graph instead of a grid.
 

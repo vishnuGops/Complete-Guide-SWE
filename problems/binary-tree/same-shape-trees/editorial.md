@@ -15,7 +15,7 @@ same(a, b) = true                 if a and b are both null
            = a.val == b.val and same(a.left, b.left) and same(a.right, b.right)
 ```
 
-The shape check needs no separate pass: it *is* the "exactly one missing" case.
+The shape check needs no separate pass: it _is_ the "exactly one missing" case.
 
 Iteratively, the same walk is a stack of pairs — push `(a.left, b.left)` and
 `(a.right, b.right)`, and apply the same three cases as each pair is popped.
@@ -38,5 +38,5 @@ allocates two lists to answer a question that needs neither.
 - **Comparing null-free traversals.** Example 2 is there for exactly this.
 - **Checking only one side's null-ness.** `a is null and b is null` must be
   distinguished from `a is null or b is null`.
-- **Returning early on the first *match*.** The answer is an `and` over the whole
+- **Returning early on the first _match_.** The answer is an `and` over the whole
   tree, not an `or`.

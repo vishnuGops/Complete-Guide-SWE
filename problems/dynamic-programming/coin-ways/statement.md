@@ -48,5 +48,5 @@ One way to make nothing: take no coins.
 ## Notes
 
 Enumerating the ways and counting them is what `sum-combinations` does, and there
-can be astronomically many. This question asks only *how many*, which a table
+can be astronomically many. This question asks only _how many_, which a table
 answers without ever writing one down.

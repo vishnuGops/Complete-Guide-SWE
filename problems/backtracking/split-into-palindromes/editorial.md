@@ -19,7 +19,7 @@ build(at):
 **The palindrome test is the prune, and it is the whole point.** There are
 `2^(n-1)` ways to cut a word of length `n` — a cut after each of the `n-1` gaps
 or not — and for most words very few of them are valid. Testing each piece
-*before* recursing abandons a branch the moment it cannot lead anywhere, so the
+_before_ recursing abandons a branch the moment it cannot lead anywhere, so the
 work is proportional to the valid prefixes rather than to all the cuttings.
 Generating every cutting and filtering afterwards is correct and does the full
 `2^(n-1)`.

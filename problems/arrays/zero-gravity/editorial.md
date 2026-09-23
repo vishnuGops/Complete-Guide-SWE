@@ -4,8 +4,8 @@
 
 Two positions moving left to right: one reads, one writes. The reader visits
 every slot; the writer only advances when a non-zero value is stored. That
-single invariant - *everything before the write position is the non-zero values
-seen so far, in order* - is what makes the result stable without any extra room.
+single invariant - _everything before the write position is the non-zero values
+seen so far, in order_ - is what makes the result stable without any extra room.
 
 After the reader finishes, the writer marks how many non-zero values there were,
 and everything from there to the end is a zero.
@@ -28,5 +28,5 @@ putting it where the non-zero value came from is harmless.
   visible.
 - **Removing zeroes while iterating.** Deleting from a list you are walking skips
   elements, and in Java it is not available at all.
-- **Losing stability.** Swapping the current value with the *last* slot moves the
+- **Losing stability.** Swapping the current value with the _last_ slot moves the
   zeroes in one pass but scrambles the order of what remains.

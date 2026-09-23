@@ -1,4 +1,4 @@
-Looking down from the root, a node is *unblocked* when nothing on the path from
+Looking down from the root, a node is _unblocked_ when nothing on the path from
 the root to it — the root included — holds a larger value.
 
 Count the unblocked nodes. The root is always one of them.

@@ -32,7 +32,7 @@ is already sorted and already linked, so it is attached in one assignment rather
 than copied link by link.
 
 Using `<=` rather than `<` keeps equal values in the order the two chains had
-them — the merge is *stable*, which matters the moment this is the inner step of
+them — the merge is _stable_, which matters the moment this is the inner step of
 a merge sort.
 
 ## Complexity

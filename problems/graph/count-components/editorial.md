@@ -34,7 +34,7 @@ same, and subtract one from the count when a join actually merges something. Wit
 path compression and union by size each operation is effectively constant, and
 the whole thing is one pass over the links with no adjacency list at all.
 
-Which to reach for: the traversal when you also want *which* group each person is
+Which to reach for: the traversal when you also want _which_ group each person is
 in or anything about its shape; union find when links arrive one at a time and
 the count is wanted after each — which is what `graph-union-find` is about.
 

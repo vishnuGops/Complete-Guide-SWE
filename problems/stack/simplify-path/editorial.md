@@ -5,12 +5,12 @@
 Splitting on `/` turns the path into a sequence of pieces, and each kind of piece
 is one operation on the answer built so far:
 
-| Piece      | Meaning              | Operation |
-| ---------- | -------------------- | --------- |
-| `""`       | a repeated separator | nothing   |
-| `"."`      | this folder          | nothing   |
-| `".."`     | the folder above     | pop       |
-| anything else | a folder name     | push      |
+| Piece         | Meaning              | Operation |
+| ------------- | -------------------- | --------- |
+| `""`          | a repeated separator | nothing   |
+| `"."`         | this folder          | nothing   |
+| `".."`        | the folder above     | pop       |
+| anything else | a folder name        | push      |
 
 That is a stack, and the whole solution is one pass over the pieces.
 

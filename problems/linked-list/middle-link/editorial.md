@@ -20,7 +20,7 @@ The invariant is arithmetic: after `k` iterations, `slow` has moved `k` links an
 which happens at `k = floor(n / 2)` — so `slow` is at index `floor(n / 2)`, the
 second middle when `n` is even and the only middle when it is odd.
 
-Getting the *other* middle is a one-token change: `while fast.next is not null
+Getting the _other_ middle is a one-token change: `while fast.next is not null
 and fast.next.next is not null` stops one step earlier. Which one a problem wants
 is worth reading twice.
 

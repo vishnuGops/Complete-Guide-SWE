@@ -21,8 +21,8 @@ for i, value in readings:
         record readings[deque.front]
 ```
 
-Two removals, and they are for different reasons — one is about *value* (evicted
-by something larger) and one is about *age* (fallen out of the window). Confusing
+Two removals, and they are for different reasons — one is about _value_ (evicted
+by something larger) and one is about _age_ (fallen out of the window). Confusing
 them is where this goes wrong.
 
 **Why it is `O(n)` despite the inner loop.** Each position is pushed once and
@@ -39,7 +39,7 @@ newer one is just as large. Either works here; `<=` keeps the deque shorter.
 **Against the alternatives.** Scanning each window is `O(n·k)` and does not
 finish at the stated maximum. A max-heap with lazy deletion — the
 `window-median-stream` machinery — is `O(n log k)` and is the right tool when
-the question is about the *middle* rather than the end. For the maximum, the
+the question is about the _middle_ rather than the end. For the maximum, the
 deque is `O(n)` and needs no deletion machinery at all, because the eviction rule
 does the deleting.
 

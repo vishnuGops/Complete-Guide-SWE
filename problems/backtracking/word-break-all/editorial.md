@@ -23,7 +23,7 @@ positions rather than exponential in the number of paths to them.
 
 **Why it matters, concretely.** Take twenty `a`s followed by a `b`, with `a` and
 `aa` in the dictionary. Every prefix splits in a Fibonacci number of ways — about
-ten thousand at position 20 — and *none* of them leads anywhere, because nothing
+ten thousand at position 20 — and _none_ of them leads anywhere, because nothing
 spells the `b`. Without memoisation the search discovers that separately for
 every path. With it, position 20 is computed once, comes back empty, and
 everything above it collapses at once.
@@ -31,7 +31,7 @@ everything above it collapses at once.
 **Memoisation does not make the output small.** When there really are many
 readings, there really are many readings — `a` and `aa` over twenty `a`s give
 over ten thousand sentences — and they all have to be built. What memoisation
-removes is the *wasted* work, which is the part that is exponential for no
+removes is the _wasted_ work, which is the part that is exponential for no
 reason.
 
 **The base case returns one empty reading, not none.** `[""]` means "there is one
@@ -51,6 +51,6 @@ because it never builds the readings.
 
 - **No memoisation.** Correct, and exponential on the almost-works inputs.
 - **Returning `[]` at the end of the letters.** Everything collapses to nothing.
-- **Memoising the *sentence* rather than the readings of a suffix.** The prefix
+- **Memoising the _sentence_ rather than the readings of a suffix.** The prefix
   is not part of the subproblem, and including it makes every entry unique.
 - **Joining with a trailing space.** The words are separated, not terminated.

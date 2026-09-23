@@ -25,7 +25,7 @@ return lowDummy.next
 
 The line that is forgotten is `highTail.next = null`. Every link kept its
 original `next` while it was being appended, so the last link of the upper run
-still points at whatever followed it in the *input* — which is usually a link
+still points at whatever followed it in the _input_ — which is usually a link
 already in the lower run. Without terminating, the result is a cycle, and the
 symptom is a program that never finishes rather than a wrong answer.
 

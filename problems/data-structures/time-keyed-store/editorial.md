@@ -33,7 +33,7 @@ noticing which promise makes a design cheap is the transferable skill.
 
 **The boundary search is `first-not-below` again**, with two differences worth
 naming: the comparison is `>` rather than `>=` (so an exact time match is found
-rather than skipped), and the answer is the entry *before* the boundary rather
+rather than skipped), and the answer is the entry _before_ the boundary rather
 than at it.
 
 ## Complexity
@@ -45,7 +45,7 @@ than at it.
 
 - **Searching for an exact time.** The time asked about usually has no entry;
   the question is which entry was most recent.
-- **`>=` instead of `>`.** An exact match then returns the *previous* value.
+- **`>=` instead of `>`.** An exact match then returns the _previous_ value.
 - **Forgetting the before-the-beginning case.** It is an empty string, not the
   first value.
 - **One list for every key.** Each key's history has to be searched

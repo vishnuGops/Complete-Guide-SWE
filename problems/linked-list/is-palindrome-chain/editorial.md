@@ -34,7 +34,7 @@ mysterious failure when it is missing.
   exists to rule it out.
 - **Leaving the chain reversed.** A side effect nobody asked for, and the source
   of failures in whatever runs next.
-- **Comparing until the *first* half runs out.** On an odd chain that walks the
+- **Comparing until the _first_ half runs out.** On an odd chain that walks the
   reversed half past its end.
 - **The empty and single-link chains.** Both read the same both ways, and both
   should fall out of the loop conditions rather than needing a branch.

@@ -25,7 +25,7 @@ Both are correct, and the xor is `O(1)` space and one line.
 
 **Negatives need no thought.** Exclusive-or works on the two's-complement bits,
 and `x ^ x` is 0 for any `x` at all. That is worth checking rather than assuming,
-because several of the tricks in this topic *do* need care with the sign bit.
+because several of the tricks in this topic _do_ need care with the sign bit.
 
 This is the smallest of a family: `missing-from-range` xors two sequences
 together, `two-lonely-numbers` xors everything and then splits the row in two,

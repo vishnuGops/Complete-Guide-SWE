@@ -14,7 +14,7 @@ cheapest[0][0] = tolls[0][0]
 Filling top to bottom and left to right means both contributors are known when a
 cell is reached.
 
-**The edges.** A missing neighbour should be *infinitely* expensive rather than
+**The edges.** A missing neighbour should be _infinitely_ expensive rather than
 zero — the opposite of `grid-paths`, where a missing neighbour contributed zero
 routes. Getting that backwards makes the first row and column free, and the
 answer far too small. Writing the first row and column explicitly as running

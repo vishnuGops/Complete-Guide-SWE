@@ -21,7 +21,7 @@ return fresh == 0 ? minutes : -1
 
 Three things are worth stating.
 
-**Level by level.** Take the queue's size *before* expanding, and expand exactly
+**Level by level.** Take the queue's size _before_ expanding, and expand exactly
 that many cells. Mixing the new arrivals into the same round counts minutes
 wrong. (The alternative is to store a minute alongside each cell, as in
 `shortest-grid-path`; both are fine, and this one is the more natural fit when

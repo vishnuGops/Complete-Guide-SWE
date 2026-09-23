@@ -33,7 +33,7 @@ bits. A digit is legal when its bit is clear in all three; writing sets it in al
 three and erasing clears it. The box index is `(row / 3) * 3 + column / 3` — the
 one piece of arithmetic worth writing down carefully.
 
-**What a real solver adds** is choosing *which* blank to fill next rather than
+**What a real solver adds** is choosing _which_ blank to fill next rather than
 taking them in order: always the one with the fewest legal digits. That single
 change turns the hardest puzzles from minutes into milliseconds, and it is the
 general heuristic — most constrained variable first — that applies to every

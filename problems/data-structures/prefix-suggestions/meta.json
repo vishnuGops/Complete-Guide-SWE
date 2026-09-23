@@ -5,11 +5,7 @@
   "title": "Suggest As You Type",
   "version": 1,
   "topic": "data-structures",
-  "patterns": [
-    "design",
-    "trie",
-    "top k"
-  ],
+  "patterns": ["design", "trie", "top k"],
   "tier": "Medium",
   "rating": 7,
   "order": 1,
@@ -17,10 +13,7 @@
   "entry": "Suggester",
   "expect": "return",
   "comparator": "exact",
-  "related": [
-    "prefix-tree",
-    "wildcard-dictionary"
-  ],
+  "related": ["prefix-tree", "wildcard-dictionary"],
   "targetComplexity": {
     "time": "O(prefix length + k) per suggestion",
     "space": "O(total letters · k)"

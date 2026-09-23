@@ -21,11 +21,11 @@ at the group's **representative**, which points at itself.
 
 **The two optimisations are what make it fast, and each is one line.**
 
-*Union by size*: always attach the smaller group's representative under the
+_Union by size_: always attach the smaller group's representative under the
 larger one's. Without it, `link(0,1), link(0,2), link(0,3), …` can build a chain
 `n` long and every `find` walks all of it.
 
-*Path compression*: after a `find`, point every machine it walked past straight
+_Path compression_: after a `find`, point every machine it walked past straight
 at the representative, so the next `find` from any of them is one step.
 
 Together they give `O(α(n))` amortised per operation, where `α` is the inverse

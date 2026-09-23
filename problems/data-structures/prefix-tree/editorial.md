@@ -48,7 +48,7 @@ changes nothing.
 
 - **No end-of-word marker.** `has` then answers the same as `startsWith`, and
   Example 1 fails.
-- **Marking the *root* as ending a word.** The empty string is not a word here.
+- **Marking the _root_ as ending a word.** The empty string is not a word here.
 - **A hash set of every prefix of every word.** It works, answers both questions,
   and costs `O(length²)` space per word.
 - **Deleting by clearing the marker only.** Not asked for here, and the reason

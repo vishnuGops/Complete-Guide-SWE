@@ -40,6 +40,6 @@ Output: `1`
 
 ## Notes
 
-Exclusive-or cancels in *pairs*, so it does not work here directly: three copies
+Exclusive-or cancels in _pairs_, so it does not work here directly: three copies
 of a value xor together to that value, not to zero. The counting has to be done
 per bit, and in threes.

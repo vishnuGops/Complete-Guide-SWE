@@ -32,7 +32,7 @@ Input: `readings = [5, 5, 5]`
 
 Output: `[-1, -1, -1]`
 
-Nothing is *strictly* greater than anything else.
+Nothing is _strictly_ greater than anything else.
 
 ### Example 3
 

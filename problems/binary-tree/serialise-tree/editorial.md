@@ -4,7 +4,7 @@
 
 Two independent halves, and each is a traversal.
 
-**Reading the pre-order form.** The form works because *every* absent child is
+**Reading the pre-order form.** The form works because _every_ absent child is
 written down. Without the `#`s, `1,2,3` could be several different trees and
 nothing in the text says where the left subtree ends. With them, the reader
 never has to guess:

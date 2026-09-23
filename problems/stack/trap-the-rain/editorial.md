@@ -20,7 +20,7 @@ complete solution and worth writing first.
 pointers inwards from the ends, keeping `leftMax` and `rightMax` for what each
 has seen so far. At each step, compare `heights[left]` with `heights[right]`:
 
-- If `heights[left] < heights[right]`, then *whatever* lies between them, the
+- If `heights[left] < heights[right]`, then _whatever_ lies between them, the
   right-hand wall for the left column is at least `heights[right]`, which is
   already higher than `heights[left]`. So the binding wall is the left one, and
   `leftMax - heights[left]` is the final answer for that column. Settle it and
@@ -28,7 +28,7 @@ has seen so far. At each step, compare `heights[left]` with `heights[right]`:
 - Otherwise, do the mirror image on the right.
 
 The claim being used is not "the maxima are known" — they are not — but "the
-maximum on the *other* side is already at least as large as this side's, so it
+maximum on the _other_ side is already at least as large as this side's, so it
 cannot be the limiting one". That is enough.
 
 The monotonic stack is the third answer: keep a decreasing stack of positions,

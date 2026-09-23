@@ -31,7 +31,7 @@ exponential in the worst case.
 is the simplest way; processing the queue one whole level at a time and counting
 levels is the other, and is what `rotting-spread` needs.
 
-Why not depth-first? It finds *a* route, not the shortest — the first one it
+Why not depth-first? It finds _a_ route, not the shortest — the first one it
 stumbles into can wander arbitrarily far. Depth-first answers "is there a route";
 breadth-first answers "how short is the shortest".
 

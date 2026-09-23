@@ -21,14 +21,14 @@ build(start):
 ```
 
 At a given level, a run of equal values may be entered only at its first member.
-Taking a *later* member would produce a subset already reachable by taking the
-first, so it is skipped; but taking *more* of the run is still possible, because
+Taking a _later_ member would produce a subset already reachable by taking the
+first, so it is skipped; but taking _more_ of the run is still possible, because
 the deeper level starts at `i + 1` and its own `i > start` test lets it in.
 
 **`i > start`, not `i > 0`.** This is the line that is always written wrong. With
 `i > 0` the second 2 of `[1, 2, 2]` could never be chosen at all, and `[2, 2]`
-disappears from the answer. The test is about being a repeat *within this level's
-choices*, not about being a repeat in the list.
+disappears from the answer. The test is about being a repeat _within this level's
+choices_, not about being a repeat in the list.
 
 Recording at the top of the call rather than at a base case is a small
 simplification: every node of the recursion is itself a subset, so there is no

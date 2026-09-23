@@ -4,7 +4,7 @@
 
 **Dijkstra's algorithm**, and the reason it works is worth stating precisely:
 because every toll is positive, the cheapest not-yet-settled place reachable from
-the settled ones has its final cost *already*. Any other route to it would have
+the settled ones has its final cost _already_. Any other route to it would have
 to leave the settled set through some place that is at least as dear and then pay
 more on top.
 
@@ -51,6 +51,6 @@ statement gives it to you on purpose.
   Its cost is not final until then.
 - **Trying to update an entry inside the heap.** Push again and skip the stale
   pop.
-- **A plain breadth-first search.** That finds the fewest *roads*, not the
+- **A plain breadth-first search.** That finds the fewest _roads_, not the
   cheapest tolls, and the two differ the moment tolls differ.
 - **Start equal to finish.** The answer is 0, not -1.

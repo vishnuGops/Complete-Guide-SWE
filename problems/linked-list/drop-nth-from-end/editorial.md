@@ -9,7 +9,7 @@ Give the leading walker a head start of `n` links. From then on both move one
 link at a time, so the gap stays exactly `n`; when the leader falls off the end,
 the follower is exactly `n` links from it — the link to remove.
 
-But removing a link needs the link *before* it, so the follower should stop one
+But removing a link needs the link _before_ it, so the follower should stop one
 earlier, and it should start one earlier too. That is where the dummy head earns
 its place: put a link before the head, start the follower there, and the case
 "the link to remove is the head" needs no code, because the dummy is in front of

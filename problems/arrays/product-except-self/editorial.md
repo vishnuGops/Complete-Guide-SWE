@@ -35,4 +35,4 @@ right product.
   for each position is `O(n^2)`; at the stated maximum that is a hundred
   million multiplications, which does not finish here.
 - **Counting the output as extra space.** It is the answer, not scratch space —
-  but a second array of prefix products *is* scratch, and is avoidable.
+  but a second array of prefix products _is_ scratch, and is avoidable.

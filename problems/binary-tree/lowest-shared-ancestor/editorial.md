@@ -6,7 +6,7 @@
 every node's parent. Then climb from the first node to the root, putting each
 ancestor into a set; then climb from the second node and stop at the first
 ancestor already in the set. Because you climb from the deepest end, the first
-match *is* the lowest one.
+match _is_ the lowest one.
 
 `O(n)` time and `O(n)` space, entirely iterative, and it generalises: the same
 parent map answers "how far apart are these two nodes" and "what is the path
@@ -41,7 +41,7 @@ raised, which is why the reference uses the parent map.
 
 ## Pitfalls
 
-- **Climbing from the root down.** The *first* shared ancestor found from the top
+- **Climbing from the root down.** The _first_ shared ancestor found from the top
   is the highest, not the lowest; climb upwards from the nodes instead.
 - **Forgetting that a node is its own ancestor.** Example 2 exists for this.
 - **The two values being equal.** The answer is that node.

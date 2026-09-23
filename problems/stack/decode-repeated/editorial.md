@@ -2,8 +2,8 @@
 
 ## Approach
 
-Everything hinges on what a `]` has to do: repeat *the text built since the
-matching `[`*, and then append the result to whatever was being built before
+Everything hinges on what a `]` has to do: repeat _the text built since the
+matching `[`_, and then append the result to whatever was being built before
 that. Both of those — "the text since" and "whatever was before" — are
 last-in-first-out, which makes this two stacks and one pass.
 
@@ -29,9 +29,8 @@ Three details that decide whether it works:
 - **Counts can be multi-digit.** `12[a]` is twelve `a`s; accumulating with
   `count * 10 + digit` and only consuming it at the `[` handles that without
   lookahead.
-- **Reset `count` to 0 at the `[`.** Otherwise `2[a]3[b]` carries the 2 into the
-  3.
-- **The text stack holds the *prefix*, not the result.** At a `]` the answer is
+- **Reset `count` to 0 at the `[`.** Otherwise `2[a]3[b]` carries the 2 into the 3.
+- **The text stack holds the _prefix_, not the result.** At a `]` the answer is
   the popped prefix followed by the repeated run, in that order.
 
 Recursion is the other natural answer and is the same algorithm: the call stack
