@@ -92,7 +92,8 @@
   --color-warn-100: oklch(0.955 0.04 80);
   --color-warn-300: oklch(0.855 0.125 80);
   --color-warn-500: oklch(0.752 0.145 72);
-  --color-warn-700: oklch(0.515 0.115 66);
+  /* L .49 rather than .515 (P9-6): amber text holds 4.5:1 on the selected step too. */
+  --color-warn-700: oklch(0.49 0.11 66);
   --color-warn-900: oklch(0.36 0.08 68);
 
   --color-danger-100: oklch(0.945 0.024 22);

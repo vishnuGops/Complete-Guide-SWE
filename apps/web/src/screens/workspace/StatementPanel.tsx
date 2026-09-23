@@ -680,17 +680,24 @@ function StatementPanelBody({
       */}
       <div className="shrink-0 px-5 pt-4 pb-1">
         <h1 className="tracking-title text-lg font-semibold">{summary.title}</h1>
+        {/*
+          Each item carries the dot before it, so a line that wraps at 1024px
+          starts with a word rather than ends with a stray "·" (P9-6).
+        */}
         <p className="text-fg-subtle mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
           <span>{summary.tier}</span>
-          <span aria-hidden>·</span>
-          <span className="tnum">rating {summary.rating}</span>
-          <span aria-hidden>·</span>
-          <span>{TOPIC_LABEL[summary.topic]}</span>
+          <span className="tnum">
+            <span aria-hidden>· </span>rating {summary.rating}
+          </span>
+          <span>
+            <span aria-hidden>· </span>
+            {TOPIC_LABEL[summary.topic]}
+          </span>
           {summary.patterns.length > 0 && (
-            <>
-              <span aria-hidden>·</span>
-              <span>{summary.patterns.join(', ')}</span>
-            </>
+            <span>
+              <span aria-hidden>· </span>
+              {summary.patterns.join(', ')}
+            </span>
           )}
         </p>
       </div>

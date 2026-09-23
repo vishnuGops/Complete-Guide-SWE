@@ -216,6 +216,19 @@ describe.each(Object.keys(THEMES) as (keyof typeof THEMES)[])('%s theme', (theme
     ).toBeGreaterThanOrEqual(TEXT);
   });
 
+  it.each(['success-fg', 'warn-fg', 'danger-fg'] as const)(
+    'reads the %s verdict text on a selected row (P9-6)',
+    (token) => {
+      // The selected test in the results list shows its verdict code in the
+      // verdict's text colour; an amber TLE there was 4.36:1 before warn-700
+      // moved (found reading the interview screen's axe failure).
+      expect(
+        Number(contrast(colour(token), colour('surface-selected')).toFixed(2)),
+        `--${token} on --surface-selected in ${theme}`,
+      ).toBeGreaterThanOrEqual(TEXT);
+    },
+  );
+
   it.each(['success', 'warn', 'danger'] as const)(
     'shows the %s dot on a selected row (P9-6)',
     (status) => {

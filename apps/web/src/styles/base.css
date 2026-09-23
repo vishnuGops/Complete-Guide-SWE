@@ -24,6 +24,15 @@
     text-rendering: optimizeLegibility;
   }
 
+  /*
+   * Emphasis at 600, not the browser's 700: 700 is kept for stat numerals of
+   * 28px and up (docs/DESIGN.md 5).
+   */
+  strong,
+  b {
+    font-weight: 600;
+  }
+
   code,
   kbd,
   pre,

@@ -179,6 +179,8 @@ export function SolvedChart({ points }: { points: readonly ChartPoint[] }) {
         {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions */}
         <svg
           aria-hidden
+          // Nothing paints in the default black: every mark sets its own colour.
+          fill="none"
           viewBox={`0 0 ${String(WIDTH)} ${String(HEIGHT)}`}
           className="block h-40 w-full"
           preserveAspectRatio="none"

@@ -36,12 +36,18 @@ export function ListRow({ tile, title, meta, value, className }: ListRowProps) {
   );
 }
 
-/** A neutral 28px tile for an icon beside a row or a sub-stat. */
-export function IconTile({ children }: { children: ReactNode }) {
+/**
+ * A neutral tile for an icon: 28px beside a sub-stat, 20px in a list row, where
+ * it lines up with the verdict tiles around it.
+ */
+export function IconTile({ children, size = 'md' }: { children: ReactNode; size?: 'sm' | 'md' }) {
   return (
     <span
       aria-hidden
-      className="bg-surface-sunken text-fg-muted border-border grid size-7 shrink-0 place-items-center rounded-sm border"
+      className={cn(
+        'bg-surface-sunken text-fg-muted border-border grid shrink-0 place-items-center rounded-sm border',
+        size === 'md' ? 'size-7' : 'size-5',
+      )}
     >
       {children}
     </span>

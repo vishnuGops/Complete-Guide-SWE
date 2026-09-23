@@ -49,6 +49,7 @@ function Glyph({ status }: { status: ProgressStatus }) {
   return (
     <svg
       aria-hidden
+      fill="none"
       viewBox="0 0 12 12"
       className={cn('size-3 shrink-0', GLYPH_COLOUR[status])}
       data-status={status}

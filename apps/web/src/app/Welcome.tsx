@@ -31,7 +31,7 @@ export function Welcome() {
       className="bg-surface border-border shadow-card mx-6 mt-5 rounded-xl border p-5"
       aria-label="Welcome"
     >
-      <h2 className="text-sm font-semibold">Welcome to DevProMax</h2>
+      <h2 className="text-md font-semibold">Welcome to DevProMax</h2>
       <ul className="text-fg-muted mt-2 max-w-prose space-y-1 text-sm">
         <li>
           <strong className="text-fg">Run</strong> <Keys keys={SHORTCUTS.run.keys} />

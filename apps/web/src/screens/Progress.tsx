@@ -249,7 +249,7 @@ function RecentCard({ recent }: { recent: readonly RecentActivity[] }) {
                   isVerdict(entry.verdict) ? (
                     <VerdictTile verdict={entry.verdict} />
                   ) : (
-                    <IconTile>{Icon && <Icon size={14} strokeWidth={1.5} />}</IconTile>
+                    <IconTile size="sm">{Icon && <Icon size={12} strokeWidth={1.5} />}</IconTile>
                   )
                 }
                 title={
@@ -301,8 +301,8 @@ function ReviewRow({ item, overdue }: { item: ReviewItem; overdue: boolean }) {
   return (
     <ListRow
       tile={
-        <IconTile>
-          <CalendarClock size={14} strokeWidth={1.5} />
+        <IconTile size="sm">
+          <CalendarClock size={12} strokeWidth={1.5} />
         </IconTile>
       }
       title={

@@ -969,6 +969,7 @@ export function Workspace() {
       <header className="flex h-8 shrink-0 items-center gap-2">
         <Segmented
           label="Language"
+          tray="surface"
           options={LANGUAGES.map((option) => ({
             value: option,
             label: LANGUAGE_LABEL[option],

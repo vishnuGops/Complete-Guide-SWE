@@ -34,6 +34,11 @@ export interface SegmentedProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
   size?: 'sm' | 'md';
+  /**
+   * The tray's fill. `sunken` inside a card; `surface` on the canvas, where a
+   * sunken tray is lighter than what it sits on and reads as raised (P9-6).
+   */
+  tray?: 'sunken' | 'surface';
   className?: string;
 }
 
@@ -49,6 +54,7 @@ export function Segmented<T extends string>({
   value,
   onChange,
   size = 'md',
+  tray = 'sunken',
   className,
 }: SegmentedProps<T>) {
   const group = useRef<HTMLDivElement>(null);
@@ -75,7 +81,8 @@ export function Segmented<T extends string>({
       aria-label={label}
       onKeyDown={onKeyDown}
       className={cn(
-        'bg-surface-sunken border-border inline-flex items-center gap-0.5 rounded-md border p-0.5',
+        'border-border inline-flex items-center gap-0.5 rounded-md border p-0.5',
+        tray === 'sunken' ? 'bg-surface-sunken' : 'bg-surface',
         className,
       )}
     >

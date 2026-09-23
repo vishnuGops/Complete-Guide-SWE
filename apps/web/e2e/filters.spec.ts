@@ -138,7 +138,10 @@ test.describe('the filters', () => {
     await page.request.put(`/api/bookmarks/${slug}`, { headers: CLIENT_HEADERS });
 
     await page.goto('/?bookmarked=true');
-    await expect(page.getByRole('checkbox', { name: 'Starred only' })).toBeChecked();
+    // The Starred view of the list's segmented control since P9-6, not a checkbox.
+    await expect(
+      page.getByRole('group', { name: 'Which problems' }).getByRole('button', { name: 'Starred' }),
+    ).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('link', { name: 'Where It Would Go' })).toBeVisible();
 
     // Unstarring it takes the row away, which is the only assertion that shows

@@ -400,7 +400,7 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
       <header className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-2.5">
         <VerdictTile verdict={result.verdict} />
         {/* The loudest words on the screen after a run (P9-6): the verdict leads its card. */}
-        <p className={cn('text-lg font-semibold', VERDICT_TONE[result.verdict])}>
+        <p className={cn('text-lg font-semibold whitespace-nowrap', VERDICT_TONE[result.verdict])}>
           <span data-testid="verdict">{VERDICT_LABEL[result.verdict]}</span>
         </p>
         <p className="text-fg-muted tnum text-xs">

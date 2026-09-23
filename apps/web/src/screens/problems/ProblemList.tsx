@@ -64,7 +64,8 @@ const COLUMNS: Column[] = [
   { key: 'status', label: 'Status', className: 'w-28' },
   { key: 'title', label: 'Problem' },
   { key: 'topic', label: 'Topic', className: 'w-36' },
-  { key: 'patterns', label: 'Patterns', className: 'w-56' },
+  // Steps aside below 1280px, so the Problem column keeps whole titles at 1024.
+  { key: 'patterns', label: 'Patterns', className: 'w-56 max-[1279px]:hidden' },
   { key: 'tier', label: 'Tier', className: 'w-20' },
   { key: 'rating', label: 'Rating', className: 'w-20 text-right' },
   { key: 'lastAttempted', label: 'Last attempted', className: 'w-32' },
@@ -146,7 +147,10 @@ function Row({ problem }: { problem: ProblemSummary }) {
         )}
       </td>
       <td className="text-fg-muted px-3 py-0 text-xs">{TOPIC_LABEL[problem.topic]}</td>
-      <td className="text-fg-subtle truncate px-3 py-0 text-xs" title={problem.patterns.join(', ')}>
+      <td
+        className="text-fg-subtle truncate px-3 py-0 text-xs max-[1279px]:hidden"
+        title={problem.patterns.join(', ')}
+      >
         {problem.patterns.join(', ')}
       </td>
       <td className="text-fg-muted px-3 py-0 text-xs">{problem.tier}</td>

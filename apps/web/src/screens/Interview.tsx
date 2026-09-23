@@ -67,6 +67,7 @@ function ProblemRow({
   index: number;
   current: boolean;
 }) {
+  const muted = current ? 'text-fg-muted' : 'text-fg-subtle';
   return (
     <li
       aria-current={current ? 'step' : undefined}
@@ -75,24 +76,31 @@ function ProblemRow({
         current ? 'bg-surface-selected border-l-accent' : 'border-l-transparent',
       )}
     >
-      <span className="text-fg-subtle tnum text-xs">{index + 1}</span>
+      {/*
+        On the current row, secondary text is fg-muted: fg-subtle and the amber
+        of "submitted" drop under 4.5:1 on the selected step (the a11y audit
+        found it). The word still says the status; the colour is extra.
+      */}
+      <span className={cn('tnum text-xs', muted)}>{index + 1}</span>
       <Link
         to={`/problems/${problem.slug}`}
         className="focus-ring hover:text-accent-fg rounded-xs font-medium"
       >
         {problem.title}
       </Link>
-      <span className="text-fg-subtle text-xs">
+      <span className={cn('text-xs', muted)}>
         {TOPIC_LABEL[problem.topic]} · {problem.tier}
       </span>
       <span
         className={cn(
           'ml-auto text-xs',
-          problem.solved
-            ? 'text-success-fg'
-            : problem.attempted
-              ? 'text-warn-fg'
-              : 'text-fg-subtle',
+          current
+            ? 'text-fg-muted'
+            : problem.solved
+              ? 'text-success-fg'
+              : problem.attempted
+                ? 'text-warn-fg'
+                : 'text-fg-subtle',
         )}
       >
         {problem.solved ? 'accepted' : problem.attempted ? 'submitted' : 'not submitted'}
@@ -190,7 +198,7 @@ export function Interview() {
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         title="Mock interview"
-        context="Two problems, forty-five minutes, and an interviewer who wants the approach before the code. It will not give you the answer — that is the point of it."
+        context="Two problems, forty-five minutes, the approach before the code."
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
@@ -226,8 +234,10 @@ export function Interview() {
                 )}
 
                 <p className="text-fg-muted mb-4 max-w-prose text-sm">
-                  The problems are two you have not solved. The clock starts when you do, and the
-                  coding happens in the workspace, where coding happens.
+                  The interviewer wants to hear how you would solve each problem before you write
+                  it, and it will not give you the answer — that is the point of it. The problems
+                  are two you have not solved; the clock starts when you do, and the coding happens
+                  in the workspace, where coding happens.
                 </p>
                 <Button
                   variant="primary"
