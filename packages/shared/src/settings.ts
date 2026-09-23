@@ -12,6 +12,12 @@ export const editorPrefsSchema = z.object({
   tabSize: z.int().min(2).max(8).default(4),
   vimKeybindings: z.boolean().default(false),
   wordWrap: z.boolean().default(false),
+  /**
+   * Run the language's formatter when the user saves with Ctrl+S (ROADMAP
+   * P9-5). Off by default: the formatter is optional, and rewriting someone's
+   * layout is something they should have asked for.
+   */
+  formatOnSave: z.boolean().default(false),
 });
 export type EditorPrefs = z.infer<typeof editorPrefsSchema>;
 

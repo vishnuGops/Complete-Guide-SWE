@@ -6,6 +6,7 @@ import { RuntimeSection } from './RuntimeSection.js';
 import { useAppTheme } from '../../app/useAppTheme.js';
 import { Button, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
 import { CoachSection } from './CoachSection.js';
+import { FormattingSection } from './FormattingSection.js';
 import { NumberField, Row, Section, Toggle } from './fields.js';
 
 /**
@@ -144,6 +145,13 @@ export function Settings() {
             />
           </Row>
         </Section>
+
+        <FormattingSection
+          formatOnSave={editor.formatOnSave}
+          onFormatOnSave={(formatOnSave) => {
+            update.mutate({ editor: { formatOnSave } });
+          }}
+        />
 
         <Section
           title="Judge"

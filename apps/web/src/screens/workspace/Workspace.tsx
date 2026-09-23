@@ -19,6 +19,7 @@ import {
 import { api } from '../../api/client.js';
 import {
   useDeleteDraft,
+  useFormatters,
   useJudge,
   useProblem,
   useReVerify,
@@ -85,6 +86,9 @@ import { useCoach } from './useCoach.js';
 const CodeEditor = lazy(() => import('../../editor/CodeEditor.js'));
 
 const DEFAULT_EDITOR_PREFS = editorPrefsSchema.parse({});
+
+/** Monaco's own binding for Format Document, which the editor action reuses. */
+const FORMAT_KEYS = ['Shift', 'Alt', 'F'] as const;
 
 /** How long after the last keystroke a draft is written. */
 const AUTOSAVE_MS = 800;
@@ -373,6 +377,130 @@ export function Workspace() {
     };
   }, []);
 
+  /**
+   * Format, and Ctrl+S (ROADMAP P9-5).
+   *
+   * The formatter runs on the server, so formatting is a round trip, and the
+   * editor can change while it is in flight. The answer is applied only if the
+   * editor still holds exactly what was sent, for the same problem and
+   * language; otherwise it is dropped without comment - the user has moved on,
+   * and replacing what they typed since with a formatted copy of what they had
+   * before is the one outcome worse than not formatting.
+   *
+   * The note beside the button is keyed on the code it describes, so the next
+   * keystroke clears it by itself: "Formatted" stays true exactly as long as
+   * nothing has been typed since.
+   */
+  const { data: formatterList } = useFormatters();
+  const formatter = formatterList?.formatters.find(
+    (entry) => entry.language === language && entry.available,
+  );
+  const editorPrefs = settings?.editor ?? DEFAULT_EDITOR_PREFS;
+  const [formatting, setFormatting] = useState(false);
+  const [formatNote, setFormatNote] = useState<{
+    code: string;
+    text: string;
+    failed: boolean;
+  } | null>(null);
+
+  /**
+   * The editor's text as of the last keystroke, not the last render.
+   *
+   * Written by the editor's change handler as well as by the effect, because
+   * a Ctrl+S pressed straight after typing arrives before React has rendered
+   * that typing - found in a real browser, where the save sent the previous
+   * text, the answer was rightly dropped as stale, and the save went with it.
+   * The effect covers every other way `code` moves: restore, reset, switching
+   * language.
+   */
+  const codeNow = useRef(code);
+  useEffect(() => {
+    codeNow.current = code;
+  }, [code]);
+  const onEditorChange = useCallback((next: string) => {
+    codeNow.current = next;
+    setCode(next);
+  }, []);
+
+  /** Saves this code now rather than after the debounce, then says so. */
+  const saveNow = useCallback(
+    (value: string, said: string, failed = false) => {
+      const target = { slug, language, code: value };
+      const done = (): void => {
+        setFormatNote({ code: value, text: said, failed });
+      };
+      if (value === persisted) {
+        done();
+        return;
+      }
+      pending.current = null;
+      save(target, {
+        onSuccess: () => {
+          if (showing.current.slug === slug && showing.current.language === language) {
+            setPersisted(value);
+            done();
+          }
+        },
+      });
+    },
+    [save, slug, language, persisted],
+  );
+
+  const formatCode = useCallback(
+    async (andSave: boolean) => {
+      if (!formatter || formatting) return;
+      const sent = codeNow.current;
+      const at = { slug, language };
+      const stillHere = (): boolean =>
+        codeNow.current === sent &&
+        showing.current.slug === at.slug &&
+        showing.current.language === at.language;
+
+      setFormatting(true);
+      try {
+        const response = await api.format(language, sent);
+        if (!stillHere()) return;
+        if (response.outcome === 'formatted') {
+          if (response.changed && editorRef.current?.replaceAll(response.code) !== true) {
+            setCode(response.code);
+          }
+          const said = response.changed ? 'Formatted' : 'Already formatted';
+          if (andSave) saveNow(response.code, `${said}, and saved`);
+          else setFormatNote({ code: response.code, text: said, failed: false });
+          return;
+        }
+        // Saving still happens: Ctrl+S means "keep this", and code that does
+        // not parse yet is exactly the code most worth keeping. One note for
+        // both, so the save landing second cannot hide why nothing moved.
+        const why =
+          response.outcome === 'invalid' ? `Not formatted: ${response.message}` : response.message;
+        if (andSave) saveNow(sent, `Saved. ${why}`, true);
+        else setFormatNote({ code: sent, text: why, failed: true });
+      } catch (error) {
+        if (!stillHere()) return;
+        const why = error instanceof Error ? error.message : 'The formatter could not be reached.';
+        if (andSave) saveNow(sent, `Saved. ${why}`, true);
+        else setFormatNote({ code: sent, text: why, failed: true });
+      } finally {
+        setFormatting(false);
+      }
+    },
+    [formatter, formatting, slug, language, saveNow],
+  );
+
+  const formatDocument = useCallback(() => {
+    void formatCode(false);
+  }, [formatCode]);
+
+  useShortcut(
+    'save',
+    () => {
+      if (editorPrefs.formatOnSave && formatter) void formatCode(true);
+      else saveNow(codeNow.current, 'Saved');
+    },
+    ready,
+  );
+
   const shape = useMemo(
     () => (problem ? customTestShapeFrom(problem.summary.mode, problem.samples) : null),
     [problem],
@@ -652,10 +780,11 @@ export function Workspace() {
             // One Monaco model per problem and language; see CodeEditorProps.
             path={`${slug}.${language}`}
             language={language}
-            onChange={setCode}
-            prefs={settings?.editor ?? DEFAULT_EDITOR_PREFS}
+            onChange={onEditorChange}
+            prefs={editorPrefs}
             theme={theme}
             markers={result?.compileErrors ?? []}
+            onFormat={formatter ? formatDocument : undefined}
           />
         </Suspense>
       </ErrorBoundary>
@@ -855,6 +984,31 @@ export function Workspace() {
         </Button>
 
         {/*
+          Format (P9-5). Only where this language's formatter was found on the
+          machine: a button that can only ever say "not installed" is a
+          setting pretending to be an action, and Settings is where the
+          installing is explained.
+        */}
+        {formatter && (
+          <Tooltip content={`Format with ${formatter.name}`} keys={FORMAT_KEYS}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={formatting}
+              onClick={() => {
+                // Back to the code: the next thing anyone does after formatting
+                // is read it or undo it, and Ctrl+Z on a focused button undoes
+                // nothing (found by e2e/format.spec.ts).
+                editorRef.current?.focus();
+                formatDocument();
+              }}
+            >
+              {formatting ? 'Formatting…' : 'Format'}
+            </Button>
+          </Tooltip>
+        )}
+
+        {/*
           Starring a problem (P7-7). Beside Reset because it is about this
           problem rather than about the code: a bookmark says "come back to
           this one", which the command palette and the list filter both read.
@@ -900,6 +1054,19 @@ export function Workspace() {
           {status !== 'not_started' && (
             <StatusMark status={status} label={statusLine(status, language)} />
           )}
+        </p>
+
+        {/* Rendered while empty, for the same reason as the status above. */}
+        <p
+          className={cn(
+            'min-w-0 truncate text-xs',
+            formatNote?.failed === true ? 'text-danger-fg' : 'text-fg-muted',
+          )}
+          role="status"
+          data-testid="format-note"
+          title={formatNote?.code === code ? formatNote.text : undefined}
+        >
+          {formatNote?.code === code ? formatNote.text : ''}
         </p>
 
         <div className="ml-auto flex items-center gap-2">

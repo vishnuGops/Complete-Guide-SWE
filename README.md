@@ -62,6 +62,12 @@ will not produce a full solution unless the problem is already solved _and_ you 
 needs your own Anthropic or Gemini key, set in Settings, and tells you what a turn costs before you
 spend it.
 
+**Format** tidies your code with `black` or `google-java-format`, if you have them; neither comes
+with DevProMax, and the button only appears for a language whose formatter was found. `Ctrl+S` saves
+at once, and formats first when Settings › Formatting says to. `black` is found on your `PATH` or as
+`python -m black`; for Java, download the `-all-deps.jar` from google-java-format's releases and
+point `DEVPROMAX_GOOGLE_JAVA_FORMAT` at it. `npm run doctor` lists both.
+
 `Ctrl+K` opens the command palette from anywhere: any problem by name, the next recommended one (the
 easiest unsolved problem in your weakest topic), a random unsolved one, or something due for review.
 

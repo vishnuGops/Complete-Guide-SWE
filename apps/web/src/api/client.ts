@@ -17,6 +17,8 @@ import type {
   ProgressResponse,
   ReportFormat,
   RuntimeReport,
+  FormatResponse,
+  FormattersResponse,
   ResetProgressResponse,
   RunResult,
   SettingsUpdate,
@@ -210,6 +212,11 @@ export const api = {
 
   settings: (): Promise<SettingsView> => request('/api/settings'),
   runtimeCheck: (): Promise<RuntimeReport> => request('/api/settings/doctor'),
+  /** Which formatters this machine has (P9-5); `refresh` looks again. */
+  formatters: (refresh = false): Promise<FormattersResponse> =>
+    request(refresh ? '/api/format?refresh=1' : '/api/format'),
+  format: (language: Language, code: string): Promise<FormatResponse> =>
+    request('/api/format', { method: 'POST', body: JSON.stringify({ language, code }) }),
   updateSettings: (patch: SettingsUpdate): Promise<SettingsView> =>
     request('/api/settings', { method: 'PUT', body: JSON.stringify(patch) }),
   /**

@@ -39,6 +39,14 @@ export interface SpawnOptions {
    * uses this to `docker kill` the container by name. Must not throw.
    */
   onKill?: () => void;
+  /**
+   * Written to the child's stdin, which is then closed (ROADMAP P9-5).
+   *
+   * For the formatters, which read source from stdin so that nothing is
+   * written to disk to be cleaned up. Judge runs leave it unset and keep stdin
+   * closed from the start - see `runProcess`.
+   */
+  input?: string;
 }
 
 export interface SpawnResult {
@@ -131,7 +139,8 @@ function forceKill(child: ChildProcess): void {
  * output.
  *
  * stdin is closed, so a solution that reads input fails immediately with EOF
- * instead of hanging until the timeout and reporting a confusing TLE. The shell
+ * instead of hanging until the timeout and reporting a confusing TLE - unless
+ * `input` is given, in which case it is written and then closed. The shell
  * is never involved: arguments go to the process verbatim, which is both safer
  * and the only way paths with spaces behave the same on both platforms.
  */
@@ -142,7 +151,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
   return new Promise<SpawnResult>((resolve, reject) => {
     const child = spawn(options.command, options.args, {
       cwd: options.cwd,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
       shell: false,
       detached: process.platform !== 'win32',
       env: options.env ?? childEnv(),
@@ -188,6 +197,13 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
     child.stderr?.on('data', (chunk: string) => {
       stderr = append(stderr, chunk);
     });
+
+    if (options.input !== undefined && child.stdin) {
+      // A child that exits without reading everything closes the pipe under
+      // us; that is its exit code's story to tell, not an unhandled EPIPE.
+      child.stdin.on('error', () => undefined);
+      child.stdin.end(options.input, 'utf8');
+    }
 
     const watchdog = setTimeout(kill, options.timeoutMs);
 

@@ -235,6 +235,26 @@ daemon can tell a judge step from a service. It costs about a second per Run on
 Docker Desktop (two container starts): measured 2026-09-22 on a 4-core Xeon,
 Python 0.26 s → 1.2 s and Java 1.2 s → 2.1 s.
 
+### 3.7 Formatters (optional)
+
+`black` and `google-java-format` (AOSP style, the starters' four-space indent)
+run as subprocesses through the same `runProcess` as the judge, with the code on
+stdin and the allow-listed environment (P9-5, `apps/server/src/formatters.ts`).
+They are not the judge: they parse code and never run it, so they run on this
+machine whichever executor is configured, and outside the judge queue. Neither
+ships with the app. Each is found by running it with `--version` - `DEVPROMAX_BLACK`,
+else `black`, else `<judge python> -m black`; `DEVPROMAX_GOOGLE_JAVA_FORMAT` (a jar,
+run with the judge's `java`, or an executable), else `google-java-format` - once at
+start-up and again when Settings asks. `POST /api/format` answers `formatted`,
+`invalid` (the formatter's complaint, with its line) or `unavailable`, all 200s:
+code that does not parse yet is the normal state of code being written.
+
+The workspace shows Format only for a language whose formatter was found. The
+answer is applied as one undoable Monaco edit, and only if the editor still
+holds exactly what was sent. `Ctrl+S` saves the draft at once and formats first
+when the `formatOnSave` preference is on. It is deliberately not tied to the
+autosave, which fires mid-line.
+
 ## 4. Persistence
 
 `node:sqlite` with hand-written SQL and checked-in migrations applied at startup

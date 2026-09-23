@@ -14,7 +14,14 @@
  * `Ctrl+/` is Monaco's comment toggle and is never bound here.
  */
 
-export const SHORTCUT_IDS = ['run', 'submit', 'togglePanel', 'aiHelp', 'commandPalette'] as const;
+export const SHORTCUT_IDS = [
+  'run',
+  'submit',
+  'save',
+  'togglePanel',
+  'aiHelp',
+  'commandPalette',
+] as const;
 export type ShortcutId = (typeof SHORTCUT_IDS)[number];
 
 export interface Shortcut {
@@ -38,6 +45,16 @@ export const SHORTCUTS: Record<ShortcutId, Shortcut> = {
     shift: true,
     keys: ['Ctrl', 'Shift', 'Enter'],
   },
+  /*
+   * Save now, formatting first when that preference is on (ROADMAP P9-5).
+   *
+   * Drafts save themselves, so this is not what keeps work - it is what the
+   * hand does anyway, in every editor, and it used to open the browser's
+   * "Save page as" dialog over the code. Formatting hangs off it rather than
+   * off the autosave because an autosave fires while someone is mid-line, and
+   * reflowing code under a moving cursor is how a formatter gets uninstalled.
+   */
+  save: { id: 'save', label: 'Save', code: 'KeyS', shift: false, keys: ['Ctrl', 'S'] },
   togglePanel: {
     id: 'togglePanel',
     label: 'Toggle the bottom panel',

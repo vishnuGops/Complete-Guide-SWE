@@ -17,4 +17,5 @@ export * from './coach.js';
 export * from './cost.js';
 export * from './diff.js';
 export * from './settings.js';
+export * from './format.js';
 export * from './api.js';

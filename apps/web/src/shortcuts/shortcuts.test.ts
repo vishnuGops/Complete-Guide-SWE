@@ -29,6 +29,11 @@ describe('matchShortcut', () => {
     );
   });
 
+  it('reads Ctrl+S as Save, and leaves Ctrl+Shift+S alone', () => {
+    expect(matchShortcut(press({ code: 'KeyS', ctrlKey: true }))).toBe(SHORTCUTS.save);
+    expect(matchShortcut(press({ code: 'KeyS', ctrlKey: true, shiftKey: true }))).toBeUndefined();
+  });
+
   it('accepts Cmd as well as Ctrl, so the same keys work on a Mac keyboard', () => {
     expect(matchShortcut(press({ code: 'Enter', metaKey: true }))).toBe(SHORTCUTS.run);
   });

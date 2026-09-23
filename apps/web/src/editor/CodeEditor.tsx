@@ -32,6 +32,14 @@ export interface CodeEditorHandle {
   /** Used by the results panel to jump to a compile error (P4-7). */
   revealPosition: (line: number, column?: number) => void;
   focus: () => void;
+  /**
+   * Replaces the whole text as one undoable edit (ROADMAP P9-5).
+   *
+   * For the formatter's answer. Setting `value` would work too, and would wipe
+   * the undo history with it - so Ctrl+Z after a format would not undo the
+   * format, it would do nothing. Returns false when there is no editor yet.
+   */
+  replaceAll: (text: string) => boolean;
 }
 
 export interface CodeEditorProps {
@@ -58,6 +66,12 @@ export interface CodeEditorProps {
   theme: 'light' | 'dark';
   /** Compile diagnostics from the last run, drawn in the gutter. */
   markers?: readonly CompileError[];
+  /**
+   * Offered as Monaco's own "Format Document" - Shift+Alt+F, the context menu
+   * and F1 - when present (ROADMAP P9-5). Absent when this language has no
+   * formatter on the machine, and then the action is hidden, not broken.
+   */
+  onFormat?: (() => void) | undefined;
   ref?: Ref<CodeEditorHandle>;
 }
 
@@ -79,12 +93,20 @@ export default function CodeEditor({
   prefs,
   theme,
   markers,
+  onFormat,
   ref,
 }: CodeEditorProps) {
   const editorRef = useRef<MonacoEditor | null>(null);
   const monacoRef = useRef<MonacoApi | null>(null);
   const statusBarRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  /** Read by the Monaco action, which is registered once and outlives renders. */
+  const formatRef = useRef(onFormat);
+  const canFormatRef = useRef<{ set: (value: boolean) => void } | null>(null);
+  useEffect(() => {
+    formatRef.current = onFormat;
+    canFormatRef.current?.set(onFormat !== undefined);
+  }, [onFormat, mounted]);
 
   useImperativeHandle(ref, () => ({
     revealPosition(line, column = 1) {
@@ -96,6 +118,20 @@ export default function CodeEditor({
     },
     focus() {
       editorRef.current?.focus();
+    },
+    replaceAll(text) {
+      const editor = editorRef.current;
+      const model = editor?.getModel();
+      if (!editor || !model) return false;
+      const position = editor.getPosition();
+      editor.pushUndoStop();
+      editor.executeEdits('devpromax-format', [{ range: model.getFullModelRange(), text }]);
+      editor.pushUndoStop();
+      // Roughly where it was. Formatting moves lines, so this is a guess, and
+      // the start of the file - where the caret would otherwise land - is a
+      // worse one.
+      if (position) editor.setPosition(model.validatePosition(position));
+      return true;
     },
   }));
 
@@ -159,6 +195,22 @@ export default function CodeEditor({
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
+            // Monaco's own "Format Document" is shown only when a language has
+            // a formatting provider, and ours is a server round trip rather
+            // than a provider, so it is an action of its own with the same
+            // keys, gated by a context key (P9-5).
+            const canFormat = editor.createContextKey<boolean>('devpromaxCanFormat', false);
+            canFormatRef.current = canFormat;
+            editor.addAction({
+              id: 'devpromax.formatDocument',
+              label: 'Format Document',
+              keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+              precondition: 'devpromaxCanFormat',
+              contextMenuGroupId: '1_modification',
+              run: () => {
+                formatRef.current?.();
+              },
+            });
             // The vim effect needs an editor instance, and a ref assignment does not
             // re-run an effect. This is the one thing here that has to be state.
             setMounted(true);

@@ -170,6 +170,8 @@ type, run, submit is reachable from the keyboard.
 | `Ctrl+Shift+Enter` | Submit                  |
 | `Ctrl+J`           | Toggle the bottom panel |
 | `Ctrl+Shift+H`     | AI Help                 |
+| `Ctrl+S`           | Save now (and format)   |
+| `Shift+Alt+F`      | Format (Monaco's own)   |
 
 `Ctrl+/` is Monaco's comment toggle and is never bound. Shortcuts are shown in
 the tooltip of the control they trigger, so they are discoverable without a

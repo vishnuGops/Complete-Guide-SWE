@@ -12,6 +12,7 @@ import type {
   ConnectionTestResponse,
   DashboardResponse,
   DraftResponse,
+  FormattersResponse,
   Interview,
   InterviewResponse,
   HintRevealResponse,
@@ -57,6 +58,7 @@ export const keys = {
   interview: ['interview'] as const,
   settings: ['settings'] as const,
   runtimeCheck: ['runtime-check'] as const,
+  formatters: ['formatters'] as const,
 };
 
 export function useProblems(query: Partial<ProblemListQuery> = {}, enabled = true) {
@@ -235,6 +237,31 @@ export function useRuntimeCheck() {
     // presses the button and finds out.
     staleTime: 0,
     gcTime: 0,
+  });
+}
+
+/**
+ * Which formatters this machine has (ROADMAP P9-5).
+ *
+ * Fetched once and kept: the server found them at start-up and the answer only
+ * changes when someone installs one, at which point Settings' "Check again"
+ * asks the server to look and writes the fresh answer here.
+ */
+export function useFormatters() {
+  return useQuery<FormattersResponse>({
+    queryKey: keys.formatters,
+    queryFn: () => api.formatters(),
+    staleTime: Infinity,
+  });
+}
+
+export function useRecheckFormatters(): UseMutationResult<FormattersResponse, Error, void> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.formatters(true),
+    onSuccess: (fresh) => {
+      queryClient.setQueryData(keys.formatters, fresh);
+    },
   });
 }
 

@@ -192,6 +192,51 @@ jobs:
         env:
           DEVPROMAX_DOCKER_TESTS: '1'
 
+  # Format on save (ROADMAP P9-5). Both formatters are optional, so nothing else
+  # installs them and their integration suite is opt-in; this lane opts in, on
+  # the versions pinned here. Keep in step with the E2E lane's black below.
+  formatters:
+    name: formatters (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BLACK_VERSION: '26.5.1'
+      GJF_VERSION: '1.36.1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # google-java-format runs on the judge's java, which is why it is a jar
+      # and an environment variable rather than something on PATH.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install the formatters
+        run: |
+          pip install "black==$BLACK_VERSION"
+          curl -fsSL -o "$RUNNER_TEMP/google-java-format.jar"             "https://github.com/google/google-java-format/releases/download/v$GJF_VERSION/google-java-format-$GJF_VERSION-all-deps.jar"
+          echo "DEVPROMAX_GOOGLE_JAVA_FORMAT=$RUNNER_TEMP/google-java-format.jar" >> "$GITHUB_ENV"
+
+      - run: npm ci
+
+      - name: Doctor, which lists the formatters
+        run: npm run doctor
+
+      - name: Formatter integration tests
+        run: npx vitest run --project server formatters.integration.test
+        env:
+          DEVPROMAX_FORMATTER_TESTS: '1'
+
   e2e:
     name: e2e (ubuntu-latest)
     runs-on: ubuntu-latest
@@ -215,6 +260,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # For e2e/format.spec.ts (P9-5), which skips without black anywhere else
+      # and fails without it here.
+      - name: Install black
+        run: pip install "black==26.5.1"
+
       - run: npm ci
 
       - name: Install Playwright browsers
@@ -222,6 +272,8 @@ jobs:
         working-directory: apps/web
 
       - run: npm run test:e2e
+        env:
+          DEVPROMAX_FORMATTER_TESTS: '1'
 
       # Retries are a CI-only affordance (P8-1). Counting them is what stops
       # the suite from quietly retrying its way to green.

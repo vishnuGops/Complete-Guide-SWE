@@ -9,6 +9,7 @@ import type { JudgeFn } from './api/runService.js';
 import { applyRuntimeSettings } from './api/settingsService.js';
 import { serverConfig } from './config.js';
 import { doctorSummary, runDoctor } from './doctor.js';
+import { formatters, type Formatters } from './formatters.js';
 import { createDatabase, type Repositories } from './db/index.js';
 import { logger } from './logger.js';
 import { EXECUTOR_KIND, killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
@@ -26,6 +27,8 @@ export interface BuildOptions {
   env?: NodeJS.ProcessEnv;
   /** Injected `fetch` for the coach provider, so tests stay offline. */
   provider?: ProviderOptions;
+  /** Stand-in formatters (P9-5); production finds the real ones. */
+  formatters?: Formatters;
   /** Tests pass `silentLogger`; production uses the configured pino instance. */
   logger?: FastifyBaseLogger;
   /**
@@ -94,6 +97,7 @@ export async function buildServer(options: BuildOptions = {}) {
     ...(options.judge ? { judge: options.judge } : {}),
     ...(options.env ? { env: options.env } : {}),
     ...(options.provider ? { provider: options.provider } : {}),
+    ...(options.formatters ? { formatters: options.formatters } : {}),
   });
 
   // Outside /api on purpose: a health check that needed the client header would
@@ -214,6 +218,17 @@ export async function start() {
       .catch((error: unknown) => {
         logger.warn({ err: error }, 'the runtime check could not be run');
       });
+
+  /*
+   * Look for the formatters now (ROADMAP P9-5), so the workspace's first
+   * question is answered from cache rather than by starting a JVM while it
+   * waits. Silent either way: both are optional, and a line at every start-up
+   * saying black is not installed would be noise to everyone who never wanted
+   * it. Settings and `npm run doctor` say so to anyone who asks.
+   */
+  void formatters.status().catch((error: unknown) => {
+    logger.warn({ err: error }, 'the formatter check could not be run');
+  });
 }
 
 const isEntrypoint =

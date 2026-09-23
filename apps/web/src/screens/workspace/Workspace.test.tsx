@@ -1216,3 +1216,196 @@ function Elsewhere({ to }: { to: string }) {
     </button>
   );
 }
+
+describe('formatting (P9-5)', () => {
+  const PYTHON_FOUND: FakeRoute = {
+    match: path('/api/format'),
+    body: (_url, init) => {
+      if (init?.method !== 'POST') {
+        return {
+          formatters: [
+            {
+              language: 'python',
+              name: 'black',
+              available: true,
+              version: '26.5.1',
+              command: 'black',
+              guidance: null,
+            },
+            {
+              language: 'java',
+              name: 'google-java-format',
+              available: false,
+              version: null,
+              command: 'google-java-format',
+              guidance: 'Download it.',
+            },
+          ],
+        };
+      }
+      const { code } = JSON.parse(String(init.body)) as { code: string };
+      if (code.includes('(')) {
+        return { outcome: 'invalid', message: 'Cannot parse: 1:2', line: 1, column: 2 };
+      }
+      const formatted = code.replace(/\s+$/, '').replace(/  +/g, ' ') + '\n';
+      return { outcome: 'formatted', code: formatted, changed: formatted !== code };
+    },
+  };
+
+  function formatOnSave(on: boolean): FakeRoute {
+    const settings = someSettings();
+    return {
+      match: path('/api/settings'),
+      body: () => ({ ...settings, editor: { ...settings.editor, formatOnSave: on } }),
+    };
+  }
+
+  const draftWrites = (server: ReturnType<typeof serve>) =>
+    server.requests
+      .filter(
+        (request) => request.method === 'PUT' && request.url.pathname.includes('/api/drafts/'),
+      )
+      .map((request) => (request.body as { code: string }).code);
+
+  const formatCalls = (server: ReturnType<typeof serve>) =>
+    server.requests.filter(
+      (request) => request.method === 'POST' && request.url.pathname === '/api/format',
+    );
+
+  it('offers Format only for a language whose formatter was found', async () => {
+    serve(aProblemDetail(), [PYTHON_FOUND]);
+    open();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('button', { name: 'Format' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Format' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('offers nothing when the server could not say', async () => {
+    serve();
+    open();
+    await screen.findByLabelText('Code');
+    expect(screen.queryByRole('button', { name: 'Format' })).not.toBeInTheDocument();
+  });
+
+  it('formats the editor, and says so until the next keystroke', async () => {
+    const server = serve(aProblemDetail(), [PYTHON_FOUND]);
+    open();
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'x  =  1   ');
+
+    await user.click(await screen.findByRole('button', { name: 'Format' }));
+
+    await waitFor(() => {
+      expect(code).toHaveValue('x = 1\n');
+    });
+    expect(screen.getByTestId('format-note')).toHaveTextContent('Formatted');
+    expect(formatCalls(server)).toHaveLength(1);
+    expect(formatCalls(server)[0]?.body).toEqual({ language: 'python', code: 'x  =  1   ' });
+
+    await user.type(code, 'y');
+    expect(screen.getByTestId('format-note')).toHaveTextContent('');
+  });
+
+  it('shows the complaint and leaves the code alone when it does not parse', async () => {
+    serve(aProblemDetail(), [PYTHON_FOUND]);
+    open();
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'f(');
+
+    await user.click(await screen.findByRole('button', { name: 'Format' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('format-note')).toHaveTextContent(
+        'Not formatted: Cannot parse: 1:2',
+      );
+    });
+    expect(code).toHaveValue('f(');
+  });
+
+  it('saves on Ctrl+S without formatting when the setting is off', async () => {
+    const server = serve(aProblemDetail(), [PYTHON_FOUND, formatOnSave(false)]);
+    open();
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('Code');
+    await screen.findByRole('button', { name: 'Format' });
+    await user.clear(code);
+    await user.type(code, 'x  =  1');
+
+    await user.keyboard('{Control>}[KeyS]{/Control}');
+
+    await waitFor(() => {
+      expect(draftWrites(server)).toContain('x  =  1');
+    });
+    expect(formatCalls(server)).toHaveLength(0);
+    await waitFor(() => {
+      expect(screen.getByTestId('format-note')).toHaveTextContent('Saved');
+    });
+  });
+
+  it('formats and then saves the formatted code on Ctrl+S when it is on', async () => {
+    const server = serve(aProblemDetail(), [PYTHON_FOUND, formatOnSave(true)]);
+    open();
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('Code');
+    await screen.findByRole('button', { name: 'Format' });
+    await user.clear(code);
+    await user.type(code, 'x  =  1');
+
+    await user.keyboard('{Control>}[KeyS]{/Control}');
+
+    await waitFor(() => {
+      expect(draftWrites(server)).toContain('x = 1\n');
+    });
+    expect(code).toHaveValue('x = 1\n');
+    await waitFor(() => {
+      expect(screen.getByTestId('format-note')).toHaveTextContent('Formatted, and saved');
+    });
+  });
+
+  it('still saves on Ctrl+S when the code does not parse', async () => {
+    const server = serve(aProblemDetail(), [PYTHON_FOUND, formatOnSave(true)]);
+    open();
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('Code');
+    await screen.findByRole('button', { name: 'Format' });
+    await user.clear(code);
+    await user.type(code, 'f(');
+
+    await user.keyboard('{Control>}[KeyS]{/Control}');
+
+    await waitFor(() => {
+      expect(draftWrites(server)).toContain('f(');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('format-note')).toHaveTextContent(
+        'Saved. Not formatted: Cannot parse: 1:2',
+      );
+    });
+  });
+
+  it('just saves on Ctrl+S in a language with no formatter, even with the setting on', async () => {
+    const server = serve(aProblemDetail(), [PYTHON_FOUND, formatOnSave(true)]);
+    open();
+    const user = userEvent.setup();
+    await screen.findByRole('button', { name: 'Format' });
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+    const code = await screen.findByLabelText('Code');
+    await user.type(code, ' ');
+
+    await user.keyboard('{Control>}[KeyS]{/Control}');
+
+    await waitFor(() => {
+      expect(draftWrites(server).length).toBeGreaterThan(0);
+    });
+    expect(formatCalls(server)).toHaveLength(0);
+  });
+});

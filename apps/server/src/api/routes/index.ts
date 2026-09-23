@@ -3,6 +3,7 @@ import { registerCoachRoutes } from './coach.js';
 import { registerDashboardRoutes } from './dashboard.js';
 import { registerInterviewRoutes } from './interview.js';
 import { registerDraftRoutes } from './drafts.js';
+import { registerFormatRoutes } from './format.js';
 import { registerNavigationRoutes } from './navigation.js';
 import { registerNoteRoutes } from './notes.js';
 import { registerProblemRoutes } from './problems.js';
@@ -24,6 +25,7 @@ export function registerRoutes(app: FastifyInstance, deps: ApiDeps): void {
   registerProblemRoutes(app, deps);
   registerRunRoutes(app, deps);
   registerDraftRoutes(app, deps);
+  registerFormatRoutes(app, deps);
   registerNoteRoutes(app, deps);
   registerNavigationRoutes(app, deps);
   registerProgressRoutes(app, deps);

@@ -97,6 +97,40 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
       match: path('/api/settings/doctor'),
       body: () => runtimes,
     },
+    {
+      // The formatters (P9-5): black found, google-java-format not - until a
+      // refresh, which is what someone who has just downloaded the jar does.
+      match: path('/api/format'),
+      body: (url) => ({
+        formatters: [
+          {
+            language: 'python',
+            name: 'black',
+            available: true,
+            version: '26.5.1',
+            command: 'black',
+            guidance: null,
+          },
+          url.searchParams.get('refresh') === '1'
+            ? {
+                language: 'java',
+                name: 'google-java-format',
+                available: true,
+                version: '1.36.1',
+                command: 'java -jar gjf.jar',
+                guidance: null,
+              }
+            : {
+                language: 'java',
+                name: 'google-java-format',
+                available: false,
+                version: null,
+                command: 'google-java-format',
+                guidance: 'Download the jar and set DEVPROMAX_GOOGLE_JAVA_FORMAT.',
+              },
+        ],
+      }),
+    },
   ]);
 
   return {
@@ -378,5 +412,43 @@ describe('the runtime check in Docker mode (P9-2)', () => {
     // The escape hatch in Docker mode is another image, not another JDK.
     expect(screen.getByText('DEVPROMAX_DOCKER_JAVA_IMAGE')).toBeInTheDocument();
     expect(screen.queryByText('DEVPROMAX_JAVA')).not.toBeInTheDocument();
+  });
+});
+
+describe('formatting (P9-5)', () => {
+  it('says which formatters were found, and how to get the one that was not', async () => {
+    settingsServer();
+    renderApp(<Settings />);
+
+    expect(await screen.findByText('26.5.1')).toBeInTheDocument();
+    expect(screen.getByText('not found')).toBeInTheDocument();
+    expect(
+      screen.getByText('Download the jar and set DEVPROMAX_GOOGLE_JAVA_FORMAT.'),
+    ).toBeInTheDocument();
+  });
+
+  it('looks again when asked', async () => {
+    const { server } = settingsServer();
+    renderApp(<Settings />);
+    await screen.findByText('not found');
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Check again' }));
+
+    expect(await screen.findByText('1.36.1')).toBeInTheDocument();
+    expect(screen.queryByText('not found')).not.toBeInTheDocument();
+    expect(server.requests.some((request) => request.url.searchParams.get('refresh') === '1')).toBe(
+      true,
+    );
+  });
+
+  it('turns format on save on, as an editor preference and nothing else', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />);
+
+    await userEvent.setup().click(await screen.findByRole('checkbox', { name: 'Format on save' }));
+
+    await waitFor(() => {
+      expect(writes).toEqual([{ editor: { formatOnSave: true } }]);
+    });
   });
 });

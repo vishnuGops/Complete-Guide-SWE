@@ -98,6 +98,32 @@ describe('runProcess', () => {
     expect(['eof', 'err']).toContain(result.stdout);
   });
 
+  it('writes `input` to stdin and then closes it (P9-5)', async () => {
+    const result = await runProcess({
+      command: NODE,
+      args: [
+        '-e',
+        'process.stdout.write(require("node:fs").readFileSync(0, "utf8").toUpperCase())',
+      ],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      input: 'déjà vu\n',
+    });
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBe('DÉJÀ VU\n');
+  });
+
+  it('survives a child that exits without reading its input', async () => {
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'process.exit(3)'],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      input: 'x'.repeat(1024 * 1024),
+    });
+    expect(result.code).toBe(3);
+  });
+
   it('never goes through a shell, so metacharacters are literal arguments', async () => {
     const result = await runProcess({
       command: NODE,

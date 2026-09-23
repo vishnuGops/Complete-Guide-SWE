@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { doctorSummary, runDoctor } from '../doctor.js';
+import { formatters } from '../formatters.js';
 
 /**
  * `npm run doctor` (ROADMAP P8-3).
@@ -30,6 +31,21 @@ for (const check of report.checks) {
     if (check.problem !== null) process.stdout.write(`       ${check.problem}\n`);
     if (check.guidance !== null) process.stdout.write(`       ${check.guidance}\n`);
   }
+}
+
+/*
+ * The formatters (ROADMAP P9-5). Optional, so a missing one is "--" and never
+ * the exit code: the judge works without them, and this command's exit code
+ * answers "will the judge work".
+ */
+process.stdout.write('\n  Optional, for Format on save:\n');
+for (const status of await formatters.status()) {
+  const state = status.available ? 'ok  ' : '--  ';
+  const version = status.version ?? 'not found';
+  process.stdout.write(
+    `  ${state} ${status.name.padEnd(18)} ${version.padEnd(12)} ${status.command}\n`,
+  );
+  if (status.guidance !== null) process.stdout.write(`       ${status.guidance}\n`);
 }
 
 if (report.ok) {
