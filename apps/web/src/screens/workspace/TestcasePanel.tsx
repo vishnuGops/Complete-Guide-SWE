@@ -45,12 +45,12 @@ function SampleCase({ test, index }: { test: TestCase; index: number }) {
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         <dt className="text-fg-muted text-xs">{test.ops ? 'Constructor' : 'Input'}</dt>
-        <dd className="text-fg overflow-x-auto font-mono text-2xs">{JSON.stringify(test.args)}</dd>
+        <dd className="text-fg overflow-x-auto font-mono text-xs">{JSON.stringify(test.args)}</dd>
 
         {test.ops && (
           <>
             <dt className="text-fg-muted text-xs">Calls</dt>
-            <dd className="text-fg overflow-x-auto font-mono text-2xs">
+            <dd className="text-fg overflow-x-auto font-mono text-xs">
               {test.ops
                 .map((op) => `${op.method}(${op.args.map((a) => JSON.stringify(a)).join(', ')})`)
                 .join(', ')}
@@ -61,7 +61,7 @@ function SampleCase({ test, index }: { test: TestCase; index: number }) {
         {test.expected !== undefined && (
           <>
             <dt className="text-fg-muted text-xs">Expected</dt>
-            <dd className="text-fg overflow-x-auto font-mono text-2xs">
+            <dd className="text-fg overflow-x-auto font-mono text-xs">
               {JSON.stringify(test.expected)}
             </dd>
           </>
@@ -70,7 +70,7 @@ function SampleCase({ test, index }: { test: TestCase; index: number }) {
         {test.expectedMutatedArgs && (
           <>
             <dt className="text-fg-muted text-xs">After the call</dt>
-            <dd className="text-fg overflow-x-auto font-mono text-2xs">
+            <dd className="text-fg overflow-x-auto font-mono text-xs">
               {test.expectedMutatedArgs
                 .map((arg) => `arg ${String(arg.index + 1)} = ${JSON.stringify(arg.value)}`)
                 .join(', ')}
@@ -132,7 +132,7 @@ function CustomCase({
                 }}
               />
               {issue && (
-                <p id={`${fieldId}-issue`} className="text-danger-fg mt-1 text-2xs">
+                <p id={`${fieldId}-issue`} className="text-danger-fg mt-1 text-xs">
                   Argument {argIndex + 1} {issue.message}
                 </p>
               )}
@@ -155,14 +155,14 @@ function CustomCase({
               }}
               className={cn(
                 'focus-ring bg-surface text-fg placeholder:text-fg-subtle w-full rounded-md border px-2 py-1 font-mono text-xs',
-                caseIssues.length > 0 ? 'border-danger' : 'border-border-strong',
+                caseIssues.length > 0 ? 'border-danger' : 'border-border-input',
               )}
             />
           </div>
         )}
 
         {caseIssues.map((issue) => (
-          <p key={issue.message} className="text-danger-fg text-2xs">
+          <p key={issue.message} className="text-danger-fg text-xs">
             {issue.message}
           </p>
         ))}

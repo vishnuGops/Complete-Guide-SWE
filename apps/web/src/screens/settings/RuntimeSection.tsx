@@ -60,7 +60,7 @@ function CheckRow({ check, executor }: { check: RuntimeCheck; executor: Executor
           {check.guidance !== null && (
             <p className="text-fg-muted mt-1 text-xs">{check.guidance}</p>
           )}
-          <p className="text-fg-subtle mt-1 text-2xs">
+          <p className="text-fg-subtle mt-1 text-xs">
             Or set <code className="font-mono">{OVERRIDE[executor][check.name]}</code> and start the
             app again.
           </p>
@@ -97,7 +97,7 @@ export function RuntimeSection() {
               <CheckRow key={entry.name} check={entry} executor={check.data.executor} />
             ))}
           </ul>
-          <p className="text-fg-subtle mt-2 text-2xs" role="status">
+          <p className="text-fg-subtle mt-2 text-xs" role="status">
             {!check.data.ok
               ? 'Runs and submissions will fail until this is fixed.'
               : check.data.executor === 'docker'

@@ -183,6 +183,7 @@ const needAlias = [
   'focus',
   'surface-selected',
   'code-keyword',
+  'border-input',
 ];
 for (const [label, block] of [
   ['light', next.light],
@@ -254,6 +255,8 @@ const PAIRS = [
   ['border-strong', 'surface', 1.5],
   // Version 2 (P9-6): the card edge, the selected step, the Callout.
   ['border', 'surface', 1.2],
+  ['border-input', 'surface', 3],
+  ['border-input', 'surface-sunken', 3],
   ['surface', 'bg', 1.05],
   ['fg', 'surface-selected', 4.5],
   ['fg-muted', 'surface-selected', 4.5],

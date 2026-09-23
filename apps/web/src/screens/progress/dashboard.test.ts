@@ -40,7 +40,7 @@ describe('coachBrief', () => {
   });
 
   it('says nothing is marked rather than inventing a judgement', () => {
-    expect(coachBrief(dashboard()).headline).toMatch(/nothing marked yet/);
+    expect(coachBrief(dashboard()).headline).toMatch(/none of it reviewed yet/);
   });
 
   it('starts from the beginning when nothing is solved', () => {

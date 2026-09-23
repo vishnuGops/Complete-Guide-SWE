@@ -109,6 +109,8 @@ export default function CodeEditor({
   const monacoRef = useRef<MonacoApi | null>(null);
   const statusBarRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  /** Which theme Monaco was last given, so a mount does not redefine it. */
+  const appliedTheme = useRef<'light' | 'dark' | null>(null);
   /** Read by the Monaco action, which is registered once and outlives renders. */
   const formatRef = useRef(onFormat);
   const canFormatRef = useRef<{ set: (value: boolean) => void } | null>(null);
@@ -171,10 +173,16 @@ export default function CodeEditor({
    * A theme switch. The page's tokens have already moved by the time this runs
    * (the attribute is set before the render that got here), so the palette read
    * now is the new theme's. Monaco's theme is global, which is what we want.
+   *
+   * Only on a real change. Redefining the theme `beforeMount` has just defined
+   * swaps Monaco's colour map, and the first tokenization of the file starts
+   * over: code sat uncoloured for most of a second on every load (P9-6, found
+   * in the final capture and timed against the build before it).
    */
   useEffect(() => {
     const monaco = monacoRef.current;
-    if (!monaco) return;
+    if (!monaco || appliedTheme.current === theme) return;
+    appliedTheme.current = theme;
     defineEditorTheme(monaco, theme);
     monaco.editor.setTheme(editorThemeName(theme));
   }, [theme, mounted]);
@@ -215,6 +223,7 @@ export default function CodeEditor({
           theme={editorThemeName(theme)}
           beforeMount={(monaco) => {
             defineEditorTheme(monaco, theme);
+            appliedTheme.current = theme;
           }}
           onMount={(editor, monaco) => {
             editorRef.current = editor;

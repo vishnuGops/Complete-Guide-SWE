@@ -173,7 +173,7 @@ describe('filters', () => {
     await screen.findByRole('row', { name: /Pair Sum Index/ });
     const user = userEvent.setup();
 
-    expect(await screen.findByText(/problems · 2 due for review/)).toBeInTheDocument();
+    expect(await screen.findByText(/2 due for review/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Due' }));

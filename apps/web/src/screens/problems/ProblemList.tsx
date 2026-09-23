@@ -129,7 +129,7 @@ function Row({ problem }: { problem: ProblemSummary }) {
         */}
         {problem.solvedVersion !== null && problem.solvedVersion < problem.version && (
           <span
-            className="text-warn-fg ml-1.5 text-2xs"
+            className="text-warn-fg ml-1.5 text-xs"
             title={`Solved against v${String(problem.solvedVersion)}; the tests are now v${String(problem.version)}`}
           >
             <span aria-hidden>tests changed</span>
@@ -274,13 +274,22 @@ export function ProblemList() {
   const narrowed = isFiltered(filters);
   const due = data?.due ?? 0;
 
+  /*
+   * The header's line says what is waiting, not how many rows there are: the
+   * table's toolbar already counts the rows, and the same number twice on one
+   * page reads as two numbers that might differ (DESIGN.md 3).
+   */
+  const waiting = data
+    ? [
+        due > 0 ? `${String(due)} due for review` : null,
+        data.byStatus.in_progress > 0 ? `${String(data.byStatus.in_progress)} in progress` : null,
+      ].filter((part) => part !== null)
+    : [];
   const header = (
     <PageHeader
       title="Problems"
       context={
-        data
-          ? `${String(data.total)} problems${due > 0 ? ` · ${String(due)} due for review` : ''}`
-          : undefined
+        data ? (waiting.length > 0 ? waiting.join(' · ') : 'Nothing due for review.') : undefined
       }
     />
   );

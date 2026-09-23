@@ -123,7 +123,9 @@ function thisWeek(solves: readonly ActiveDay[]): number {
 // ---------------------------------------------------------------------------
 
 function SolvedCard({ data }: { data: DashboardResponse }) {
-  const [range, setRange] = useState<ChartRange>('3m');
+  // "All" starts at the first solve (at least a month), so the line opens on
+  // the practice there is rather than on months of zero before it.
+  const [range, setRange] = useState<ChartRange>('all');
   const points = useMemo(() => cumulative(data.solves, range), [data.solves, range]);
   const solved = solvedCount(data.byStatus);
   const week = thisWeek(data.solves);
@@ -214,7 +216,8 @@ function CoachBriefCard({ data }: { data: DashboardResponse }) {
         <Callout className="mt-auto pt-3">
           <p className="text-fg-muted text-xs">Suggested next</p>
           <p className="mt-0.5 text-sm font-semibold">{next.problem.title}</p>
-          <p className="text-fg-muted mt-0.5 text-xs">{next.reason}</p>
+          {/* The coach's reasoning, so its serif - as in the palette (DESIGN.md 5). */}
+          <p className="text-fg-muted mt-1 font-serif text-sm">{next.reason}</p>
           <Link
             to={`/problems/${next.problem.slug}`}
             className={cn(buttonClasses('primary', 'sm'), 'mt-3')}
@@ -697,7 +700,9 @@ export function Progress() {
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-3 gap-4 max-[1279px]:gap-3">
+          // `items-start`: a card sizes to its content (DESIGN.md 3), not to the
+          // tallest card in its row.
+          <div className="grid grid-cols-3 items-start gap-4 max-[1279px]:gap-3">
             <SolvedCard data={data} />
             <CoachBriefCard data={data} />
 

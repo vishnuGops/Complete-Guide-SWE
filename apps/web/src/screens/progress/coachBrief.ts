@@ -66,7 +66,7 @@ export function coachBrief(data: DashboardResponse): CoachBrief {
   } else if (due > 0) {
     headline = `${String(due)} of your solves ${due === 1 ? 'is' : 'are'} due for review. Re-solve ${due === 1 ? 'it' : 'them'} from memory before starting something new.`;
   } else {
-    headline = `${String(solved)} solved, and nothing marked yet. Ask me about your next solution and this is where my read of it goes.`;
+    headline = `${String(solved)} solved, none of it reviewed yet - so there is no weakest topic to name.`;
   }
 
   return { headline, signals };

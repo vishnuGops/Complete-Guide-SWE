@@ -35,10 +35,10 @@ const SOURCE_LABEL = { sample: 'Sample', hidden: 'Hidden', custom: 'Custom' } as
 function ValueBlock({ lines, truncated }: { lines: readonly string[]; truncated: boolean }) {
   return (
     <>
-      <pre className="text-fg overflow-x-auto font-mono text-2xs leading-5">
+      <pre className="text-fg overflow-x-auto font-mono text-xs leading-5">
         {lines.length > 0 ? lines.join('\n') : '—'}
       </pre>
-      {truncated && <p className="text-fg-subtle mt-1 text-2xs">…truncated for display.</p>}
+      {truncated && <p className="text-fg-subtle mt-1 text-xs">…truncated for display.</p>}
     </>
   );
 }
@@ -81,16 +81,14 @@ function SideBySide({
             <pre
               key={`${String(index)}:${line}`}
               className={cn(
-                'px-2 font-mono text-2xs leading-5 whitespace-pre',
+                'px-2 font-mono text-xs leading-5 whitespace-pre',
                 changed[index] && 'bg-danger-subtle',
               )}
             >
               {line}
             </pre>
           ))}
-          {truncated && (
-            <p className="text-fg-subtle px-2 py-1 text-2xs">…truncated for display.</p>
-          )}
+          {truncated && <p className="text-fg-subtle px-2 py-1 text-xs">…truncated for display.</p>}
         </div>
       ) : (
         <div className="border-border bg-surface-sunken rounded-md border px-2 py-1">
@@ -189,7 +187,7 @@ function OperationsView({ test }: { test: TestResult }) {
   return (
     <Field label="Calls">
       <div className="border-border overflow-x-auto rounded-md border">
-        <table className="w-full text-left font-mono text-2xs">
+        <table className="w-full text-left font-mono text-xs">
           <thead>
             <tr className="text-fg-subtle border-border border-b font-sans">
               <th className="px-2 py-1 font-medium">#</th>
@@ -224,7 +222,7 @@ function OperationsView({ test }: { test: TestResult }) {
         </table>
       </div>
       {hidden > 0 && (
-        <p className="text-fg-subtle mt-1 text-2xs">
+        <p className="text-fg-subtle mt-1 text-xs">
           {`Showing calls ${String(start + 1)}–${String(start + ops.length)} of ${String(allOps.length)}.`}
         </p>
       )}
@@ -239,7 +237,7 @@ function Stream({ label, text }: { label: string; text: string }) {
       <summary className="focus-ring-inset text-fg-muted cursor-pointer px-2 py-1 text-xs">
         {label} ({text.split('\n').length} lines)
       </summary>
-      <pre className="text-fg-muted max-h-48 overflow-auto px-2 pb-2 font-mono text-2xs leading-5">
+      <pre className="text-fg-muted max-h-48 overflow-auto px-2 pb-2 font-mono text-xs leading-5">
         {text}
       </pre>
     </details>
@@ -293,11 +291,7 @@ function TestDetail({ test }: { test: TestResult }) {
       {isOperations ? (
         <OperationsView test={test} />
       ) : (
-        hasReturn && (
-          <Field label="Result">
-            <SideBySide expected={test.expected} actual={test.actual} />
-          </Field>
-        )
+        hasReturn && <SideBySide expected={test.expected} actual={test.actual} />
       )}
 
       {hasMutated && <MutatedArgsView test={test} />}
@@ -485,7 +479,7 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
                   <span className="text-fg tnum text-xs">
                     {SOURCE_LABEL[test.source]} {index + 1}
                   </span>
-                  <span className={cn('ml-auto text-2xs font-medium', VERDICT_TONE[test.verdict])}>
+                  <span className={cn('ml-auto text-xs font-medium', VERDICT_TONE[test.verdict])}>
                     {test.verdict}
                   </span>
                 </button>

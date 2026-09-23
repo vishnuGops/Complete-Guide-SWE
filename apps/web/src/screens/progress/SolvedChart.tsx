@@ -213,6 +213,13 @@ export function SolvedChart({ points }: { points: readonly ChartPoint[] }) {
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
+          <circle
+            cx={geometry.x(points.length - 1)}
+            cy={geometry.y(last.total)}
+            r="3"
+            fill="var(--color-accent)"
+            vectorEffect="non-scaling-stroke"
+          />
           {at !== null && (
             <line
               x1={geometry.x(at)}

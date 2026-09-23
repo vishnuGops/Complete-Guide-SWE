@@ -29,7 +29,8 @@ export function Input({ invalid = false, mono = false, className, ...props }: In
         'bg-surface text-fg placeholder:text-fg-subtle',
         'transition-colors duration-75',
         'disabled:cursor-not-allowed disabled:opacity-45',
-        invalid ? 'border-danger' : 'border-border-strong hover:border-border-hover',
+        // A field's edge carries meaning, so it holds 3:1 (border-input, P9-6).
+        invalid ? 'border-danger' : 'border-border-input hover:border-fg-muted',
         mono && 'font-mono',
         className,
       )}

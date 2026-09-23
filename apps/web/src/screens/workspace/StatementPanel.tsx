@@ -354,7 +354,7 @@ function Notes({ slug, note }: { slug: string; note: string | null }) {
             setBody(event.target.value);
           }}
           placeholder="What tripped you up, what to remember next time."
-          className="focus-ring border-border bg-surface text-fg min-h-0 flex-1 resize-none rounded-md border p-2 font-mono text-xs"
+          className="focus-ring border-border-input bg-surface text-fg min-h-0 flex-1 resize-none rounded-md border p-2 font-mono text-xs"
         />
       )}
 
@@ -702,8 +702,12 @@ function StatementPanelBody({
         </p>
       </div>
 
-      {/* Scrolls sideways rather than clipping at 1024px (P9-6). */}
-      <TabsList className="shrink-0 overflow-x-auto px-3">
+      {/*
+        Wraps to a second row below 1280px rather than scrolling (P9-6): six
+        tabs do not fit a 40% column at 1024, and a strip that scrolled hid
+        Submissions with nothing on screen saying it was there.
+      */}
+      <TabsList className="shrink-0 px-3 max-[1279px]:flex-wrap max-[1279px]:gap-0">
         <TabsTrigger value="description">Description</TabsTrigger>
         {/* Gone while the clock runs (P7-6), not disabled: a greyed-out Hints
             tab is still a hint tab you can see and think about. */}

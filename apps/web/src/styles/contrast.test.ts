@@ -191,6 +191,18 @@ describe.each(Object.keys(THEMES) as (keyof typeof THEMES)[])('%s theme', (theme
     expect(contrast(colour('border-strong'), colour('surface'))).toBeGreaterThanOrEqual(1.5);
   });
 
+  it.each(['surface', 'surface-sunken'] as const)(
+    'draws the edge of a text field at 3:1 on %s (P9-6)',
+    (surface) => {
+      // The field's fill is the card's, so the edge is the only signal that
+      // there is somewhere to type: meaning-carrying, so the non-text floor.
+      expect(
+        Number(contrast(colour('border-input'), colour(surface)).toFixed(2)),
+        `--border-input on --${surface} in ${theme}`,
+      ).toBeGreaterThanOrEqual(NON_TEXT);
+    },
+  );
+
   it('keeps a card a card (P9-6)', () => {
     // docs/DESIGN.md 7: a card's fill barely differs from the canvas, so the
     // hairline is what draws its edge, and it has to hold 1.2:1 against the

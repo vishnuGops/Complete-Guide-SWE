@@ -8,7 +8,7 @@ import {
 } from '@devpromax/shared';
 import { Markdown } from '../../markdown/Markdown.js';
 import { SHORTCUTS } from '../../shortcuts/shortcuts.js';
-import { Button, Callout, CoachMark, Input, cn } from '../../ui/index.js';
+import { Button, Callout, CoachMark, Input, Keys, cn } from '../../ui/index.js';
 import type { CoachState } from './useCoach.js';
 
 /**
@@ -186,7 +186,7 @@ function CoachPanelPanel({
   const empty = state.turns.length === 0 && state.streaming === '';
 
   return (
-    <div className="flex min-h-0 flex-col p-4">
+    <div className="flex min-h-0 flex-col px-5 py-4">
       {/*
         The no-key state is not an error and is not styled as one: nothing has
         gone wrong, the feature simply has not been set up. It gets the one
@@ -360,7 +360,9 @@ function CoachPanelPanel({
 
       {empty && state.phase === 'idle' && (
         <p className="text-fg-subtle mt-3 text-xs">
-          {SHORTCUTS.aiHelp.keys.join(' ')} asks for help from anywhere in the workspace.
+          <Keys keys={SHORTCUTS.aiHelp.keys} />
+          <span className="sr-only">{SHORTCUTS.aiHelp.keys.join('+')}</span> asks for help from
+          anywhere in the workspace.
         </p>
       )}
     </div>

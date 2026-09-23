@@ -35,6 +35,8 @@
   --color-neutral-300: oklch(0.86 0.008 265);
   --color-neutral-400: oklch(0.74 0.012 265);
   --color-neutral-500: oklch(0.66 0.014 265);
+  --color-neutral-525: oklch(0.64 0.014 265);
+  --color-neutral-575: oklch(0.54 0.016 265);
   --color-neutral-600: oklch(0.52 0.016 265);
   --color-neutral-700: oklch(0.42 0.016 265);
   --color-neutral-750: oklch(0.38 0.014 265);
@@ -219,6 +221,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-border-hover: var(--border-hover);
+  --color-border-input: var(--border-input);
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
@@ -262,6 +265,12 @@
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
   --border-hover: var(--color-neutral-400);
+  /*
+   * The edge of a text field (P9-6). A field's fill is the card's, so its edge
+   * is the only thing saying "type here" - it carries meaning and holds 3:1
+   * (DESIGN.md 7), where `border-strong` draws buttons and trays at 1.5:1.
+   */
+  --border-input: var(--color-neutral-525);
 
   --accent: var(--color-accent-600);
   --accent-hover: var(--color-accent-700);
@@ -330,6 +339,7 @@
     --border: var(--color-neutral-850);
     --border-strong: var(--color-neutral-750);
     --border-hover: var(--color-neutral-600);
+    --border-input: var(--color-neutral-575);
 
     --accent: var(--color-accent-550);
     --accent-hover: var(--color-accent-500);
@@ -374,6 +384,7 @@
   --border: var(--color-neutral-850);
   --border-strong: var(--color-neutral-750);
   --border-hover: var(--color-neutral-600);
+  --border-input: var(--color-neutral-575);
 
   --accent: var(--color-accent-550);
   --accent-hover: var(--color-accent-500);

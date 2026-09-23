@@ -146,6 +146,7 @@ const SEMANTIC_COLORS = [
   'border',
   'border-strong',
   'border-hover',
+  'border-input',
   'accent',
   'accent-hover',
   'accent-fg',
@@ -165,9 +166,9 @@ const SEMANTIC_COLORS = [
   'focus',
 ];
 const RAMP_COLORS = [
-  ...[0, 50, 100, 150, 200, 300, 400, 500, 600, 700, 750, 800, 850, 875, 900, 950, 1000].map(
-    (n) => `neutral-${n}`,
-  ),
+  ...[
+    0, 50, 100, 150, 200, 300, 400, 500, 525, 575, 600, 700, 750, 800, 850, 875, 900, 950, 1000,
+  ].map((n) => `neutral-${n}`),
   ...[100, 200, 300, 400, 500, 550, 600, 700, 800, 900, 950].map((n) => `accent-${n}`),
   ...[300, 700].map((n) => `keyword-${n}`),
   ...[100, 300, 500, 700, 900].flatMap((n) => [`success-${n}`, `warn-${n}`]),

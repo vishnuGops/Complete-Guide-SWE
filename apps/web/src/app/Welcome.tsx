@@ -28,7 +28,7 @@ export function Welcome() {
 
   return (
     <aside
-      className="bg-surface border-border shadow-card mx-6 mt-5 rounded-xl border p-5"
+      className="bg-surface border-border shadow-card mx-6 mt-5 max-w-3xl rounded-xl border p-5"
       aria-label="Welcome"
     >
       <h2 className="text-md font-semibold">Welcome to DevProMax</h2>

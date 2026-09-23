@@ -191,7 +191,7 @@ export function Filters({ filters, onChange, counts, className }: FiltersProps) 
         })}
       </Section>
 
-      <Section title="Difficulty">
+      <Section title="Tier">
         {/*
           No counts beside the tiers. The list response tallies by topic and by
           status only, and three more numbers are not worth a second request -

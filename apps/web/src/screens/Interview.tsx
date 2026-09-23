@@ -218,7 +218,7 @@ export function Interview() {
                 </Card>
               )}
 
-              <Card>
+              <Card className="max-w-xl">
                 {/*
                  * Why there is no debrief, on the screen that has no debrief.
                  *
@@ -415,7 +415,7 @@ export function Interview() {
                     onChange={(event) => {
                       setSaid(event.target.value);
                     }}
-                    className="focus-ring border-border-strong bg-surface text-fg w-full resize-y rounded-md border p-2.5 text-sm"
+                    className="focus-ring border-border-input bg-surface text-fg w-full resize-y rounded-md border p-2.5 text-sm"
                   />
                   <Button
                     type="submit"
