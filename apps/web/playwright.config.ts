@@ -3,6 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
+/*
+ * The API's port: 5174 unless DEVPROMAX_PORT says otherwise (P9-6). Run the
+ * suite with DEVPROMAX_PORT set when a dev server already holds 5174 - its API
+ * is running on your practice database, and the suite's own, which it cannot
+ * bind beside it, is the one that should answer. The Vite proxy follows the
+ * same variable.
+ */
+const API_PORT = process.env['DEVPROMAX_PORT'] ?? '5174';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export default defineConfig({
@@ -34,10 +42,28 @@ export default defineConfig({
     permissions: ['clipboard-read', 'clipboard-write'],
   },
   projects: [
+    /*
+     * The production server first, alone (P9-6).
+     *
+     * `production.spec.ts` times cold start - spawn to the first `/health` -
+     * against P8-2's two-second budget. Run beside three browser workers on the
+     * slower machine it was timing the machine instead: 1.1 s alone, 1.8 s
+     * under the suite before P9-6 and 2.1 s after, with no change to what the
+     * server does at start. Every other project waits for these few seconds, so
+     * the number is the server's again.
+     */
+    {
+      name: 'production',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /production\.spec\.ts/,
+      workers: 1,
+      fullyParallel: false,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /(a11y|settings|interview)\.spec\.ts/,
+      testIgnore: /(a11y|settings|interview|production)\.spec\.ts/,
+      dependencies: ['production'],
     },
     /*
      * Settings get a project of their own, one worker wide (ROADMAP P8-1).
@@ -52,6 +78,7 @@ export default defineConfig({
       testMatch: /settings\.spec\.ts/,
       workers: 1,
       fullyParallel: false,
+      dependencies: ['production'],
     },
     /*
      * And so does the interview, for the same reason (ROADMAP P9-1).
@@ -68,6 +95,7 @@ export default defineConfig({
       testMatch: /interview\.spec\.ts/,
       workers: 1,
       fullyParallel: false,
+      dependencies: ['production'],
     },
     /*
      * The audit gets its own project, one worker wide (ROADMAP P4-13).
@@ -138,7 +166,7 @@ export default defineConfig({
        * the coach. Under `/api` the client-header rule runs before any route
        * and refuses, built UI or not.
        */
-      DEVPROMAX_COACH_BASE_URL: 'http://127.0.0.1:5174/api/__no_vendor__',
+      DEVPROMAX_COACH_BASE_URL: `http://127.0.0.1:${API_PORT}/api/__no_vendor__`,
     },
   },
 });

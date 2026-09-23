@@ -22,7 +22,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5174',
+        // Follows the API's own port setting, so a second API on another port
+        // (the e2e suite's, beside a dev server already on 5174) is reachable.
+        target: `http://127.0.0.1:${process.env['DEVPROMAX_PORT'] ?? '5174'}`,
         changeOrigin: false,
       },
     },
