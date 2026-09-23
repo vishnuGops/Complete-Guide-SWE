@@ -8,7 +8,7 @@ DevProMax is a local-first, LeetCode-style DSA training app for **Python and Jav
 
 Current state: **M5 reached (2026-09-22)** — release 1.0; M4 was reached 2026-09-18. The catalogue is 171 validated problems with generated hidden tests (M3); the learning loop is complete apart from P7-10 — progressive hints, the editorial unlock with a diff, submission history, notes, the dashboard and its exportable skills report, interview mode, the command palette with bookmarks and recommendations, the spaced-repetition review queue, and version drift with Re-verify. M5's P8-1 … P8-5 are done: end-to-end tests with a flake budget, performance budgets and Lighthouse ≥ 90, the doctor, welcome, movable `data/` and backups, the README and CHANGELOG, and the legacy `temp/` archive retired (git history keeps it; last at `2c01d25`). Beyond v1, P9-1 (mock interview), P9-2 (Docker executor), P9-4 (OpenAI-compatible provider) and P9-5 (format on save, with optional `black` / `google-java-format`) are done.
 
-One task cannot be finished here and says so in its row: **P7-10** needs measured human solving times.
+Two tasks are not to be started and say so in their rows: **P7-10** needs measured human solving times, and **P9-3** (more languages) is deferred by the owner until the existing app is solid.
 
 ## Stack (decided, see ROADMAP D1–D25)
 
