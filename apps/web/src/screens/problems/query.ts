@@ -35,6 +35,8 @@ export interface ProblemFilters {
   language: Language | undefined;
   /** Starred problems only (P7-7). There is no "unstarred only". */
   bookmarked: boolean;
+  /** Only what the review queue says is due now (P9-6). */
+  due: boolean;
   sort: ProblemSort;
   dir: SortDirection;
 }
@@ -46,6 +48,7 @@ export const NO_FILTERS: ProblemFilters = {
   q: '',
   language: undefined,
   bookmarked: false,
+  due: false,
   sort: 'default',
   dir: 'asc',
 };
@@ -79,6 +82,7 @@ export function filtersFromSearch(params: URLSearchParams): ProblemFilters {
     q: params.get('q')?.slice(0, 120) ?? '',
     language: one(params.get('language'), LANGUAGES),
     bookmarked: params.get('bookmarked') === 'true',
+    due: params.get('due') === 'true',
     sort: one(params.get('sort'), PROBLEM_SORT_KEYS) ?? 'default',
     dir: one(params.get('dir'), ['asc', 'desc'] as const) ?? 'asc',
   };
@@ -93,6 +97,7 @@ export function searchFromFilters(filters: ProblemFilters): string {
     ...(filters.q ? { q: filters.q } : {}),
     ...(filters.language ? { language: filters.language } : {}),
     ...(filters.bookmarked ? { bookmarked: true } : {}),
+    ...(filters.due ? { due: true } : {}),
     sort: filters.sort,
     dir: filters.dir,
   });
@@ -111,7 +116,8 @@ export function isFiltered(filters: ProblemFilters): boolean {
     filters.status.length > 0 ||
     filters.q !== '' ||
     filters.language !== undefined ||
-    filters.bookmarked
+    filters.bookmarked ||
+    filters.due
   );
 }
 

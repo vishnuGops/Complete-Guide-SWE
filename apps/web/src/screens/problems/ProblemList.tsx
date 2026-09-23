@@ -1,4 +1,5 @@
 import { useEffect, useState, type MouseEvent } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   PROBLEM_SORT_KEYS,
@@ -7,16 +8,28 @@ import {
   type ProblemSummary,
 } from '@devpromax/shared';
 import { useProblems } from '../../api/hooks.js';
-import { Button, ErrorState, Input, Loading, Skeleton, StatusMark, cn } from '../../ui/index.js';
+import { PageHeader } from '../../app/PageHeader.js';
+import {
+  Button,
+  Card,
+  ErrorState,
+  Input,
+  Loading,
+  Segmented,
+  Skeleton,
+  StatusMark,
+  cn,
+} from '../../ui/index.js';
 import { Filters } from './Filters.js';
 import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters } from './query.js';
 
 /**
  * The problem list (ROADMAP P4-4, P4-5).
  *
- * A table, and nothing but a table. Two hundred rows read by eye want columns
- * they can scan down - status here, rating there - which is the one thing a grid
- * of cards cannot do (docs/DESIGN.md section 2).
+ * A table in a card, beside the filters in a card of their own (P9-6). Two
+ * hundred rows read by eye want columns they can scan down - status here,
+ * rating there - which is the one thing a grid of cards cannot do, so the rows
+ * are table rows and only the two regions are cards (docs/DESIGN.md 8).
  *
  * Sorting and filtering both happen on the server. That is not an optimisation:
  * the default order is "rating, then curriculum position", which is the learning
@@ -27,6 +40,19 @@ import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters }
  * Virtualisation is deliberately absent. P8-2 measures the list at 500 rows and
  * adds it only if the measurement asks for it.
  */
+
+type ListView = 'all' | 'due' | 'starred';
+
+/** Every filter off; sort is not a filter and is left alone. */
+const CLEARED = {
+  topic: [],
+  tier: [],
+  status: [],
+  q: '',
+  language: undefined,
+  bookmarked: false,
+  due: false,
+} satisfies Partial<ProblemFilters>;
 
 interface Column {
   key: ProblemSort | 'patterns';
@@ -40,7 +66,7 @@ const COLUMNS: Column[] = [
   { key: 'topic', label: 'Topic', className: 'w-36' },
   { key: 'patterns', label: 'Patterns', className: 'w-56' },
   { key: 'tier', label: 'Tier', className: 'w-20' },
-  { key: 'rating', label: 'Rating', className: 'w-16' },
+  { key: 'rating', label: 'Rating', className: 'w-20 text-right' },
   { key: 'lastAttempted', label: 'Last attempted', className: 'w-32' },
 ];
 
@@ -69,12 +95,20 @@ function Row({ problem }: { problem: ProblemSummary }) {
     void navigate(`/problems/${problem.slug}`);
   };
 
+  /*
+   * 36px rows (DESIGN.md 6). The row under the pointer takes `surface-sunken`;
+   * the row holding keyboard focus - where you are - gets a 2px accent bar at
+   * its left edge, drawn as the first cell's border so nothing shifts.
+   */
   return (
-    <tr className="border-border hover:bg-surface-sunken cursor-pointer border-b" onClick={openRow}>
-      <td className="px-3 py-1.5">
+    <tr
+      className="border-border hover:bg-surface-sunken group h-9 cursor-pointer border-b last:border-b-0"
+      onClick={openRow}
+    >
+      <td className="group-focus-within:border-l-accent border-l-2 border-l-transparent py-0 pr-3 pl-3.5">
         <StatusMark status={problem.status} />
       </td>
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-0">
         <Link
           to={`/problems/${problem.slug}`}
           className="focus-ring hover:text-accent-fg rounded-xs font-medium"
@@ -111,16 +145,13 @@ function Row({ problem }: { problem: ProblemSummary }) {
           </span>
         )}
       </td>
-      <td className="text-fg-muted px-3 py-1.5 text-xs">{TOPIC_LABEL[problem.topic]}</td>
-      <td
-        className="text-fg-subtle truncate px-3 py-1.5 text-xs"
-        title={problem.patterns.join(', ')}
-      >
+      <td className="text-fg-muted px-3 py-0 text-xs">{TOPIC_LABEL[problem.topic]}</td>
+      <td className="text-fg-subtle truncate px-3 py-0 text-xs" title={problem.patterns.join(', ')}>
         {problem.patterns.join(', ')}
       </td>
-      <td className="text-fg-muted px-3 py-1.5 text-xs">{problem.tier}</td>
-      <td className="text-fg-muted tnum px-3 py-1.5 text-xs">{problem.rating}</td>
-      <td className="text-fg-subtle tnum px-3 py-1.5 text-xs">
+      <td className="text-fg-muted px-3 py-0 text-xs">{problem.tier}</td>
+      <td className="text-fg-muted tnum px-3 py-0 text-right text-xs">{problem.rating}</td>
+      <td className="text-fg-subtle tnum px-3 py-0 pr-4 text-xs">
         {whenAttempted(problem.lastAttemptedAt)}
       </td>
     </tr>
@@ -206,6 +237,7 @@ export function ProblemList() {
   }, [search, typing, setParams]);
 
   const { data, isPending, isFetching, error, refetch } = useProblems(filters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const apply = (next: ProblemFilters) => {
     setSearch(next.q);
@@ -224,136 +256,209 @@ export function ProblemList() {
     );
   };
 
+  /*
+   * The view: everything, what is due for review, or what is starred (P9-6).
+   * Three exclusive answers to "which list", so a segmented control rather than
+   * two more checkboxes in the filter card - and both are still filters, in the
+   * URL like the rest.
+   */
+  const view: ListView = filters.due ? 'due' : filters.bookmarked ? 'starred' : 'all';
+  const setView = (next: ListView) => {
+    apply({ ...filters, due: next === 'due', bookmarked: next === 'starred' });
+  };
+
+  const narrowed = isFiltered(filters);
+  const due = data?.due ?? 0;
+
+  const header = (
+    <PageHeader
+      title="Problems"
+      context={
+        data
+          ? `${String(data.total)} problems${due > 0 ? ` · ${String(due)} due for review` : ''}`
+          : undefined
+      }
+    />
+  );
+
   if (error) {
     return (
-      <ErrorState
-        title="The problem list could not load."
-        error={error}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        {header}
+        <div className="px-6 pb-6">
+          <Card>
+            <ErrorState
+              className="p-0"
+              title="The problem list could not load."
+              error={error}
+              onRetry={() => {
+                void refetch();
+              }}
+            />
+          </Card>
+        </div>
+      </div>
     );
   }
 
-  const narrowed = isFiltered(filters);
-
   return (
-    <div className="flex h-full min-h-0">
-      <Filters filters={filters} onChange={apply} counts={data} />
+    <div className="flex h-full min-h-0 flex-col">
+      {header}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-border flex h-10 shrink-0 items-center gap-3 border-b px-4">
-          <h1 className="text-sm font-semibold">Problems</h1>
+      <div className="flex min-h-0 flex-1 gap-4 px-6 pb-6 max-[1279px]:gap-3 max-[1279px]:px-4 max-[1279px]:pb-4">
+        <Filters
+          filters={filters}
+          onChange={apply}
+          counts={data}
+          className={cn(!filtersOpen && 'max-[1279px]:hidden')}
+        />
 
-          <Input
-            type="search"
-            value={search}
-            aria-label="Search problems"
-            placeholder="Search titles, patterns and notes"
-            className="max-w-64"
-            onChange={(event) => {
-              setTyping(true);
-              setSearch(event.target.value);
-            }}
-          />
-
-          {/*
-            How many rows are on screen, and not how many are solved: the top
-            bar already carries the catalogue's solved count on every screen, and
-            printing it twice on one page makes both copies read like they might
-            mean different things.
-          */}
-          {data && (
-            <p className="text-fg-muted tnum ml-auto text-xs" data-testid="list-counts">
-              {narrowed
-                ? `${String(data.matched)} of ${String(data.total)} problems`
-                : `${String(data.total)} problems`}
-            </p>
-          )}
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {isPending ? (
-            <ListSkeleton />
-          ) : data.items.length === 0 ? (
-            <div className="p-6">
-              <p className="text-fg-muted text-sm">
-                {narrowed
-                  ? 'No problem matches these filters.'
-                  : 'The catalogue is empty. Run `npm run problems:validate` to check the problem packages.'}
-              </p>
-              {narrowed && (
-                <Button
-                  className="mt-3"
-                  onClick={() => {
-                    apply({
-                      ...filters,
-                      topic: [],
-                      tier: [],
-                      status: [],
-                      q: '',
-                      language: undefined,
-                      bookmarked: false,
-                    });
-                  }}
-                >
-                  Clear all filters
-                </Button>
-              )}
-            </div>
-          ) : (
-            <table
-              className={cn(
-                'w-full table-fixed text-left text-sm transition-opacity duration-75',
-                // The previous rows stay while the next query runs, dimmed so it
-                // is visible that they are the old answer.
-                isFetching && 'opacity-60',
-              )}
+        <Card
+          aria-label="Problem list"
+          padding="none"
+          className="flex min-w-0 flex-1 flex-col overflow-hidden"
+        >
+          <div className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-3">
+            {/*
+              At 1024px the filter card folds away behind this button
+              (DESIGN.md 11) and comes back beside the table when asked. CSS
+              decides whether the button is there at all.
+            */}
+            <Button
+              size="sm"
+              variant="secondary"
+              className="min-[1280px]:hidden"
+              aria-expanded={filtersOpen}
+              onClick={() => {
+                setFiltersOpen(!filtersOpen);
+              }}
             >
-              <thead>
-                <tr className="border-border text-fg-muted bg-bg sticky top-0 z-10 border-b text-xs">
-                  {COLUMNS.map((column) => (
-                    <th
-                      key={column.key}
-                      scope="col"
-                      className={cn('font-medium', column.className)}
-                      aria-sort={
-                        sortable(column.key) && filters.sort === column.key
-                          ? filters.dir === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : undefined
-                      }
-                    >
-                      {sortable(column.key) ? (
-                        <button
-                          type="button"
-                          className="focus-ring-inset hover:text-fg flex w-full items-center gap-1 px-3 py-2 text-left"
-                          onClick={() => {
-                            sortBy(column.key as ProblemSort);
-                          }}
-                        >
-                          {column.label}
-                          <span aria-hidden className="text-2xs">
-                            {filters.sort === column.key ? (filters.dir === 'asc' ? '↑' : '↓') : ''}
-                          </span>
-                        </button>
-                      ) : (
-                        <span className="block px-3 py-2">{column.label}</span>
-                      )}
-                    </th>
+              <SlidersHorizontal aria-hidden size={14} strokeWidth={1.5} />
+              Filters
+            </Button>
+
+            <Input
+              type="search"
+              value={search}
+              aria-label="Search problems"
+              placeholder="Search titles, patterns and notes"
+              className="max-w-72"
+              onChange={(event) => {
+                setTyping(true);
+                setSearch(event.target.value);
+              }}
+            />
+
+            <Segmented
+              label="Which problems"
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'due', label: 'Due' },
+                { value: 'starred', label: 'Starred' },
+              ]}
+              value={view}
+              onChange={setView}
+            />
+
+            {/*
+              How many rows are on screen, and not how many are solved: the page
+              header already carries the catalogue's solved count, and printing
+              it twice on one page makes both copies read like they might mean
+              different things.
+            */}
+            {data && (
+              <p className="text-fg-muted tnum ml-auto text-xs" data-testid="list-counts">
+                {narrowed
+                  ? `${String(data.matched)} of ${String(data.total)} problems`
+                  : `${String(data.total)} problems`}
+              </p>
+            )}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {isPending ? (
+              <ListSkeleton />
+            ) : data.items.length === 0 ? (
+              <div className="p-5">
+                <p className="text-fg-muted text-sm">
+                  {view === 'due' && !isFiltered({ ...filters, due: false })
+                    ? 'Nothing is due for review. Solved problems come back here as they age.'
+                    : narrowed
+                      ? 'No problem matches these filters.'
+                      : 'The catalogue is empty. Run `npm run problems:validate` to check the problem packages.'}
+                </p>
+                {narrowed && (
+                  <Button
+                    className="mt-3"
+                    onClick={() => {
+                      apply({ ...filters, ...CLEARED });
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <table
+                className={cn(
+                  'w-full table-fixed text-left text-sm transition-opacity duration-75',
+                  // The previous rows stay while the next query runs, dimmed so it
+                  // is visible that they are the old answer.
+                  isFetching && 'opacity-60',
+                )}
+              >
+                <thead>
+                  <tr className="border-border text-fg-muted bg-surface-sunken sticky top-0 z-10 border-b text-xs">
+                    {COLUMNS.map((column, index) => (
+                      <th
+                        key={column.key}
+                        scope="col"
+                        className={cn('font-medium', column.className)}
+                        aria-sort={
+                          sortable(column.key) && filters.sort === column.key
+                            ? filters.dir === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : undefined
+                        }
+                      >
+                        {sortable(column.key) ? (
+                          <button
+                            type="button"
+                            className={cn(
+                              'focus-ring-inset hover:text-fg flex w-full items-center gap-1 px-3 py-2',
+                              column.key === 'rating' ? 'justify-end' : 'text-left',
+                              index === 0 && 'pl-4',
+                            )}
+                            onClick={() => {
+                              sortBy(column.key as ProblemSort);
+                            }}
+                          >
+                            {column.label}
+                            <span aria-hidden className="text-2xs">
+                              {filters.sort === column.key
+                                ? filters.dir === 'asc'
+                                  ? '↑'
+                                  : '↓'
+                                : ''}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="block px-3 py-2">{column.label}</span>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((problem) => (
+                    <Row key={problem.slug} problem={problem} />
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((problem) => (
-                  <Row key={problem.slug} problem={problem} />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </tbody>
+              </table>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );

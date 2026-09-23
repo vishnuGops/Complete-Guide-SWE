@@ -158,10 +158,36 @@ describe('filters', () => {
     renderApp(<ProblemList />, { route: '/?tier=Hard&status=solved' });
 
     await waitFor(() => {
-      expect(server.requests[0]?.url.searchParams.getAll('tier')).toEqual(['Hard']);
+      // By path, not by position: the page header's solved counter asks
+      // /api/progress first (P9-6).
+      const list = server.requests.find((request) => request.url.pathname === '/api/problems');
+      expect(list?.url.searchParams.getAll('tier')).toEqual(['Hard']);
     });
     expect(screen.getByRole('checkbox', { name: /Hard/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Solved' })).toBeChecked();
+  });
+
+  it('switches between All, Due and Starred as one filter (P9-6)', async () => {
+    const server = serve({ ...aList(PROBLEMS), due: 2 });
+    renderApp(<ProblemList />);
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/problems · 2 due for review/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Due' }));
+    await waitFor(() => {
+      expect(server.requests.at(-1)?.url.searchParams.get('due')).toBe('true');
+    });
+
+    // Exclusive: Starred replaces Due rather than adding to it.
+    await user.click(screen.getByRole('button', { name: 'Starred' }));
+    await waitFor(() => {
+      const last = server.requests.at(-1)?.url.searchParams;
+      expect(last?.get('bookmarked')).toBe('true');
+      expect(last?.get('due')).toBeNull();
+    });
   });
 
   it('narrows progress to one language when asked', async () => {

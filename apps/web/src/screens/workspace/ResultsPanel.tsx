@@ -8,7 +8,7 @@ import {
   type RunResult,
   type TestResult,
 } from '@devpromax/shared';
-import { Button, cn } from '../../ui/index.js';
+import { Button, VerdictTile, cn } from '../../ui/index.js';
 import { changedLines, firstDifference, formatValue } from './diff.js';
 import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
 
@@ -74,7 +74,7 @@ function SideBySide({
         an `h4` under the workspace's `h1` was a two-level jump that a screen
         reader reads as missing structure.
       */}
-      <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</p>
+      <p className="text-fg-muted mb-1 text-xs font-medium">{label}</p>
       {multiline ? (
         <div className="border-border bg-surface-sunken overflow-x-auto rounded-md border">
           {lines.map((line, index) => (
@@ -117,7 +117,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
         an `h4` under the workspace's `h1` was a two-level jump that a screen
         reader reads as missing structure.
       */}
-      <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">{label}</p>
+      <p className="text-fg-muted mb-1 text-xs font-medium">{label}</p>
       {children}
     </div>
   );
@@ -392,12 +392,15 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-testid="results">
-      <header className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-2">
-        <span
-          aria-hidden
-          className={cn('size-2 shrink-0 rounded-full', VERDICT_MARK[result.verdict])}
-        />
-        <p className={cn('text-sm font-semibold', VERDICT_TONE[result.verdict])}>
+      {/*
+        The verdict line leads with a verdict tile (P9-6, DESIGN.md 8): the
+        verdict's tint and glyph, then the verdict in words - so it is read by
+        shape and word as well as by colour.
+      */}
+      <header className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-2.5">
+        <VerdictTile verdict={result.verdict} />
+        {/* The loudest words on the screen after a run (P9-6): the verdict leads its card. */}
+        <p className={cn('text-lg font-semibold', VERDICT_TONE[result.verdict])}>
           <span data-testid="verdict">{VERDICT_LABEL[result.verdict]}</span>
         </p>
         <p className="text-fg-muted tnum text-xs">
@@ -460,9 +463,16 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
                 <button
                   type="button"
                   aria-current={index === selected}
+                  /*
+                   * The test being read: the selected step, a 2px accent bar
+                   * and a heavier label - three signals, none of them only a
+                   * tint (P9-6; the sunken grey this replaces was 1.03:1).
+                   */
                   className={cn(
-                    'focus-ring-inset border-border flex w-full items-center gap-2 border-b px-3 py-1.5 text-left',
-                    index === selected ? 'bg-surface-sunken' : 'hover:bg-surface-sunken',
+                    'focus-ring-inset border-border flex w-full items-center gap-2 border-b border-l-2 py-1.5 pr-3 pl-2.5 text-left',
+                    index === selected
+                      ? 'bg-surface-selected border-l-accent font-semibold'
+                      : 'hover:bg-surface-sunken border-l-transparent',
                   )}
                   onClick={() => {
                     setSelected(index);

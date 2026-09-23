@@ -64,6 +64,7 @@ describe('searchFromFilters', () => {
       q: 'sum',
       language: 'python',
       bookmarked: true,
+      due: true,
       sort: 'rating',
       dir: 'desc',
     };

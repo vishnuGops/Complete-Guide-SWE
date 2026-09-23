@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Timer } from 'lucide-react';
 import { Button, cn } from '../../ui/index.js';
 
 /**
@@ -115,8 +116,7 @@ export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
           {formatClock(shown)}
         </span>
         <Button
-          size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => {
             timer.stop();
           }}
@@ -130,12 +130,12 @@ export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
   if (!choosing) {
     return (
       <Button
-        size="sm"
-        variant="ghost"
+        variant="secondary"
         onClick={() => {
           setChoosing(true);
         }}
       >
+        <Timer aria-hidden size={14} strokeWidth={1.5} />
         Interview mode
       </Button>
     );

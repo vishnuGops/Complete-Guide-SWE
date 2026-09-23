@@ -8,7 +8,7 @@ import {
 } from '@devpromax/shared';
 import { Markdown } from '../../markdown/Markdown.js';
 import { SHORTCUTS } from '../../shortcuts/shortcuts.js';
-import { Button, Input, cn } from '../../ui/index.js';
+import { Button, Callout, CoachMark, Input, cn } from '../../ui/index.js';
 import type { CoachState } from './useCoach.js';
 
 /**
@@ -33,7 +33,9 @@ const HINT_DESCRIPTION: Record<HintLevel, string> = {
 };
 
 /**
- * One rubric dimension as a row of filled and empty pips.
+ * One rubric dimension as a row of filled and empty pips. Filled pips are
+ * `fg-muted` and a full score is `success`: the rubric is a reading, not an
+ * action, so it has no business in the accent (P9-6).
  *
  * Pips rather than a bar or a number: five dimensions out of four points each
  * is a small enough range to read at a glance, and a shape the eye can compare
@@ -57,7 +59,7 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
             aria-hidden
             className={cn(
               'h-1.5 w-5 rounded-xs',
-              i < score ? (score === MAX_RUBRIC_SCORE ? 'bg-success' : 'bg-accent') : 'bg-border',
+              i < score ? (score === MAX_RUBRIC_SCORE ? 'bg-success' : 'bg-fg-muted') : 'bg-border',
             )}
           />
         ))}
@@ -71,8 +73,8 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
 
 function RubricCard({ feedback }: { feedback: CoachFeedback }) {
   return (
-    <div className="border-border bg-surface-sunken mt-3 rounded-md border p-3">
-      <p className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">Rubric</p>
+    <div className="bg-surface-sunken mt-3 rounded-lg p-3">
+      <p className="text-fg-muted mb-2 text-xs font-medium">Rubric</p>
 
       {RUBRIC_DIMENSIONS.map((dimension) => (
         <ScoreRow
@@ -96,15 +98,25 @@ function RubricCard({ feedback }: { feedback: CoachFeedback }) {
  *
  * Set apart from the prose because it is the sentence the user acts on, and in
  * a panel of five paragraphs the actionable one should not have to be hunted
- * for. A left border rather than a filled callout: DESIGN.md allows one accent
- * and no decorated boxes.
+ * for. A Callout - the tinted inset DESIGN.md 10 keeps for the suggested next
+ * step - and in the coach's serif, because the words are the coach's.
  */
 function NextStep({ text }: { text: string }) {
   return (
-    <div className="border-accent mt-3 border-l-2 pl-3">
-      <p className="text-fg-subtle text-2xs font-medium tracking-wide uppercase">Next step</p>
-      <p className="text-fg mt-1 text-sm">{text}</p>
-    </div>
+    <Callout className="mt-3">
+      <p className="text-fg-muted text-xs font-medium">Next step</p>
+      <p className="text-fg mt-1 font-serif text-md">{text}</p>
+    </Callout>
+  );
+}
+
+/** Who is speaking, above each of the coach's turns. */
+function CoachLabel() {
+  return (
+    <p className="text-fg-muted mb-1.5 flex items-center gap-2 text-xs font-medium">
+      <CoachMark />
+      Coach
+    </p>
   );
 }
 
@@ -112,16 +124,22 @@ function Turn({ turn }: { turn: CoachState['turns'][number] }) {
   if (turn.role === 'user') {
     return (
       <div className="border-border-strong mt-4 border-l-2 pl-3">
-        <p className="text-fg-subtle text-2xs font-medium tracking-wide uppercase">You asked</p>
-        <p className="text-fg-muted mt-1 text-sm">{turn.content}</p>
+        <p className="text-fg-muted text-xs font-medium">You asked</p>
+        <p className="text-fg mt-1 text-sm">{turn.content}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-4">
-      {turn.feedback && <p className="text-fg mb-2 text-sm font-medium">{turn.feedback.summary}</p>}
-      <Markdown content={turn.content} trust="coach" />
+      <CoachLabel />
+      {/*
+        The coach's words are in serif and nothing else is (DESIGN.md 5): that
+        is how advice is told from interface at a glance. Code inside the
+        answer stays mono.
+      */}
+      {turn.feedback && <p className="text-fg mb-2 font-serif text-lg">{turn.feedback.summary}</p>}
+      <Markdown content={turn.content} trust="coach" className="md-coach" />
       {turn.feedback?.nextStep !== undefined && <NextStep text={turn.feedback.nextStep} />}
       {turn.feedback && <RubricCard feedback={turn.feedback} />}
     </div>
@@ -175,7 +193,7 @@ function CoachPanelPanel({
         button that fixes it rather than a red message that does not.
       */}
       {state.phase === 'skipped' && state.skipped?.reason === 'no_api_key' ? (
-        <div className="border-border rounded-md border p-3">
+        <div className="bg-surface-sunken rounded-lg p-4">
           <p className="text-fg text-sm">{state.skipped.message}</p>
           <Button className="mt-3" onClick={onOpenSettings}>
             Open Settings
@@ -183,9 +201,7 @@ function CoachPanelPanel({
 
           {fallback && fallback.points.length > 0 && (
             <div className="border-border mt-3 border-t pt-3">
-              <p className="text-fg-subtle text-2xs font-medium tracking-wide uppercase">
-                What the judge can tell you
-              </p>
+              <p className="text-fg-muted text-xs font-medium">What the judge can tell you</p>
               <p className="text-fg-muted mt-1 text-sm">{fallback.headline}</p>
               <ul className="text-fg-muted mt-2 flex list-disc flex-col gap-1 pl-4 text-sm">
                 {fallback.points.map((point) => (
@@ -216,7 +232,12 @@ function CoachPanelPanel({
             It will not hand over the solution unless the problem is already solved and you ask for
             it.
           </p>
-          <Button className="mt-3" variant="primary" onClick={onAsk}>
+          {/*
+            Outlined, not filled: Submit is the one filled pill on this screen,
+            and asking costs money (D13).
+          */}
+          <Button className="mt-3" variant="primary-outline" onClick={onAsk}>
+            <CoachMark />
             Ask for help
           </Button>
         </div>
@@ -235,7 +256,8 @@ function CoachPanelPanel({
       */}
       {state.streaming !== '' && (
         <div className="mt-4" role="status" aria-busy="true" data-testid="coach-streaming">
-          <Markdown content={state.streaming} trust="coach" />
+          <CoachLabel />
+          <Markdown content={state.streaming} trust="coach" className="md-coach" />
         </div>
       )}
 

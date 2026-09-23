@@ -15,15 +15,17 @@ import { Markdown } from '../../markdown/Markdown.js';
 import {
   Button,
   ConfirmDialog,
+  Segmented,
   StickyTabsContent,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  VerdictTile,
   cn,
 } from '../../ui/index.js';
 import { CodeDiff } from './CodeDiff.js';
-import { VERDICT_MARK, VERDICT_TONE } from './verdict.js';
+import { VERDICT_TONE } from './verdict.js';
 
 /**
  * The left half of the workspace (ROADMAP P4-6).
@@ -64,10 +66,8 @@ function Hints({
   return (
     <div className="flex flex-col gap-3 p-4">
       {hints.slice(0, revealed).map((hint, index) => (
-        <div key={hint} className="border-border rounded-md border px-3 py-2">
-          <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">
-            Hint {index + 1}
-          </p>
+        <div key={hint} className="bg-surface-sunken rounded-lg px-4 py-3">
+          <p className="text-fg-muted mb-1 text-xs font-medium">Hint {index + 1}</p>
           <Markdown content={hint} />
         </div>
       ))}
@@ -123,19 +123,16 @@ function ReferenceSolution({
       <h2 className="text-sm font-semibold">Reference solution</h2>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        {LANGUAGES.map((candidate) => (
-          <Button
-            key={candidate}
-            size="sm"
-            variant={candidate === shown ? 'secondary' : 'ghost'}
-            aria-pressed={candidate === shown}
-            onClick={() => {
-              setShown(candidate);
-            }}
-          >
-            {LANGUAGE_LABEL[candidate]}
-          </Button>
-        ))}
+        <Segmented
+          label="Reference language"
+          size="sm"
+          options={LANGUAGES.map((candidate) => ({
+            value: candidate,
+            label: LANGUAGE_LABEL[candidate],
+          }))}
+          value={shown}
+          onChange={setShown}
+        />
 
         <Button
           size="sm"
@@ -383,9 +380,7 @@ function Related({ related }: { related: ProblemDetail['related'] }) {
 
   return (
     <section className="border-border mt-6 border-t pt-3">
-      <h2 className="text-fg-subtle mb-1.5 text-2xs font-medium tracking-wide uppercase">
-        Related problems
-      </h2>
+      <h2 className="text-fg-muted mb-1.5 text-xs font-medium">Related problems</h2>
       <ul>
         {related.map((problem) => (
           <li key={problem.slug} className="flex items-baseline gap-2 py-0.5 text-sm">
@@ -426,15 +421,12 @@ function SubmissionRow({
       onClick={onSelect}
       aria-expanded={selected}
       className={cn(
-        'focus-ring hover:bg-surface-sunken flex w-full items-center gap-3 px-3 py-1.5 text-left',
+        'focus-ring-inset hover:bg-surface-sunken flex w-full items-center gap-3 px-4 py-2 text-left',
         selected && 'bg-surface-sunken',
       )}
     >
-      <span className="flex min-w-24 items-center gap-2">
-        <span
-          aria-hidden
-          className={cn('size-1.5 shrink-0 rounded-full', VERDICT_MARK[submission.verdict])}
-        />
+      <span className="flex min-w-28 items-center gap-2">
+        <VerdictTile verdict={submission.verdict} size="sm" />
         <span className={cn('text-xs font-medium', VERDICT_TONE[submission.verdict])}>
           {VERDICT_LABEL[submission.verdict]}
         </span>
@@ -473,7 +465,7 @@ function OpenSubmission({
   const differs = submission.language !== language;
 
   return (
-    <div className="border-border border-b px-3 py-3">
+    <div className="border-border border-b px-4 py-3">
       <p className="text-fg-muted text-xs">
         {LANGUAGE_LABEL[submission.language]} · {submission.passed} of {submission.total} tests ·{' '}
         <span className="tnum">{Math.round(submission.timeMs)} ms</span> · problem version{' '}
@@ -604,7 +596,7 @@ function Submissions({
       ))}
 
       {hasNextPage && (
-        <li className="px-3 py-2">
+        <li className="px-4 py-2">
           <Button
             size="sm"
             variant="ghost"
@@ -686,8 +678,8 @@ function StatementPanelBody({
         otherwise disappear, and the only thing left on screen naming the problem
         would be the browser's URL.
       */}
-      <div className="border-border shrink-0 border-b px-4 py-2">
-        <h1 className="text-lg font-semibold">{summary.title}</h1>
+      <div className="shrink-0 px-5 pt-4 pb-1">
+        <h1 className="tracking-title text-lg font-semibold">{summary.title}</h1>
         <p className="text-fg-subtle mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
           <span>{summary.tier}</span>
           <span aria-hidden>·</span>
@@ -703,7 +695,8 @@ function StatementPanelBody({
         </p>
       </div>
 
-      <TabsList className="shrink-0 px-2">
+      {/* Scrolls sideways rather than clipping at 1024px (P9-6). */}
+      <TabsList className="shrink-0 overflow-x-auto px-3">
         <TabsTrigger value="description">Description</TabsTrigger>
         {/* Gone while the clock runs (P7-6), not disabled: a greyed-out Hints
             tab is still a hint tab you can see and think about. */}
@@ -725,7 +718,7 @@ function StatementPanelBody({
       </TabsList>
 
       <TabsContent value="description" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <div className="p-4">
+        <div className="px-5 py-4">
           <Markdown content={problem.statement} assetSlug={summary.slug} />
 
           {problem.targetComplexity && (

@@ -10,8 +10,8 @@ import {
   type SettingsView,
 } from '@devpromax/shared';
 import { useTestConnection } from '../../api/hooks.js';
-import { Button, Input, Tooltip } from '../../ui/index.js';
-import { Row, Section, OptionalNumberField, TextField } from './fields.js';
+import { Button, Input, Segmented, Tooltip, cn } from '../../ui/index.js';
+import { ControlColumn, Row, Section, OptionalNumberField, TextField } from './fields.js';
 
 /**
  * The coach's own settings (ROADMAP P5-8).
@@ -48,22 +48,17 @@ function ProviderChoice({
   disabled: boolean;
 }) {
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label="Coach provider">
-      {COACH_PROVIDERS.map((provider) => (
-        <Button
-          key={provider}
-          size="sm"
-          variant={value === provider ? 'secondary' : 'ghost'}
-          aria-pressed={value === provider}
-          disabled={disabled}
-          onClick={() => {
-            onChange(provider);
-          }}
-        >
-          {PROVIDER_LABEL[provider]}
-        </Button>
-      ))}
-    </div>
+    <Segmented
+      label="Coach provider"
+      size="sm"
+      options={COACH_PROVIDERS.map((provider) => ({
+        value: provider,
+        label: PROVIDER_LABEL[provider],
+        disabled,
+      }))}
+      value={value}
+      onChange={onChange}
+    />
   );
 }
 
@@ -96,8 +91,8 @@ function ApiKeyRow({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0">
+      <div className="flex items-start gap-6">
+        <div className="min-w-0 flex-1">
           <label htmlFor={id} className="text-fg text-sm">
             API key
           </label>
@@ -106,7 +101,7 @@ function ApiKeyRow({
             returns it.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <ControlColumn>
           <Input
             id={id}
             type="password"
@@ -139,11 +134,15 @@ function ApiKeyRow({
           >
             Save
           </Button>
-        </div>
+        </ControlColumn>
       </div>
 
       <div className="flex items-center justify-between gap-6">
-        <p className="text-fg-muted font-mono text-xs" data-testid="api-key-status">
+        {/* Mono only when it shows a key: the app's own words are in sans (P9-6). */}
+        <p
+          className={cn('text-fg-muted text-xs', coach.apiKeyMasked !== null && 'font-mono')}
+          data-testid="api-key-status"
+        >
           {status}
         </p>
         {coach.apiKeySource === 'settings' && (

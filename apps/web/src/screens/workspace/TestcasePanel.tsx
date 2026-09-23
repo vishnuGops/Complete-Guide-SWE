@@ -37,8 +37,8 @@ export interface TestcasePanelProps {
 
 function SampleCase({ test, index }: { test: TestCase; index: number }) {
   return (
-    <li className="border-border rounded-md border px-3 py-2">
-      <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">
+    <li className="bg-surface-sunken rounded-lg px-3 py-2.5">
+      <p className="text-fg-muted mb-1 text-xs font-medium">
         Sample {index + 1}
         {test.name !== undefined && <span className="normal-case"> · {test.name}</span>}
       </p>
@@ -101,11 +101,9 @@ function CustomCase({
   const caseIssues = issues.filter((issue) => issue.argIndex === undefined);
 
   return (
-    <li className="border-border rounded-md border px-3 py-2">
+    <li className="bg-surface-sunken rounded-lg px-3 py-2.5">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-fg-subtle text-2xs font-medium tracking-wide uppercase">
-          Custom {index + 1}
-        </p>
+        <p className="text-fg-muted text-xs font-medium">Custom {index + 1}</p>
         <Button size="sm" variant="ghost" onClick={onRemove}>
           Remove
         </Button>

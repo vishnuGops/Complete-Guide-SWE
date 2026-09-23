@@ -59,7 +59,7 @@ export function AppShell() {
           {/* The mark, not a link: Problems is the way home, and two links to one place is one too many. */}
           <span
             aria-hidden
-            className="bg-fg text-bg mb-3 grid size-9 place-items-center rounded-lg"
+            className="bg-surface-sunken text-fg border-border mb-3 grid size-9 place-items-center rounded-lg border"
           >
             <Braces size={18} strokeWidth={2} />
           </span>

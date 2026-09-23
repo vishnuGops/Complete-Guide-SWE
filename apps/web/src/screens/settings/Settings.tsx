@@ -3,8 +3,9 @@ import { editorPrefsSchema, judgePrefsSchema, type ResetProgressResponse } from 
 import { useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
 import { ThemeToggle } from '../../app/ThemeToggle.js';
 import { RuntimeSection } from './RuntimeSection.js';
+import { PageHeader } from '../../app/PageHeader.js';
 import { useAppTheme } from '../../app/useAppTheme.js';
-import { Button, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
+import { Button, Card, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
 import { CoachSection } from './CoachSection.js';
 import { FormattingSection } from './FormattingSection.js';
 import { NumberField, Row, Section, Toggle } from './fields.js';
@@ -42,16 +43,16 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
   return said.length === 0 ? 'There was nothing to clear.' : `Cleared ${said.join(', ')}.`;
 }
 
-/** Four sections' worth of rows, at the height they will be. */
+/** The first card's worth of rows, at the height they will be. */
 function SettingsSkeleton() {
   return (
-    <Loading label="Loading settings" className="mx-auto max-w-2xl px-6 py-6">
+    <Loading label="Loading settings" className="max-w-3xl px-6 pt-5 pb-6">
       <Skeleton className="h-6 w-28" />
-      <span className="mt-6 block">
+      <span className="bg-surface border-border mt-8 block rounded-xl border p-5">
         {Array.from({ length: 5 }, (_, index) => (
-          <span key={index} className="flex items-center justify-between gap-6 py-3">
-            <Skeleton className="h-3 w-48" />
-            <Skeleton className="h-6 w-20" />
+          <span key={index} className="flex items-center gap-6 py-3">
+            <Skeleton className="h-3 flex-1" />
+            <Skeleton className="h-6 w-80" />
           </span>
         ))}
       </span>
@@ -69,13 +70,18 @@ export function Settings() {
   if (isPending) return <SettingsSkeleton />;
   if (error) {
     return (
-      <ErrorState
-        title="Settings could not load."
-        error={error}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
+      <div className="px-6 pt-5">
+        <Card>
+          <ErrorState
+            className="p-0"
+            title="Settings could not load."
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
+          />
+        </Card>
+      </div>
     );
   }
 
@@ -83,138 +89,147 @@ export function Settings() {
   const judge = settings.judge ?? DEFAULT_JUDGE;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-2xl px-6 py-6">
-        <h1 className="text-xl font-semibold">Settings</h1>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Settings"
+        context="Saved as you change them, in a database on this machine."
+      />
+      {/*
+        One column of cards, one per section (DESIGN.md 8), left-aligned under
+        the title rather than centred: the page reads top to bottom and the
+        controls line up in one column down all of it.
+      */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+        <div className="flex max-w-3xl flex-col gap-4">
+          <CoachSection
+            coach={settings.coach}
+            saving={update.isPending}
+            onChange={(patch) => {
+              update.mutate(patch);
+            }}
+          />
 
-        <CoachSection
-          coach={settings.coach}
-          saving={update.isPending}
-          onChange={(patch) => {
-            update.mutate(patch);
-          }}
-        />
+          <RuntimeSection />
 
-        <RuntimeSection />
+          <Section title="Appearance" description="Applies to the whole app, including the editor.">
+            <Row label="Theme" hint="System follows your operating system.">
+              <ThemeToggle value={theme} onChange={setTheme} />
+            </Row>
+          </Section>
 
-        <Section title="Appearance" description="Applies to the whole app, including the editor.">
-          <Row label="Theme" hint="System follows your operating system.">
-            <ThemeToggle value={theme} onChange={setTheme} />
-          </Row>
-        </Section>
+          <Section title="Editor" description="How Monaco behaves in the workspace.">
+            <Row label="Font size" hint="10 to 24 pixels.">
+              <NumberField
+                label="Editor font size"
+                value={editor.fontSize}
+                min={10}
+                max={24}
+                onCommit={(fontSize) => {
+                  update.mutate({ editor: { fontSize } });
+                }}
+              />
+            </Row>
+            <Row label="Tab size" hint="Spaces per indent level. Python starters assume 4.">
+              <NumberField
+                label="Editor tab size"
+                value={editor.tabSize}
+                min={2}
+                max={8}
+                onCommit={(tabSize) => {
+                  update.mutate({ editor: { tabSize } });
+                }}
+              />
+            </Row>
+            <Row label="Wrap long lines">
+              <Toggle
+                label="Wrap long lines"
+                checked={editor.wordWrap}
+                onChange={(wordWrap) => {
+                  update.mutate({ editor: { wordWrap } });
+                }}
+              />
+            </Row>
+            <Row label="Vim keybindings" hint="Adds a mode line under the editor.">
+              <Toggle
+                label="Vim keybindings"
+                checked={editor.vimKeybindings}
+                onChange={(vimKeybindings) => {
+                  update.mutate({ editor: { vimKeybindings } });
+                }}
+              />
+            </Row>
+          </Section>
 
-        <Section title="Editor" description="How Monaco behaves in the workspace.">
-          <Row label="Font size" hint="10 to 24 pixels.">
-            <NumberField
-              label="Editor font size"
-              value={editor.fontSize}
-              min={10}
-              max={24}
-              onCommit={(fontSize) => {
-                update.mutate({ editor: { fontSize } });
-              }}
-            />
-          </Row>
-          <Row label="Tab size" hint="Spaces per indent level. Python starters assume 4.">
-            <NumberField
-              label="Editor tab size"
-              value={editor.tabSize}
-              min={2}
-              max={8}
-              onCommit={(tabSize) => {
-                update.mutate({ editor: { tabSize } });
-              }}
-            />
-          </Row>
-          <Row label="Wrap long lines">
-            <Toggle
-              label="Wrap long lines"
-              checked={editor.wordWrap}
-              onChange={(wordWrap) => {
-                update.mutate({ editor: { wordWrap } });
-              }}
-            />
-          </Row>
-          <Row label="Vim keybindings" hint="Adds a mode line under the editor.">
-            <Toggle
-              label="Vim keybindings"
-              checked={editor.vimKeybindings}
-              onChange={(vimKeybindings) => {
-                update.mutate({ editor: { vimKeybindings } });
-              }}
-            />
-          </Row>
-        </Section>
+          <FormattingSection
+            formatOnSave={editor.formatOnSave}
+            onFormatOnSave={(formatOnSave) => {
+              update.mutate({ editor: { formatOnSave } });
+            }}
+          />
 
-        <FormattingSection
-          formatOnSave={editor.formatOnSave}
-          onFormatOnSave={(formatOnSave) => {
-            update.mutate({ editor: { formatOnSave } });
-          }}
-        />
-
-        <Section
-          title="Judge"
-          description="How your code is run. The defaults suit a machine that is not busy doing something else."
-        >
-          <Row
-            label="Time limit multiplier"
-            hint="Multiplies every problem's limits. Raise it if correct solutions time out on this machine."
+          <Section
+            title="Judge"
+            description="How your code is run. The defaults suit a machine that is not busy doing something else."
           >
-            <NumberField
+            <Row
               label="Time limit multiplier"
-              value={judge.timeoutMultiplier}
-              min={0.5}
-              max={5}
-              step={0.5}
-              onCommit={(timeoutMultiplier) => {
-                update.mutate({ judge: { timeoutMultiplier } });
-              }}
-            />
-          </Row>
-          <Row label="Concurrent runs" hint="How many judge runs may execute at once.">
-            <NumberField
-              label="Concurrent runs"
-              value={judge.concurrency}
-              min={1}
-              max={8}
-              onCommit={(concurrency) => {
-                update.mutate({ judge: { concurrency } });
-              }}
-            />
-          </Row>
-        </Section>
-
-        <Section
-          title="Progress"
-          description="Your practice history lives in a SQLite file on this machine and nowhere else."
-        >
-          <Row
-            label="Reset all progress"
-            hint="Deletes submissions, statuses, drafts and activity. Your notes and these settings are kept."
-          >
-            <Button
-              variant="danger"
-              disabled={reset.isPending}
-              onClick={() => {
-                setConfirming(true);
-              }}
+              hint="Multiplies every problem's limits. Raise it if correct solutions time out on this machine."
             >
-              Reset…
-            </Button>
-          </Row>
+              <NumberField
+                label="Time limit multiplier"
+                value={judge.timeoutMultiplier}
+                min={0.5}
+                max={5}
+                step={0.5}
+                onCommit={(timeoutMultiplier) => {
+                  update.mutate({ judge: { timeoutMultiplier } });
+                }}
+              />
+            </Row>
+            <Row label="Concurrent runs" hint="How many judge runs may execute at once.">
+              <NumberField
+                label="Concurrent runs"
+                value={judge.concurrency}
+                min={1}
+                max={8}
+                onCommit={(concurrency) => {
+                  update.mutate({ judge: { concurrency } });
+                }}
+              />
+            </Row>
+          </Section>
 
-          {reset.isSuccess && (
-            <p className="text-fg-muted text-xs" role="status">
-              {clearedSummary(reset.data.cleared)}
-            </p>
-          )}
-          {reset.error && (
-            <p className="text-danger-fg text-xs" role="alert">
-              {reset.error.message}
-            </p>
-          )}
-        </Section>
+          <Section
+            title="Progress"
+            description="Your practice history lives in a SQLite file on this machine and nowhere else."
+          >
+            <Row
+              label="Reset all progress"
+              hint="Deletes submissions, statuses, drafts and activity. Your notes and these settings are kept."
+            >
+              <Button
+                variant="danger"
+                disabled={reset.isPending}
+                onClick={() => {
+                  setConfirming(true);
+                }}
+              >
+                Reset…
+              </Button>
+            </Row>
+
+            {reset.isSuccess && (
+              <p className="text-fg-muted text-xs" role="status">
+                {clearedSummary(reset.data.cleared)}
+              </p>
+            )}
+            {reset.error && (
+              <p className="text-danger-fg text-xs" role="alert">
+                {reset.error.message}
+              </p>
+            )}
+          </Section>
+        </div>
       </div>
 
       <ConfirmDialog

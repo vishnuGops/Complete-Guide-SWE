@@ -115,12 +115,23 @@ export function SplitPane({
           event.currentTarget.releasePointerCapture(event.pointerId);
         }}
         className={cn(
-          'focus-ring-inset bg-border hover:bg-accent shrink-0 transition-colors duration-75',
-          direction === 'row'
-            ? 'w-px cursor-col-resize hover:w-0.5'
-            : 'h-px cursor-row-resize hover:h-0.5',
+          // The 12px gutter between two cards is the handle (P9-6): wide
+          // enough to grab, empty until it is hovered or focused, when a 2px
+          // accent line down its middle says "this moves".
+          'group focus-ring-inset relative shrink-0 rounded-full',
+          direction === 'row' ? 'w-3 cursor-col-resize' : 'h-3 cursor-row-resize',
         )}
-      />
+      >
+        <span
+          aria-hidden
+          className={cn(
+            'group-hover:bg-accent group-focus-visible:bg-accent absolute rounded-full bg-transparent transition-colors duration-75',
+            direction === 'row'
+              ? 'inset-y-2 left-1/2 w-0.5 -translate-x-1/2'
+              : 'inset-x-2 top-1/2 h-0.5 -translate-y-1/2',
+          )}
+        />
+      </div>
       {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
 
       <div className="flex min-h-0 min-w-0 flex-1">{second}</div>

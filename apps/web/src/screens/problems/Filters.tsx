@@ -17,7 +17,7 @@ import { Button, cn } from '../../ui/index.js';
 import { isFiltered, toggle, type ProblemFilters } from './query.js';
 
 /**
- * The filter sidebar (ROADMAP P4-5).
+ * The filter card (ROADMAP P4-5; a card beside the table since P9-6).
  *
  * Checkboxes rather than a row of pills or a multi-select: fourteen topics is
  * too many for pills, and a `<select multiple>` hides the counts that are half
@@ -31,8 +31,8 @@ import { isFiltered, toggle, type ProblemFilters } from './query.js';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-border border-b px-3 py-3 last:border-b-0">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">{title}</h2>
+    <section className="border-border border-t px-4 py-3">
+      <h3 className="text-fg-muted mb-2 text-xs font-medium">{title}</h3>
       {children}
     </section>
   );
@@ -115,7 +115,7 @@ function TopicBar({ solved, total }: { solved: number; total: number }) {
   const percent = Math.round((solved / total) * 100);
   return (
     <span aria-hidden className="mt-1 ml-5.5 block">
-      <span className="bg-surface-sunken block h-0.5 overflow-hidden rounded-xs">
+      <span className="bg-border block h-0.5 overflow-hidden rounded-full">
         <span
           className="bg-success block h-full"
           style={{ width: `${String(percent)}%` }}
@@ -130,9 +130,10 @@ export interface FiltersProps {
   filters: ProblemFilters;
   onChange: (next: ProblemFilters) => void;
   counts: ProblemListResponse | undefined;
+  className?: string;
 }
 
-export function Filters({ filters, onChange, counts }: FiltersProps) {
+export function Filters({ filters, onChange, counts, className }: FiltersProps) {
   const byTopic = new Map(counts?.byTopic.map((row) => [row.topic, row]) ?? []);
 
   const set = (patch: Partial<ProblemFilters>) => {
@@ -141,10 +142,13 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
 
   return (
     <aside
-      className="border-border bg-surface w-56 shrink-0 overflow-y-auto border-r"
+      className={cn(
+        'bg-surface border-border shadow-card w-60 shrink-0 overflow-y-auto rounded-xl border',
+        className,
+      )}
       aria-label="Filters"
     >
-      <div className="border-border flex h-10 items-center justify-between border-b px-3">
+      <div className="flex h-12 items-center justify-between px-4">
         <h2 className="text-sm font-semibold">Filters</h2>
         {isFiltered(filters) && (
           <Button
@@ -152,7 +156,7 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
             variant="ghost"
             onClick={() => {
               // Sort is not a filter and is deliberately left alone.
-              // Every filter, the bookmark one included (P7-7). A Clear that
+              // Every filter, the view included (P7-7, P9-6). A Clear that
               // leaves one on is a Clear the user has to do twice.
               set({
                 topic: [],
@@ -161,6 +165,7 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
                 q: '',
                 language: undefined,
                 bookmarked: false,
+                due: false,
               });
             }}
           >
@@ -215,21 +220,6 @@ export function Filters({ filters, onChange, counts }: FiltersProps) {
             }}
           />
         ))}
-      </Section>
-
-      <Section title="Bookmarks">
-        {/*
-          One way round only (P7-7). "Starred" is a shortlist someone made on
-          purpose; "not starred" is everything else, which is the unfiltered
-          list with an extra click.
-        */}
-        <Check
-          checked={filters.bookmarked}
-          onChange={() => {
-            set({ bookmarked: !filters.bookmarked });
-          }}
-          label="Starred only"
-        />
       </Section>
 
       {/*

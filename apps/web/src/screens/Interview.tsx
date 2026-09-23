@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { STAGE_PROMPT, TOPIC_LABEL, type InterviewProblem } from '@devpromax/shared';
+import {
+  STAGE_PROMPT,
+  TOPIC_LABEL,
+  type InterviewProblem,
+  type InterviewStage,
+} from '@devpromax/shared';
 import { streamCoach } from '../api/coachStream.js';
 import { useAdvanceInterview, useInterview, useStartInterview } from '../api/hooks.js';
+import { PageHeader } from '../app/PageHeader.js';
 import { Markdown } from '../markdown/Markdown.js';
 import { formatClock } from './workspace/InterviewTimer.js';
-import { Button, ErrorState, Loading, Skeleton, cn } from '../ui/index.js';
+import { Button, Card, CoachMark, ErrorState, Loading, Skeleton, cn } from '../ui/index.js';
 
 /**
  * Mock interview (ROADMAP P9-1).
@@ -44,6 +50,14 @@ function useNow(active: boolean): number {
   return now;
 }
 
+/** The stages a sitting moves through, as the candidate sees them. */
+const SHOWN_STAGES = ['approach', 'coding', 'review'] as const satisfies readonly InterviewStage[];
+const STAGE_LABEL: Record<(typeof SHOWN_STAGES)[number], string> = {
+  approach: 'Approach',
+  coding: 'Code',
+  review: 'Review',
+};
+
 function ProblemRow({
   problem,
   index,
@@ -55,9 +69,10 @@ function ProblemRow({
 }) {
   return (
     <li
+      aria-current={current ? 'step' : undefined}
       className={cn(
-        'border-border flex items-baseline gap-2 border-b py-2 last:border-b-0',
-        current && 'bg-surface-sunken -mx-3 px-3',
+        'border-border flex items-baseline gap-2 border-b border-l-2 py-2 pr-3 pl-2.5 last:border-b-0',
+        current ? 'bg-surface-selected border-l-accent' : 'border-l-transparent',
       )}
     >
       <span className="text-fg-subtle tnum text-xs">{index + 1}</span>
@@ -146,7 +161,7 @@ export function Interview() {
 
   if (isPending) {
     return (
-      <Loading label="Loading the interview" className="mx-auto max-w-3xl px-6 py-6">
+      <Loading label="Loading the interview" className="max-w-3xl px-6 pt-5">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="mt-3 h-4 w-full" />
       </Loading>
@@ -154,213 +169,257 @@ export function Interview() {
   }
   if (error) {
     return (
-      <ErrorState
-        title="The interview could not load."
-        error={error}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
+      <div className="px-6 pt-5">
+        <Card>
+          <ErrorState
+            className="p-0"
+            title="The interview could not load."
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
+          />
+        </Card>
+      </div>
     );
   }
 
+  const left = sitting === null ? 0 : sitting.remainingMs - (now - Date.parse(sitting.createdAt));
+
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl px-6 py-6">
-        <header className="mb-6">
-          <h1 className="text-xl font-semibold">Mock interview</h1>
-          <p className="text-fg-muted mt-1 max-w-prose text-sm">
-            Two problems, forty-five minutes, and an interviewer who wants to hear the approach
-            before the code. It will not give you the answer — that is the point of it.
-          </p>
-        </header>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Mock interview"
+        context="Two problems, forty-five minutes, and an interviewer who wants the approach before the code. It will not give you the answer — that is the point of it."
+      />
 
-        {sitting === null || sitting.endedAt !== null ? (
-          <>
-            {sitting?.debrief != null && (
-              <section className="mb-8">
-                <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                  Debrief
-                </h2>
-                <Markdown content={sitting.debrief} trust="coach" />
-              </section>
-            )}
-
-            {/*
-             * Why there is no debrief, on the screen that has no debrief.
-             *
-             * Ending without a key, or over the cap, still ends the sitting -
-             * so the failure has to survive the switch to this branch, or the
-             * candidate presses the button and watches the interview vanish
-             * with no explanation at all.
-             */}
-            {failure !== null && (
-              <p className="text-danger-fg mb-3 max-w-prose text-sm" role="alert">
-                {failure}
-              </p>
-            )}
-
-            <Button
-              disabled={start.isPending}
-              onClick={() => {
-                setTranscript([]);
-                setFailure(null);
-                start.mutate();
-              }}
-            >
-              {start.isPending ? 'Setting up…' : 'Start an interview'}
-            </Button>
-            {start.error && (
-              <p className="text-danger-fg mt-2 max-w-prose text-sm" role="alert">
-                {start.error.message}
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            <section className="mb-6 flex items-baseline gap-3">
-              <span
-                role="timer"
-                aria-live="off"
-                aria-label="Time remaining"
-                className={cn(
-                  'tnum text-lg font-semibold',
-                  sitting.remainingMs - (now - Date.parse(sitting.createdAt)) <= 0
-                    ? 'text-warn-fg'
-                    : 'text-fg',
-                )}
-              >
-                {formatClock(
-                  Math.max(0, sitting.remainingMs - (now - Date.parse(sitting.createdAt))),
-                )}
-              </span>
-              <span className="text-fg-muted text-sm">left</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="ml-auto"
-                disabled={busy}
-                onClick={() => {
-                  void send(`/api/interview/${sitting.id}/finish`, '');
-                }}
-              >
-                End it and get the debrief
-              </Button>
-            </section>
-
-            <section className="mb-6">
-              <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                The problems
-              </h2>
-              <ul aria-label="The problems in this interview">
-                {sitting.problems.map((problem, index) => (
-                  <ProblemRow
-                    key={problem.slug}
-                    problem={problem}
-                    index={index}
-                    current={index === sitting.at}
-                  />
-                ))}
-              </ul>
-            </section>
-
-            <section className="mb-6">
-              <h2 className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">
-                Now
-              </h2>
-              <p className="text-fg max-w-prose text-sm">{STAGE_PROMPT[sitting.stage]}</p>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="mt-2"
-                disabled={advance.isPending || busy}
-                onClick={() => {
-                  advance.mutate(sitting.id);
-                }}
-              >
-                {sitting.stage === 'approach'
-                  ? 'I am ready to write it'
-                  : sitting.stage === 'coding'
-                    ? 'I have written it'
-                    : 'Move on'}
-              </Button>
-            </section>
-
-            <section className="mb-6">
-              <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                The conversation
-              </h2>
-
-              {transcript.length === 0 && streaming === '' && (
-                <p className="text-fg-muted text-sm">
-                  Nothing said yet. Describe how you would solve the first problem.
-                </p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+        <div className="flex max-w-3xl flex-col gap-4">
+          {sitting === null || sitting.endedAt !== null ? (
+            <>
+              {sitting?.debrief != null && (
+                <Card
+                  title={
+                    <span className="flex items-center gap-2">
+                      <CoachMark />
+                      Debrief
+                    </span>
+                  }
+                >
+                  <Markdown content={sitting.debrief} trust="coach" className="md-coach" />
+                </Card>
               )}
 
-              <div className="flex flex-col gap-3">
-                {transcript.map((line, index) => (
-                  <div
-                    key={`${line.from}-${String(index)}`}
-                    className={cn(
-                      'rounded-md px-3 py-2 text-sm',
-                      line.from === 'you' ? 'bg-surface-sunken' : 'border-border border',
-                    )}
-                  >
-                    <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">
-                      {line.from === 'you' ? 'You' : 'Interviewer'}
-                    </p>
-                    <Markdown content={line.text} trust="coach" />
-                  </div>
-                ))}
-
-                {streaming !== '' && (
-                  <div className="border-border rounded-md border px-3 py-2 text-sm">
-                    <p className="text-fg-subtle mb-1 text-2xs font-medium tracking-wide uppercase">
-                      Interviewer
-                    </p>
-                    <Markdown content={streaming} trust="coach" />
-                  </div>
+              <Card>
+                {/*
+                 * Why there is no debrief, on the screen that has no debrief.
+                 *
+                 * Ending without a key, or over the cap, still ends the sitting -
+                 * so the failure has to survive the switch to this branch, or the
+                 * candidate presses the button and watches the interview vanish
+                 * with no explanation at all.
+                 */}
+                {failure !== null && (
+                  <p className="text-danger-fg mb-3 max-w-prose text-sm" role="alert">
+                    {failure}
+                  </p>
                 )}
-              </div>
 
-              {failure !== null && (
-                <p className="text-danger-fg mt-2 text-sm" role="alert">
-                  {failure}
+                <p className="text-fg-muted mb-4 max-w-prose text-sm">
+                  The problems are two you have not solved. The clock starts when you do, and the
+                  coding happens in the workspace, where coding happens.
                 </p>
-              )}
-
-              <form
-                className="mt-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const text = said.trim();
-                  if (text === '' || busy) return;
-                  setTranscript((before) => [...before, { from: 'you', text }]);
-                  setSaid('');
-                  void send(`/api/interview/${sitting.id}/say`, text);
-                }}
-              >
-                <label htmlFor="interview-say" className="sr-only">
-                  What you would say
-                </label>
-                <textarea
-                  id="interview-say"
-                  rows={4}
-                  value={said}
-                  disabled={busy}
-                  placeholder="Say it the way you would out loud."
-                  onChange={(event) => {
-                    setSaid(event.target.value);
+                <Button
+                  variant="primary"
+                  disabled={start.isPending}
+                  onClick={() => {
+                    setTranscript([]);
+                    setFailure(null);
+                    start.mutate();
                   }}
-                  className="focus-ring border-border bg-surface text-fg w-full resize-y rounded-md border p-2 text-sm"
-                />
-                <Button type="submit" className="mt-2" disabled={busy || said.trim() === ''}>
-                  {busy ? 'Listening…' : 'Say it'}
+                >
+                  {start.isPending ? 'Setting up…' : 'Start an interview'}
                 </Button>
-              </form>
-            </section>
-          </>
-        )}
+                {start.error && (
+                  <p className="text-danger-fg mt-2 max-w-prose text-sm" role="alert">
+                    {start.error.message}
+                  </p>
+                )}
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card
+                title="This sitting"
+                action={
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      void send(`/api/interview/${sitting.id}/finish`, '');
+                    }}
+                  >
+                    End it and get the debrief
+                  </Button>
+                }
+              >
+                <div className="flex items-end gap-6">
+                  <div>
+                    <span
+                      role="timer"
+                      aria-live="off"
+                      aria-label="Time remaining"
+                      className={cn(
+                        'tnum tracking-numeral text-2xl font-bold',
+                        left <= 0 ? 'text-warn-fg' : 'text-fg',
+                      )}
+                    >
+                      {formatClock(Math.max(0, left))}
+                    </span>
+                    <p className="text-fg-muted text-xs">left</p>
+                  </div>
+
+                  {/*
+                    Where the sitting is, as a row of stages with the current
+                    one filled: a display, not a control - the stage moves with
+                    the button below, when the candidate says so.
+                  */}
+                  <ol
+                    aria-label="Stage"
+                    className="bg-surface-sunken border-border flex rounded-md border p-0.5"
+                  >
+                    {SHOWN_STAGES.map((stage) => (
+                      <li
+                        key={stage}
+                        aria-current={stage === sitting.stage ? 'step' : undefined}
+                        className={cn(
+                          'rounded-sm px-2.5 py-1 text-xs font-medium',
+                          stage === sitting.stage ? 'bg-accent text-fg-on-accent' : 'text-fg-muted',
+                        )}
+                      >
+                        {STAGE_LABEL[stage]}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <ul aria-label="The problems in this interview" className="mt-5">
+                  {sitting.problems.map((problem, index) => (
+                    <ProblemRow
+                      key={problem.slug}
+                      problem={problem}
+                      index={index}
+                      current={index === sitting.at}
+                    />
+                  ))}
+                </ul>
+
+                <div className="border-border mt-4 border-t pt-4">
+                  <p className="text-fg-muted text-xs font-medium">Now</p>
+                  <p className="text-fg mt-1 max-w-prose text-sm">{STAGE_PROMPT[sitting.stage]}</p>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-3"
+                    disabled={advance.isPending || busy}
+                    onClick={() => {
+                      advance.mutate(sitting.id);
+                    }}
+                  >
+                    {sitting.stage === 'approach'
+                      ? 'I am ready to write it'
+                      : sitting.stage === 'coding'
+                        ? 'I have written it'
+                        : 'Move on'}
+                  </Button>
+                </div>
+              </Card>
+
+              <Card title="The conversation">
+                {transcript.length === 0 && streaming === '' && (
+                  <p className="text-fg-muted text-sm">
+                    Nothing said yet. Describe how you would solve the first problem.
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-4">
+                  {transcript.map((line, index) =>
+                    line.from === 'you' ? (
+                      <div
+                        key={`${line.from}-${String(index)}`}
+                        className="border-border-strong border-l-2 pl-3"
+                      >
+                        <p className="text-fg-muted mb-1 text-xs font-medium">You</p>
+                        <Markdown content={line.text} trust="coach" />
+                      </div>
+                    ) : (
+                      <div key={`${line.from}-${String(index)}`}>
+                        <p className="text-fg-muted mb-1 flex items-center gap-2 text-xs font-medium">
+                          <CoachMark />
+                          Interviewer
+                        </p>
+                        {/* The interviewer is the coach, so it speaks in the coach's serif. */}
+                        <Markdown content={line.text} trust="coach" className="md-coach" />
+                      </div>
+                    ),
+                  )}
+
+                  {streaming !== '' && (
+                    <div>
+                      <p className="text-fg-muted mb-1 flex items-center gap-2 text-xs font-medium">
+                        <CoachMark />
+                        Interviewer
+                      </p>
+                      <Markdown content={streaming} trust="coach" className="md-coach" />
+                    </div>
+                  )}
+                </div>
+
+                {failure !== null && (
+                  <p className="text-danger-fg mt-2 text-sm" role="alert">
+                    {failure}
+                  </p>
+                )}
+
+                <form
+                  className="border-border mt-4 border-t pt-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const text = said.trim();
+                    if (text === '' || busy) return;
+                    setTranscript((before) => [...before, { from: 'you', text }]);
+                    setSaid('');
+                    void send(`/api/interview/${sitting.id}/say`, text);
+                  }}
+                >
+                  <label htmlFor="interview-say" className="sr-only">
+                    What you would say
+                  </label>
+                  <textarea
+                    id="interview-say"
+                    rows={4}
+                    value={said}
+                    disabled={busy}
+                    placeholder="Say it the way you would out loud."
+                    onChange={(event) => {
+                      setSaid(event.target.value);
+                    }}
+                    className="focus-ring border-border-strong bg-surface text-fg w-full resize-y rounded-md border p-2.5 text-sm"
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="mt-2"
+                    disabled={busy || said.trim() === ''}
+                  >
+                    {busy ? 'Listening…' : 'Say it'}
+                  </Button>
+                </form>
+              </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

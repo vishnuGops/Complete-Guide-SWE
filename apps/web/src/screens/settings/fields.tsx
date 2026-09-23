@@ -1,10 +1,12 @@
 import { useId, useState, type ReactNode } from 'react';
-import { Input, cn } from '../../ui/index.js';
+import { Card, Input, cn } from '../../ui/index.js';
 
 /**
  * The rows Settings is made of (ROADMAP P3-4, split out by P5-8).
  *
- * Section and Row are layout; the two fields exist because a settings screen
+ * Section and Row are layout - one card per section, and every control in one
+ * fixed-width column so they line up down the page (P9-6, docs/DESIGN.md 8).
+ * The fields exist because a settings screen
  * with no Save button - see the note in `Settings.tsx` - has to decide for
  * itself when a half-typed value becomes a write, and that decision is the same
  * on every row.
@@ -20,12 +22,18 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="border-border border-b py-5 last:border-b-0">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <p className="text-fg-muted mt-1 mb-3 text-xs">{description}</p>
-      <div className="flex flex-col gap-3">{children}</div>
-    </section>
+    <Card title={title} description={description}>
+      <div className="flex flex-col gap-4">{children}</div>
+    </Card>
   );
+}
+
+/**
+ * The column every control sits in. Fixed, so a number field, a toggle and a
+ * segmented control start at the same x on every card of the page.
+ */
+export function ControlColumn({ children }: { children: ReactNode }) {
+  return <div className="flex w-80 shrink-0 items-center gap-2">{children}</div>;
 }
 
 export function Row({
@@ -38,12 +46,12 @@ export function Row({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-6">
-      <div className="min-w-0">
+    <div className="flex items-start gap-6">
+      <div className="min-w-0 flex-1">
         <p className="text-fg text-sm">{label}</p>
         {hint !== undefined && <p className="text-fg-subtle mt-0.5 text-xs">{hint}</p>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <ControlColumn>{children}</ControlColumn>
     </div>
   );
 }

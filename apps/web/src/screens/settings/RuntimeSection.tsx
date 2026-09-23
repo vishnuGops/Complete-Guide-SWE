@@ -116,7 +116,9 @@ export function RuntimeSection() {
       <Button
         size="sm"
         variant="secondary"
-        className="mt-3"
+        // Sized to its label: the section's column would otherwise stretch it
+        // across the card (P9-6).
+        className="mt-3 self-start"
         disabled={check.isFetching}
         onClick={() => {
           void check.refetch();

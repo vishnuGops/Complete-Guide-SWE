@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { RotateCcw, Star, WandSparkles } from 'lucide-react';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
@@ -36,10 +37,15 @@ import { InterviewTimerControl, useInterviewTimer } from './InterviewTimer.js';
 import { useShortcut } from '../../shortcuts/ShortcutProvider.js';
 import {
   Button,
+  Callout,
+  Card,
+  CoachMark,
   ConfirmDialog,
   ErrorBoundary,
   ErrorState,
+  Keys,
   Loading,
+  Segmented,
   Skeleton,
   StatusMark,
   StickyTabsContent,
@@ -63,8 +69,9 @@ import { useCoach } from './useCoach.js';
  * The problem workspace (ROADMAP P4-6).
  *
  * Statement on the left, editor top right, testcases and results below it -
- * three panels the user resizes and the app remembers (`layout.ts`). Everything
- * here is about one loop: read, type, Run, read the failure, type again.
+ * three cards with 12px gutters (P9-6) that the user resizes and the app
+ * remembers (`layout.ts`). Everything here is about one loop: read, type, Run,
+ * read the failure, type again.
  *
  * Two rules the rest of the file follows from:
  *
@@ -113,20 +120,23 @@ const SYSTEM_PROMPT_CHARS = 5_700;
  */
 function WorkspaceSkeleton() {
   return (
-    <Loading label="Loading the problem" className="flex h-full min-h-0 flex-col">
-      <span className="border-border flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        <Skeleton className="h-6 w-16" />
+    <Loading
+      label="Loading the problem"
+      className="flex h-full min-h-0 flex-col gap-3 py-4 pr-4 pl-3"
+    >
+      <span className="flex h-8 shrink-0 items-center gap-2">
+        <Skeleton className="h-6 w-28" />
         <Skeleton className="h-6 w-16" />
         <Skeleton className="ml-auto h-6 w-32" />
       </span>
-      <span className="flex min-h-0 flex-1">
-        <span className="border-border w-2/5 shrink-0 border-r p-4">
+      <span className="flex min-h-0 flex-1 gap-3">
+        <span className="bg-surface border-border w-2/5 shrink-0 rounded-xl border p-4">
           <Skeleton className="h-5 w-2/3" />
           <Skeleton className="mt-4 h-3 w-full" />
           <Skeleton className="mt-2 h-3 w-full" />
           <Skeleton className="mt-2 h-3 w-4/5" />
         </span>
-        <span className="flex-1 p-4">
+        <span className="bg-surface border-border flex-1 rounded-xl border p-4">
           <Skeleton className="h-3 w-1/2" />
           <Skeleton className="mt-2 h-3 w-2/3" />
           <Skeleton className="mt-2 h-3 w-1/3" />
@@ -733,13 +743,18 @@ export function Workspace() {
   if (isPending) return <WorkspaceSkeleton />;
   if (error) {
     return (
-      <ErrorState
-        title="This problem could not load."
-        error={error}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
+      <div className="py-4 pr-4 pl-3">
+        <Card>
+          <ErrorState
+            className="p-0"
+            title="This problem could not load."
+            error={error}
+            onRetry={() => {
+              void refetch();
+            }}
+          />
+        </Card>
+      </div>
     );
   }
 
@@ -764,7 +779,7 @@ export function Workspace() {
   };
 
   const editor = (
-    <div className="min-h-0 w-full" data-testid="editor">
+    <Card as="div" padding="none" className="min-h-0 w-full overflow-hidden" data-testid="editor">
       {/*
         The editor is a lazy chunk, and the chunk can be gone (P4-12): after the
         dev server restarts, the hashed file this page is holding a reference to
@@ -788,7 +803,7 @@ export function Workspace() {
           />
         </Suspense>
       </ErrorBoundary>
-    </div>
+    </Card>
   );
 
   const bottomPanel = (
@@ -798,7 +813,7 @@ export function Workspace() {
         setTab(next as 'testcases' | 'results');
         if (layout.panelCollapsed) setLayout({ panelCollapsed: false });
       }}
-      className="flex min-h-0 w-full flex-col"
+      className="bg-surface border-border shadow-card flex min-h-0 w-full flex-col overflow-hidden rounded-xl border"
     >
       {/*
         The toggle sits beside the tab strip, not in it.
@@ -881,15 +896,14 @@ export function Workspace() {
               never auto-called, and an accepted submit is not a request.
             */}
             {offerMastery && (
-              <div
-                className="border-border bg-surface-sunken flex shrink-0 items-center gap-3 border-b px-4 py-2"
-                role="status"
-              >
-                <p className="text-fg-muted flex-1 text-sm">
+              <Callout role="status" className="mx-3 mt-3 flex shrink-0 items-center gap-3 py-2">
+                <CoachMark />
+                <p className="text-fg flex-1 text-sm">
                   Accepted. Ask the coach whether this is interview-ready?
                 </p>
                 <Button
                   size="sm"
+                  variant="primary-outline"
                   onClick={() => {
                     askCoach({ masteryCheck: true });
                   }}
@@ -905,7 +919,7 @@ export function Workspace() {
                 >
                   Not now
                 </Button>
-              </div>
+              </Callout>
             )}
 
             {failure ? (
@@ -926,9 +940,9 @@ export function Workspace() {
   );
 
   const editorColumn = layout.panelCollapsed ? (
-    <div className="flex min-h-0 w-full flex-col">
-      <div className="min-h-0 flex-1">{editor}</div>
-      <div className="border-border shrink-0 border-t">{bottomPanel}</div>
+    <div className="flex min-h-0 w-full flex-col gap-3">
+      <div className="flex min-h-0 flex-1">{editor}</div>
+      <div className="flex shrink-0">{bottomPanel}</div>
     </div>
   ) : (
     <SplitPane
@@ -945,41 +959,43 @@ export function Workspace() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <header className="border-border flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        <div className="flex items-center gap-1" role="group" aria-label="Language">
-          {LANGUAGES.map((option) => (
-            <Button
-              key={option}
-              size="sm"
-              variant={language === option ? 'secondary' : 'ghost'}
-              aria-pressed={language === option}
-              /*
-                Locked while the judge is working (P4-11). The run in flight is
-                for the language that started it, and a switch mid-run puts the
-                user in front of one language's editor waiting for the other
-                language's verdict.
-              */
-              disabled={busy && language !== option}
-              onClick={() => {
-                setChosen(option);
-                updateSettings.mutate({ lastLanguage: option });
-              }}
-            >
-              {LANGUAGE_LABEL[option]}
-            </Button>
-          ))}
-        </div>
+    <div className="flex h-full min-h-0 flex-col gap-3 py-4 pr-4 pl-3">
+      {/*
+        The toolbar, on the canvas above the cards (DESIGN.md 8). Left: the
+        conditions you are working under - language, reset, format, bookmark,
+        interview mode - and the status. Right: the loop, Run then Submit, then
+        AI Help. One filled pill in the row: Submit.
+      */}
+      <header className="flex h-8 shrink-0 items-center gap-2">
+        <Segmented
+          label="Language"
+          options={LANGUAGES.map((option) => ({
+            value: option,
+            label: LANGUAGE_LABEL[option],
+            /*
+              Locked while the judge is working (P4-11). The run in flight is
+              for the language that started it, and a switch mid-run puts the
+              user in front of one language's editor waiting for the other
+              language's verdict.
+            */
+            disabled: busy && language !== option,
+          }))}
+          value={language}
+          onChange={(option) => {
+            setChosen(option);
+            updateSettings.mutate({ lastLanguage: option });
+          }}
+        />
 
         <span className="bg-border mx-1 h-4 w-px" aria-hidden />
 
         <Button
-          size="sm"
-          variant="ghost"
+          variant="secondary"
           onClick={() => {
             setConfirmingReset(true);
           }}
         >
+          <RotateCcw aria-hidden size={14} strokeWidth={1.5} />
           Reset
         </Button>
 
@@ -992,8 +1008,7 @@ export function Workspace() {
         {formatter && (
           <Tooltip content={`Format with ${formatter.name}`} keys={FORMAT_KEYS}>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="secondary"
               disabled={formatting}
               onClick={() => {
                 // Back to the code: the next thing anyone does after formatting
@@ -1003,6 +1018,7 @@ export function Workspace() {
                 formatDocument();
               }}
             >
+              <WandSparkles aria-hidden size={14} strokeWidth={1.5} />
               {formatting ? 'Formatting…' : 'Format'}
             </Button>
           </Tooltip>
@@ -1012,15 +1028,21 @@ export function Workspace() {
           Starring a problem (P7-7). Beside Reset because it is about this
           problem rather than about the code: a bookmark says "come back to
           this one", which the command palette and the list filter both read.
+          The star fills when it is on - a shape, beside a word that changes.
         */}
         <Button
-          size="sm"
-          variant="ghost"
+          variant="secondary"
           aria-pressed={problem.summary.bookmarked}
           onClick={() => {
             setBookmark.mutate({ slug, bookmarked: !problem.summary.bookmarked });
           }}
         >
+          <Star
+            aria-hidden
+            size={14}
+            strokeWidth={1.5}
+            className={cn(problem.summary.bookmarked && 'fill-current')}
+          />
           {problem.summary.bookmarked ? 'Bookmarked' : 'Bookmark'}
         </Button>
 
@@ -1046,9 +1068,9 @@ export function Workspace() {
           `role="status"` makes the flip a polite announcement, so the one
           confirmation that exists reaches a screen reader as well as an eye.
           There is no toast and no confetti: the status flipping to Solved *is*
-          the reward (docs/DESIGN.md section 2). The region is rendered even
-          while it is empty, because a live region inserted at the same moment
-          as its text is a live region that announces nothing.
+          the reward (docs/DESIGN.md 3). The region is rendered even while it
+          is empty, because a live region inserted at the same moment as its
+          text is a live region that announces nothing.
         */}
         <p className="ml-2 flex items-center" role="status" data-testid="problem-status">
           {status !== 'not_started' && (
@@ -1070,29 +1092,6 @@ export function Workspace() {
         </p>
 
         <div className="ml-auto flex items-center gap-2">
-          {/*
-            Ghost, not primary: Run and Submit are the loop, and AI Help is the
-            thing you reach for when the loop is not working. It is also the
-            only control here that spends money, which is a second reason not
-            to make it the most clickable thing on the bar (D13).
-          */}
-          <Tooltip
-            content={`Ask the coach about the code you have written · about ${costEstimate}`}
-            keys={SHORTCUTS.aiHelp.keys}
-          >
-            <Button
-              variant="ghost"
-              disabled={coachState.phase === 'streaming'}
-              onClick={() => {
-                askCoach();
-              }}
-            >
-              AI Help
-            </Button>
-          </Tooltip>
-
-          <span className="bg-border mx-1 h-4 w-px" aria-hidden />
-
           <Tooltip content="Run the samples and your own cases" keys={SHORTCUTS.run.keys}>
             <Button
               variant="secondary"
@@ -1115,6 +1114,29 @@ export function Workspace() {
               {submit.isPending ? 'Submitting…' : 'Submit'}
             </Button>
           </Tooltip>
+          {/*
+            An outlined pill, not a filled one: Run and Submit are the loop, and
+            AI Help is the thing you reach for when the loop is not working. It
+            is also the only control here that spends money, which is a second
+            reason not to make it the most clickable thing on the bar (D13). Its
+            keys are on the pill itself (DESIGN.md 9), hidden from its name.
+          */}
+          <Tooltip
+            content={`Ask the coach about the code you have written · about ${costEstimate}`}
+            keys={SHORTCUTS.aiHelp.keys}
+          >
+            <Button
+              variant="primary-outline"
+              disabled={coachState.phase === 'streaming'}
+              onClick={() => {
+                askCoach();
+              }}
+            >
+              <CoachMark />
+              AI Help
+              <Keys keys={SHORTCUTS.aiHelp.keys} className="max-[1279px]:hidden" />
+            </Button>
+          </Tooltip>
         </div>
       </header>
 
@@ -1129,14 +1151,14 @@ export function Workspace() {
         fail, and a failure is recorded and demotes nothing.
       */}
       {drifted && (
-        <div className="border-border bg-warn-subtle flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
+        <div className="bg-warn-subtle flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5">
           <p className="text-fg text-xs">
             Solved against v{problem.summary.solvedVersion}; the tests are now v
             {problem.summary.version}.
           </p>
           <Button
             size="sm"
-            variant="ghost"
+            variant="secondary"
             className="ml-auto"
             disabled={reVerify.isPending || busy}
             onClick={() => {
@@ -1158,10 +1180,7 @@ export function Workspace() {
       )}
 
       {reVerify.error && (
-        <p
-          className="text-danger-fg border-border shrink-0 border-b px-3 py-1.5 text-xs"
-          role="alert"
-        >
+        <p className="text-danger-fg shrink-0 px-1 text-xs" role="alert">
           {reVerify.error.message}
         </p>
       )}
@@ -1172,7 +1191,7 @@ export function Workspace() {
         out has to be on it, because the only other one is editing the URL.
       */}
       {reviewing && (
-        <div className="border-border bg-surface-sunken flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
+        <div className="bg-surface border-border flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5">
           <p className="text-fg-muted text-xs">
             Reviewing from memory. Hints and the editorial are shut until you leave review mode.
           </p>
@@ -1198,9 +1217,9 @@ export function Workspace() {
           setLayout({ statement: next });
         }}
         label="Statement and editor"
-        className={cn('flex-1')}
+        className="flex-1"
         first={
-          <div className="border-border flex min-h-0 w-full border-r">
+          <Card as="div" padding="none" className="flex min-h-0 w-full overflow-hidden">
             <StatementPanel
               problem={problem}
               tab={leftTab}
@@ -1213,7 +1232,7 @@ export function Workspace() {
               onRestore={restoreSubmission}
               coach={coachPanel}
             />
-          </div>
+          </Card>
         }
         second={editorColumn}
       />
