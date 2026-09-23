@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { skillsFrom, streakFrom } from './dashboardService.js';
+import { skillsFrom, solvesFrom, streakFrom } from './dashboardService.js';
 
 /**
  * The two derivations the dashboard does that are not a count (ROADMAP P7-5).
@@ -98,5 +98,38 @@ describe('skillsFrom', () => {
 
   it('is empty before the coach has scored anything', () => {
     expect(skillsFrom([], topicOf)).toEqual([]);
+  });
+});
+
+describe('solvesFrom (P9-6)', () => {
+  const at = (slug: string, verdict: string, createdAt: string) => ({ slug, verdict, createdAt });
+
+  it('counts each problem once, on the day it was first accepted', () => {
+    const solves = solvesFrom([
+      at('a', 'AC', '2026-09-20T10:00:00.000Z'),
+      // A re-solve is a review, not a second solve.
+      at('a', 'AC', '2026-09-21T10:00:00.000Z'),
+      at('b', 'WA', '2026-09-19T09:00:00.000Z'),
+      at('b', 'AC', '2026-09-21T11:00:00.000Z'),
+      at('c', 'AC', '2026-09-21T23:59:59.000Z'),
+    ]);
+    expect(solves).toEqual([
+      { day: '2026-09-21', count: 2 },
+      { day: '2026-09-20', count: 1 },
+    ]);
+  });
+
+  it('takes the earliest accept whatever order the archive arrives in', () => {
+    // The archive is listed newest first; the first solve is the last row seen.
+    expect(
+      solvesFrom([
+        at('a', 'AC', '2026-09-22T10:00:00.000Z'),
+        at('a', 'AC', '2026-09-01T10:00:00.000Z'),
+      ]),
+    ).toEqual([{ day: '2026-09-01', count: 1 }]);
+  });
+
+  it('is empty before anything is accepted', () => {
+    expect(solvesFrom([at('a', 'WA', '2026-09-22T10:00:00.000Z')])).toEqual([]);
   });
 });

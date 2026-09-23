@@ -110,6 +110,11 @@ export const problemListQuerySchema = z.object({
   /** Only starred problems (P7-7). Absent means "all of them", not "unstarred". */
   bookmarked: z.stringbool().optional(),
   /**
+   * Only what the review queue says is due now (P9-6). Absent means "all of
+   * them"; like `bookmarked`, there is no "not due".
+   */
+  due: z.stringbool().optional(),
+  /**
    * Narrows progress to one language: a problem's status becomes its status in
    * that language, so `?status=solved&language=python` reads as "solved in
    * Python" rather than "solved in either language".
@@ -200,6 +205,11 @@ export const problemListResponseSchema = z.object({
   total: z.int().min(0),
   byStatus: statusCountsSchema,
   byTopic: z.array(topicCountSchema),
+  /**
+   * How many solved problems are due for review now (P9-6), catalogue-wide like
+   * the counts above. The list's header says it, and the Due view filters to it.
+   */
+  due: z.int().min(0),
 });
 export type ProblemListResponse = z.infer<typeof problemListResponseSchema>;
 
@@ -494,6 +504,13 @@ export const dashboardResponseSchema = z.object({
   byTopic: z.array(topicCountSchema),
   byTier: z.array(tierCountSchema),
   streak: streakSchema,
+  /**
+   * First solves per UTC day, newest first (P9-6): the day each problem was
+   * first accepted, in any language. What the Solved chart draws, cumulatively.
+   * Every day with a first solve, not a window: the catalogue is a few hundred
+   * problems, so this is at most a few hundred rows.
+   */
+  solves: z.array(activeDaySchema),
   recent: z.array(recentActivitySchema),
   /** Weakest first. Empty until the coach has scored something. */
   skills: z.array(topicSkillSchema),

@@ -20,6 +20,7 @@ function aDashboard(overrides: Partial<DashboardResponse> = {}): DashboardRespon
     byTopic: [{ topic: 'arrays', total: 4, solved: 2, mastered: 1, inProgress: 0 }],
     byTier: [{ tier: 'Easy', total: 4, solved: 2, mastered: 1, inProgress: 0 }],
     streak: { current: 3, longest: 9, days: [{ day: '2026-09-18', count: 4 }] },
+    solves: [{ day: '2026-09-18', count: 1 }],
     recent: [],
     skills: [],
     editorialsRevealed: 0,

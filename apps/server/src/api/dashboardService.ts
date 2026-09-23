@@ -66,6 +66,36 @@ export function streakFrom(days: readonly ActiveDay[], today: string): Streak {
   return { current, longest, days: [...days] };
 }
 
+/**
+ * First solves per day, newest first (P9-6).
+ *
+ * The earliest accepted submission of each problem, in either language, is the
+ * day it was solved; later accepts are reviews and re-solves and do not move
+ * the line. Grouped by the first ten characters of the timestamp, which is the
+ * UTC day, as everywhere else in this schema.
+ */
+export function solvesFrom(
+  submissions: readonly { slug: string; verdict: string; createdAt: string }[],
+): ActiveDay[] {
+  const first = new Map<string, string>();
+  for (const submission of submissions) {
+    if (submission.verdict !== 'AC') continue;
+    const seen = first.get(submission.slug);
+    if (seen === undefined || submission.createdAt < seen) {
+      first.set(submission.slug, submission.createdAt);
+    }
+  }
+
+  const perDay = new Map<string, number>();
+  for (const at of first.values()) {
+    const day = utcDay(at);
+    perDay.set(day, (perDay.get(day) ?? 0) + 1);
+  }
+  return [...perDay]
+    .map(([day, count]) => ({ day, count }))
+    .sort((a, b) => b.day.localeCompare(a.day));
+}
+
 function verdictOf(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null) return null;
   const verdict = (payload as Record<string, unknown>)['verdict'];
@@ -141,6 +171,7 @@ export function dashboard(deps: ProblemServiceDeps): DashboardResponse {
     byTopic: overview.byTopic,
     byTier: overview.byTier,
     streak: streakFrom(days, utcDay(generatedAt)),
+    solves: solvesFrom(repos.submissions.list()),
     recent,
     skills: skillsFrom(repos.coach.scoredTurns(), (slug) => titles.get(slug)?.topic),
     editorialsRevealed: repos.events.list().filter((event) => event.type === 'editorial_revealed')

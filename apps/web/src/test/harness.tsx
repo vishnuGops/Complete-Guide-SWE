@@ -166,6 +166,7 @@ export function aList(items: ProblemSummary[]): ProblemListResponse {
     total: items.length,
     byStatus: { not_started: items.length, in_progress: 0, solved: 0, mastered: 0 },
     byTopic: [{ topic: 'arrays', total: items.length, solved: 0, mastered: 0, inProgress: 0 }],
+    due: 0,
   };
 }
 

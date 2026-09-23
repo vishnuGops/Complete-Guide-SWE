@@ -181,6 +181,22 @@ export function useNextProblem(): UseMutationResult<NextProblemResponse, Error, 
   return useMutation({ mutationFn: api.nextProblem });
 }
 
+/**
+ * The suggested next problem on Progress (ROADMAP P9-6).
+ *
+ * A query, unlike the palette's `useNextProblem`: the recommended pick is
+ * deterministic, so caching it is right, and a card that asked again on every
+ * render would be a request per paint. Keyed under the dashboard, so whatever
+ * refreshes the dashboard - an accepted submit - refreshes the suggestion.
+ */
+export function useRecommendation(enabled = true) {
+  return useQuery<NextProblemResponse>({
+    queryKey: [...keys.dashboard, 'recommendation'],
+    queryFn: () => api.nextProblem('recommended'),
+    enabled,
+  });
+}
+
 /** Downloading the skills report. A mutation: it is a button, not a fact. */
 export function useDownloadReport(): UseMutationResult<void, Error, ReportFormat> {
   return useMutation({ mutationFn: api.downloadReport });

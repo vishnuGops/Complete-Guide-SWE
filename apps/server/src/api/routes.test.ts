@@ -943,6 +943,35 @@ describe('the review queue (P7-8)', () => {
     expect(body.problem).toBeNull();
     expect(body.reason).toContain('Nothing is due');
   });
+
+  it('filters the list to what is due, and counts it on every list (P9-6)', async () => {
+    passed(EASY, '2026-08-01T09:00:00.000Z');
+    passed(MEDIUM, new Date(Date.now() - 60 * 60 * 1000).toISOString());
+
+    const due = (await api('GET', '/api/problems?due=true')).json() as ProblemListResponse;
+    expect(due.items.map((item) => item.slug)).toEqual([EASY]);
+
+    // The count is catalogue-wide, like the others: the unfiltered list and a
+    // list filtered to something else both say one is due.
+    const all = (await api('GET', '/api/problems')).json() as ProblemListResponse;
+    expect(all.due).toBe(1);
+    expect(all.items).toHaveLength(2);
+    const starred = (
+      await api('GET', '/api/problems?bookmarked=true')
+    ).json() as ProblemListResponse;
+    expect(starred.due).toBe(1);
+  });
+
+  it('sends the day each problem was first solved, for the chart (P9-6)', async () => {
+    passed(EASY, '2026-08-01T09:00:00.000Z');
+    passed(EASY, '2026-09-01T09:00:00.000Z');
+    passed(MEDIUM, '2026-09-01T10:00:00.000Z');
+
+    expect((await dashboard()).solves).toEqual([
+      { day: '2026-09-01', count: 1 },
+      { day: '2026-08-01', count: 1 },
+    ]);
+  });
 });
 
 describe('the interview timer (P7-6)', () => {

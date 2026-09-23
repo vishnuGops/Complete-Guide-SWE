@@ -127,6 +127,8 @@ export function problemQueryString(query: Partial<ProblemListQuery>): string {
   // Only when true: `?bookmarked=false` would read as "the ones I have not
   // starred", which is not a question anyone asks (P7-7).
   if (query.bookmarked) params.set('bookmarked', 'true');
+  // The same rule for the review queue's Due view (P9-6).
+  if (query.due) params.set('due', 'true');
   return params.toString();
 }
 

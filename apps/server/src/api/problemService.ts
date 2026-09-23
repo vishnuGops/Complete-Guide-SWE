@@ -24,6 +24,7 @@ import {
 import type { Repositories } from '../db/index.js';
 import type { Catalogue } from './catalogue.js';
 import { notFound } from './errors.js';
+import { reviewQueue } from './reviewService.js';
 
 /**
  * Reading the catalogue (ROADMAP P3-1).
@@ -205,6 +206,13 @@ export function listProblems(
       ? new Set(deps.repos.notes.search(query.q).map((note) => note.slug))
       : new Set<string>();
 
+  /*
+   * The review queue's due set (P9-6), for the Due view and the header's count.
+   * Derived from the submission archive like everything else about reviews;
+   * cheap, because only solved problems are in it.
+   */
+  const dueNow = new Set(reviewQueue(deps).due.map((item) => item.slug));
+
   const matched = all.filter((summary) => {
     if (query.topic.length > 0 && !query.topic.includes(summary.topic)) return false;
     if (query.tier.length > 0 && !query.tier.includes(summary.tier)) return false;
@@ -212,6 +220,7 @@ export function listProblems(
     // Absent means "all of them". `?bookmarked=false` is a question nobody asks
     // and would read as "the ones I have not starred", so it is not offered.
     if (query.bookmarked === true && !summary.bookmarked) return false;
+    if (query.due === true && !dueNow.has(summary.slug)) return false;
     if (query.q !== undefined && query.q !== '' && !matchesQuery(summary, query.q, inNotes)) {
       return false;
     }
@@ -224,6 +233,7 @@ export function listProblems(
     total: all.length,
     byStatus: countByStatus(all.map((summary) => summary.status)),
     byTopic: countTopics(all),
+    due: [...dueNow].filter((slug) => all.some((summary) => summary.slug === slug)).length,
   };
 }
 
