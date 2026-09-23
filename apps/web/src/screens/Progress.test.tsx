@@ -263,3 +263,73 @@ describe('the dashboard', () => {
     expect(asked?.url.searchParams.get('format')).toBe('markdown');
   });
 });
+
+describe('the dashboard layout (P9-6)', () => {
+  it('leads with the solved count and what this week added', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    serve(aDashboard({ solves: [{ day: today, count: 2 }] }));
+    renderApp(<Progress />);
+
+    const solved = await screen.findByRole('region', { name: 'Solved' });
+    expect(within(solved).getByText('+2 this week')).toBeInTheDocument();
+    expect(within(solved).getByText('of 10 problems')).toBeInTheDocument();
+  });
+
+  it('says there is no week yet rather than a red zero', async () => {
+    serve(aDashboard({ solves: [] }));
+    renderApp(<Progress />);
+
+    expect(await screen.findByText('none this week')).toBeInTheDocument();
+  });
+
+  it('gives the coach brief in words taken from the coach marks, and offers the next problem', async () => {
+    fakeServer([
+      {
+        match: path('/api/dashboard'),
+        body: () =>
+          aDashboard({
+            skills: [
+              { topic: 'graph', samples: 2, scores: {}, average: 1.5 },
+              { topic: 'hashmap', samples: 3, scores: {}, average: 3.5 },
+            ],
+          }),
+      },
+      {
+        match: path('/api/next'),
+        body: () => ({
+          problem: {
+            id: 'clone-the-graph',
+            slug: 'clone-the-graph',
+            title: 'Clone The Graph',
+            topic: 'graph',
+            tier: 'Medium',
+            rating: 5,
+            order: 0,
+            patterns: [],
+            mode: 'function',
+            status: 'not_started',
+            statusByLanguage: {},
+            attempts: 0,
+            lastAttemptedAt: null,
+            solvedAt: null,
+            hasNote: false,
+            bookmarked: false,
+            version: 1,
+            solvedVersion: null,
+          },
+          reason: 'The easiest one left in Graph.',
+        }),
+      },
+    ]);
+    renderApp(<Progress />);
+
+    const brief = await screen.findByRole('region', { name: 'Coach brief' });
+    expect(
+      within(brief).getByText('You are strongest in HashMap and weakest in Graph.'),
+    ).toBeInTheDocument();
+    expect(await within(brief).findByRole('link', { name: 'Open it' })).toHaveAttribute(
+      'href',
+      '/problems/clone-the-graph',
+    );
+  });
+});

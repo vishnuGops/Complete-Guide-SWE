@@ -1,94 +1,504 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  Award,
+  BookOpen,
+  CalendarClock,
+  Flame,
+  Lightbulb,
+  MessagesSquare,
+  Pencil,
+  Play,
+  type LucideIcon,
+} from 'lucide-react';
+import {
+  LANGUAGE_LABEL,
   MAX_RUBRIC_SCORE,
-  PROGRESS_LABEL,
-  PROGRESS_STATUSES,
   RUBRIC_DIMENSIONS,
   RUBRIC_LABEL,
   TOPIC_LABEL,
+  VERDICTS,
   solvedCount,
   type ActiveDay,
+  type DashboardResponse,
   type RecentActivity,
   type ReviewItem,
   type ReviewQueue,
   type Streak,
-  type TierCount,
-  type TopicCount,
   type TopicSkill,
+  type Verdict,
 } from '@devpromax/shared';
-import { useDashboard, useDownloadReport } from '../api/hooks.js';
-import { Button, ErrorState, Loading, Skeleton, cn } from '../ui/index.js';
+import { useDashboard, useDownloadReport, useRecommendation } from '../api/hooks.js';
+import { PageHeader } from '../app/PageHeader.js';
+import {
+  Button,
+  Callout,
+  Card,
+  CoachMark,
+  DeltaChip,
+  ErrorState,
+  IconTile,
+  ListRow,
+  Loading,
+  SegmentBar,
+  Segmented,
+  Skeleton,
+  Stat,
+  VerdictTile,
+  buttonClasses,
+  cn,
+} from '../ui/index.js';
+import { coachBrief } from './progress/coachBrief.js';
+import { SolvedChart, cumulative, type ChartRange } from './progress/SolvedChart.js';
 
 /**
- * Progress (ROADMAP P4-2 for the route).
+ * Progress (ROADMAP P4-2 for the route, P7-5 for what is on it, P9-6 for how).
  *
- * Completed by P7-5: the counts per topic and tier, plus the streak calendar,
- * the recent activity, the weakest topics as the coach scored them, and the
- * exportable skills report. Everything on screen comes from one payload, which
- * is also what the export is built from - so a number here and a number in a
- * file someone sends to a recruiter cannot disagree.
+ * The one screen that is a dashboard, laid out like the reference the owner
+ * chose (docs/DESIGN.md 8): a wide Solved card with the number, its week and
+ * its shape over time; the coach's brief beside it; then what happened, what
+ * is due and where each topic stands; then the coach's marks, the streak and
+ * the exportable report. Every card answers one question - there is no card
+ * per number (DESIGN.md 3).
  *
- * Each row links into the list with that topic already filtered, because
- * "Graph 0/14" is a prompt, and a prompt you cannot act on is just a number.
+ * Everything on screen comes from one payload, which is also what the export
+ * is built from - so a number here and a number in a file someone sends to a
+ * recruiter cannot disagree. The one exception is the suggested next problem,
+ * which is the same recommendation the command palette gives.
  */
 
-function Bar({ label, solved, total }: { label: string; solved: number; total: number }) {
-  const percent = total === 0 ? 0 : Math.round((solved / total) * 100);
-  return (
-    <span
-      className="bg-surface-sunken border-border block h-1.5 w-full overflow-hidden rounded-xs border"
-      role="progressbar"
-      // A progressbar with a value and no name is a number with nothing to be
-      // the number *of*; the row header says it on screen but a bar read on its
-      // own has to carry it too (P4-10, axe `aria-progressbar-name`).
-      aria-label={`${label} solved`}
-      aria-valuenow={solved}
-      aria-valuemin={0}
-      aria-valuemax={total}
-      aria-valuetext={`${String(solved)} of ${String(total)}`}
-    >
-      <span className="bg-success block h-full" style={{ width: `${String(percent)}%` }} />
-    </span>
-  );
-}
+const DAY_MS = 86_400_000;
 
-function GroupRow({ label, to, row }: { label: string; to?: string; row: TopicCount | TierCount }) {
-  return (
-    <tr className="border-border border-b">
-      {/* The row's header cell: what the bar and the counts beside it are about. */}
-      <th scope="row" className="w-44 px-3 py-1.5 text-left text-sm font-normal">
-        {to ? (
-          <Link to={to} className="focus-ring hover:text-accent-fg rounded-xs">
-            {label}
-          </Link>
-        ) : (
-          label
-        )}
-      </th>
-      <td className="px-3 py-1.5">
-        <Bar label={label} solved={row.solved} total={row.total} />
-      </td>
-      <td className="text-fg-muted tnum w-20 px-3 py-1.5 text-right text-xs">
-        {row.solved}/{row.total}
-      </td>
-      <td className="text-fg-subtle tnum w-28 px-3 py-1.5 text-right text-xs">
-        {row.mastered > 0 && `${String(row.mastered)} mastered`}
-      </td>
-    </tr>
-  );
-}
-
-/** Weeks shown in the calendar. Seventeen fits the width without scrolling. */
-const CALENDAR_WEEKS = 17;
+const RANGES = [
+  { value: '1m', label: '1M' },
+  { value: '3m', label: '3M' },
+  { value: 'all', label: 'All' },
+] as const;
 
 const ACTIVITY_LABEL: Record<RecentActivity['kind'], string> = {
   run: 'Ran',
   submit: 'Submitted',
-  coach_feedback: 'Asked the coach about',
-  hint_revealed: 'Took a hint on',
-  editorial_revealed: 'Opened the editorial for',
-  status_override: 'Changed the status of',
+  coach_feedback: 'Asked the coach',
+  hint_revealed: 'Took a hint',
+  editorial_revealed: 'Opened the editorial',
+  status_override: 'Changed the status',
 };
+
+const ACTIVITY_ICON: Record<Exclude<RecentActivity['kind'], 'submit'>, LucideIcon> = {
+  run: Play,
+  coach_feedback: MessagesSquare,
+  hint_revealed: Lightbulb,
+  editorial_revealed: BookOpen,
+  status_override: Pencil,
+};
+
+/** How many recent events the card shows; the rest are in the report. */
+const RECENT_ROWS = 6;
+
+function isVerdict(value: string | null): value is Verdict {
+  return value !== null && (VERDICTS as readonly string[]).includes(value);
+}
+
+/** "3h ago", "yesterday", "12 Sep" - how long ago, not to the minute. */
+function ago(iso: string, now = Date.now()): string {
+  const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${String(minutes)}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${String(hours)}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${String(days)} days ago`;
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/** First solves in the last seven days, today included. */
+function thisWeek(solves: readonly ActiveDay[]): number {
+  const since = new Date(Date.now() - 6 * DAY_MS).toISOString().slice(0, 10);
+  return solves.filter((entry) => entry.day >= since).reduce((sum, entry) => sum + entry.count, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Solved
+// ---------------------------------------------------------------------------
+
+function SolvedCard({ data }: { data: DashboardResponse }) {
+  const [range, setRange] = useState<ChartRange>('3m');
+  const points = useMemo(() => cumulative(data.solves, range), [data.solves, range]);
+  const solved = solvedCount(data.byStatus);
+  const week = thisWeek(data.solves);
+
+  return (
+    <Card
+      title="Solved"
+      className="col-span-2"
+      action={
+        <Segmented
+          label="Chart range"
+          size="sm"
+          options={RANGES}
+          value={range}
+          onChange={setRange}
+        />
+      }
+    >
+      <Stat
+        value={solved}
+        label={`of ${String(data.total)} problems`}
+        delta={
+          <DeltaChip good={week > 0}>
+            {week > 0 ? `+${String(week)} this week` : 'none this week'}
+          </DeltaChip>
+        }
+      />
+      <div className="mt-4">
+        <SolvedChart points={points} />
+      </div>
+
+      <div className="border-border mt-5 grid grid-cols-3 gap-4 border-t pt-4">
+        <SubStat icon={Award} value={data.byStatus.mastered} label="Mastered" />
+        <SubStat icon={CalendarClock} value={data.reviews.due.length} label="Due for review" />
+        <SubStat
+          icon={Flame}
+          value={data.streak.current}
+          label={`Day${data.streak.current === 1 ? '' : 's'} in a row`}
+        />
+      </div>
+    </Card>
+  );
+}
+
+function SubStat({ icon: Icon, value, label }: { icon: LucideIcon; value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <IconTile>
+        <Icon size={16} strokeWidth={1.5} />
+      </IconTile>
+      <div>
+        <p className="text-fg tnum text-lg leading-none font-semibold">{value}</p>
+        <p className="text-fg-muted mt-1 text-xs">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The coach's brief
+// ---------------------------------------------------------------------------
+
+function CoachBriefCard({ data }: { data: DashboardResponse }) {
+  const brief = coachBrief(data);
+  const { data: next } = useRecommendation(data.total > 0);
+
+  return (
+    <Card
+      title={
+        <span className="flex items-center gap-2">
+          <CoachMark />
+          Coach brief
+        </span>
+      }
+      className="flex flex-col"
+    >
+      {/* The coach's voice is the serif (DESIGN.md 5); the signals under it are the app's. */}
+      <p className="text-fg tracking-title font-serif text-xl">{brief.headline}</p>
+      {brief.signals.length > 0 && (
+        <ul className="text-fg-muted mt-3 flex flex-col gap-1 text-xs">
+          {brief.signals.map((signal) => (
+            <li key={signal}>{signal}</li>
+          ))}
+        </ul>
+      )}
+
+      {next?.problem && (
+        <Callout className="mt-auto pt-3">
+          <p className="text-fg-muted text-xs">Suggested next</p>
+          <p className="mt-0.5 text-sm font-semibold">{next.problem.title}</p>
+          <p className="text-fg-muted mt-0.5 text-xs">{next.reason}</p>
+          <Link
+            to={`/problems/${next.problem.slug}`}
+            className={cn(buttonClasses('primary', 'sm'), 'mt-3')}
+          >
+            Open it
+          </Link>
+        </Callout>
+      )}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// What happened, what is due, where each topic stands
+// ---------------------------------------------------------------------------
+
+function RecentCard({ recent }: { recent: readonly RecentActivity[] }) {
+  return (
+    <Card title="Recent activity">
+      {recent.length === 0 ? (
+        <p className="text-fg-muted text-sm">
+          Nothing yet. Runs, submissions and coaching turns appear here as they happen.
+        </p>
+      ) : (
+        <ul>
+          {recent.slice(0, RECENT_ROWS).map((entry, index) => {
+            const Icon = entry.kind === 'submit' ? null : ACTIVITY_ICON[entry.kind];
+            return (
+              <ListRow
+                key={`${entry.at}-${String(index)}`}
+                tile={
+                  isVerdict(entry.verdict) ? (
+                    <VerdictTile verdict={entry.verdict} />
+                  ) : (
+                    <IconTile>{Icon && <Icon size={14} strokeWidth={1.5} />}</IconTile>
+                  )
+                }
+                title={
+                  entry.slug !== null && entry.title !== null ? (
+                    <Link
+                      to={`/problems/${entry.slug}`}
+                      className="focus-ring hover:text-accent-fg rounded-xs"
+                    >
+                      {entry.title}
+                    </Link>
+                  ) : (
+                    <span className="text-fg-subtle font-normal">
+                      a problem that is no longer here
+                    </span>
+                  )
+                }
+                meta={
+                  <>
+                    <span>{ACTIVITY_LABEL[entry.kind]}</span>
+                    {entry.verdict !== null && <span> · {entry.verdict}</span>}
+                    {entry.language !== null && <span> · {LANGUAGE_LABEL[entry.language]}</span>}
+                  </>
+                }
+                value={ago(entry.at)}
+              />
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * The review queue (ROADMAP P7-8).
+ *
+ * Two lists, and the second one matters as much as the first: a queue that only
+ * shows what is due is a nag, and one that also shows what is coming is a
+ * calendar. Each row says how many times it has been solved, because "review
+ * this" without that is an instruction rather than a reason.
+ */
+function ReviewRow({ item, overdue }: { item: ReviewItem; overdue: boolean }) {
+  const when = overdue
+    ? item.overdueDays === 0
+      ? 'due today'
+      : `${String(item.overdueDays)} day${item.overdueDays === 1 ? '' : 's'} overdue`
+    : `due ${new Date(item.dueAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+
+  return (
+    <ListRow
+      tile={
+        <IconTile>
+          <CalendarClock size={14} strokeWidth={1.5} />
+        </IconTile>
+      }
+      title={
+        /* `?review=1` is what puts the workspace into review mode: hints and the
+           editorial stay shut, because a review you can look up is not a review. */
+        <Link
+          to={`/problems/${item.slug}?review=1`}
+          className="focus-ring hover:text-accent-fg rounded-xs"
+        >
+          {item.title}
+        </Link>
+      }
+      meta={
+        <>
+          <span>{TOPIC_LABEL[item.topic]}</span> ·{' '}
+          <span>
+            {item.passes} pass{item.passes === 1 ? '' : 'es'}
+          </span>
+        </>
+      }
+      value={<span className={cn(overdue && 'text-warn-fg font-medium')}>{when}</span>}
+    />
+  );
+}
+
+function ReviewCard({ reviews }: { reviews: ReviewQueue }) {
+  return (
+    <Card title="Review queue">
+      {reviews.due.length === 0 ? (
+        <p className="text-fg-muted text-sm">
+          Nothing due. The queue fills up as what you have solved gets older.
+        </p>
+      ) : (
+        <ul>
+          {reviews.due.map((item) => (
+            <ReviewRow key={item.slug} item={item} overdue />
+          ))}
+        </ul>
+      )}
+
+      {reviews.upcoming.length > 0 && (
+        <details className="border-border mt-3 border-t pt-3">
+          <summary className="text-fg-muted focus-ring cursor-pointer rounded-xs text-xs">
+            {reviews.upcoming.length} coming up
+          </summary>
+          <ul className="mt-2">
+            {reviews.upcoming.map((item) => (
+              <ReviewRow key={item.slug} item={item} overdue={false} />
+            ))}
+          </ul>
+        </details>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Where each topic stands (P4-8, re-drawn by P9-6).
+ *
+ * A segmented bar per topic, one segment per problem, so "3 of 14" is
+ * countable and a four-problem topic does not look like a forty-problem one. A
+ * topic with a review overdue is behind its schedule and says so in words as
+ * well as in `warn`. Each name links into the list with that topic filtered,
+ * because "Graph 0/14" is a prompt, and a prompt you cannot act on is just a
+ * number.
+ */
+function TopicsCard({ data, wide }: { data: DashboardResponse; wide: boolean }) {
+  const behind = new Set(data.reviews.due.map((item) => item.topic));
+
+  return (
+    <Card title="Topics" className={cn(wide && 'col-span-2')}>
+      <ul className={cn('grid gap-x-6 gap-y-3', wide && 'grid-cols-2')}>
+        {data.byTopic.map((row) => {
+          const late = behind.has(row.topic);
+          const percent = row.total === 0 ? 0 : Math.round((row.solved / row.total) * 100);
+          return (
+            <li key={row.topic}>
+              <div className="flex items-baseline gap-2 text-sm">
+                <Link
+                  to={`/?topic=${row.topic}`}
+                  className="focus-ring hover:text-accent-fg min-w-0 truncate rounded-xs"
+                >
+                  {TOPIC_LABEL[row.topic]}
+                </Link>
+                {late && <span className="text-warn-fg text-xs font-medium">behind</span>}
+                <span className="text-fg-muted tnum ml-auto text-xs">
+                  {row.solved}/{row.total} · {percent}%
+                </span>
+              </div>
+              <SegmentBar
+                className="mt-1.5"
+                filled={row.solved}
+                total={row.total}
+                tone={late ? 'warn' : 'success'}
+              />
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="text-fg-muted border-border tnum mt-4 border-t pt-3 text-xs">
+        {data.byTier.map((row, index) => (
+          <span key={row.tier}>
+            {index > 0 && ' · '}
+            <Link to={`/?tier=${row.tier}`} className="focus-ring hover:text-accent-fg rounded-xs">
+              {row.tier}
+            </Link>{' '}
+            {row.solved}/{row.total}
+          </span>
+        ))}
+      </p>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The coach's marks, the streak, the report
+// ---------------------------------------------------------------------------
+
+/**
+ * Rubric averages per topic, weakest first (P7-5).
+ *
+ * The review count is on every row rather than in a footnote: an average taken
+ * over one review is an anecdote, and a weakest topic chosen from anecdotes
+ * sends someone off to practise the wrong thing.
+ */
+function SkillsCard({ skills }: { skills: readonly TopicSkill[] }) {
+  return (
+    <Card
+      title="Weakest topics"
+      description={`The coach's rubric marks per topic, out of ${String(MAX_RUBRIC_SCORE)}.`}
+      className="col-span-2"
+    >
+      {skills.length === 0 ? (
+        <p className="text-fg-muted text-sm">
+          Nothing scored yet. These are the coach&rsquo;s rubric marks, so they appear once you have
+          asked it to review something.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <caption className="sr-only">
+              Average coach rubric score per topic, out of {MAX_RUBRIC_SCORE}, weakest first
+            </caption>
+            <thead>
+              <tr className="border-border text-fg-muted border-b text-xs">
+                <th scope="col" className="py-2 pr-3 text-left font-medium">
+                  Topic
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Reviews
+                </th>
+                {RUBRIC_DIMENSIONS.map((dimension) => (
+                  <th key={dimension} scope="col" className="px-3 py-2 text-right font-medium">
+                    {RUBRIC_LABEL[dimension]}
+                  </th>
+                ))}
+                <th scope="col" className="py-2 pl-3 text-right font-medium">
+                  Average
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {skills.map((skill) => (
+                <tr key={skill.topic} className="border-border border-b last:border-b-0">
+                  <th scope="row" className="py-2 pr-3 text-left font-normal">
+                    <Link
+                      to={'/?topic=' + skill.topic}
+                      className="focus-ring hover:text-accent-fg rounded-xs"
+                    >
+                      {TOPIC_LABEL[skill.topic]}
+                    </Link>
+                  </th>
+                  <td className="text-fg-subtle tnum px-3 py-2 text-right text-xs">
+                    {skill.samples}
+                  </td>
+                  {RUBRIC_DIMENSIONS.map((dimension) => (
+                    <td key={dimension} className="text-fg-muted tnum px-3 py-2 text-right text-xs">
+                      {(skill.scores[dimension] ?? 0).toFixed(1)}
+                    </td>
+                  ))}
+                  <td className="tnum py-2 pl-3 text-right text-xs font-semibold">
+                    {skill.average.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/** Weeks shown in the calendar: seventeen, about four months. */
+const CALENDAR_WEEKS = 17;
 
 function utcDay(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -98,13 +508,11 @@ function utcDay(date: Date): string {
  * The last seventeen weeks, Sunday to Saturday, with today in the final column.
  *
  * Built here rather than sent: the server sends the active days only, because a
- * year of mostly-zeroes is not worth putting on a wire, and the empty squares
- * between them are a fact about the calendar rather than about the user.
+ * year of mostly-zeroes is not worth putting on a wire.
  */
 function calendarCells(days: readonly ActiveDay[]): { day: string; count: number }[] {
   const counts = new Map(days.map((entry) => [entry.day, entry.count]));
   const today = new Date(utcDay(new Date()) + 'T00:00:00.000Z');
-
   const end = new Date(today);
   end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
   const start = new Date(end);
@@ -118,167 +526,47 @@ function calendarCells(days: readonly ActiveDay[]): { day: string; count: number
   return cells;
 }
 
-function StreakCalendar({ streak }: { streak: Streak }) {
+/**
+ * The streak, in words first (P7-5).
+ *
+ * The calendar is a picture of the sentence above it, so it is decoration as
+ * far as a screen reader is concerned: a hundred and nineteen cells each saying
+ * "no activity" would be worse than useless. Neutral rather than green -
+ * activity is not a verdict, and green in this app means the judge said yes.
+ */
+function StreakCard({ streak }: { streak: Streak }) {
   const cells = calendarCells(streak.days);
   const today = utcDay(new Date());
   const active = streak.days.length;
 
   return (
-    <section className="mb-8">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">Streak</h2>
-      <p className="text-fg-muted text-sm">
-        <span className="tnum text-fg font-medium">{streak.current}</span> day
-        {streak.current === 1 ? '' : 's'} in a row. Longest{' '}
-        <span className="tnum">{streak.longest}</span>; <span className="tnum">{active}</span>{' '}
-        active day{active === 1 ? '' : 's'} in the last year.
-      </p>
-
-      {/*
-        A picture of the sentence above it, so it is decoration as far as a
-        screen reader is concerned: a hundred and nineteen list items each
-        saying "no activity" would be worse than useless. Each square keeps a
-        `title` for a mouse.
-      */}
-      <div
-        aria-hidden
-        className="mt-3 grid grid-flow-col grid-rows-7 gap-0.5"
-        style={{ gridTemplateColumns: 'repeat(' + String(CALENDAR_WEEKS) + ', minmax(0, 1fr))' }}
-      >
+    <Card
+      title="Streak"
+      description={
+        <>
+          <span className="tnum text-fg font-medium">{streak.current}</span> day
+          {streak.current === 1 ? '' : 's'} in a row. Longest{' '}
+          <span className="tnum">{streak.longest}</span>; <span className="tnum">{active}</span>{' '}
+          active day{active === 1 ? '' : 's'} in the last year.
+        </>
+      }
+    >
+      <div aria-hidden className="grid w-fit grid-flow-col grid-rows-7 gap-0.5">
         {cells.map((cell) => (
           <span
             key={cell.day}
             title={cell.day + ': ' + String(cell.count) + ' activity'}
             className={cn(
-              'aspect-square rounded-xs',
-              cell.count === 0 && 'bg-surface-sunken',
-              cell.count > 0 && cell.count < 4 && 'bg-success opacity-45',
-              cell.count >= 4 && 'bg-success',
-              cell.day > today && 'opacity-0',
-              cell.day === today && 'ring-border-strong ring-1',
+              'size-3 rounded-xs',
+              cell.count === 0 && 'bg-border',
+              cell.count > 0 && cell.count < 4 && 'bg-fg-subtle',
+              cell.count >= 4 && 'bg-fg',
+              cell.day > today && 'invisible',
             )}
           />
         ))}
       </div>
-    </section>
-  );
-}
-
-/**
- * Rubric averages per topic, weakest first (P7-5).
- *
- * The review count is on every row rather than in a footnote: an average taken
- * over one review is an anecdote, and a weakest topic chosen from anecdotes
- * sends someone off to practise the wrong thing.
- */
-function Skills({ skills }: { skills: readonly TopicSkill[] }) {
-  return (
-    <section className="mb-8">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-        Weakest topics
-      </h2>
-
-      {skills.length === 0 ? (
-        <p className="text-fg-muted text-sm">
-          Nothing scored yet. These are the coach&rsquo;s rubric marks, so they appear once you have
-          asked it to review something.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">
-              Average coach rubric score per topic, out of {MAX_RUBRIC_SCORE}, weakest first
-            </caption>
-            <thead>
-              <tr className="border-border text-fg-muted border-b text-2xs">
-                <th scope="col" className="px-3 py-1.5 text-left font-medium">
-                  Topic
-                </th>
-                <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                  Reviews
-                </th>
-                {RUBRIC_DIMENSIONS.map((dimension) => (
-                  <th key={dimension} scope="col" className="px-3 py-1.5 text-right font-medium">
-                    {RUBRIC_LABEL[dimension]}
-                  </th>
-                ))}
-                <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                  Average
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {skills.map((skill) => (
-                <tr key={skill.topic} className="border-border border-b">
-                  <th scope="row" className="px-3 py-1.5 text-left font-normal">
-                    <Link
-                      to={'/?topic=' + skill.topic}
-                      className="focus-ring hover:text-accent-fg rounded-xs"
-                    >
-                      {TOPIC_LABEL[skill.topic]}
-                    </Link>
-                  </th>
-                  <td className="text-fg-subtle tnum px-3 py-1.5 text-right text-xs">
-                    {skill.samples}
-                  </td>
-                  {RUBRIC_DIMENSIONS.map((dimension) => (
-                    <td
-                      key={dimension}
-                      className="text-fg-muted tnum px-3 py-1.5 text-right text-xs"
-                    >
-                      {(skill.scores[dimension] ?? 0).toFixed(1)}
-                    </td>
-                  ))}
-                  <td className="tnum px-3 py-1.5 text-right text-xs font-medium">
-                    {skill.average.toFixed(1)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Recent({ recent }: { recent: readonly RecentActivity[] }) {
-  if (recent.length === 0) return null;
-
-  return (
-    <section className="mb-8">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-        Recent activity
-      </h2>
-      <ul className="text-sm">
-        {recent.map((entry, index) => (
-          <li
-            key={entry.at + '-' + String(index)}
-            className="border-border flex items-baseline gap-2 border-b py-1.5 last:border-b-0"
-          >
-            <span className="text-fg-muted">{ACTIVITY_LABEL[entry.kind]}</span>
-            {entry.slug !== null && entry.title !== null ? (
-              <Link
-                to={'/problems/' + entry.slug}
-                className="focus-ring hover:text-accent-fg rounded-xs font-medium"
-              >
-                {entry.title}
-              </Link>
-            ) : (
-              <span className="text-fg-subtle">a problem that is no longer here</span>
-            )}
-            {entry.verdict !== null && (
-              <span className="text-fg-subtle text-xs">{entry.verdict}</span>
-            )}
-            <span className="text-fg-subtle tnum ml-auto text-xs">
-              {new Date(entry.at).toLocaleString(undefined, {
-                dateStyle: 'short',
-                timeStyle: 'short',
-              })}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    </Card>
   );
 }
 
@@ -289,18 +577,14 @@ function Recent({ recent }: { recent: readonly RecentActivity[] }) {
  * else the user wrote: a skills report is what someone can do, not what they
  * typed. The web page is one self-contained file, so it survives being emailed.
  */
-function Export() {
+function ExportCard() {
   const download = useDownloadReport();
 
   return (
-    <section className="border-border mb-8 border-t pt-5">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-        Skills report
-      </h2>
-      <p className="text-fg-muted mb-3 text-sm">
-        Everything above as a file to keep or send. No code and no notes: only what you have solved
-        and how it was scored.
-      </p>
+    <Card
+      title="Skills report"
+      description="Everything on this page as a file to keep or send. No code and no notes."
+    >
       <div className="flex flex-wrap gap-2">
         {(
           [
@@ -327,100 +611,28 @@ function Export() {
           {download.error.message}
         </p>
       )}
-    </section>
+    </Card>
   );
 }
 
-/**
- * The review queue (ROADMAP P7-8).
- *
- * Two lists, and the second one matters as much as the first: a queue that only
- * shows what is due is a nag, and one that also shows what is coming is a
- * calendar. Each row says how long ago it was last solved and how many times it
- * has been, because "review this" without that is an instruction rather than a
- * reason.
- */
-function ReviewRow({ item, overdue }: { item: ReviewItem; overdue: boolean }) {
-  const when = overdue
-    ? item.overdueDays === 0
-      ? 'due today'
-      : `${String(item.overdueDays)} day${item.overdueDays === 1 ? '' : 's'} overdue`
-    : `due ${new Date(item.dueAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+// ---------------------------------------------------------------------------
 
-  return (
-    <li className="border-border flex items-baseline gap-2 border-b py-1.5 text-sm last:border-b-0">
-      {/*
-        `?review=1` is what puts the workspace into review mode: hints and the
-        editorial stay shut, because a review you can look up is not a review.
-      */}
-      <Link
-        to={`/problems/${item.slug}?review=1`}
-        className="focus-ring hover:text-accent-fg rounded-xs font-medium"
-      >
-        {item.title}
-      </Link>
-      <span className="text-fg-subtle text-xs">{TOPIC_LABEL[item.topic]}</span>
-      <span className="text-fg-subtle tnum text-xs">
-        {item.passes} pass{item.passes === 1 ? '' : 'es'}
-      </span>
-      <span className={cn('tnum ml-auto text-xs', overdue ? 'text-warn-fg' : 'text-fg-subtle')}>
-        {when}
-      </span>
-    </li>
-  );
-}
-
-function Reviews({ reviews }: { reviews: ReviewQueue }) {
-  if (reviews.due.length === 0 && reviews.upcoming.length === 0) return null;
-
-  return (
-    <section className="mb-8">
-      <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-        Review queue
-      </h2>
-
-      {reviews.due.length === 0 ? (
-        <p className="text-fg-muted text-sm">
-          Nothing due. The queue fills up as what you have solved gets older.
-        </p>
-      ) : (
-        <ul>
-          {reviews.due.map((item) => (
-            <ReviewRow key={item.slug} item={item} overdue />
-          ))}
-        </ul>
-      )}
-
-      {reviews.upcoming.length > 0 && (
-        <details className="mt-3">
-          <summary className="text-fg-muted focus-ring cursor-pointer rounded-xs text-xs">
-            {reviews.upcoming.length} coming up
-          </summary>
-          <ul className="mt-1">
-            {reviews.upcoming.map((item) => (
-              <ReviewRow key={item.slug} item={item} overdue={false} />
-            ))}
-          </ul>
-        </details>
-      )}
-    </section>
-  );
-}
-
-/** Two tables' worth of rows, at the height they will be when they arrive. */
+/** The cards, in their places, before the numbers arrive. */
 function ProgressSkeleton() {
   return (
-    <Loading label="Loading progress" className="mx-auto max-w-3xl px-6 py-6">
-      <Skeleton className="h-6 w-40" />
-      <Skeleton className="mt-2 h-4 w-56" />
-      <span className="mt-8 block">
-        {Array.from({ length: 6 }, (_, index) => (
-          <span key={index} className="flex items-center gap-3 py-2">
-            <Skeleton className="h-3 w-44" />
-            <Skeleton className="h-1.5 flex-1" />
-            <Skeleton className="h-3 w-12" />
-          </span>
-        ))}
+    <Loading label="Loading progress" className="grid grid-cols-3 gap-4 px-6 pt-5 pb-6">
+      <span className="col-span-3 block pb-2">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="mt-2 h-4 w-56" />
+      </span>
+      <span className="bg-surface border-border col-span-2 block h-80 rounded-xl border p-5">
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="mt-6 h-40 w-full" />
+      </span>
+      <span className="bg-surface border-border block h-80 rounded-xl border p-5">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="mt-4 h-5 w-full" />
+        <Skeleton className="mt-2 h-5 w-4/5" />
       </span>
     </Loading>
   );
@@ -443,13 +655,14 @@ export function Progress() {
   }
 
   const solved = solvedCount(data.byStatus);
+  const hasReviews = data.reviews.due.length > 0 || data.reviews.upcoming.length > 0;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl px-6 py-6">
-        <header className="mb-6">
-          <h1 className="text-xl font-semibold">Progress</h1>
-          <p className="text-fg-muted tnum mt-1 text-sm">
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Progress"
+        context={
+          <>
             {solved} of {data.total} problems solved.
             {data.driftedSolves > 0 && (
               /* Counted apart from the solved total, not deducted from it: the
@@ -465,87 +678,40 @@ export function Progress() {
                 {data.editorialsRevealed === 1 ? '' : 's'} opened before solving.
               </>
             )}
-          </p>
-        </header>
-
-        {/*
-          An empty catalogue reaches this screen as three sections of nothing,
-          which reads like a bug in the dashboard rather than an absence of
-          problems. Say which it is (P4-10).
-        */}
-        {data.total === 0 && (
-          <p className="text-fg-muted text-sm">
-            There are no problems to make progress through yet. Run{' '}
-            <code className="font-mono">npm run problems:validate</code> to check the problem
-            packages.
-          </p>
-        )}
-
-        {data.total > 0 && (
-          <>
-            <StreakCalendar streak={data.streak} />
-
-            <section className="mb-8">
-              <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                By status
-              </h2>
-              <ul className="flex flex-wrap gap-x-6 gap-y-1">
-                {PROGRESS_STATUSES.map((status) => (
-                  <li key={status} className="text-sm">
-                    <span
-                      className={cn(
-                        'tnum font-medium',
-                        status === 'not_started' && 'text-fg-subtle',
-                        status === 'in_progress' && 'text-accent-fg',
-                        status !== 'not_started' && status !== 'in_progress' && 'text-success-fg',
-                      )}
-                    >
-                      {data.byStatus[status]}
-                    </span>{' '}
-                    <span className="text-fg-muted">{PROGRESS_LABEL[status]}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                By topic
-              </h2>
-              <table className="w-full table-fixed">
-                <caption className="sr-only">Problems solved in each curriculum topic</caption>
-                <tbody>
-                  {data.byTopic.map((row) => (
-                    <GroupRow
-                      key={row.topic}
-                      label={TOPIC_LABEL[row.topic]}
-                      to={`/?topic=${row.topic}`}
-                      row={row}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-fg-subtle mb-2 text-2xs font-medium tracking-wide uppercase">
-                By difficulty
-              </h2>
-              <table className="w-full table-fixed">
-                <caption className="sr-only">Problems solved at each difficulty tier</caption>
-                <tbody>
-                  {data.byTier.map((row) => (
-                    <GroupRow key={row.tier} label={row.tier} to={`/?tier=${row.tier}`} row={row} />
-                  ))}
-                </tbody>
-              </table>
-            </section>
-
-            <Reviews reviews={data.reviews} />
-            <Skills skills={data.skills} />
-            <Recent recent={data.recent} />
-            <Export />
           </>
+        }
+      />
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 max-[1279px]:px-4">
+        {/*
+          An empty catalogue reaches this screen as cards of nothing, which reads
+          like a bug in the dashboard rather than an absence of problems. Say
+          which it is (P4-10).
+        */}
+        {data.total === 0 ? (
+          <Card>
+            <p className="text-fg-muted text-sm">
+              There are no problems to make progress through yet. Run{' '}
+              <code className="font-mono">npm run problems:validate</code> to check the problem
+              packages.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 max-[1279px]:gap-3">
+            <SolvedCard data={data} />
+            <CoachBriefCard data={data} />
+
+            <RecentCard recent={data.recent} />
+            {/* No queue at all before anything is solved: an empty calendar is noise. */}
+            {hasReviews && <ReviewCard reviews={data.reviews} />}
+            <TopicsCard data={data} wide={!hasReviews} />
+
+            <SkillsCard skills={data.skills} />
+            <div className="flex flex-col gap-4 max-[1279px]:gap-3">
+              <StreakCard streak={data.streak} />
+              <ExportCard />
+            </div>
+          </div>
         )}
       </div>
     </div>
