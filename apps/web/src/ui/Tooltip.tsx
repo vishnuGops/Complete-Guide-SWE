@@ -1,5 +1,6 @@
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import type { ReactNode } from 'react';
+import { Kbd } from './Kbd.js';
 import { cn } from './cn.js';
 
 /**
@@ -56,21 +57,19 @@ export function Tooltip({ content, children, side = 'bottom', keys, ...props }: 
           side={side}
           sideOffset={6}
           className={cn(
-            'bg-overlay text-fg border-border shadow-overlay z-50 rounded-md border',
+            'bg-overlay text-fg border-border-strong shadow-overlay z-50 rounded-md border',
             'flex items-center gap-2 px-2 py-1 text-xs',
             'select-none',
           )}
         >
           {content}
           {keys && keys.length > 0 && (
+            // The same chips as the pills and the welcome (P9-6): one key style
+            // everywhere. Read out, unlike the pills': the tooltip is the
+            // control's description, and the keys are part of it.
             <span className="flex items-center gap-0.5">
               {keys.map((key) => (
-                <kbd
-                  key={key}
-                  className="border-border-strong text-fg-muted rounded-xs border px-1 text-2xs"
-                >
-                  {key}
-                </kbd>
+                <Kbd key={key}>{key}</Kbd>
               ))}
             </span>
           )}
