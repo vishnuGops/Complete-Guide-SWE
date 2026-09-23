@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppShell } from './AppShell.js';
+import { PageHeader } from './PageHeader.js';
 import {
   aList,
   aProblem,
@@ -20,10 +21,18 @@ import {
  * not be testing the thing that has to work from inside the editor.
  */
 
-/** Prints the current path, so navigation can be asserted without a router spy. */
+/**
+ * Prints the current path, so navigation can be asserted without a router spy -
+ * under a page header, which is where the search pill lives since P9-6.
+ */
 function Where() {
   const location = useLocation();
-  return <span data-testid="where">{location.pathname + location.search}</span>;
+  return (
+    <>
+      <PageHeader title="Somewhere" />
+      <span data-testid="where">{location.pathname + location.search}</span>
+    </>
+  );
 }
 
 const PROBLEMS = [
@@ -76,7 +85,11 @@ describe('the command palette', () => {
     open();
 
     const button = screen.getByRole('button', { name: /Search/ });
-    expect(button).toHaveTextContent('Ctrl K');
+    // One chip per key (P9-6), hidden from the button's name, which stays "Search".
+    expect([...button.querySelectorAll('kbd')].map((key) => key.textContent)).toEqual([
+      'Ctrl',
+      'K',
+    ]);
 
     await userEvent.setup().click(button);
     expect(await screen.findByRole('listbox', { name: 'Results' })).toBeInTheDocument();

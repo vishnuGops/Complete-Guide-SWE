@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './app/AppShell.js';
+import { NotFound } from './app/NotFound.js';
 import { KitchenSink } from './dev/KitchenSink.js';
 import { Interview } from './screens/Interview.js';
 import { Progress } from './screens/Progress.js';
@@ -13,7 +14,7 @@ import { TooltipProvider } from './ui/index.js';
  * Routes (ROADMAP P4-2).
  *
  * Five screens under one shell, and the shell is a layout route rather than
- * something each screen renders: the top bar must not blink out and back while
+ * something each screen renders: the rail must not blink out and back while
  * the workspace loads a problem.
  *
  * `/dev/kitchen-sink` is the token reference page and exists in development
@@ -31,7 +32,7 @@ export function App() {
             <Route path="/progress" element={<Progress />} />
             <Route path="/interview" element={<Interview />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<p className="text-fg-muted p-6 text-sm">No such page.</p>} />
+            <Route path="*" element={<NotFound />} />
           </Route>
           {import.meta.env.DEV && <Route path="/dev/kitchen-sink" element={<KitchenSink />} />}
         </Routes>

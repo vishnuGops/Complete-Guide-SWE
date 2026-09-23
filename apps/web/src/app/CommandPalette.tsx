@@ -33,6 +33,12 @@ interface Action {
   id: string;
   label: string;
   hint: string;
+  /**
+   * The hint is the coach's judgement rather than the app's description - the
+   * recommendation is chosen from the coach's rubric marks - so it is set in
+   * the coach's serif (docs/DESIGN.md 5).
+   */
+  coach?: boolean;
   run: () => Promise<string | null>;
 }
 
@@ -77,6 +83,7 @@ export function CommandPalette({
         id: 'recommended',
         label: 'Next recommended problem',
         hint: 'the easiest one left in your weakest topic',
+        coach: true,
         run: async () => {
           const result = await suggest('recommended');
           if (!result.problem) return result.reason;
@@ -223,6 +230,9 @@ export function CommandPalette({
           className={[
             'bg-surface-raised border-border shadow-overlay fixed top-24 left-1/2 z-50',
             'w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-lg border',
+            // The field below draws no ring of its own, because it is the whole
+            // dialog: the dialog shows focus for it (DESIGN.md 9).
+            'has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2',
           ].join(' ')}
         >
           {/* Radix requires a title; this dialog's visible name is on the field. */}
@@ -284,6 +294,7 @@ export function CommandPalette({
                 onChoose={choose}
                 label={action.label}
                 trailing={action.hint}
+                serif={action.coach === true}
               />
             ))}
 
@@ -315,6 +326,7 @@ function Row({
   label,
   leading,
   trailing,
+  serif = false,
   onHover,
   onChoose,
 }: {
@@ -323,6 +335,7 @@ function Row({
   label: string;
   leading?: ReactNode;
   trailing: string;
+  serif?: boolean;
   onHover: (index: number) => void;
   onChoose: (index: number) => void;
 }) {
@@ -345,14 +358,27 @@ function Row({
       onClick={() => {
         onChoose(index);
       }}
+      /*
+        The highlighted row: the selected step, a 2px accent bar and its hint
+        in `fg-muted` - `fg-subtle` drops below 4.5:1 on the selected step. A
+        tint alone was 1.07:1 and invisible (P9-6).
+      */
       className={cn(
-        'flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm',
-        active && 'bg-surface-sunken',
+        'flex cursor-pointer items-center gap-2 border-l-2 py-1.5 pr-4 pl-3.5 text-sm',
+        active ? 'bg-surface-selected border-l-accent' : 'border-l-transparent',
       )}
     >
       {leading}
       <span className="truncate">{label}</span>
-      <span className="text-fg-subtle ml-auto shrink-0 text-xs">{trailing}</span>
+      <span
+        className={cn(
+          'ml-auto shrink-0',
+          serif ? 'font-serif text-sm' : 'text-xs',
+          active ? 'text-fg-muted' : 'text-fg-subtle',
+        )}
+      >
+        {trailing}
+      </span>
     </li>
   );
 }

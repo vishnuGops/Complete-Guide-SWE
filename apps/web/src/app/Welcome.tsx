@@ -1,6 +1,6 @@
 import { useSettings, useUpdateSettings } from '../api/hooks.js';
 import { SHORTCUTS } from '../shortcuts/shortcuts.js';
-import { Button } from '../ui/index.js';
+import { Button, Keys } from '../ui/index.js';
 
 /**
  * The first-run welcome (ROADMAP P8-3).
@@ -10,7 +10,7 @@ import { Button } from '../ui/index.js';
  * automatic, and that nothing here leaves the machine. Everything else on the
  * screen explains itself.
  *
- * A panel above the list rather than a modal or a tour. A modal is a thing to
+ * A card above the page rather than a modal or a tour. A modal is a thing to
  * dismiss before you can look at what you came for, and a tour of five steps
  * teaches less than one sentence beside the button it is about.
  *
@@ -27,21 +27,27 @@ export function Welcome() {
   if (!settings || settings.welcomeDismissed) return null;
 
   return (
-    <aside className="border-border bg-surface-sunken border-b px-6 py-4" aria-label="Welcome">
+    <aside
+      className="bg-surface border-border shadow-card mx-6 mt-5 rounded-xl border p-5"
+      aria-label="Welcome"
+    >
       <h2 className="text-sm font-semibold">Welcome to DevProMax</h2>
       <ul className="text-fg-muted mt-2 max-w-prose space-y-1 text-sm">
         <li>
-          <strong className="text-fg">Run</strong> ({SHORTCUTS.run.keys.join('+')}) tries your code
-          against the visible samples and your own cases. It records nothing.
+          <strong className="text-fg">Run</strong> <Keys keys={SHORTCUTS.run.keys} />
+          <span className="sr-only">({SHORTCUTS.run.keys.join('+')})</span> tries your code against
+          the visible samples and your own cases. It records nothing.
         </li>
         <li>
-          <strong className="text-fg">Submit</strong> ({SHORTCUTS.submit.keys.join('+')}) runs every
-          hidden test and writes the verdict down. That is what moves a problem to Solved.
+          <strong className="text-fg">Submit</strong> <Keys keys={SHORTCUTS.submit.keys} />
+          <span className="sr-only">({SHORTCUTS.submit.keys.join('+')})</span> runs every hidden
+          test and writes the verdict down. That is what moves a problem to Solved.
         </li>
         <li>
-          <strong className="text-fg">AI Help</strong> ({SHORTCUTS.aiHelp.keys.join('+')}) asks a
-          coach to review what you have written. It needs your own API key, it costs a few cents a
-          turn, and it is never called on its own.
+          <strong className="text-fg">AI Help</strong> <Keys keys={SHORTCUTS.aiHelp.keys} />
+          <span className="sr-only">({SHORTCUTS.aiHelp.keys.join('+')})</span> asks a coach to
+          review what you have written. It needs your own API key, it costs a few cents a turn, and
+          it is never called on its own.
         </li>
       </ul>
       <p className="text-fg-subtle mt-2 max-w-prose text-xs">
