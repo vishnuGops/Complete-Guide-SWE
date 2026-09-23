@@ -8,12 +8,14 @@ It is a working document with teeth: section 13 is a checklist, and a screen
 that fails it does not merge. Where it is silent, decide in the spirit of
 section 1 and then write down what you decided.
 
-> **Status (2026-09-22, P9-6).** This is the second version of this document,
-> rewritten from a reference the owner chose (section 2). `tokens.css` and the
-> screens still implement the first version until P9-6 lands, so an audit against
-> this document today reports the whole gap - which is the work list. The first
-> version is in git history: `git show 181e5c5:docs/DESIGN.md`. Values marked _target_ are read off the reference by eye; P9-6 sets
-> the exact ones in `tokens.css`, where `contrast.test.ts` proves them.
+> **Status (2026-09-23, P9-6).** This is the second version of this document,
+> rewritten from a reference the owner chose (section 2) and implemented by P9-6.
+> The values below are the shipped ones in `tokens.css`, where `contrast.test.ts`
+> proves them; where they moved from the targets read off the reference, the
+> table says so and why. The first version is in git history:
+> `git show 181e5c5:docs/DESIGN.md`. The redesign's run - brief, four reviewed
+> preview rounds, decision - is in `data/design-audit/redesign-cards/`
+> (gitignored).
 
 ---
 
@@ -100,52 +102,77 @@ matters:
 > the semantic name. If none fits, add one - do not reach past them into a ramp.
 
 Colours are OKLCH so that equal steps look equal. Neutrals lean slightly blue
-(hue ~265) toward the accent, as the reference's greys do.
+(hue 265) toward the accent, as the reference's greys do.
 
-### Surfaces, light theme (_target_)
+### Surfaces, light theme
 
-| Token            | Target                   | Used for                                                             |
-| ---------------- | ------------------------ | -------------------------------------------------------------------- |
-| `bg`             | `oklch(0.965 0.006 265)` | The canvas behind everything                                         |
-| `surface`        | `oklch(1 0 0)`           | Cards and the rail                                                   |
-| `surface-sunken` | `oklch(0.975 0.004 265)` | Inside a card: segmented trays, search fields, table headers         |
-| `surface-raised` | `oklch(1 0 0)`           | Menus, the palette, dialogs (lifted by `shadow-overlay`, not colour) |
-| `border`         | `oklch(0.925 0.006 265)` | The hairline around every card and between rows                      |
-| `border-strong`  | `oklch(0.86 0.008 265)`  | Inputs, the edge of a control that can be clicked                    |
+| Token              | Value                    | Used for                                                                        |
+| ------------------ | ------------------------ | ------------------------------------------------------------------------------- |
+| `bg`               | `oklch(0.965 0.006 265)` | The canvas behind everything                                                    |
+| `surface`          | `oklch(1 0 0)`           | Cards and the rail                                                              |
+| `surface-sunken`   | `oklch(0.975 0.004 265)` | **Inside a card only**: trays, wells, table headers, the row under the pointer  |
+| `surface-raised`   | `oklch(1 0 0)`           | Menus, the palette, dialogs (lifted by `shadow-overlay`, not colour)            |
+| `surface-selected` | accent-200               | The selected row or option; see below                                           |
+| `border`           | `oklch(0.925 0.006 265)` | The hairline around every card and between rows                                 |
+| `border-strong`    | `oklch(0.86 0.008 265)`  | The edge of a control that can be clicked: buttons, trays                       |
+| `border-input`     | neutral-525 (L 0.64)     | The edge of a text field: 3:1 on the card, since it is the only sign of a field |
 
-### Surfaces, dark theme (_target_)
+`surface-sunken` is lighter than the canvas, so it is only ever used inside a
+card; on the canvas a well reads as a raised patch or not at all. A tray that
+sits on the canvas (the workspace toolbar's language control) takes `surface`.
+
+### Surfaces, dark theme
 
 Dark is designed, not inverted: surfaces get **lighter** as they rise, and
 tonal steps do the lifting because a shadow on near-black is invisible.
 
-| Token            | Target                   |
-| ---------------- | ------------------------ |
-| `bg`             | `oklch(0.155 0.01 265)`  |
-| `surface`        | `oklch(0.2 0.012 265)`   |
-| `surface-sunken` | `oklch(0.175 0.01 265)`  |
-| `surface-raised` | `oklch(0.235 0.013 265)` |
-| `border`         | `oklch(0.27 0.012 265)`  |
-| `border-strong`  | `oklch(0.36 0.014 265)`  |
+| Token            | Value                    | Target read off the reference | Why it moved                                                                     |
+| ---------------- | ------------------------ | ----------------------------- | -------------------------------------------------------------------------------- |
+| `bg`             | `oklch(0.155 0.01 265)`  | same                          |                                                                                  |
+| `surface`        | `oklch(0.225 0.012 265)` | `0.2`                         | A card needs 1.14:1 over the canvas to read as a card with no shadow             |
+| `surface-sunken` | `oklch(0.185 0.01 265)`  | `0.175`                       | Kept between canvas and card after the card moved                                |
+| `surface-raised` | `oklch(0.27 0.013 265)`  | `0.235`                       | Tooltips melted into the card at 1.08:1; 1.14:1 now, plus a `border-strong` edge |
+| `border`         | `oklch(0.3 0.012 265)`   | `0.27`                        | Holds the card-edge floor (1.2:1) against the lighter card                       |
+| `border-strong`  | `oklch(0.38 0.014 265)`  | `0.36`                        | Same                                                                             |
+| `fg`             | `oklch(0.94 0.006 265)`  | about 0.95                    |                                                                                  |
 
-Text in dark is off-white (`fg` about L 0.95), never pure white.
+Text in dark is off-white, never pure white.
+
+### The selected step
+
+`surface-selected` (added by P9-6) marks the row or option you are on: the
+palette's highlighted result, the test being read in the results card, the
+current interview problem. It is a blue step (light accent-200; dark a calm
+accent-900 at chroma .07, so a verdict dot on it still holds 3:1), and it is
+never the only signal - it always comes with a 2px accent bar at the row's left
+edge and usually a heavier label. Text on it is `fg`, `fg-muted` or a verdict's
+`*-fg`, never `fg-subtle`, which drops to 4.1:1 there. In dark the Callout's `accent-subtle`
+sits a step below it, so a suggestion never reads as a selection.
 
 ### The accent
 
-One accent, a saturated royal blue, _target_ `oklch(0.52 0.23 266)` for fills
-in light and `oklch(0.56 0.21 266)` in dark, with white text on both (5.9:1 and
-about 4.9:1; the dark fill cannot get lighter without losing that).
+One accent, a saturated royal blue: `oklch(0.52 0.215 268)` for fills in light
+and `oklch(0.565 0.2 268)` in dark, with white text on both (5.86:1 and
+4.78:1; the dark fill cannot get lighter without losing that). The reference
+read as `0.52 0.23 266`; that is within a few ΔE of Tailwind's stock blue-600,
+which the preview reviewers flagged as a default-kit colour, so the hue moved
+two degrees and the chroma came down a little - still the reference's blue.
 `accent-fg` (the accent as text) is darker in light and lighter in dark;
 `accent-subtle` is the pale blue tint of the Callout.
 
 It means **"this is the action"** or **"this is where you are"**: the primary
 pill, the active rail item, the selected segment, the focus ring, a chart's
-line, the current row. It is never decoration, and it is never a status -
+line, the bar on the current row. It is never decoration, and it is never a status -
 "In progress" is drawn in `fg-muted` with its ring glyph, not in blue, so the
 only blue things on screen are things you can act on or where you are.
 
 The previous accent was indigo-violet, chosen to sit far from the verdict hues
-and from the editor. Blue at 266 is still far from green, amber and red, but it
-is Monaco's keyword blue - so the editor gets its own theme (section 8).
+and from the editor. Blue at 268 is still far from green, amber and red, but it
+is Monaco's keyword blue - so the editor gets its own theme (section 8), and code
+keywords everywhere take `code-keyword`, a violet at hue 315.
+
+The focus ring is accent-800 in light (darker than the fill, 1.8:1 against the
+Submit pill it surrounds) and accent-400 in dark.
 
 ## 5. Type
 
@@ -189,13 +216,13 @@ Every number read by comparison - counts, timings, ratings, deltas - gets `tnum`
 so even steps land on the grid and odd ones are deliberate half-steps. The
 reference's airiness is spent in chosen places, not by stretching the step:
 
-| Where                 | Space                                                                                   |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| Canvas padding        | 24px (`p-6`)                                                                            |
-| Gap between cards     | 16px (`gap-4`); 12px in the workspace, where width is scarce                            |
-| Card padding          | 20px (`p-5`); 16px for dense cards (the list, the results panel)                        |
-| Card title to content | 16px                                                                                    |
-| Table rows            | 36px tall (was 33px): about one row fewer at 900px, accepted by the owner for this look |
+| Where                 | Space                                                                                                                                                                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canvas padding        | 24px (`p-6`)                                                                                                                                                                                                                                                |
+| Gap between cards     | 16px (`gap-4`); 12px in the workspace, where width is scarce                                                                                                                                                                                                |
+| Card padding          | 20px (`p-5`); 16px for dense cards (the list, the results panel)                                                                                                                                                                                            |
+| Card title to content | 16px                                                                                                                                                                                                                                                        |
+| Table rows            | 36px tall (was 33px). Measured after P9-6: with the page header and the card's toolbar, a 1440×900 window shows 19 rows where version 1 showed 24 - more than the "about one row fewer" this table first said. Left for the owner to weigh against the look |
 
 In hand-written CSS a spacing step is `calc(var(--spacing) * 3)`, never
 `var(--spacing-3)`. Tailwind v4 has one `--spacing` variable; the shorter
@@ -247,8 +274,12 @@ Two uses are added:
 - **Positive numbers** in a list may be `success-fg`; negative ones stay `fg`.
   Red is for failure, not for "less".
 
-Progress statuses: Not started is `fg-subtle`, In progress is `fg-muted` with
-the half-ring glyph, Solved and Mastered are `success`, told apart by shape.
+Progress statuses: Not started is an empty ring in `fg-subtle`, In progress a
+half-filled ring in `fg-muted`, Solved a disc and Mastered a disc in a ring, both
+`success`. Solved counts drawn as progress - topic bars, the solved meter - are
+`success` too: solved is a status, and the accent never is one. (The first draft
+of this version said topic segments were "solved in accent"; that contradicted
+this section, and the preview review caught it.)
 
 **Never colour alone.** Every state carries a second signal: a word, a shape, an
 icon, an `aria-` attribute. Roughly one reader in twelve cannot separate red
@@ -265,21 +296,28 @@ The shell and each screen, in the reference's terms. Components are built with
 the screen that needs them (section 10).
 
 **Shell.** A 64px icon rail on the left, a card of its own on the canvas: the
-logo mark at the top, then Problems, Progress, Interview, and Settings pinned to
-the bottom. Items are 40px squares with an 18px outline icon; the active one is
-filled `accent` with a white icon, `rounded-lg`. Every item has a tooltip naming
-it and its shortcut. The rail replaces the top navigation bar. To the right of
+logo mark at the top (a neutral tile, not a link), then Problems, Progress,
+Interview, and Settings pinned to the bottom. Items are 40px squares with an 18px
+outline icon; the active one is filled `accent` with a white icon, `rounded-lg`,
+and Problems stays active inside a problem. Every item has a tooltip naming it
+(there are no navigation shortcuts to add to it). The rail replaces the top
+navigation bar. The theme choice is in Settings > Appearance, not the chrome: the
+header has room for what is used on every visit, and the theme is chosen once. To the right of
 it, each page has a **header** on the canvas, not in a card: title (`text-xl`,
-600), one muted line of real context beneath ("171 problems · 4 due for
-review"), and on the right the search pill (`surface`, `rounded-full`, "Search"
+600), one muted line of real context beneath ("4 due for review · 1 in
+progress" - what is waiting, never a count the page shows again below), and on the right the search pill (`surface`, `rounded-full`, "Search"
 plus a `Ctrl K` chip, opening the palette) and the solved counter.
 
-**Problem list.** Two cards: filters (topic, difficulty, status, starred) in a
-narrow card on the left, and the table in a wide card beside it, with its own
-toolbar row (search field, a Segmented control for All / Due / Starred, the
-count). Rows 36px, hairline dividers, status glyph first, numbers `tnum` and
-right-aligned. The row under the pointer takes `surface-sunken`; the current row
-has a 2px accent bar at its left edge.
+**Problem list.** Two cards: filters (topic, difficulty, status, the language
+progress is counted in) in a narrow card on the left, and the table in a wide
+card beside it, with its own toolbar row (search field, a Segmented control for
+All / Due / Starred, the count). Due is a list filter of its own
+(`?due=true`, from the review queue) and Starred moved out of the filter card
+into the Segmented. Rows 36px, hairline dividers, status glyph first, numbers
+`tnum` and right-aligned. The row under the pointer takes `surface-sunken`; the
+row holding keyboard focus - where you are - has a 2px accent bar at its left
+edge. Below 1280px the filter card folds behind a Filters button and the
+Patterns column steps aside.
 
 **Workspace.** Three cards with 12px gutters: the statement (tabs across its top,
 Description / Hints / Coach / Editorial / Notes / Submissions), the editor, and
@@ -297,21 +335,29 @@ verdict's subtle tint with its glyph, then the verdict in words.
 **Coach tab.** The coach's words in Newsreader `text-md`, the rubric as small
 pips, the user's messages in Inter. The recommendation sits in a Callout.
 
-**Progress.** The one screen that is a dashboard, laid out like the reference's:
+**Progress.** The one screen that is a dashboard, laid out like the reference's.
+The `solves` series behind the chart (first accepts per day) is part of
+`/api/dashboard`:
 
 - A wide **Solved** card: the count as a `text-3xl` 700 numeral, a delta chip
   ("+3 this week"), a Segmented range control (1M / 3M / All), and a line chart
   of solves over time in the accent, with the permitted area fill. Beneath a
   divider, three sub-stats with icon tiles: Mastered, Due for review, Current streak.
 - A **Coach brief** card beside it: the coach mark, a one-sentence serif headline
-  ("You are strongest in hash maps; graphs have stalled for nine days."), a short
-  list of the signals behind it, and a Callout with the suggested next problem
-  and a primary pill to open it.
-- A row of three cards: **Recent submissions** (verdict tile, problem, topic ·
-  when, time right-aligned), **Review queue** (due items, same row pattern), and
-  **Topics** (each topic's name, percentage, and a segmented bar of its problems:
-  solved in accent, remaining in `border`; a topic behind its review schedule
-  uses `warn` with the words "behind").
+  ("You are strongest in HashMap and weakest in Graph."), a short list of the
+  signals behind it, and a Callout with the suggested next problem and a primary
+  pill to open it. The sentence is written locally from the coach's rubric marks
+  and the review queue - the coach's record read back in its voice - and never by
+  calling the coach: D13 does not bend for a dashboard.
+- A row of three cards: **Recent activity** (verdict tile for a submission or a
+  run, a neutral icon tile for a hint, an editorial or a coaching turn; problem;
+  what happened · language; when, right-aligned), **Review queue** (due items,
+  same row pattern; absent before anything is solved), and **Topics** (each
+  topic's name, percentage, and a segmented bar of its problems: solved in
+  `success`, remaining in `border`; a topic behind its review schedule uses
+  `warn` with the word "behind"; tiers in a footer line).
+- Then the coach's marks per topic (**Weakest topics**), the **Streak** in words
+  with a neutral calendar under it, and the **Skills report** export.
 
 **Interview.** A header, then one card for the running sitting (stage as a
 Segmented display, clock in `tnum`), the transcript in the coach's serif.
@@ -358,18 +404,20 @@ Primitives in `apps/web/src/ui/` today: `Button`, `Input`, `Tabs`, `Tooltip`.
 This design adds, each when its first screen is built and promoted to `ui/` when
 a second one needs it:
 
-| Pattern           | First needed by | What it is                                                                                            |
-| ----------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
-| `Card`            | Shell           | `surface`, `border`, `shadow-card`, `rounded-xl`, a title slot and an action slot (the ↗ link button) |
-| `Button` variants | Workspace       | `primary` becomes a pill; `secondary` stays `rounded-md`; new `primary-outline`                       |
-| `Segmented`       | Workspace       | Radix Toggle Group in a `surface-sunken` tray, selected segment filled `accent`                       |
-| `Kbd`             | Shell           | `rounded-xs` chip, `text-2xs`, `surface-sunken`, `fg-muted`                                           |
-| `RailItem`        | Shell           | Icon link with tooltip, active state                                                                  |
-| `Stat`            | Progress        | Numeral, label, optional delta chip                                                                   |
-| `Callout`         | Coach, Progress | `accent-subtle` inset, `rounded-lg`, no border                                                        |
-| `ListRow`         | Progress        | Icon or verdict tile, title, meta line, right-aligned value                                           |
-| `SegmentBar`      | Progress        | A row of small segments, one per item, for topic progress                                             |
-| `CoachMark`       | Coach           | 8px `accent` dot in a 2px `accent-subtle` ring - flat, no gradient                                    |
+| Pattern           | First needed by | What it is                                                                                                                                                                                                            |
+| ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Card`            | Shell           | `surface`, `border`, `shadow-card`, `rounded-xl`, a title slot and an action slot (the ↗ link button)                                                                                                                 |
+| `Button` variants | Workspace       | `primary` becomes a pill; `secondary` stays `rounded-md`; new `primary-outline`                                                                                                                                       |
+| `Segmented`       | Workspace       | Toggle buttons (`aria-pressed`) in a labelled group, in a `surface-sunken` tray, selected segment filled `accent`; arrow keys move between them. Not Radix Toggle Group: the choosers were already announced this way |
+| `Kbd`             | Shell           | `rounded-xs` chip, `text-2xs`, `surface-sunken`, `fg-muted`                                                                                                                                                           |
+| `RailItem`        | Shell           | Icon link with tooltip, active state                                                                                                                                                                                  |
+| `Stat`            | Progress        | Numeral, label, optional delta chip                                                                                                                                                                                   |
+| `Callout`         | Coach, Progress | `accent-subtle` inset, `rounded-lg`, no border                                                                                                                                                                        |
+| `ListRow`         | Progress        | Icon or verdict tile, title, meta line, right-aligned value                                                                                                                                                           |
+| `SegmentBar`      | Progress        | A row of small segments, one per item, for topic progress                                                                                                                                                             |
+| `CoachMark`       | Coach           | 8px `accent` dot in a 2px `accent-subtle` ring - flat, no gradient                                                                                                                                                    |
+| `VerdictTile`     | Workspace       | 20px `rounded-sm` square in the verdict's subtle tint with its glyph (tick, cross, clock)                                                                                                                             |
+| `IconTile`        | Progress        | The neutral tile beside a sub-stat or a non-verdict row                                                                                                                                                               |
 
 Icons are `lucide-react` (ISC licence): outline, 1.5px stroke, 16px in text and
 18px in the rail. It is an icon set, not a component library; the CLAUDE.md rule
@@ -412,6 +460,7 @@ Unchanged in substance from the first version:
 - [ ] Reachable and operable by keyboard alone; focus order matches visual order.
 - [ ] Focus ring present, not overridden, visible beside an accent fill.
 - [ ] No state signalled by colour alone; blue only for action or location.
+- [ ] A selected row carries a bar or weight as well as `surface-selected`; `surface-sunken` only inside a card.
 - [ ] Text contrast ≥ 4.5:1, meaningful borders and icons ≥ 3:1, both themes.
 - [ ] Spacing on the 4px step; card, gutter and row spacing as section 6.
 - [ ] Radius by size (section 6); nothing nested at the same radius as its parent.
