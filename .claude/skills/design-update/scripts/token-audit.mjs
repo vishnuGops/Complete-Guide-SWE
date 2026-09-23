@@ -27,8 +27,15 @@ const asJson = process.argv.includes('--json');
 const changedAt = process.argv.indexOf('--changed');
 const changedRef = changedAt === -1 ? undefined : process.argv[changedAt + 1];
 
-/** Where ramps and raw values are defined on purpose. */
-const DEFINITIONS = new Set([path.join(SRC, 'styles', 'tokens.css')]);
+/**
+ * Where ramps and raw values are defined on purpose: the token file, and the
+ * bridge that converts its values to the hex Monaco needs (P9-6) - which is
+ * where a transparent and a fallback grey have to be written as numbers.
+ */
+const DEFINITIONS = new Set([
+  path.join(SRC, 'styles', 'tokens.css'),
+  path.join(SRC, 'editor', 'theme.ts'),
+]);
 
 const PREFIX =
   '(?:bg|text|border(?:-[trblxy])?|ring|ring-offset|outline|fill|stroke|from|via|to|divide|placeholder|decoration|caret|accent|shadow)';
@@ -46,7 +53,7 @@ const RULES = [
     section: '4',
     why: 'A ramp colour in a component hard-codes one theme. Use the semantic token; add one if none fits.',
     re: new RegExp(
-      `(?<![\\w-])(?:[\\w-]+:)*${PREFIX}-(?:neutral|accent|success|warn|danger)-\\d{1,4}(?:\\/\\d+)?\\b`,
+      `(?<![\\w-])(?:[\\w-]+:)*${PREFIX}-(?:neutral|accent|keyword|success|warn|danger)-\\d{1,4}(?:\\/\\d+)?\\b`,
       'g',
     ),
   },
@@ -97,7 +104,7 @@ const RULES = [
     id: 'radius',
     severity: 'warn',
     section: '6',
-    why: 'Radius by size: cards rounded-xl (16px) and nothing rounder; rounded-full only for the primary pill, delta chips, dots and avatars.',
+    why: 'Radius by size: cards rounded-xl (16px) and nothing rounder; rounded-full only for the primary pills (filled and outlined), the search pill, delta chips, dots and avatars. A person decides each one.',
     re: /(?<![\w-])(?:[\w-]+:)*rounded(?:-[trblse]{1,2})?-(?:2xl|3xl|4xl|full|\[[^\]]+\])(?![\w-])/g,
     // A status dot (size-2, size-2.5 ...) is round by definition.
     allowIf: /\bsize-[0-3](?:\.5)?(?![\w.-])/,

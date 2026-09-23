@@ -26,8 +26,9 @@ export function Stat({ value, label, delta, size = 'primary', className }: StatP
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            'text-fg tnum tracking-numeral font-bold',
-            size === 'primary' ? 'text-3xl' : 'text-2xl',
+            'text-fg tnum tracking-numeral',
+            // 700 only here, on numerals of 28px and up (DESIGN.md 5).
+            size === 'primary' ? 'text-3xl font-bold' : 'text-2xl font-bold',
           )}
         >
           {value}

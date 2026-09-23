@@ -33,7 +33,7 @@ export function SegmentBar({ filled, total, tone = 'success', label, className }
         <span
           key={index}
           className={cn(
-            'min-w-0 flex-1 rounded-full',
+            'min-w-0 flex-1 rounded-xs',
             index < filled ? (tone === 'warn' ? 'bg-warn' : 'bg-success') : 'bg-border',
           )}
         />

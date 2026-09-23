@@ -123,13 +123,14 @@ const ALSO_SOLVED = [
  * edit is picked up without touching this file.
  */
 const SCALE = {
-  fontSize: [11, 12, 13, 14, 16, 18, 22, 28],
-  fontWeight: [400, 500, 600],
-  radius: [0, 2, 3, 5, 8],
+  fontSize: [11, 12, 13, 14, 16, 18, 22, 28, 36],
+  // 700 is allowed on stat numerals of 28px and up (DESIGN.md 5, version 2).
+  fontWeight: [400, 500, 600, 700],
+  radius: [0, 4, 6, 8, 12, 16],
   durationMs: [0, 75],
   ...(SCALE_FILE ? JSON.parse(fs.readFileSync(path.resolve(SCALE_FILE), 'utf8')) : {}),
 };
-const TYPE_TOKENS = ['2xs', 'xs', 'sm', 'base', 'md', 'lg', 'xl', '2xl'];
+const TYPE_TOKENS = ['2xs', 'xs', 'sm', 'base', 'md', 'lg', 'xl', '2xl', '3xl'];
 const RADIUS_TOKENS = ['xs', 'sm', 'md', 'lg', 'xl'];
 const SEMANTIC_COLORS = [
   'bg',
@@ -149,6 +150,8 @@ const SEMANTIC_COLORS = [
   'accent-hover',
   'accent-fg',
   'accent-subtle',
+  'surface-selected',
+  'code-keyword',
   'success',
   'success-fg',
   'success-subtle',
@@ -162,10 +165,11 @@ const SEMANTIC_COLORS = [
   'focus',
 ];
 const RAMP_COLORS = [
-  ...[0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 850, 900, 950, 1000].map(
+  ...[0, 50, 100, 150, 200, 300, 400, 500, 600, 700, 750, 800, 850, 875, 900, 950, 1000].map(
     (n) => `neutral-${n}`,
   ),
-  ...[100, 200, 300, 400, 500, 600, 700, 800, 900].map((n) => `accent-${n}`),
+  ...[100, 200, 300, 400, 500, 550, 600, 700, 800, 900, 950].map((n) => `accent-${n}`),
+  ...[300, 700].map((n) => `keyword-${n}`),
   ...[100, 300, 500, 700, 900].flatMap((n) => [`success-${n}`, `warn-${n}`]),
   ...[100, 300, 500, 600, 700, 900].map((n) => `danger-${n}`),
 ];

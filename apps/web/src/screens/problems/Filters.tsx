@@ -115,7 +115,7 @@ function TopicBar({ solved, total }: { solved: number; total: number }) {
   const percent = Math.round((solved / total) * 100);
   return (
     <span aria-hidden className="mt-1 ml-5.5 block">
-      <span className="bg-border block h-0.5 overflow-hidden rounded-full">
+      <span className="bg-border block h-0.5 overflow-hidden rounded-xs">
         <span
           className="bg-success block h-full"
           style={{ width: `${String(percent)}%` }}

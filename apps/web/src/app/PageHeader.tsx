@@ -46,7 +46,7 @@ export function GlobalProgress() {
   return (
     <div className="flex items-center gap-2" data-testid="global-progress">
       <span
-        className="bg-border block h-1.5 w-20 overflow-hidden rounded-full"
+        className="bg-border block h-1.5 w-20 overflow-hidden rounded-xs"
         role="progressbar"
         aria-label="Problems solved"
         aria-valuenow={solved}

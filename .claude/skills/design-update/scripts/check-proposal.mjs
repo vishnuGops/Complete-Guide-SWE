@@ -181,6 +181,8 @@ const needAlias = [
   'danger-subtle',
   'danger-solid',
   'focus',
+  'surface-selected',
+  'code-keyword',
 ];
 for (const [label, block] of [
   ['light', next.light],
@@ -209,12 +211,17 @@ for (const name of [
   '--text-lg',
   '--text-xl',
   '--text-2xl',
+  '--text-3xl',
+  '--radius-xs',
   '--radius-sm',
   '--radius-md',
   '--radius-lg',
+  '--radius-xl',
+  '--shadow-card',
   '--shadow-overlay',
   '--font-sans',
   '--font-mono',
+  '--font-serif',
   '--spacing',
 ]) {
   check('shape', `${name} is still defined`, new RegExp(`${name}:`).test(proposal));
@@ -232,6 +239,7 @@ const TEXT_TOKENS = [
   'success-fg',
   'warn-fg',
   'danger-fg',
+  'code-keyword',
 ];
 const PAIRS = [
   ...SURFACES.flatMap((s) => TEXT_TOKENS.map((t) => [t, s, 4.5])),
@@ -244,6 +252,18 @@ const PAIRS = [
   ['fg', 'success-subtle', 4.5],
   ['fg', 'danger-subtle', 4.5],
   ['border-strong', 'surface', 1.5],
+  // Version 2 (P9-6): the card edge, the selected step, the Callout.
+  ['border', 'surface', 1.2],
+  ['surface', 'bg', 1.05],
+  ['fg', 'surface-selected', 4.5],
+  ['fg-muted', 'surface-selected', 4.5],
+  ['success', 'surface-selected', 3],
+  ['warn', 'surface-selected', 3],
+  ['danger', 'surface-selected', 3],
+  ['surface-selected', 'surface', 1.2],
+  ['fg-subtle', 'bg', 3],
+  ['fg', 'accent-subtle', 4.5],
+  ['fg-muted', 'accent-subtle', 4.5],
 ];
 
 function colourOf(theme, token) {

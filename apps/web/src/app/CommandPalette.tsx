@@ -230,9 +230,6 @@ export function CommandPalette({
           className={[
             'bg-surface-raised border-border shadow-overlay fixed top-24 left-1/2 z-50',
             'w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-lg border',
-            // The field below draws no ring of its own, because it is the whole
-            // dialog: the dialog shows focus for it (DESIGN.md 9).
-            'has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2',
           ].join(' ')}
         >
           {/* Radix requires a title; this dialog's visible name is on the field. */}
@@ -263,7 +260,7 @@ export function CommandPalette({
                 choose(at);
               }
             }}
-            className="border-border text-fg placeholder:text-fg-subtle w-full border-b bg-transparent px-4 py-3 text-sm outline-none"
+            className="focus-ring-inset border-border text-fg placeholder:text-fg-subtle w-full border-b bg-transparent px-4 py-3 text-sm"
           />
 
           {notice !== null && (

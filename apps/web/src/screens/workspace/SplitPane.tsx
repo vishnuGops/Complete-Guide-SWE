@@ -118,14 +118,14 @@ export function SplitPane({
           // The 12px gutter between two cards is the handle (P9-6): wide
           // enough to grab, empty until it is hovered or focused, when a 2px
           // accent line down its middle says "this moves".
-          'group focus-ring-inset relative shrink-0 rounded-full',
+          'group focus-ring-inset relative shrink-0 rounded-xs',
           direction === 'row' ? 'w-3 cursor-col-resize' : 'h-3 cursor-row-resize',
         )}
       >
         <span
           aria-hidden
           className={cn(
-            'group-hover:bg-accent group-focus-visible:bg-accent absolute rounded-full bg-transparent transition-colors duration-75',
+            'group-hover:bg-accent group-focus-visible:bg-accent absolute rounded-xs bg-transparent transition-colors duration-75',
             direction === 'row'
               ? 'inset-y-2 left-1/2 w-0.5 -translate-x-1/2'
               : 'inset-x-2 top-1/2 h-0.5 -translate-y-1/2',
