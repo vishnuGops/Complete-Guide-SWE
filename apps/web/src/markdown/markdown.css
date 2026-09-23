@@ -21,6 +21,17 @@
     overflow-wrap: break-word;
   }
 
+  /*
+   * The coach's voice (P9-6, docs/DESIGN.md 5). Its replies are set in
+   * Newsreader at 16px, so advice reads as advice beside the interface's Inter.
+   * Code inside a reply stays mono: `code` and `pre` set their own family.
+   */
+  .md-prose.md-coach {
+    font-family: var(--font-serif);
+    font-size: var(--text-md);
+    line-height: var(--text-md--line-height);
+  }
+
   .md-prose > :first-child {
     margin-top: 0;
   }
@@ -191,15 +202,14 @@
 }
 
 /*
- * Syntax highlighting, in one accent (docs/DESIGN.md section 3).
+ * Syntax highlighting, in one hue (docs/DESIGN.md 8).
  *
- * Every published highlight.js theme is five or six hues, and three of ours are
- * spoken for: green, amber and red mean accepted, over-budget and failed
- * everywhere else in this app, and a keyword painted in "success green" inside
- * an editorial teaches the eye the wrong thing. So the theme is the one the
- * design system already has - structure in the accent, commentary receding,
- * everything else the body colour - which is enough to read code by and is the
- * only version of this that stays honest in both themes.
+ * Every published highlight.js theme is five or six hues, and four of ours are
+ * spoken for: green, amber and red mean accepted, over-budget and failed, and
+ * blue is the accent - "act here". So keywords take `code-keyword`, a violet
+ * the editor's own theme uses too (`editor/theme.ts`), commentary recedes, and
+ * everything else is the body colour. A code block in an editorial and the same
+ * code in the editor look like the same code.
  */
 @layer components {
   .md-prose .hljs-keyword,
@@ -207,7 +217,7 @@
   .md-prose .hljs-literal,
   .md-prose .hljs-type,
   .md-prose .hljs-meta {
-    color: var(--color-accent-fg);
+    color: var(--color-code-keyword);
     font-weight: 500;
   }
 

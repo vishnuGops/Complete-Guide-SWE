@@ -7,11 +7,15 @@
  * @font-face carries a unicode-range, so a browser downloading English text
  * fetches the latin file and nothing else. Italics are imported for Inter
  * because problem statements are markdown and use emphasis; code is never
- * italic, so JetBrains Mono ships upright only.
+ * italic, so JetBrains Mono ships upright only. Newsreader is the third family
+ * (P9-6), and the coach writes markdown too, so it gets its italic.
  */
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/inter/wght-italic.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
+/* The coach's voice (P9-6): Newsreader, upright and italic, for its words only. */
+@import '@fontsource-variable/newsreader/wght.css';
+@import '@fontsource-variable/newsreader/wght-italic.css';
 @import 'tailwindcss';
 @import './styles/tokens.css';
 @import './styles/base.css';

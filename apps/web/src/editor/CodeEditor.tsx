@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'reac
 import Editor, { type OnMount } from '@monaco-editor/react';
 import type { CompileError, EditorPrefs, Language } from '@devpromax/shared';
 import { MONACO_LANGUAGE } from './monaco.js';
+import { editorTheme, editorThemeName, readPalette } from './theme.js';
 
 /**
  * The code editor (ROADMAP P4-1, extended by P4-6 and P4-7).
@@ -21,6 +22,9 @@ import { MONACO_LANGUAGE } from './monaco.js';
  *   - **`detectIndentation: false`.** Monaco otherwise infers the indent from
  *     the file and silently ignores `tabSize`, which makes the setting look
  *     broken on every starter that already has an indented body.
+ *   - **The theme.** Built from the tokens (`theme.ts`, P9-6) rather than
+ *     Monaco's stock `vs` / `vs-dark`, and redefined whenever the app's theme
+ *     changes, because it is read from the page and the page has just changed.
  *   - **Vim mode.** Imported only when the preference is on, because it is a
  *     second keymap engine and the people who do not use it should not download
  *     it. It brings its own status line, which is not decoration: without the
@@ -77,6 +81,11 @@ export interface CodeEditorProps {
 
 type MonacoApi = Parameters<OnMount>[1];
 type MonacoEditor = Parameters<OnMount>[0];
+
+/** Defines (or redefines) this theme from the tokens the page resolves now. */
+function defineEditorTheme(monaco: MonacoApi, theme: 'light' | 'dark'): void {
+  monaco.editor.defineTheme(editorThemeName(theme), editorTheme(theme, readPalette()));
+}
 
 const MARKER_OWNER = 'devpromax-judge';
 
@@ -158,6 +167,18 @@ export default function CodeEditor({
     };
   }, [prefs.vimKeybindings, mounted]);
 
+  /*
+   * A theme switch. The page's tokens have already moved by the time this runs
+   * (the attribute is set before the render that got here), so the palette read
+   * now is the new theme's. Monaco's theme is global, which is what we want.
+   */
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (!monaco) return;
+    defineEditorTheme(monaco, theme);
+    monaco.editor.setTheme(editorThemeName(theme));
+  }, [theme, mounted]);
+
   useEffect(() => {
     const editor = editorRef.current;
     const monaco = monacoRef.current;
@@ -191,7 +212,10 @@ export default function CodeEditor({
           path={path}
           language={MONACO_LANGUAGE[language]}
           height="100%"
-          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+          theme={editorThemeName(theme)}
+          beforeMount={(monaco) => {
+            defineEditorTheme(monaco, theme);
+          }}
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
@@ -229,6 +253,11 @@ export default function CodeEditor({
             scrollBeyondLastLine: false,
             automaticLayout: true,
             renderWhitespace: 'selection',
+            // No overview ruler: it painted a cursor dash at the card's top
+            // right, and the minimap it summarises is off anyway (P9-6).
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
             // The app owns Ctrl+Enter and friends; Monaco's own command palette
             // shortcut (F1) stays, because nothing here competes with it.
             padding: { top: 8, bottom: 8 },

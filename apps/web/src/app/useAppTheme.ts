@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { Theme } from '@devpromax/shared';
 import { useSettings, useUpdateSettings } from '../api/hooks.js';
 import { applyTheme, cacheTheme, cachedTheme } from '../theme.js';
@@ -27,7 +27,13 @@ export function useAppTheme(): {
 
   const theme = settings?.theme ?? cachedTheme();
 
-  useEffect(() => {
+  /*
+   * A layout effect, so the attribute is on the document before any passive
+   * effect runs (P9-6): the editor builds its theme from the page's tokens in
+   * its own effect, and a child's passive effect runs before this parent's -
+   * it read the previous theme's colours when the stored theme arrived.
+   */
+  useLayoutEffect(() => {
     applyTheme(theme);
     cacheTheme(theme);
   }, [theme]);

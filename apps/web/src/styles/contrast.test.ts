@@ -129,6 +129,8 @@ const TEXT_TOKENS = [
   'success-fg',
   'warn-fg',
   'danger-fg',
+  // Keywords in the editor and in highlighted code blocks (P9-6).
+  'code-keyword',
 ] as const;
 
 describe.each(Object.keys(THEMES) as (keyof typeof THEMES)[])('%s theme', (theme) => {
@@ -182,9 +184,60 @@ describe.each(Object.keys(THEMES) as (keyof typeof THEMES)[])('%s theme', (theme
     },
   );
 
-  it('separates panels from the page', () => {
-    // Not a WCAG rule - a layout one. If a panel edge is invisible, the panel
-    // is not a panel, and 1.5:1 is about where an edge stops reading.
+  it('draws the edge of a control', () => {
+    // Not a WCAG rule - a layout one. An input or a secondary button whose
+    // edge is invisible is a label floating in space; 1.5:1 is about where an
+    // edge stops reading.
     expect(contrast(colour('border-strong'), colour('surface'))).toBeGreaterThanOrEqual(1.5);
+  });
+
+  it('keeps a card a card (P9-6)', () => {
+    // docs/DESIGN.md 7: a card's fill barely differs from the canvas, so the
+    // hairline is what draws its edge, and it has to hold 1.2:1 against the
+    // card in both themes. In dark the card is also a tonal step up from the
+    // canvas, since a shadow on near-black is invisible.
+    expect(
+      Number(contrast(colour('border'), colour('surface')).toFixed(2)),
+      `--border on --surface in ${theme}`,
+    ).toBeGreaterThanOrEqual(1.2);
+    expect(
+      Number(contrast(colour('surface'), colour('bg')).toFixed(2)),
+      `--surface on --bg in ${theme}`,
+    ).toBeGreaterThanOrEqual(1.05);
+  });
+
+  it.each(['fg', 'fg-muted'] as const)('reads %s on a selected row (P9-6)', (token) => {
+    // The selected option, row or test. Only these two text tokens are used
+    // on it: `fg-subtle` falls under 4.5:1 there, which axe caught in the
+    // command palette.
+    expect(
+      Number(contrast(colour(token), colour('surface-selected')).toFixed(2)),
+      `--${token} on --surface-selected in ${theme}`,
+    ).toBeGreaterThanOrEqual(TEXT);
+  });
+
+  it.each(['success', 'warn', 'danger'] as const)(
+    'shows the %s dot on a selected row (P9-6)',
+    (status) => {
+      // The verdict dot on the test being read is the one the user is looking at.
+      expect(contrast(colour(status), colour('surface-selected'))).toBeGreaterThanOrEqual(NON_TEXT);
+    },
+  );
+
+  it('shows a selected row against its card (P9-6)', () => {
+    // Paired with an accent bar, so this is a supporting signal, not the only
+    // one - but a tint nobody can see was the r1 finding that started it.
+    expect(contrast(colour('surface-selected'), colour('surface'))).toBeGreaterThanOrEqual(1.2);
+  });
+
+  it('marks Not started with a ring that reads (P9-6)', () => {
+    // The empty ring is the only visible status for most of a fresh catalogue:
+    // it is drawn in `fg-subtle`, and holds the non-text floor on the canvas.
+    expect(contrast(colour('fg-subtle'), colour('bg'))).toBeGreaterThanOrEqual(NON_TEXT);
+  });
+
+  it('puts legible text in a Callout (P9-6)', () => {
+    expect(contrast(colour('fg'), colour('accent-subtle'))).toBeGreaterThanOrEqual(TEXT);
+    expect(contrast(colour('fg-muted'), colour('accent-subtle'))).toBeGreaterThanOrEqual(TEXT);
   });
 });
