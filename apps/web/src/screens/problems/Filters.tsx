@@ -41,7 +41,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * One filter row.
  *
- * A native checkbox, tinted with `accent-color`. Radix has no checkbox we are
+ * A native checkbox, drawn from the tokens in base.css (P9-7). Radix has no checkbox we are
  * using and this needs none: the native control is keyboard-operable, announced
  * correctly, and in a list of twenty-odd rows it is the one that does not cost a
  * component per row.
@@ -66,7 +66,7 @@ function Check({
           type="checkbox"
           checked={checked}
           onChange={onChange}
-          className="focus-ring accent-accent size-3.5 shrink-0 cursor-pointer"
+          className="focus-ring size-3.5 shrink-0 cursor-pointer"
         />
         <label
           htmlFor={id}
@@ -273,7 +273,7 @@ function LanguageChoice({
               onChange={() => {
                 onChange(option.value);
               }}
-              className="focus-ring accent-accent size-3.5 shrink-0 cursor-pointer"
+              className="focus-ring size-3.5 shrink-0 cursor-pointer"
             />
             <label
               htmlFor={id}

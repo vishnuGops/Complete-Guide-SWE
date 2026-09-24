@@ -65,7 +65,7 @@ export function CommandPalette({
   const [query, setQuery] = useState('');
   const [at, setAt] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetched only while it is open: the palette is a keystroke away from every
@@ -269,51 +269,105 @@ export function CommandPalette({
             </p>
           )}
 
-          <ul
+          {/*
+            Two groups, each under its label (P9-7): what you can do, then
+            where you can go. One unlabelled run of rows made "Settings" and
+            the first problem look like neighbours in the same list. 384px
+            tall rather than 320, so the labels do not push the problems out
+            of the first screen.
+          */}
+          <div
             ref={listRef}
             id="palette-results"
             role="listbox"
             aria-label="Results"
-            className="max-h-80 overflow-y-auto py-1"
+            className="max-h-96 overflow-y-auto pb-1"
           >
             {rows === 0 && (
-              <li className="text-fg-muted px-4 py-3 text-sm">
+              <p className="text-fg-muted px-4 py-3 text-sm">
                 Nothing matches. Titles, topics, patterns and slugs are all searched.
-              </li>
+              </p>
             )}
 
-            {shownActions.map((action, index) => (
-              <Row
-                key={action.id}
-                index={index}
-                active={index === at}
-                onHover={setAt}
-                onChoose={choose}
-                label={action.label}
-                trailing={action.hint}
-                serif={action.coach === true}
-              />
-            ))}
+            {shownActions.length > 0 && (
+              <Group id="palette-group-commands" label="Commands">
+                {shownActions.map((action, index) => (
+                  <Row
+                    key={action.id}
+                    index={index}
+                    active={index === at}
+                    onHover={setAt}
+                    onChoose={choose}
+                    label={action.label}
+                    trailing={
+                      <span
+                        className={cn(
+                          action.coach === true ? 'font-serif text-sm' : 'text-xs',
+                          index === at ? 'text-fg-muted' : 'text-fg-subtle',
+                        )}
+                      >
+                        {action.hint}
+                      </span>
+                    }
+                  />
+                ))}
+              </Group>
+            )}
 
-            {problems.map((problem, index) => {
-              const row = shownActions.length + index;
-              return (
-                <Row
-                  key={problem.slug}
-                  index={row}
-                  active={row === at}
-                  onHover={setAt}
-                  onChoose={choose}
-                  leading={<StatusMark status={problem.status} />}
-                  label={problem.title}
-                  trailing={`${TOPIC_LABEL[problem.topic]} · ${problem.tier}`}
-                />
-              );
-            })}
-          </ul>
+            {problems.length > 0 && (
+              <Group id="palette-group-problems" label="Problems">
+                {problems.map((problem, index) => {
+                  const row = shownActions.length + index;
+                  return (
+                    <Row
+                      key={problem.slug}
+                      index={row}
+                      active={row === at}
+                      onHover={setAt}
+                      onChoose={choose}
+                      /*
+                        A column of fixed width, so every title starts at the
+                        same x whether the word beside its glyph is "Solved",
+                        "In progress" or nothing at all (P9-7).
+                      */
+                      leading={
+                        <span className="w-24 shrink-0">
+                          <StatusMark status={problem.status} />
+                        </span>
+                      }
+                      label={problem.title}
+                      trailing={
+                        <span
+                          className={cn(
+                            'flex text-xs',
+                            row === at ? 'text-fg-muted' : 'text-fg-subtle',
+                          )}
+                        >
+                          <span className="w-32 truncate">{TOPIC_LABEL[problem.topic]}</span>
+                          <span className="w-14 text-right">{problem.tier}</span>
+                        </span>
+                      }
+                    />
+                  );
+                })}
+              </Group>
+            )}
+          </div>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>
+  );
+}
+
+/** A labelled run of options: `group` is the one child role a listbox allows besides `option`. */
+function Group({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return (
+    <div role="group" aria-labelledby={id}>
+      <div id={id} role="presentation" className="text-fg-muted px-4 pt-3 pb-1 text-xs font-medium">
+        {label}
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -323,7 +377,6 @@ function Row({
   label,
   leading,
   trailing,
-  serif = false,
   onHover,
   onChoose,
 }: {
@@ -331,8 +384,7 @@ function Row({
   active: boolean;
   label: string;
   leading?: ReactNode;
-  trailing: string;
-  serif?: boolean;
+  trailing: ReactNode;
   onHover: (index: number) => void;
   onChoose: (index: number) => void;
 }) {
@@ -341,10 +393,12 @@ function Row({
       Mouse-only, and the lint rule is right to ask. The keyboard path through
       this list is the combo box pattern: focus stays in the text field, the
       arrows move `aria-activedescendant`, and Enter chooses. A key handler on a
-      row that can never hold focus would never fire.
+      row that can never hold focus would never fire - and a row that could
+      hold focus would take it from the field on click (the rule asking for
+      focusable options is the other pattern, roving tabindex).
     */
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-    <li
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
+    <div
       id={`palette-row-${String(index)}`}
       role="option"
       aria-selected={active}
@@ -366,16 +420,8 @@ function Row({
       )}
     >
       {leading}
-      <span className="truncate">{label}</span>
-      <span
-        className={cn(
-          'ml-auto shrink-0',
-          serif ? 'font-serif text-sm' : 'text-xs',
-          active ? 'text-fg-muted' : 'text-fg-subtle',
-        )}
-      >
-        {trailing}
-      </span>
-    </li>
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="ml-auto shrink-0">{trailing}</span>
+    </div>
   );
 }

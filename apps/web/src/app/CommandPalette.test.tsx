@@ -108,6 +108,25 @@ describe('the command palette', () => {
     expect(results.queryByText('Pair Sum Index')).not.toBeInTheDocument();
   });
 
+  it('groups its rows under Commands and Problems, and drops a group with nothing in it', async () => {
+    serve();
+    open();
+    const user = await openPalette();
+
+    const results = within(await screen.findByRole('listbox', { name: 'Results' }));
+    const commands = results.getByRole('group', { name: 'Commands' });
+    const problems = results.getByRole('group', { name: 'Problems' });
+    expect(within(commands).getByRole('option', { name: /Settings/ })).toBeInTheDocument();
+    expect(
+      await within(problems).findByRole('option', { name: /Pair Sum Index/ }),
+    ).toBeInTheDocument();
+
+    // No command says "graph", so only the problems are left - under their label.
+    await user.type(screen.getByRole('combobox'), 'graph');
+    expect(results.queryByRole('group', { name: 'Commands' })).not.toBeInTheDocument();
+    expect(results.getByRole('group', { name: 'Problems' })).toBeInTheDocument();
+  });
+
   it('opens the highlighted problem on Enter', async () => {
     serve();
     open();

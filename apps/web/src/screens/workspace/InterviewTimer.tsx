@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Timer } from 'lucide-react';
-import { Button, cn } from '../../ui/index.js';
+import { Button, Tooltip, cn } from '../../ui/index.js';
 
 /**
  * Interview mode (ROADMAP P7-6).
@@ -128,16 +128,24 @@ export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
   }
 
   if (!choosing) {
+    /*
+     * Its icon alone below 1280px (P9-7), so the toolbar has room for AI Help's
+     * key chips at 1024 - the shortcut is on the pill because it is the one
+     * nobody guesses, while this button is used once a sitting. The word stays
+     * as the accessible name and in the tooltip (DESIGN.md 3).
+     */
     return (
-      <Button
-        variant="secondary"
-        onClick={() => {
-          setChoosing(true);
-        }}
-      >
-        <Timer aria-hidden size={14} strokeWidth={1.5} />
-        Interview mode
-      </Button>
+      <Tooltip content="Interview mode">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setChoosing(true);
+          }}
+        >
+          <Timer aria-hidden size={14} strokeWidth={1.5} />
+          <span className="max-[1279px]:sr-only">Interview mode</span>
+        </Button>
+      </Tooltip>
     );
   }
 

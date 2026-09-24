@@ -241,7 +241,7 @@ export function Toggle({
         id={id}
         type="checkbox"
         checked={checked}
-        className="focus-ring accent-accent size-4 cursor-pointer"
+        className="focus-ring size-4 cursor-pointer"
         onChange={(event) => {
           onChange(event.target.checked);
         }}

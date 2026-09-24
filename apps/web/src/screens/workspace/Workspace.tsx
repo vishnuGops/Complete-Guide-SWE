@@ -1120,7 +1120,9 @@ export function Workspace() {
             AI Help is the thing you reach for when the loop is not working. It
             is also the only control here that spends money, which is a second
             reason not to make it the most clickable thing on the bar (D13). Its
-            keys are on the pill itself (DESIGN.md 9), hidden from its name.
+            keys are on the pill itself (DESIGN.md 9), hidden from its name - at
+            every width, since P9-7 made room at 1024 by shortening Interview
+            mode to its icon instead.
           */}
           <Tooltip
             content={`Ask the coach about the code you have written · about ${costEstimate}`}
@@ -1135,7 +1137,7 @@ export function Workspace() {
             >
               <CoachMark />
               AI Help
-              <Keys keys={SHORTCUTS.aiHelp.keys} className="max-[1279px]:hidden" />
+              <Keys keys={SHORTCUTS.aiHelp.keys} />
             </Button>
           </Tooltip>
         </div>

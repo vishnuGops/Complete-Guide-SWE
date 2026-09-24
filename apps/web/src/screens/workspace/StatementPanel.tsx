@@ -656,6 +656,18 @@ export interface StatementPanelProps {
   coach: ReactNode;
 }
 
+/** One item of the meta line, its dot in the 16px gap before it (see the caller). */
+function MetaItem({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <span className={cn('relative pl-4', className)}>
+      <span aria-hidden className="absolute left-0 w-4 text-center">
+        ·
+      </span>
+      {children}
+    </span>
+  );
+}
+
 function StatementPanelBody({
   problem,
   tab,
@@ -681,25 +693,21 @@ function StatementPanelBody({
       <div className="shrink-0 px-5 pt-4 pb-1">
         <h1 className="tracking-title text-lg font-semibold">{summary.title}</h1>
         {/*
-          Each item carries the dot before it, so a line that wraps at 1024px
-          starts with a word rather than ends with a stray "·" (P9-6).
+          The separators never start or end a line (P9-7). Each item carries its
+          dot in the gap to its left, and the line is pulled left by one gap
+          inside a clipping box - so whichever item begins a line, the first on
+          the page or the first after a wrap at 1024px, has its dot clipped away.
+          Carrying the dot inside the item (P9-6) only moved the stray "·" from
+          the end of one line to the start of the next.
         */}
-        <p className="text-fg-subtle mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
-          <span>{summary.tier}</span>
-          <span className="tnum">
-            <span aria-hidden>· </span>rating {summary.rating}
-          </span>
-          <span>
-            <span aria-hidden>· </span>
-            {TOPIC_LABEL[summary.topic]}
-          </span>
-          {summary.patterns.length > 0 && (
-            <span>
-              <span aria-hidden>· </span>
-              {summary.patterns.join(', ')}
-            </span>
-          )}
-        </p>
+        <div className="mt-0.5 overflow-hidden">
+          <p className="text-fg-subtle -ml-4 flex flex-wrap text-xs">
+            <MetaItem>{summary.tier}</MetaItem>
+            <MetaItem className="tnum">rating {summary.rating}</MetaItem>
+            <MetaItem>{TOPIC_LABEL[summary.topic]}</MetaItem>
+            {summary.patterns.length > 0 && <MetaItem>{summary.patterns.join(', ')}</MetaItem>}
+          </p>
+        </div>
       </div>
 
       {/*

@@ -563,6 +563,21 @@ describe('interview mode (P7-6)', () => {
     return user;
   }
 
+  it('keeps its name when it narrows to an icon, so AI Help can keep its keys (P9-7)', async () => {
+    serve();
+    open();
+
+    // The word is the accessible name at every width; below 1280px CSS makes it sr-only.
+    const button = await screen.findByRole('button', { name: 'Interview mode' });
+    expect(button.querySelector('svg')).not.toBeNull();
+
+    // The chips are on the pill at every width now, not hidden below 1280px.
+    const aiHelp = screen.getByRole('button', { name: /AI Help/ });
+    const keys = [...aiHelp.querySelectorAll('kbd')];
+    expect(keys.map((key) => key.textContent)).toEqual(['Ctrl', 'Shift', 'H']);
+    expect(keys.every((key) => !key.closest('[class*="hidden"]'))).toBe(true);
+  });
+
   it('takes the hints and the editorial off the screen while it runs', async () => {
     serve();
     open();
