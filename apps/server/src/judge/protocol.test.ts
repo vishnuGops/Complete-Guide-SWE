@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isFatal, parseResultLines } from './protocol.js';
+import { firstNonFinite, isFatal, parseResultLines, parseResults } from './protocol.js';
 
 describe('parseResultLines', () => {
   it('reads one record per line', () => {
@@ -74,7 +74,66 @@ describe('parseResultLines', () => {
     expect(record).toMatchObject({ mutatedArgs: [{ index: 0, value: [3, 1, 2] }] });
   });
 
-  it('rejects a record carrying a non-finite number, which JSON cannot express', () => {
-    expect(parseResultLines('{"index":0,"status":"ok","returned":1e999,"timeMs":1}')).toEqual([]);
+  it('turns a non-finite returned number into an error for that test, not a lost record', () => {
+    // What a Python `10**400` becomes: JSON.parse overflows it to Infinity. A
+    // dropped record looked like a test the harness never reached (P2-19).
+    const [record] = parseResultLines('{"index":0,"status":"ok","returned":1e999,"timeMs":1}');
+    expect(record).toMatchObject({
+      index: 0,
+      status: 'error',
+      timeMs: 1,
+      error: { type: 'UnreadableResult' },
+    });
+    expect(record && !isFatal(record) ? record.error?.message : '').toMatch(/too large/);
+  });
+
+  it('does the same for a non-finite number in a mutated argument', () => {
+    const [record] = parseResultLines(
+      '{"index":2,"status":"ok","mutatedArgs":[{"index":1,"value":[1,[2,-1e999]]}]}',
+    );
+    expect(record).toMatchObject({
+      index: 2,
+      status: 'error',
+      error: { type: 'UnreadableResult' },
+    });
+    expect(record && !isFatal(record) ? record.error?.message : '').toMatch(/argument 1/);
+  });
+
+  it('reports a record that names a test but breaks the schema, saying what broke', () => {
+    const [record] = parseResultLines('{"index":3,"status":"finished","timeMs":2}');
+    expect(record).toMatchObject({
+      index: 3,
+      status: 'error',
+      error: { type: 'UnreadableResult' },
+    });
+    expect(record && !isFatal(record) ? record.error?.message : '').toMatch(/status/);
+  });
+});
+
+describe('parseResults', () => {
+  it('notices the ready event, and does not count it as a record', () => {
+    const parsed = parseResults('{"event":"ready"}\n{"index":0,"status":"ok"}\n');
+    expect(parsed.ready).toBe(true);
+    expect(parsed.records).toHaveLength(1);
+  });
+
+  it('is not ready when the harness never got that far', () => {
+    expect(parseResults('').ready).toBe(false);
+    expect(parseResults('{"event":"fatal","kind":"load","message":"x"}').ready).toBe(false);
+  });
+});
+
+describe('firstNonFinite', () => {
+  it('finds a non-finite number at any depth, in lists and objects', () => {
+    expect(firstNonFinite(1)).toBe(false);
+    expect(firstNonFinite([1, [2, { a: [3, 'x', null, true] }]])).toBe(false);
+    expect(firstNonFinite([1, [2, { a: [3, Infinity] }]])).toBe(true);
+    expect(firstNonFinite({ deep: -Infinity })).toBe(true);
+  });
+
+  it('walks a deeply nested value without recursing', () => {
+    let value: unknown = 1;
+    for (let i = 0; i < 100_000; i += 1) value = [value];
+    expect(firstNonFinite(value)).toBe(false);
   });
 });

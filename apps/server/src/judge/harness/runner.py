@@ -11,6 +11,9 @@ Contract with the judge (apps/server/src/judge):
   makes the timeout isolation fallback possible.
 * Nothing of consequence goes to stdout. The user's own `print` is captured per
   test and reported as data, so it can never corrupt the result stream.
+* `{"event": "ready"}` is written once the solution has loaded and its entry
+  point was found, before the first test (ROADMAP P2-17). Its absence is how
+  the judge knows a failure happened while loading rather than in a test.
 * Exit codes: 0 every test attempted, 2 the solution could not be loaded,
   3 a per-test timeout fired and the remaining tests were abandoned.
 
@@ -116,13 +119,22 @@ def from_list_node(node):
 
 
 def to_tree_node(values):
-    if not values:
+    """Level order in, nodes out; the same reading as DevProMaxConvert.toTreeNode.
+
+    `[null]` is the empty tree, as it is in Java (ROADMAP P2-19). It used to be
+    a root holding None, so the same test handed the two languages different
+    trees. The queue is read with a cursor rather than `pop(0)`, which moved
+    every remaining element on each pop - quadratic in the size of the tree.
+    """
+    if not values or values[0] is None:
         return None
     root = TreeNode(values[0])
     queue = [root]
+    at = 0
     i = 1
-    while queue and i < len(values):
-        node = queue.pop(0)
+    while at < len(queue) and i < len(values):
+        node = queue[at]
+        at += 1
         if i < len(values):
             value = values[i]
             i += 1
@@ -143,8 +155,11 @@ def from_tree_node(root):
         return []
     out = []
     queue = [root]
-    while queue:
-        node = queue.pop(0)
+    # A cursor, not `pop(0)`, for the reason `to_tree_node` gives.
+    at = 0
+    while at < len(queue):
+        node = queue[at]
+        at += 1
         if node is None:
             out.append(None)
             continue
@@ -366,16 +381,21 @@ class Results:
     after this one has exited, so the operating system's own buffer is already
     enough; on Windows an fsync per record costs milliseconds each and buys
     nothing (P2-13).
+
+    Binary, encoded here: a str can hold a lone surrogate - `chr(0xD800)`, or
+    half of an emoji sliced in two - which UTF-8 cannot encode, and the text
+    file raised on it (ROADMAP P2-19). Such a record is written with JSON's
+    ASCII escapes instead, which carry the surrogate through intact.
     """
 
     def __init__(self, path):
-        self._file = open(path, "w", encoding="utf-8", newline="\n")
+        self._file = open(path, "wb")
         self._lock = threading.Lock()
 
     def write(self, record):
-        line = self._encode(record)
+        data = self._encode(record)
         with self._lock:
-            self._file.write(line + "\n")
+            self._file.write(data)
             self._file.flush()
 
     @property
@@ -384,19 +404,23 @@ class Results:
 
     def write_locked(self, record):
         """Write without taking the lock; the caller already holds it."""
-        line = self._encode(record)
-        self._file.write(line + "\n")
+        data = self._encode(record)
+        self._file.write(data)
         self._file.flush()
 
     @staticmethod
     def _encode(record):
-        line = json.dumps(record, ensure_ascii=False, allow_nan=False)
-        if len(line) > RESULT_CAP:
+        text = json.dumps(record, ensure_ascii=False, allow_nan=False)
+        try:
+            data = text.encode("utf-8")
+        except UnicodeEncodeError:
+            data = json.dumps(record, ensure_ascii=True, allow_nan=False).encode("ascii")
+        if len(data) > RESULT_CAP:
             raise ResultTooLarge(
                 "the result is %.1f MB, past the %d MB the judge will carry"
-                % (len(line) / 1024.0 / 1024.0, RESULT_CAP // (1024 * 1024))
+                % (len(data) / 1024.0 / 1024.0, RESULT_CAP // (1024 * 1024))
             )
-        return line
+        return data + b"\n"
 
 
 class CappingWriter:
@@ -474,13 +498,23 @@ def load_solution(path):
 
 
 def syntax_error_record(err):
-    return {
+    """The judge's CE for a Python solution (ROADMAP P2-18).
+
+    There is no separate syntax check before a run any more: importing the
+    solution is the check, and this record is its diagnostic. Positions are
+    sent only when they are real 1-based numbers, because the judge's schema is
+    strict about them and a record it cannot read is a CE it cannot show.
+    """
+    record = {
         "event": "fatal",
         "kind": "compile",
         "message": err.msg or "syntax error",
-        "line": err.lineno,
-        "column": err.offset,
     }
+    if isinstance(err.lineno, int) and err.lineno > 0:
+        record["line"] = err.lineno
+    if isinstance(err.offset, int) and err.offset > 0:
+        record["column"] = err.offset
+    return record
 
 
 # ---------------------------------------------------------------------------
@@ -720,6 +754,7 @@ def main():
         )
         sys.exit(EXIT_LOAD_FAILED)
 
+    results.write({"event": "ready"})
     run_tests(module, payload, results)
     sys.exit(EXIT_OK)
 

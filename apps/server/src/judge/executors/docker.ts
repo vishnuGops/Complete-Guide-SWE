@@ -41,6 +41,13 @@ import { JudgeUnavailableError, type Launcher, type Program } from './launcher.j
 /** The workspace, as every judge container sees it. */
 export const CONTAINER_WORKSPACE = '/ws';
 
+/**
+ * The prebuilt, shared judge files - the compiled Java harness (ROADMAP P2-18) -
+ * mounted read-only: every run on the machine reads the same copy, so no run
+ * may be able to change what the next one executes.
+ */
+export const CONTAINER_SHARED = '/devpromax';
+
 export const JUDGE_LABEL = 'devpromax.judge';
 
 /** Seconds past the step's own limit before the in-container backstop fires. */
@@ -74,6 +81,8 @@ export interface DockerRunSpec {
   timeoutMs: number;
   /** `uid:gid`. On Linux the caller's, so the workspace stays theirs to delete. */
   user: string;
+  /** Host directory to mount read-only at `CONTAINER_SHARED`, if the step needs one. */
+  sharedDir?: string;
 }
 
 /**
@@ -99,9 +108,13 @@ export function containerUser(): string {
  * field; quoting the field (with inner quotes doubled) is the CSV way out. `-v`
  * is not used because its separator is the colon, which every Windows path has.
  */
-export function bindMount(hostDir: string): string {
+export function bindMount(
+  hostDir: string,
+  target: string = CONTAINER_WORKSPACE,
+  readOnly = false,
+): string {
   const source = `source=${hostDir}`.replaceAll('"', '""');
-  return `type=bind,"${source}",target=${CONTAINER_WORKSPACE}`;
+  return `type=bind,"${source}",target=${target}${readOnly ? ',readonly' : ''}`;
 }
 
 /** Arguments for `docker`, pure so the flags can be asserted without a daemon. */
@@ -139,6 +152,9 @@ export function dockerRunArgs(spec: DockerRunSpec): string[] {
     spec.user,
     '--mount',
     bindMount(spec.hostDir),
+    ...(spec.sharedDir === undefined
+      ? []
+      : ['--mount', bindMount(spec.sharedDir, CONTAINER_SHARED, true)]),
     '--workdir',
     CONTAINER_WORKSPACE,
     // The JVM and Python both want somewhere to call home; / is read-only.
@@ -172,10 +188,19 @@ export function dockerFailure(
   ranAnything: boolean,
 ): string | null {
   if (result.killed || ranAnything) return null;
+  // A step that exited 0 ran, whatever it printed; and Docker's own failures
+  // never exit cleanly.
+  if (result.code === 0 || result.code === null) return null;
   const stderr = result.stderr;
 
+  // Anchored to the start of a line (ROADMAP P2-19). Unanchored, the phrase
+  // matched anywhere - including in the source excerpt javac prints under a
+  // compile error, so a solution with "error during connect" in a string that
+  // failed to compile was reported as Docker being down. The CLI starts its
+  // own line with it, optionally after `docker: `; javac's excerpt lines start
+  // with a file name or indentation.
   if (
-    /failed to connect to the docker API|Cannot connect to the Docker daemon|error during connect/i.test(
+    /^(?:docker:\s*)?(?:failed to connect to the docker API|Cannot connect to the Docker daemon|error during connect)/im.test(
       stderr,
     )
   ) {
@@ -194,7 +219,7 @@ export function dockerFailure(
 
   // `timeout` could not find the program: the image is not the kind the
   // judge needs - a JRE where a JDK was wanted, say.
-  if (result.code === 127 && /failed to run command/i.test(stderr)) {
+  if (result.code === 127 && /^timeout: failed to run command/im.test(stderr)) {
     return `The Docker image ${image} has no ${program}. Set it to an image that does (DEVPROMAX_DOCKER_${program === 'python' ? 'PYTHON' : 'JAVA'}_IMAGE).`;
   }
 
@@ -262,6 +287,9 @@ export const dockerLauncher: Launcher = {
   startupMs: CONTAINER_STARTUP_MS,
   path: (_workspace, name) => path.posix.join(CONTAINER_WORKSPACE, name),
   dir: () => CONTAINER_WORKSPACE,
+  shared: () => CONTAINER_SHARED,
+  // The container is Linux whatever the host is.
+  pathDelimiter: ':',
 
   async run(program, args, workspace, options) {
     const image = IMAGE_FOR[program];
@@ -279,6 +307,7 @@ export const dockerLauncher: Launcher = {
           args,
           timeoutMs: options.timeoutMs,
           user: containerUser(),
+          ...(options.shared === undefined ? {} : { sharedDir: realDir(options.shared) }),
         }),
         cwd: workspace.dir,
         env: dockerClientEnv(),
@@ -288,6 +317,7 @@ export const dockerLauncher: Launcher = {
           killContainer(name);
         },
         ...(options.stall ? { stall: options.stall } : {}),
+        ...(options.signal ? { signal: options.signal } : {}),
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {

@@ -1,7 +1,8 @@
-import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
+import type { FastifyBaseLogger, FastifyInstance, FastifyReply } from 'fastify';
 import { runBodySchema, type Language, type RunKind, type RunResult } from '@devpromax/shared';
 import { HttpError, badRequest, notFound, parseInput } from '../errors.js';
 import { JudgeUnavailableError } from '../../judge/executors/launcher.js';
+import { isAbortError } from '../../judge/process.js';
 import { CustomTestError, ProblemNotFoundError, executeRun } from '../runService.js';
 import type { ApiDeps } from './types.js';
 
@@ -14,7 +15,12 @@ import type { ApiDeps } from './types.js';
  * case and why.
  */
 export function registerRunRoutes(app: FastifyInstance, deps: ApiDeps): void {
-  async function run(kind: RunKind, body: unknown, log: FastifyBaseLogger): Promise<RunResult> {
+  async function run(
+    kind: RunKind,
+    body: unknown,
+    log: FastifyBaseLogger,
+    signal: AbortSignal,
+  ): Promise<RunResult> {
     const parsed = parseInput(runBodySchema, body, 'body');
 
     try {
@@ -36,43 +42,84 @@ export function registerRunRoutes(app: FastifyInstance, deps: ApiDeps): void {
           repos: deps.repos,
           ...(deps.judge ? { judge: deps.judge } : {}),
           ...(deps.problemsRoot ? { problemsRoot: deps.problemsRoot } : {}),
+          signal,
         },
       );
     } catch (error) {
-      if (error instanceof ProblemNotFoundError) {
-        throw notFound(`No problem with slug "${error.slug}".`);
-      }
-      if (error instanceof CustomTestError) {
-        throw badRequest(
-          'One of the custom test cases does not fit this problem.',
-          error.issues.map((issue) => ({
-            path: `customTests[${issue.case}]`,
-            message: issue.message,
-          })),
-        );
-      }
-      if (error instanceof HttpError) throw error;
-      if (error instanceof JudgeUnavailableError) throw error;
-
-      /*
-       * Anything else - a missing interpreter, an unreadable problem package -
-       * is our problem, not the client's, but it is worth its own tag: the UI
-       * can offer "check that python is on your PATH" for this and nothing
-       * else.
-       *
-       * Node's own message is logged and *not* forwarded (ROADMAP P5-10). A
-       * `spawn ENOENT` carries the absolute path it tried, which the browser
-       * has no business being told and which reads as a crash rather than as
-       * "the judge needs a runtime it cannot find". The mapped message says the
-       * one thing the user can act on.
-       */
-      log.error({ err: error }, 'judge run failed');
-      throw new HttpError(500, 'JudgeError', describeJudgeFailure(error, parsed.language));
+      throw runErrorToHttp(error, parsed.language, log);
     }
   }
 
-  app.post('/api/run', async (request) => run('run', request.body, request.log));
-  app.post('/api/submit', async (request) => run('submit', request.body, request.log));
+  app.post('/api/run', async (request, reply) =>
+    run('run', request.body, request.log, clientGone(reply)),
+  );
+  app.post('/api/submit', async (request, reply) =>
+    run('submit', request.body, request.log, clientGone(reply)),
+  );
+}
+
+/**
+ * A signal that fires when the client stops waiting (ROADMAP P2-17).
+ *
+ * The response's `close`, not the request's: Node closes the request stream as
+ * soon as the body has been read, long before the verdict, while the response
+ * closes either when it has been sent - `writableFinished` - or when the
+ * connection went first, which is the case that matters here.
+ */
+function clientGone(reply: FastifyReply): AbortSignal {
+  const controller = new AbortController();
+  reply.raw.once('close', () => {
+    if (!reply.raw.writableFinished) controller.abort();
+  });
+  return controller.signal;
+}
+
+/**
+ * The error mapping for anything that runs the judge through `executeRun`
+ * (ROADMAP P2-19), so that `/api/run`, `/api/submit` and re-verify answer the
+ * same failure the same way. Returns the error to throw:
+ *
+ *   ProblemNotFoundError    404
+ *   CustomTestError         400, naming the case
+ *   a cancelled run         499, which nobody is waiting to read
+ *   HttpError, JudgeUnavailableError   as they are
+ *   anything else           logged, then 500 JudgeError with a safe message
+ */
+export function runErrorToHttp(error: unknown, language: Language, log: FastifyBaseLogger): Error {
+  if (error instanceof ProblemNotFoundError) {
+    return notFound(`No problem with slug "${error.slug}".`);
+  }
+  if (error instanceof CustomTestError) {
+    return badRequest(
+      'One of the custom test cases does not fit this problem.',
+      error.issues.map((issue) => ({
+        path: `customTests[${issue.case}]`,
+        message: issue.message,
+      })),
+    );
+  }
+  if (error instanceof HttpError) return error;
+  if (error instanceof JudgeUnavailableError) return error;
+  if (isAbortError(error)) {
+    // nginx's code for it; the client closed the connection, so the status is
+    // for the log rather than for anyone reading a response.
+    return new HttpError(499, 'ClientClosedRequest', 'The run was cancelled.');
+  }
+
+  /*
+   * Anything else - a missing interpreter, an unreadable problem package -
+   * is our problem, not the client's, but it is worth its own tag: the UI
+   * can offer "check that python is on your PATH" for this and nothing
+   * else.
+   *
+   * Node's own message is logged and *not* forwarded (ROADMAP P5-10). A
+   * `spawn ENOENT` carries the absolute path it tried, which the browser
+   * has no business being told and which reads as a crash rather than as
+   * "the judge needs a runtime it cannot find". The mapped message says the
+   * one thing the user can act on.
+   */
+  log.error({ err: error }, 'judge run failed');
+  return new HttpError(500, 'JudgeError', describeJudgeFailure(error, language));
 }
 
 /**

@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { runProcess, type SpawnResult } from '../process.js';
 import type { Workspace } from '../workspace.js';
 import { JAVAC_COMMAND, JAVA_COMMAND, PYTHON_COMMAND } from './commands.js';
@@ -35,6 +36,14 @@ export interface LaunchOptions {
   timeoutMs: number;
   outputCap: number;
   stall?: { ms: number; progress: () => number };
+  /** Kills the program when the run is cancelled (ROADMAP P2-17). */
+  signal?: AbortSignal;
+  /**
+   * A directory of prebuilt judge files the program reads but must not write -
+   * the compiled Java harness (ROADMAP P2-18). `shared(...)` names it as the
+   * program sees it.
+   */
+  shared?: string;
 }
 
 export interface Launcher {
@@ -53,6 +62,12 @@ export interface Launcher {
 
   /** The workspace directory itself, as the program will see it. */
   dir(workspace: Workspace): string;
+
+  /** `LaunchOptions.shared`, as the program will see it. */
+  shared(hostDir: string): string;
+
+  /** The class-path separator of the machine the program runs on. */
+  readonly pathDelimiter: string;
 
   run(
     program: Program,
@@ -74,6 +89,8 @@ export const localLauncher: Launcher = {
   startupMs: 0,
   path: (workspace, name) => workspace.file(name),
   dir: (workspace) => workspace.dir,
+  shared: (hostDir) => hostDir,
+  pathDelimiter: path.delimiter,
   run: (program, args, workspace, options) =>
     runProcess({
       command: LOCAL_COMMANDS[program],
@@ -82,5 +99,6 @@ export const localLauncher: Launcher = {
       timeoutMs: options.timeoutMs,
       outputCap: options.outputCap,
       ...(options.stall ? { stall: options.stall } : {}),
+      ...(options.signal ? { signal: options.signal } : {}),
     }),
 };

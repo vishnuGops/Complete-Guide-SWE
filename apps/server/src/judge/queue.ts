@@ -1,3 +1,5 @@
+import { abortReason } from './process.js';
+
 /**
  * A fixed-width queue for judge runs.
  *
@@ -30,8 +32,16 @@ export class RunQueue {
     this.drain();
   }
 
-  async run<T>(task: () => Promise<T>): Promise<T> {
-    await this.acquire();
+  /**
+   * Runs `task` once a slot is free.
+   *
+   * An aborted `signal` takes a task that is still waiting out of the line
+   * (ROADMAP P2-17): a Run whose tab was closed would otherwise wait its turn,
+   * start a JVM nobody is listening to, and hold the slot the next Run needed.
+   * A task already running is the task's to stop - it gets the same signal.
+   */
+  async run<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    await this.acquire(signal);
     try {
       return await task();
     } finally {
@@ -39,16 +49,25 @@ export class RunQueue {
     }
   }
 
-  private acquire(): Promise<void> {
+  private acquire(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return Promise.reject(abortReason(signal));
     if (this.active < this.limit) {
       this.active += 1;
       return Promise.resolve();
     }
-    return new Promise<void>((resolve) => {
-      this.waiting.push(() => {
+    return new Promise<void>((resolve, reject) => {
+      const onAbort = (): void => {
+        const at = this.waiting.indexOf(admit);
+        if (at !== -1) this.waiting.splice(at, 1);
+        reject(abortReason(signal as AbortSignal));
+      };
+      const admit = (): void => {
+        signal?.removeEventListener('abort', onAbort);
         this.active += 1;
         resolve();
-      });
+      };
+      this.waiting.push(admit);
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 

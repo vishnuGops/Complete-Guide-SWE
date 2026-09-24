@@ -1,5 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { RunRequest, RunResult, TestResult, Verdict } from '@devpromax/shared';
+import { paths } from '../config.js';
 import { createDatabase, IN_MEMORY, type Repositories } from '../db/index.js';
 import type { RunProblemOptions } from '../judge/index.js';
 import { CustomTestError, ProblemNotFoundError, executeRun } from './runService.js';
@@ -267,6 +271,66 @@ describe('unknown problems', () => {
 
   it('writes nothing for a problem that does not exist', async () => {
     await run({ slug: 'no-such-problem' }).catch(() => undefined);
+    expect(repos.events.list()).toEqual([]);
+  });
+});
+
+describe('a Run leaves the hidden tests unread (P2-18)', () => {
+  let root: string;
+
+  beforeEach(() => {
+    // A copy of a real problem whose hidden pool would fail validation: a
+    // Submit has to read it and says so, a Run must not even look.
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'devpromax-run-hidden-'));
+    const target = path.join(root, 'arrays', PAIR_SUM);
+    fs.cpSync(path.join(paths.problems, 'arrays', PAIR_SUM), target, { recursive: true });
+    const testsFile = path.join(target, 'tests.json');
+    const tests = JSON.parse(fs.readFileSync(testsFile, 'utf8')) as { hidden: unknown[] };
+    tests.hidden = [{ args: 'not a list of arguments' }];
+    fs.writeFileSync(testsFile, JSON.stringify(tests));
+  });
+
+  afterEach(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('runs the samples of a problem whose hidden tests do not parse', async () => {
+    await executeRun(request({ kind: 'run' }), { repos, judge: fakeJudge(), problemsRoot: root });
+    expect(seen?.tests.every((t) => t.source === 'sample')).toBe(true);
+  });
+
+  it('while a Submit, which needs them, still refuses', async () => {
+    await expect(
+      executeRun(request({ kind: 'submit' }), { repos, judge: fakeJudge(), problemsRoot: root }),
+    ).rejects.toThrow(/could not be read/);
+  });
+});
+
+describe('a cancelled run (P2-17)', () => {
+  it('hands the judge the signal', async () => {
+    const controller = new AbortController();
+    await executeRun(request(), { repos, judge: fakeJudge(), signal: controller.signal });
+    expect(seen?.signal).toBe(controller.signal);
+  });
+
+  it('records nothing when the client left while the judge was running', async () => {
+    const controller = new AbortController();
+    const judge = async (options: RunProblemOptions): Promise<RunResult> => {
+      const result = await fakeJudge('AC')(options);
+      // The verdict came back, but the tab that asked for it has gone.
+      controller.abort();
+      return result;
+    };
+
+    const error = await executeRun(request({ kind: 'submit' }), {
+      repos,
+      judge,
+      signal: controller.signal,
+    }).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ name: 'AbortError' });
+    expect(repos.submissions.list()).toEqual([]);
+    expect(repos.progress.list()).toEqual([]);
     expect(repos.events.list()).toEqual([]);
   });
 });

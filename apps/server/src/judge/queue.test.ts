@@ -117,3 +117,75 @@ describe('RunQueue', () => {
     expect(() => new RunQueue(1).setLimit(0)).toThrow(RangeError);
   });
 });
+
+describe('RunQueue cancellation (P2-17)', () => {
+  it('takes an aborted task out of the line without ever running it', async () => {
+    const queue = new RunQueue(1);
+    const gate = deferred();
+    const controller = new AbortController();
+    let ran = false;
+
+    const first = queue.run(() => gate.promise);
+    const second = queue.run(async () => {
+      ran = true;
+    }, controller.signal);
+    await tick();
+    expect(queue.size).toBe(2);
+
+    controller.abort();
+    await expect(second).rejects.toMatchObject({ name: 'AbortError' });
+    expect(queue.size).toBe(1);
+
+    gate.resolve();
+    await first;
+    await tick();
+    expect(ran).toBe(false);
+    expect(queue.size).toBe(0);
+  });
+
+  it('lets the task behind an aborted one take its place', async () => {
+    const queue = new RunQueue(1);
+    const gate = deferred();
+    const controller = new AbortController();
+    let thirdStarted = false;
+
+    const first = queue.run(() => gate.promise);
+    const second = queue.run(async () => undefined, controller.signal);
+    const third = queue.run(async () => {
+      thirdStarted = true;
+    });
+    controller.abort();
+    await expect(second).rejects.toMatchObject({ name: 'AbortError' });
+
+    gate.resolve();
+    await Promise.all([first, third]);
+    expect(thirdStarted).toBe(true);
+  });
+
+  it('refuses a task whose signal is already aborted', async () => {
+    const queue = new RunQueue(2);
+    const controller = new AbortController();
+    controller.abort();
+    await expect(queue.run(async () => 1, controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+    expect(queue.running).toBe(0);
+  });
+
+  it('does not reach into a task that is already running', async () => {
+    const queue = new RunQueue(1);
+    const controller = new AbortController();
+    const gate = deferred();
+    const running = queue.run(async () => {
+      await gate.promise;
+      return 'finished';
+    }, controller.signal);
+    await tick();
+
+    controller.abort();
+    gate.resolve();
+    // Stopping a running task is the task's job; it was given the same signal.
+    await expect(running).resolves.toBe('finished');
+    expect(queue.running).toBe(0);
+  });
+});

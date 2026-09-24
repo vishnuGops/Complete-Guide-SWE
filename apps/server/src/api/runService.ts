@@ -12,6 +12,7 @@ import {
 } from '@devpromax/shared';
 import { transaction, type Repositories } from '../db/index.js';
 import { runProblem, type JudgeTest } from '../judge/index.js';
+import { throwIfAborted } from '../judge/process.js';
 import { loadProblemBySlug } from '../problems/loader.js';
 
 /**
@@ -57,6 +58,12 @@ export interface RunServiceOptions {
   workspaceRoot?: string;
   /** The time recorded against whatever this run changes; defaults to now. */
   now?: string;
+  /**
+   * The request's lifetime (ROADMAP P2-17). Aborted when the client goes away,
+   * which cancels the judge run and records nothing: a Submit whose verdict
+   * nobody saw is not an attempt anybody made.
+   */
+  signal?: AbortSignal;
 }
 
 export async function executeRun(
@@ -66,7 +73,14 @@ export async function executeRun(
   const { repos } = options;
   const judge = options.judge ?? runProblem;
 
-  const pkg = loadProblemBySlug(request.slug, options.problemsRoot);
+  // A Run never uses the hidden tests, and reading them is most of the cost of
+  // loading a problem that has large ones - 1033 ms against 57 ms measured on
+  // one (ROADMAP P2-18) - so it does not ask for them.
+  const pkg = loadProblemBySlug(
+    request.slug,
+    options.problemsRoot,
+    request.kind === 'run' ? { hidden: false } : {},
+  );
   if (!pkg) throw new ProblemNotFoundError(request.slug);
 
   const customTests = request.kind === 'run' ? validateCustomTests(request, pkg) : [];
@@ -87,8 +101,12 @@ export async function executeRun(
     kind: request.kind,
     timeoutMultiplier: settings.judge.timeoutMultiplier,
     ...(options.workspaceRoot ? { workspaceRoot: options.workspaceRoot } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
   });
 
+  // The verdict may have landed just as the client left; it still goes
+  // unrecorded, because nobody is there to have seen it.
+  throwIfAborted(options.signal);
   record(request, result, options);
   return result;
 }

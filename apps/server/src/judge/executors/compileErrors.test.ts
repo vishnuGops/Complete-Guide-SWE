@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   compileTimeoutMessage,
+  harnessClassMessage,
   harnessCollisionMessage,
+  isHarnessClassName,
   parseJavacOutput,
+  publicClassMessage,
   summariseCompileFailure,
 } from './compileErrors.js';
 
@@ -200,5 +203,31 @@ describe('compileTimeoutMessage', () => {
 
   it('points at the setting that fixes it', () => {
     expect(compileTimeoutMessage(10_000)).toContain('time limit multiplier');
+  });
+});
+
+describe('harness class names (P2-18)', () => {
+  it('knows the node types and every DevProMax name, and nothing else', () => {
+    for (const name of ['ListNode', 'TreeNode', 'DevProMaxMain', 'DevProMaxCappedStream']) {
+      expect(isHarnessClassName(name)).toBe(true);
+    }
+    for (const name of ['Main', 'Solution', 'Node', 'MyListNode', 'DevPro']) {
+      expect(isHarnessClassName(name)).toBe(false);
+    }
+  });
+
+  it('explains each one, including the helpers the table does not list', () => {
+    expect(harnessClassMessage('ListNode')).toContain('the judge already defines `ListNode`');
+    expect(harnessClassMessage('DevProMaxCappedStream')).toContain('`DevProMax`');
+    expect(harnessClassMessage('DevProMaxCappedStream')).toContain('DevProMaxCappedStream');
+  });
+});
+
+describe('publicClassMessage (P2-19)', () => {
+  it('gives advice the user can follow, rather than a file name they cannot choose', () => {
+    const message = publicClassMessage('LRUCache');
+    expect(message).toContain('remove `public` from `class LRUCache`');
+    expect(message).toContain('Solution.java');
+    expect(message).not.toContain('LRUCache.java');
   });
 });

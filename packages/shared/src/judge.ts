@@ -139,8 +139,9 @@ export const runResultSchema = z.object({
   /** True when stdout/stderr hit OUTPUT_CAP_BYTES and was cut. */
   outputTruncated: z.boolean().default(false),
   /**
-   * True when a per-test timeout forced the judge to abandon batch execution
-   * and re-run the remaining tests one process each (ROADMAP D3).
+   * True when a test that timed out, crashed or ended the process made the
+   * judge restart the batch at the test after it (ROADMAP D3, P2-17). A run
+   * costs one process per such failure, plus one.
    */
   isolationFallback: z.boolean().default(false),
 });

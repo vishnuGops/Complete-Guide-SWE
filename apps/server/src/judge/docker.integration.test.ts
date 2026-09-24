@@ -209,6 +209,33 @@ describe.skipIf(!enabled)('what a solution in a judge container cannot do', () =
     ]);
   }, 60_000);
 
+  it('change the compiled harness every later run executes (P2-18)', async () => {
+    // The harness is compiled once and mounted into every Java step; a
+    // solution that could rewrite it would be running code in the next one.
+    const code = [
+      'import java.nio.file.*;',
+      '',
+      'class Solution {',
+      '    public String solve(int n) {',
+      '        try {',
+      '            Files.writeString(Path.of("/devpromax/DevProMaxMain.class"), "x");',
+      '            return "wrote";',
+      '        } catch (Exception denied) {',
+      '            return "denied";',
+      '        }',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+    const result = await run({
+      meta: syntheticMeta(),
+      language: 'java',
+      code,
+      tests: [{ source: 'sample', test: { args: [1], expected: 'unreachable' } }],
+    });
+    expect(result.tests[0]?.actual).toBe('denied');
+  }, 60_000);
+
   it('run as root', async () => {
     const test = await probe('        return os.getuid()');
     expect(test.actual).not.toBe(0);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseExecutorKind } from './commands.js';
 import {
   CONTAINER_LIMITS,
+  CONTAINER_SHARED,
   CONTAINER_WORKSPACE,
   JUDGE_LABEL,
   bindMount,
@@ -74,6 +75,18 @@ describe('dockerRunArgs', () => {
   it('mounts the workspace at /ws and runs from there', () => {
     expect(valueOf(args, '--mount')).toBe(bindMount(spec.hostDir));
     expect(valueOf(args, '--workdir')).toBe(CONTAINER_WORKSPACE);
+    // Nothing else is mounted unless the step asks for the shared files.
+    expect(args.filter((arg) => arg === '--mount')).toHaveLength(1);
+  });
+
+  it('mounts the shared harness read-only, beside the workspace (P2-18)', () => {
+    const withShared = dockerRunArgs({ ...spec, sharedDir: 'C:\\data\\devpromax-judge-cache\\h' });
+    const mounts = withShared.flatMap((arg, i) => (arg === '--mount' ? [withShared[i + 1]] : []));
+    expect(mounts).toEqual([
+      bindMount(spec.hostDir),
+      'type=bind,"source=C:\\data\\devpromax-judge-cache\\h",target=/devpromax,readonly',
+    ]);
+    expect(CONTAINER_SHARED).toBe('/devpromax');
   });
 
   it('runs the program under a KILL backstop past its own limit, then its arguments verbatim', () => {
@@ -112,6 +125,9 @@ describe('dockerLauncher paths', () => {
     // Linux container a backslash.
     expect(dockerLauncher.path(workspace as never, 'solution.py')).toBe('/ws/solution.py');
     expect(dockerLauncher.dir(workspace as never)).toBe('/ws');
+    expect(dockerLauncher.shared('C:\\data\\devpromax-judge-cache\\h')).toBe('/devpromax');
+    // A Linux class path, whatever the host's separator is.
+    expect(dockerLauncher.pathDelimiter).toBe(':');
   });
 });
 
@@ -182,6 +198,43 @@ describe('dockerFailure', () => {
       dockerFailure(failed(1, 'Cannot connect to the Docker daemon'), image, 'python', true),
     ).toBeNull();
     expect(dockerFailure(failed(null, '', true), image, 'python', false)).toBeNull();
+  });
+
+  it("does not read the daemon's words inside a compile error as the daemon (P2-19)", () => {
+    // javac echoes the offending line under its diagnostic, so a solution
+    // whose broken line mentions the phrase used to be "Docker is not running".
+    const javac = [
+      "/ws/Solution.java:3: error: ';' expected",
+      '        String s = "error during connect: Cannot connect to the Docker daemon"',
+      '                                                                            ^',
+      '1 error',
+    ].join('\n');
+    expect(dockerFailure(failed(1, javac), image, 'javac', false)).toBeNull();
+    expect(
+      dockerFailure(
+        failed(127, "Solution.java:1: error: timeout: failed to run command 'x'"),
+        image,
+        'javac',
+        false,
+      ),
+    ).toBeNull();
+  });
+
+  it('never blames Docker for a step that exited cleanly', () => {
+    expect(
+      dockerFailure(failed(0, 'Cannot connect to the Docker daemon'), image, 'python', false),
+    ).toBeNull();
+  });
+
+  it('still recognises the CLI prefixing its own error', () => {
+    expect(
+      dockerFailure(
+        failed(1, 'docker: error during connect: Post "http://...": open //./pipe/docker_engine'),
+        image,
+        'python',
+        false,
+      ),
+    ).toMatch(/Docker is not running/);
   });
 });
 

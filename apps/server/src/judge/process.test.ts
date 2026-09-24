@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { killLiveChildren, runProcess } from './process.js';
+import { isAbortError, killLiveChildren, runProcess } from './process.js';
 
 const NODE = process.execPath;
 
@@ -49,21 +49,29 @@ describe('runProcess', () => {
       process.stdout.write(String(child.pid));
       setInterval(() => {}, 1000);
     `;
+    // Five seconds, not one: on a loaded machine two Node start-ups can take
+    // longer than a second, and a kill before the pid was printed left `''`,
+    // which `Number` reads as 0 - a "pid" this test then happily confirmed dead.
     const result = await runProcess({
       command: NODE,
       args: ['-e', script],
       cwd: process.cwd(),
-      timeoutMs: 1000,
+      timeoutMs: 5000,
     });
 
     expect(result.killed).toBe(true);
     const grandchild = Number(result.stdout.trim());
-    expect(Number.isFinite(grandchild)).toBe(true);
+    expect(Number.isInteger(grandchild)).toBe(true);
+    expect(grandchild).toBeGreaterThan(0);
 
-    // Give the OS a moment to reap, then confirm the grandchild is gone.
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Reaping is asynchronous (taskkill is itself a process), so poll for it
+    // rather than guessing how long it takes.
+    const deadline = Date.now() + 10_000;
+    while (isAlive(grandchild) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     expect(isAlive(grandchild)).toBe(false);
-  });
+  }, 20_000);
 
   it('caps output rather than buffering without limit', async () => {
     const result = await runProcess({
@@ -75,6 +83,22 @@ describe('runProcess', () => {
     });
 
     expect(result.stdout.length).toBe(1024);
+    expect(result.outputTruncated).toBe(true);
+  });
+
+  it('caps stdout and stderr together, as the cap promises (P2-19)', async () => {
+    const result = await runProcess({
+      command: NODE,
+      args: [
+        '-e',
+        'process.stdout.write("o".repeat(3000)); process.stderr.write("e".repeat(3000))',
+      ],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      outputCap: 4096,
+    });
+
+    expect(result.stdout.length + result.stderr.length).toBe(4096);
     expect(result.outputTruncated).toBe(true);
   });
 
@@ -329,5 +353,63 @@ describe('runProcess onKill (P9-2)', () => {
       },
     });
     expect(calls).toBe(0);
+  });
+});
+
+describe('runProcess cancellation (P2-17)', () => {
+  it('kills the child when the signal aborts, and reports it as killed', async () => {
+    const controller = new AbortController();
+    let calls = 0;
+    const running = runProcess({
+      command: NODE,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      cwd: process.cwd(),
+      timeoutMs: 30_000,
+      signal: controller.signal,
+      onKill: () => {
+        calls += 1;
+      },
+    });
+    setTimeout(() => controller.abort(), 300);
+
+    const result = await running;
+    expect(result.killed).toBe(true);
+    // The wall clock was thirty seconds; this was the signal.
+    expect(result.elapsedMs).toBeLessThan(15_000);
+    expect(calls).toBe(1);
+  });
+
+  it('starts nothing for a signal that is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let calls = 0;
+
+    const error = await runProcess({
+      command: NODE,
+      args: ['-e', 'process.exit(0)'],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      signal: controller.signal,
+      onKill: () => {
+        calls += 1;
+      },
+    }).catch((e: unknown) => e);
+
+    expect(isAbortError(error)).toBe(true);
+    expect(calls).toBe(0);
+  });
+
+  it('leaves a child alone once it has finished', async () => {
+    const controller = new AbortController();
+    const result = await runProcess({
+      command: NODE,
+      args: ['-e', 'process.exit(0)'],
+      cwd: process.cwd(),
+      timeoutMs: 10_000,
+      signal: controller.signal,
+    });
+    controller.abort();
+    expect(result.killed).toBe(false);
+    expect(result.code).toBe(0);
   });
 });

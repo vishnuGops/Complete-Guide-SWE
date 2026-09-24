@@ -41,6 +41,44 @@ public class DevProMaxMain {
     static final int EXIT_OK = 0;
     static final int EXIT_LOAD_FAILED = 2;
     static final int EXIT_TIMEOUT = 3;
+    /** The solution called System.exit; the test that did it has its record. */
+    static final int EXIT_ABANDONED = 4;
+
+    /**
+     * How long a test past its budget may take to finish a stack overflow
+     * (ROADMAP P2-19).
+     *
+     * With `-Xss64m` a one-line runaway recursion is four million frames deep
+     * before it overflows, and the error then unwinds every one of them. That
+     * is half a second on this machine idle and several seconds on it busy, so
+     * a StackOverflowError - the most useful thing the judge can say about
+     * unbounded recursion - came back as TLE. A test that is past its budget
+     * and is deep in recursion gets this long to finish: if it ends in a
+     * StackOverflowError that is its verdict, and anything else is still TLE.
+     * Kept under the judge's three-second stall slack, which it must not trip.
+     */
+    static final long OVERFLOW_GRACE_MS = 2_000;
+
+    /**
+     * A worker this many frames deep is recursing, not looping. The JVM reports
+     * at most 1024 frames of another thread's stack, cheaply, so the test is
+     * "did the report hit the cap"; ordinary code is a few dozen frames deep.
+     */
+    static final int DEEP_STACK_FRAMES = 1_000;
+
+    /**
+     * What the exit hook needs to know (ROADMAP P2-17): whether the solution
+     * finished loading, which test is running, and on which thread. Guarded
+     * by `STATE`, because the hook runs on a thread of its own while the
+     * harness is in the middle of something.
+     */
+    private static final Object STATE = new Object();
+    private static boolean ready;
+    private static int inFlight = -1;
+    private static long inFlightStarted;
+    private static Thread inFlightWorker;
+    /** Set before the harness's own exits, which the hook must not report. */
+    private static volatile boolean harnessExiting;
 
     /** Per test, so one runaway println cannot exhaust the heap. */
     static final int OUTPUT_CAP = 16 * 1024;
@@ -94,25 +132,49 @@ public class DevProMaxMain {
             cycleAt = ((Number) cycle.get("at")).intValue();
         }
 
+        Runtime.getRuntime().addShutdownHook(
+                new Thread(DevProMaxMain::reportExit, "devpromax-exit-hook"));
+
         Class<?> target;
         String wanted = mode.equals("operations") ? entry : "Solution";
+        Method method = null;
         try {
             target = Class.forName(wanted);
+            if (!mode.equals("operations")) {
+                method = findMethod(target, entry, tests);
+                if (method == null) {
+                    loadFailed("Solution has no method named " + entry, "");
+                    return;
+                }
+            }
         } catch (ClassNotFoundException err) {
-            writeFatal("load", "the compiled solution does not define " + wanted, "");
-            System.exit(EXIT_LOAD_FAILED);
+            loadFailed("the compiled solution does not define " + wanted, "");
+            return;
+        } catch (Throwable err) {
+            /*
+             * `Class.forName` runs the class's static initialisers, which are
+             * the user's code (ROADMAP P2-17). One that throws used to escape
+             * `main`, the JVM printed it and exited 1 with no record, and the
+             * judge reported "the process exited" once per test. What failed
+             * is the solution's own initialiser, so that is what is reported.
+             */
+            Throwable cause = err instanceof ExceptionInInitializerError && err.getCause() != null
+                    ? err.getCause()
+                    : err;
+            String detail = cause.getMessage() == null ? "" : ": " + cause.getMessage();
+            loadFailed(
+                    (cause == err ? "" : "a static initialiser threw ")
+                            + cause.getClass().getSimpleName() + detail,
+                    stackTrace(cause));
             return;
         }
 
-        Method method = null;
-        if (!mode.equals("operations")) {
-            method = findMethod(target, entry, tests);
-            if (method == null) {
-                writeFatal("load", "Solution has no method named " + entry, "");
-                System.exit(EXIT_LOAD_FAILED);
-                return;
-            }
+        synchronized (STATE) {
+            ready = true;
         }
+        Map<String, Object> readyRecord = new LinkedHashMap<>();
+        readyRecord.put("event", "ready");
+        writeRecord(readyRecord);
 
         int exit = EXIT_OK;
         for (Object raw : tests) {
@@ -126,7 +188,82 @@ public class DevProMaxMain {
 
         results.flush();
         results.close();
+        harnessExiting = true;
         System.exit(exit);
+    }
+
+    private static void loadFailed(String message, String traceback) {
+        writeFatal("load", message, traceback);
+        harnessExiting = true;
+        System.exit(EXIT_LOAD_FAILED);
+    }
+
+    /**
+     * The shutdown hook: the solution called `System.exit` (ROADMAP P2-17).
+     *
+     * That ends the JVM from inside a test, and the test's record was never
+     * written - so the judge saw a batch that stopped early, re-ran every
+     * remaining test in isolation, and each one reported "the process exited"
+     * for a test that had not called anything. The hook records the exit
+     * against the test that made it, with the frames that made it, and halts
+     * with a code that tells the judge the rest were abandoned rather than
+     * crashed. The harness's own exits set `harnessExiting` first; a halt,
+     * which the timeout path uses, never runs hooks at all.
+     */
+    private static void reportExit() {
+        if (harnessExiting) {
+            return;
+        }
+        synchronized (STATE) {
+            if (!ready) {
+                writeFatal("load",
+                        "the solution called System.exit while its classes were loading, "
+                                + "which ends the judge's process before any test can run",
+                        "");
+                Runtime.getRuntime().halt(EXIT_LOAD_FAILED);
+                return;
+            }
+            if (inFlight < 0) {
+                return;
+            }
+            Map<String, Object> record = new LinkedHashMap<>();
+            record.put("index", inFlight);
+            record.put("status", "error");
+            record.put("timeMs", (System.nanoTime() - inFlightStarted) / 1_000_000.0);
+            Map<String, Object> error = new LinkedHashMap<>();
+            error.put("type", "SystemExit");
+            error.put("message", "the solution called System.exit, which ends the judge's process;"
+                    + " return the answer instead");
+            error.put("traceback", inFlightWorker == null ? "" : framesOf(inFlightWorker));
+            record.put("error", error);
+            inFlight = -1;
+            try {
+                writeRecord(record);
+            } catch (IOException | RuntimeException ignored) {
+                // The judge reports the missing record as a crash instead.
+            }
+        }
+        Runtime.getRuntime().halt(EXIT_ABANDONED);
+    }
+
+    /** Another thread's frames as a stack trace reads, for the exit report. */
+    private static String framesOf(Thread thread) {
+        StringBuilder out = new StringBuilder();
+        boolean inUserCode = false;
+        for (StackTraceElement frame : thread.getStackTrace()) {
+            // The top is the JDK's own shutdown machinery, waiting on this
+            // hook; the story starts at the first frame that is not.
+            String owner = frame.getClassName();
+            if (!inUserCode && (owner.startsWith("java.") || owner.startsWith("jdk."))) {
+                continue;
+            }
+            inUserCode = true;
+            out.append("\tat ").append(frame).append('\n');
+            if (out.length() > OUTPUT_CAP) {
+                break;
+            }
+        }
+        return out.length() > OUTPUT_CAP ? out.substring(0, OUTPUT_CAP) : out.toString();
     }
 
     /**
@@ -167,22 +304,49 @@ public class DevProMaxMain {
         long started = System.nanoTime();
         System.setOut(new PrintStream(outBuffer, true, StandardCharsets.UTF_8));
         System.setErr(new PrintStream(errBuffer, true, StandardCharsets.UTF_8));
-        worker.start();
-        try {
-            worker.join(timeoutMs);
-        } catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
+        synchronized (STATE) {
+            inFlight = index;
+            inFlightStarted = started;
+            inFlightWorker = worker;
         }
-        boolean timedOut = worker.isAlive();
+        worker.start();
+        join(worker, timeoutMs);
+        boolean overBudget = worker.isAlive();
+        if (overBudget && worker.getStackTrace().length >= DEEP_STACK_FRAMES) {
+            // Possibly a stack overflow still unwinding; see OVERFLOW_GRACE_MS.
+            join(worker, OVERFLOW_GRACE_MS);
+        }
+        boolean stillRunning = worker.isAlive();
         double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
         System.setOut(realOut);
         System.setErr(realErr);
 
-        if (timedOut) {
+        synchronized (STATE) {
+            if (inFlight != index) {
+                // The exit hook has reported this test and the JVM is going
+                // down; nothing written here would be read.
+                return false;
+            }
+            inFlight = -1;
+            inFlightWorker = null;
+        }
+
+        // Reflection wraps what the solution threw; the overflow is inside.
+        Throwable thrown = (Throwable) outcome[1];
+        if (thrown instanceof InvocationTargetException && thrown.getCause() != null) {
+            thrown = thrown.getCause();
+        }
+        boolean overflowed = thrown instanceof StackOverflowError;
+        if (stillRunning || (overBudget && !overflowed)) {
             record.put("status", "timeout");
             record.put("timeMs", (double) timeoutMs);
             writeRecord(record);
             results.flush();
+            if (!stillRunning) {
+                // It finished, late: over budget is a TLE whatever it
+                // returned, but nothing is left running, so the batch goes on.
+                return true;
+            }
             // The worker is still burning CPU and cannot be stopped; halt rather
             // than let it skew every timing that follows.
             Runtime.getRuntime().halt(EXIT_TIMEOUT);
@@ -240,6 +404,14 @@ public class DevProMaxMain {
             writeRecord(replacement);
         }
         return true;
+    }
+
+    private static void join(Thread worker, long ms) {
+        try {
+            worker.join(ms);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1154,7 +1326,11 @@ final class DevProMaxJson {
                 case '\b' -> out.append("\\b");
                 case '\f' -> out.append("\\f");
                 default -> {
-                    if (c < 0x20) {
+                    if (c < 0x20 || isLoneSurrogate(value, i)) {
+                        // A lone surrogate is legal in a Java String and has no
+                        // UTF-8 encoding, so the results writer threw on it and
+                        // the whole run ended with no record (ROADMAP P2-19).
+                        // JSON's escape carries it through intact.
                         out.append(String.format("\\u%04x", (int) c));
                     } else {
                         out.append(c);
@@ -1163,5 +1339,17 @@ final class DevProMaxJson {
             }
         }
         out.append('"');
+    }
+
+    /** A surrogate that is not half of a well-formed pair. */
+    private static boolean isLoneSurrogate(String value, int i) {
+        char c = value.charAt(i);
+        if (Character.isHighSurrogate(c)) {
+            return i + 1 >= value.length() || !Character.isLowSurrogate(value.charAt(i + 1));
+        }
+        if (Character.isLowSurrogate(c)) {
+            return i == 0 || !Character.isHighSurrogate(value.charAt(i - 1));
+        }
+        return false;
     }
 }

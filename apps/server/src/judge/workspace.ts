@@ -28,7 +28,15 @@ export async function createWorkspace(root: string = paths.judgeWorkspaces): Pro
   // would resolve against the workspace itself rather than against ours.
   const dir = path.resolve(root, id);
   await fs.mkdir(dir, { recursive: true });
+  return workspaceAt(id, dir);
+}
 
+/**
+ * A workspace over a directory the caller already made - the scratch directory
+ * the shared Java harness is built in (ROADMAP P2-18), which a launcher has to be
+ * able to mount exactly as it mounts a run's.
+ */
+export function workspaceAt(id: string, dir: string): Workspace {
   const file = (name: string): string => path.join(dir, name);
 
   return {

@@ -47,6 +47,16 @@ export interface SpawnOptions {
    * closed from the start - see `runProcess`.
    */
   input?: string;
+  /**
+   * Kills the tree when aborted, exactly as the watchdog does (ROADMAP P2-17).
+   *
+   * The request that asked for a run can go away - a closed tab, a navigation -
+   * and until this existed its JVM ran to the end of every hidden test for a
+   * verdict nobody would read, holding a queue slot the next Run was waiting
+   * for. The result is reported as killed; deciding that it means "cancelled"
+   * rather than "timed out" is the caller's, which still holds the signal.
+   */
+  signal?: AbortSignal;
 }
 
 export interface SpawnResult {
@@ -148,6 +158,12 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
   const cap = options.outputCap ?? OUTPUT_CAP_BYTES;
   const started = process.hrtime.bigint();
 
+  // Nothing to kill yet, so nothing to start: a run cancelled while it waited
+  // for the queue must not spawn a JVM on its way out.
+  if (options.signal?.aborted) {
+    return Promise.reject(abortReason(options.signal));
+  }
+
   return new Promise<SpawnResult>((resolve, reject) => {
     const child = spawn(options.command, options.args, {
       cwd: options.cwd,
@@ -176,12 +192,17 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       options.onKill?.();
     };
 
+    // One budget for both streams together, which is what `outputCap` and
+    // OUTPUT_CAP_BYTES promise (ROADMAP P2-19); each stream used to get the
+    // whole cap to itself, so a run could keep twice what it said. Counted in
+    // UTF-16 units rather than bytes: the point is a bound, and a byte count
+    // would mean re-encoding every chunk to take it.
     const append = (current: string, chunk: string): string => {
-      if (current.length >= cap) {
+      const room = cap - stdout.length - stderr.length;
+      if (room <= 0) {
         outputTruncated = true;
         return current;
       }
-      const room = cap - current.length;
       if (chunk.length > room) {
         outputTruncated = true;
         return current + chunk.slice(0, room);
@@ -232,12 +253,15 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
         }, stallTick)
       : undefined;
 
+    options.signal?.addEventListener('abort', kill, { once: true });
+
     const finish = (code: number | null, signal: NodeJS.Signals | null): void => {
       if (settled) return;
       settled = true;
       live.delete(child);
       clearTimeout(watchdog);
       if (stallTimer) clearInterval(stallTimer);
+      options.signal?.removeEventListener('abort', kill);
       resolve({
         code,
         signal,
@@ -255,6 +279,7 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
       live.delete(child);
       clearTimeout(watchdog);
       if (stallTimer) clearInterval(stallTimer);
+      options.signal?.removeEventListener('abort', kill);
       reject(err);
     });
 
@@ -262,6 +287,35 @@ export function runProcess(options: SpawnOptions): Promise<SpawnResult> {
     // output written just before exit is lost.
     child.on('close', finish);
   });
+}
+
+/**
+ * What an aborted signal carries, as an Error. `AbortController.abort()` with
+ * no argument gives a DOMException named `AbortError`, which is what every
+ * layer above tests for by name.
+ */
+export function abortReason(signal: AbortSignal): Error {
+  const reason: unknown = signal.reason;
+  if (reason instanceof Error && isAbortError(reason)) return reason;
+  const error = new Error('the run was cancelled');
+  error.name = 'AbortError';
+  return error;
+}
+
+/** True for the error a cancelled run ends with, from whichever layer threw it. */
+export function isAbortError(error: unknown): boolean {
+  // By name rather than by class: `AbortSignal.reason` is a DOMException,
+  // and whether that is an `Error` has varied between Node versions.
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { name?: unknown }).name === 'AbortError'
+  );
+}
+
+/** Throws the signal's reason, as an Error, if it has been aborted. */
+export function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) throw abortReason(signal);
 }
 
 /** True when the command exists and can be started at all. */

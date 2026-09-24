@@ -1,7 +1,14 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Language, RunResult } from '@devpromax/shared';
-import { runProblemUnqueued, type JudgeTest, type RunProblemOptions } from './index.js';
+import {
+  isAbortError,
+  judgeCacheDir,
+  runProblemUnqueued,
+  type JudgeTest,
+  type RunProblemOptions,
+} from './index.js';
 import { PILOTS, makeWorkspaceRoot, syntheticMeta } from './__fixtures__/pilots.js';
 
 /**
@@ -708,15 +715,70 @@ describe('java memory and stack', () => {
     expect(result.verdict).toBe('MLE');
   });
 
+  /*
+   * A one-line runaway recursion under `-Xss64m` is about four million frames
+   * deep when it overflows, and the error then unwinds every one of them: half
+   * a second on the home server idle, and past the default two-second budget
+   * with other suites running beside it - where this test used to see TLE.
+   * The limit here is generous because what is under test is the verdict, not
+   * the time; the harness's own answer to the slow case is the next test.
+   */
   it('keeps a StackOverflowError as RE, not MLE', async () => {
     const result = await runSynthetic(
       'java',
       'class Solution {\n    public int solve(int n) {\n        return solve(n + 1);\n    }\n}\n',
+      { meta: { limits: { timeoutMs: { java: 15000 } } } },
     );
 
     expect(result.verdict).toBe('RE');
     expect(result.tests[0]?.message).toContain('StackOverflowError');
   });
+
+  it('still says StackOverflowError when unwinding it outlasts the budget (P2-19)', async () => {
+    // 300 ms is less than an overflow of this depth takes on any machine this
+    // runs on, so the test is past its budget while the error unwinds; the
+    // harness gives a worker that deep in recursion a grace period to finish.
+    const result = await runSynthetic(
+      'java',
+      'class Solution {\n    public int solve(int n) {\n        return solve(n + 1);\n    }\n}\n',
+      { meta: { limits: { timeoutMs: { java: 300 } } } },
+    );
+
+    expect(result.verdict).toBe('RE');
+    expect(result.tests[0]?.message).toContain('StackOverflowError');
+  });
+
+  it('keeps a deep recursion that is merely slow a TLE (P2-19)', async () => {
+    // Deep, so it earns the grace period, and never overflows: the grace is for
+    // an error that has already happened, not extra time for a slow answer.
+    const code = [
+      'class Solution {',
+      '    public int solve(int n) {',
+      '        return spin(0);',
+      '    }',
+      '',
+      '    private int spin(int depth) {',
+      '        if (depth < 5000) {',
+      '            return spin(depth + 1);',
+      '        }',
+      '        while (true) {',
+      '        }',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+    const tests: JudgeTest[] = [
+      { source: 'sample', test: { args: [1], expected: 1 } },
+      { source: 'sample', test: { args: [2], expected: 2 } },
+    ];
+
+    const result = await runSynthetic('java', code, {
+      tests,
+      meta: { limits: { timeoutMs: { java: 500 } } },
+    });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['TLE', 'TLE']);
+  }, 60_000);
 });
 
 describe('python recursion', () => {
@@ -1358,5 +1420,414 @@ describe('output and result bounds', () => {
 
     expect(result.verdict).toBe('TLE');
     expect(result.tests[0]?.message).toMatch(/time limit/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Failure recovery (ROADMAP P2-17)
+// ---------------------------------------------------------------------------
+
+/**
+ * A file the solution appends to as it loads, so a test can count the
+ * processes a run took: one character per harness start.
+ */
+function loadCounter(): { count: () => number; python: string; java: string } {
+  const file = path.join(workspaceRoot, `loads-${Math.random().toString(36).slice(2)}.txt`);
+  const literal = JSON.stringify(file);
+  return {
+    count: () => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8').length : 0),
+    python: `with open(${literal}, "a") as _loads:\n    _loads.write("x")\n`,
+    java: [
+      '    static {',
+      '        try {',
+      `            java.nio.file.Files.writeString(java.nio.file.Path.of(${literal}), "x",`,
+      '                    java.nio.file.StandardOpenOption.CREATE,',
+      '                    java.nio.file.StandardOpenOption.APPEND);',
+      '        } catch (java.io.IOException ignored) {',
+      '        }',
+      '    }',
+    ].join('\n'),
+  };
+}
+
+const THREE: JudgeTest[] = [
+  { source: 'sample', test: { args: [0], expected: 0 } },
+  { source: 'sample', test: { args: [1], expected: 1 } },
+  { source: 'sample', test: { args: [2], expected: 2 } },
+];
+
+describe('failure recovery: after a failing test the batch resumes', () => {
+  const fastLimits = { limits: { timeoutMs: { python: 800, java: 800 } } };
+
+  it.each(LANGUAGES)(
+    '%s: takes one process per failure plus one, not one per remaining test',
+    async (language) => {
+      const counter = loadCounter();
+      const tests: JudgeTest[] = [0, 1, 2, 3, 4].map((n) => ({
+        source: 'sample',
+        test: { args: [n], expected: n },
+      }));
+      const code =
+        language === 'python'
+          ? `${counter.python}\n\nclass Solution:\n    def solve(self, n):\n        while n in (1, 3):\n            pass\n        return n\n`
+          : `class Solution {\n${counter.java}\n\n    public int solve(int n) {\n        while (n == 1 || n == 3) {\n        }\n        return n;\n    }\n}\n`;
+
+      const result = await runSynthetic(language, code, { tests, meta: fastLimits });
+
+      expect(result.tests.map((t) => t.verdict)).toEqual(['AC', 'TLE', 'AC', 'TLE', 'AC']);
+      expect(result.isolationFallback).toBe(true);
+      // Two failures: the first batch, and one restart after each. D3's old
+      // fallback took five - the first batch and one per test after test 1.
+      expect(counter.count()).toBe(3);
+    },
+    90_000,
+  );
+
+  it('python: a test that kills its own process is blamed alone, and the rest still run', async () => {
+    const counter = loadCounter();
+    const code = `import os\n${counter.python}\n\nclass Solution:\n    def solve(self, n):\n        if n == 1:\n            os._exit(9)\n        return n\n`;
+
+    const result = await runSynthetic('python', code, { tests: THREE });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['AC', 'RE', 'AC']);
+    expect(result.tests[1]?.message).toMatch(/ProcessExited: the process exited with code 9/);
+    expect(result.isolationFallback).toBe(true);
+    expect(counter.count()).toBe(2);
+  });
+
+  it('java: System.exit in a test is reported against that test, with where it was called', async () => {
+    const counter = loadCounter();
+    const code = [
+      'class Solution {',
+      counter.java,
+      '',
+      '    public int solve(int n) {',
+      '        if (n == 1) {',
+      '            System.exit(0);',
+      '        }',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code, { tests: THREE });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['AC', 'RE', 'AC']);
+    expect(result.tests[1]?.message).toMatch(/^SystemExit: the solution called System\.exit/);
+    expect(result.tests[1]?.stderr).toContain('Solution.solve');
+    expect(counter.count()).toBe(2);
+  });
+});
+
+describe('failure recovery: a solution that never finishes loading fails once', () => {
+  const fastLimits = { limits: { timeoutMs: { python: 800, java: 800 } } };
+
+  it.each(LANGUAGES)(
+    '%s: a hang while loading is one TLE for every test',
+    async (language) => {
+      const code =
+        language === 'python'
+          ? 'while True:\n    pass\n\n\nclass Solution:\n    def solve(self, n):\n        return n\n'
+          : // javac refuses an initialiser that provably never completes, so
+            // the loop's condition is one it cannot prove.
+            'class Solution {\n    static {\n        while (System.nanoTime() != 0) {\n        }\n    }\n\n    public int solve(int n) {\n        return n;\n    }\n}\n';
+
+      const started = Date.now();
+      const result = await runSynthetic(language, code, { tests: THREE, meta: fastLimits });
+
+      expect(result.tests.map((t) => t.verdict)).toEqual(['TLE', 'TLE', 'TLE']);
+      expect(result.tests[0]?.message).toMatch(/did not finish loading/);
+      expect(result.isolationFallback).toBe(false);
+      // One stall (0.8 s + 3 s slack), where it used to be that and then three
+      // isolated runs of 5.8 s each. Generous, for a loaded machine.
+      expect(Date.now() - started).toBeLessThan(15_000);
+    },
+    60_000,
+  );
+
+  it('python: a process that dies while loading is explained once, not per test', async () => {
+    const result = await runSynthetic(
+      'python',
+      'import os\n\nos._exit(7)\n\n\nclass Solution:\n    def solve(self, n):\n        return n\n',
+      { tests: THREE },
+    );
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['RE', 'RE', 'RE']);
+    expect(result.tests[0]?.message).toMatch(/could not be loaded: the process exited with code 7/);
+    expect(result.isolationFallback).toBe(false);
+  });
+
+  it('java: a static initialiser that throws is the reported failure', async () => {
+    const code = [
+      'class Solution {',
+      '    static final int LIMIT = compute();',
+      '',
+      '    static int compute() {',
+      '        throw new IllegalStateException("boom");',
+      '    }',
+      '',
+      '    public int solve(int n) {',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code, { tests: THREE });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['RE', 'RE', 'RE']);
+    expect(result.tests[0]?.message).toBe('a static initialiser threw IllegalStateException: boom');
+    expect(result.tests[0]?.stderr).toContain('Solution.compute');
+    expect(result.isolationFallback).toBe(false);
+  });
+
+  it('java: System.exit while loading says so', async () => {
+    const code =
+      'class Solution {\n    static {\n        System.exit(3);\n    }\n\n    public int solve(int n) {\n        return n;\n    }\n}\n';
+
+    const result = await runSynthetic('java', code, { tests: THREE });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['RE', 'RE', 'RE']);
+    expect(result.tests[0]?.message).toMatch(/System\.exit while its classes were loading/);
+  });
+});
+
+describe('cancellation (P2-17)', () => {
+  it.each(LANGUAGES)(
+    '%s: an aborted run kills its process and returns nothing',
+    async (language) => {
+      const code =
+        language === 'python'
+          ? 'class Solution:\n    def solve(self, n):\n        while True:\n            pass\n'
+          : 'class Solution {\n    public int solve(int n) {\n        while (true) {\n        }\n    }\n}\n';
+      const before = fs.readdirSync(workspaceRoot).length;
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 1500);
+
+      const started = Date.now();
+      const error = await runProblemUnqueued({
+        meta: syntheticMeta({ limits: { timeoutMs: { python: 30_000, java: 30_000 } } }),
+        language,
+        code,
+        tests: THREE,
+        kind: 'run',
+        workspaceRoot,
+        signal: controller.signal,
+      }).catch((e: unknown) => e);
+
+      expect(isAbortError(error)).toBe(true);
+      // Thirty seconds a test was the limit; the abort is what ended it.
+      expect(Date.now() - started).toBeLessThan(15_000);
+      expect(fs.readdirSync(workspaceRoot).length).toBe(before);
+    },
+    60_000,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Speed (ROADMAP P2-18)
+// ---------------------------------------------------------------------------
+
+describe('speed', () => {
+  it('java: compiles the harness once, into the cache beside the workspaces', async () => {
+    const first = await runSynthetic(
+      'java',
+      'class Solution {\n    public int solve(int n) {\n        return n;\n    }\n}\n',
+    );
+    expect(first.verdict).toBe('AC');
+
+    const cache = judgeCacheDir(workspaceRoot);
+    const builds = fs
+      .readdirSync(cache)
+      .filter((entry) => entry.startsWith('java-harness-'))
+      .map((entry) => path.join(cache, entry));
+    expect(builds.length).toBeGreaterThanOrEqual(1);
+    expect(builds.some((dir) => fs.existsSync(path.join(dir, 'DevProMaxMain.class')))).toBe(true);
+    expect(builds.some((dir) => fs.existsSync(path.join(dir, 'ListNode.class')))).toBe(true);
+  });
+
+  it('java: explains a user-declared TreeNode, and points at it', async () => {
+    const code = [
+      'class Solution {',
+      '    public int solve(int n) {',
+      '        return n;',
+      '    }',
+      '}',
+      '',
+      'class TreeNode {',
+      '    int val;',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code);
+    expect(result.verdict).toBe('CE');
+    expect(result.compileErrors).toHaveLength(1);
+    expect(result.compileErrors[0]).toMatchObject({ line: 7, column: 7 });
+    expect(result.compileErrors[0]?.message).toContain('the judge already defines `TreeNode`');
+  });
+
+  it('python: a syntax error found by the harness is CE with its line and column', async () => {
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        return (n +\n',
+      { tests: THREE },
+    );
+
+    expect(result.verdict).toBe('CE');
+    expect(result.tests.every((t) => t.verdict === 'CE')).toBe(true);
+    expect(result.compileErrors[0]).toMatchObject({ severity: 'error' });
+    expect(result.compileErrors[0]?.line).toBeGreaterThan(0);
+    expect(result.compileErrors[0]?.column).toBeGreaterThan(0);
+  });
+
+  it('python: builds a large tree in linear time', async () => {
+    // 100,001 nodes in level order; `pop(0)` made this quadratic.
+    const values = Array.from({ length: 100_001 }, (_, i) => i);
+    const code = [
+      'from typing import Optional',
+      '',
+      '',
+      'class Solution:',
+      '    def solve(self, root: Optional[TreeNode]) -> int:',
+      '        count, stack = 0, [root]',
+      '        while stack:',
+      '            node = stack.pop()',
+      '            if node is not None:',
+      '                count += 1',
+      '                stack.append(node.left)',
+      '                stack.append(node.right)',
+      '        return count',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('python', code, {
+      tests: [{ source: 'sample', test: { args: [values], expected: 100_001 } }],
+    });
+    expect(result.verdict).toBe('AC');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Edge cases (ROADMAP P2-19)
+// ---------------------------------------------------------------------------
+
+describe('edge cases', () => {
+  it.each(LANGUAGES)('%s: [null] is the empty tree', async (language) => {
+    const code =
+      language === 'python'
+        ? 'from typing import Optional\n\n\nclass Solution:\n    def solve(self, root: Optional[TreeNode]) -> bool:\n        return root is None\n'
+        : 'class Solution {\n    public boolean solve(TreeNode root) {\n        return root == null;\n    }\n}\n';
+
+    const result = await runSynthetic(language, code, {
+      tests: [{ source: 'sample', test: { args: [[null]], expected: true } }],
+    });
+    expect(result.verdict).toBe('AC');
+  });
+
+  it.each(LANGUAGES)('%s: a lone surrogate in a result travels intact', async (language) => {
+    const code =
+      language === 'python'
+        ? 'class Solution:\n    def solve(self, n):\n        print("half " + chr(0xD800))\n        return "a" + chr(0xD800) + "\\U0001F600"\n'
+        : 'class Solution {\n    public String solve(int n) {\n        System.out.println("half " + (char) 0xD800);\n        return "a" + (char) 0xD800 + "\\uD83D\\uDE00";\n    }\n}\n';
+
+    const result = await runSynthetic(language, code, {
+      tests: [{ source: 'sample', test: { args: [1], expected: 'a\uD800\u{1F600}' } }],
+    });
+
+    expect(result.verdict).toBe('AC');
+    expect(result.tests[0]?.stdout).toContain('half');
+    expect(result.isolationFallback).toBe(false);
+  });
+
+  it('python: a number JSON cannot carry fails that test, and only that test', async () => {
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        return 10 ** 400 if n == 1 else n\n',
+      { tests: THREE },
+    );
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['AC', 'RE', 'AC']);
+    expect(result.tests[1]?.message).toMatch(/^UnreadableResult: .*too large/);
+    expect(result.isolationFallback).toBe(false);
+  });
+
+  it('a checker that throws on a wrong answer judges it WA, saying so', async () => {
+    const dir = fs.mkdtempSync(path.join(workspaceRoot, 'checker-'));
+    fs.writeFileSync(
+      path.join(dir, 'checker.ts'),
+      [
+        "import type { CheckerFn } from '@devpromax/shared';",
+        '',
+        'const check: CheckerFn = ({ actual }) => {',
+        "  if (!Array.isArray(actual)) throw new TypeError('expected a list');",
+        '  return { pass: true };',
+        '};',
+        '',
+        'export default check;',
+        '',
+      ].join('\n'),
+    );
+
+    const result = await run({
+      meta: syntheticMeta({ comparator: { kind: 'checker' } }),
+      problemDir: dir,
+      language: 'python',
+      code: 'class Solution:\n    def solve(self, n):\n        return [n] if n != 1 else n\n',
+      tests: THREE,
+    });
+
+    expect(result.tests.map((t) => t.verdict)).toEqual(['AC', 'WA', 'AC']);
+    expect(result.tests[1]?.message).toBe('checker failed: expected a list');
+  });
+
+  it('a concealed hidden test says what failed, never with what input', async () => {
+    const tests: JudgeTest[] = [
+      { source: 'sample', test: { args: [1], expected: 1 } },
+      { source: 'hidden', test: { args: [48213], expected: 48213 } },
+      { source: 'hidden', test: { args: [90417], expected: 90417 } },
+    ];
+    const result = await runSynthetic(
+      'python',
+      'class Solution:\n    def solve(self, n):\n        if n > 1000:\n            raise KeyError(n)\n        return n\n',
+      { tests },
+    );
+
+    // The first failing hidden test is revealed, message and all (P2-6).
+    expect(result.tests[1]?.revealed).toBe(true);
+    expect(result.tests[1]?.message).toContain('48213');
+    // The second stays hidden, and its message used to carry its input.
+    expect(result.tests[2]?.revealed).toBe(false);
+    expect(result.tests[2]?.verdict).toBe('RE');
+    expect(result.tests[2]?.message).toBe('KeyError');
+  });
+
+  it('java: a public class other than Solution gets advice it can follow', async () => {
+    const code = [
+      'public class Counter {',
+      '    private int count;',
+      '',
+      '    public int add(int n) {',
+      '        count += n;',
+      '        return count;',
+      '    }',
+      '}',
+      '',
+    ].join('\n');
+
+    const result = await runSynthetic('java', code, {
+      meta: { mode: 'operations', entry: 'Counter' },
+      tests: [
+        {
+          source: 'sample',
+          test: { args: [], ops: [{ method: 'add', args: [2] }], expected: [2] },
+        },
+      ],
+    });
+
+    expect(result.verdict).toBe('CE');
+    expect(result.compileErrors[0]).toMatchObject({ line: 1 });
+    expect(result.compileErrors[0]?.message).toContain('remove `public` from `class Counter`');
   });
 });

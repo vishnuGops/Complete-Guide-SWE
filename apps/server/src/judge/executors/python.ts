@@ -1,14 +1,12 @@
 import fs from 'node:fs/promises';
-import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { OUTPUT_CAP_BYTES } from '@devpromax/shared';
-import { parseResultLines } from '../protocol.js';
 import type { HarnessPayload } from '../protocol.js';
 import { localLauncher, type Launcher } from './launcher.js';
 import { compileTimeoutMessage } from './compileErrors.js';
+import { PAYLOAD_FILE, RESULTS_FILE, runHarness } from './harnessRun.js';
 import type { Workspace } from '../workspace.js';
-import type { Executor, HarnessRun, PrepareResult } from './types.js';
+import type { Executor, HarnessRun, PrepareOptions, PrepareResult, RunLimits } from './types.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /** src/judge/executors -> src/judge/harness (and the same shape under dist/). */
@@ -16,16 +14,21 @@ const HARNESS_SOURCE = path.resolve(HERE, '..', 'harness', 'runner.py');
 
 export { PYTHON_COMMAND } from './commands.js';
 
-export const RESULTS_FILE = 'results.jsonl';
-const PAYLOAD_FILE = 'payload.json';
+export { RESULTS_FILE };
 const HARNESS_FILE = 'runner.py';
 const SOLUTION_FILE = 'solution.py';
 
 /**
- * Python's answer to "compile": `py_compile` turns a syntax error into a
- * diagnostic with a line and column before any test runs, so the user gets the
- * same CE-with-markers experience Java gives rather than a runtime traceback on
- * test 1.
+ * Python's answer to "compile", for `checkCompiles` alone: `compile()` turns a
+ * syntax error into a diagnostic with a line and column without running
+ * anything.
+ *
+ * A Run and a Submit no longer pay for it (ROADMAP P2-18). It was a whole
+ * interpreter start - a sixth of a Python Run on this machine, and a container
+ * start under Docker - spent learning what the harness learns anyway when it
+ * imports the solution, and already reports as a fatal `compile` record with the
+ * same line and column. The validator keeps it because checking a starter has no
+ * harness run to ride on.
  */
 const SYNTAX_CHECK = `
 import json, sys, traceback
@@ -53,19 +56,29 @@ sys.exit(0)
  * container the workspace is not where this process created it.
  */
 export function createPythonExecutor(launcher: Launcher): Executor {
+  async function writeSources(workspace: Workspace, code: string): Promise<void> {
+    await workspace.write(SOLUTION_FILE, code);
+    await fs.copyFile(HARNESS_SOURCE, workspace.file(HARNESS_FILE));
+  }
+
   return {
     language: 'python',
     solutionFile: SOLUTION_FILE,
     startupMs: launcher.startupMs,
 
-    async prepare(
+    async prepare(workspace: Workspace, code: string): Promise<PrepareResult> {
+      const started = Date.now();
+      await writeSources(workspace, code);
+      return { ok: true, timeMs: Date.now() - started };
+    },
+
+    async check(
       workspace: Workspace,
       code: string,
-      compileTimeoutMs: number,
+      options: PrepareOptions,
     ): Promise<PrepareResult> {
       const started = Date.now();
-      await workspace.write(SOLUTION_FILE, code);
-      await fs.copyFile(HARNESS_SOURCE, workspace.file(HARNESS_FILE));
+      await writeSources(workspace, code);
 
       const result = await launcher.run(
         'python',
@@ -76,7 +89,11 @@ export function createPythonExecutor(launcher: Launcher): Executor {
         // loads `solution.py` by path rather than importing it by name (P2-12).
         ['-X', 'utf8', '-I', '-c', SYNTAX_CHECK, launcher.path(workspace, SOLUTION_FILE)],
         workspace,
-        { timeoutMs: compileTimeoutMs, outputCap: 16 * 1024 },
+        {
+          timeoutMs: options.compileTimeoutMs,
+          outputCap: 16 * 1024,
+          ...(options.signal ? { signal: options.signal } : {}),
+        },
       );
 
       const timeMs = Date.now() - started;
@@ -86,7 +103,7 @@ export function createPythonExecutor(launcher: Launcher): Executor {
         return {
           ok: false,
           timeMs,
-          errors: [{ message: compileTimeoutMessage(compileTimeoutMs), severity: 'error' }],
+          errors: [{ message: compileTimeoutMessage(options.compileTimeoutMs), severity: 'error' }],
           stderr: result.stderr,
         };
       }
@@ -107,23 +124,10 @@ export function createPythonExecutor(launcher: Launcher): Executor {
       };
     },
 
-    async run(
-      workspace: Workspace,
-      payload: HarnessPayload,
-      wallClockMs: number,
-      stallMs?: number,
-    ): Promise<HarnessRun> {
-      // The harness opens these two by the paths in the payload, so they are
-      // named as the harness will see them.
-      const located: HarnessPayload = {
-        ...payload,
-        solutionPath: launcher.path(workspace, SOLUTION_FILE),
-        resultsPath: launcher.path(workspace, RESULTS_FILE),
-      };
-      await workspace.write(PAYLOAD_FILE, JSON.stringify(located));
-      await fs.rm(workspace.file(RESULTS_FILE), { force: true });
-
-      const result = await launcher.run(
+    run(workspace: Workspace, payload: HarnessPayload, limits: RunLimits): Promise<HarnessRun> {
+      return runHarness(
+        launcher,
+        workspace,
         'python',
         [
           '-X',
@@ -132,32 +136,10 @@ export function createPythonExecutor(launcher: Launcher): Executor {
           launcher.path(workspace, HARNESS_FILE),
           launcher.path(workspace, PAYLOAD_FILE),
         ],
-        workspace,
-        {
-          timeoutMs: wallClockMs,
-          outputCap: OUTPUT_CAP_BYTES,
-          // Progress is the results file growing, which happens once per
-          // completed test (ROADMAP P2-13). Read on this side, at the real path.
-          ...(stallMs === undefined
-            ? {}
-            : {
-                stall: { ms: stallMs, progress: () => resultsSizeOf(workspace.file(RESULTS_FILE)) },
-              }),
-        },
+        payload,
+        SOLUTION_FILE,
+        limits,
       );
-
-      const records = parseResultLines(await workspace.read(RESULTS_FILE));
-
-      return {
-        records,
-        exitCode: result.code,
-        signal: result.signal,
-        killed: result.killed,
-        stdout: result.stdout,
-        stderr: result.stderr,
-        outputTruncated: result.outputTruncated,
-        elapsedMs: result.elapsedMs,
-      };
     },
   };
 }
@@ -184,19 +166,5 @@ function parseSyntaxDiagnostic(
     };
   } catch {
     return undefined;
-  }
-}
-
-/**
- * The size of the results file, for the stall watchdog (ROADMAP P2-13).
- *
- * Synchronous and forgiving: it runs on a timer beside a child process, the
- * file may not exist yet, and a missing file is simply "no progress".
- */
-function resultsSizeOf(path: string): number {
-  try {
-    return fsSync.statSync(path).size;
-  } catch {
-    return 0;
   }
 }

@@ -38,6 +38,35 @@ export function harnessCollisionMessage(message: string): string | undefined {
   return name === undefined ? undefined : HARNESS_CLASSES[name];
 }
 
+/**
+ * A top-level class name the harness owns: the two node types, and anything
+ * starting `DevProMax` - the harness has helpers beyond the three named above,
+ * and a user class shadowing any of them breaks it at run time.
+ */
+export function isHarnessClassName(name: string): boolean {
+  return name in HARNESS_CLASSES || /^DevProMax\w*$/.test(name);
+}
+
+/** What to tell a user who declared a class the harness owns (ROADMAP P2-11, P2-18). */
+export function harnessClassMessage(name: string): string {
+  return (
+    HARNESS_CLASSES[name] ??
+    `the judge reserves class names beginning with \`DevProMax\`. Rename \`${name}\`.`
+  );
+}
+
+/**
+ * javac's `class LRUCache is public, should be declared in a file named
+ * LRUCache.java`, said in terms of what the user can see (ROADMAP P2-19).
+ *
+ * The file is named by the judge, not by them - their editor has no file name
+ * at all - so the advice javac gives cannot be followed. Removing `public` can,
+ * and changes nothing about how the judge calls the class.
+ */
+export function publicClassMessage(name: string): string {
+  return `remove \`public\` from \`class ${name}\`: the judge saves your code as Solution.java, where only a class named Solution may be public. Package-private works the same for every call the judge makes.`;
+}
+
 export interface ParsedDiagnostics {
   /** Diagnostics about the user's own source, ready for Monaco markers. */
   errors: CompileError[];
