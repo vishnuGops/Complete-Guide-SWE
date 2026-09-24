@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import {
   MAX_CUSTOM_TESTS,
   type CustomTestInput,
@@ -171,7 +171,7 @@ function CustomCase({
   );
 }
 
-export function TestcasePanel({ samples, shape, inputs, onChange, issues }: TestcasePanelProps) {
+function TestcasePanelBody({ samples, shape, inputs, onChange, issues }: TestcasePanelProps) {
   const addCase = () => {
     onChange([
       ...inputs,
@@ -243,3 +243,9 @@ export function TestcasePanel({ samples, shape, inputs, onChange, issues }: Test
     </div>
   );
 }
+
+/**
+ * Memoised (ROADMAP P4-18), for the same reason as the results panel: it is
+ * on screen while the user types code, and none of its props move when they do.
+ */
+export const TestcasePanel = memo(TestcasePanelBody);

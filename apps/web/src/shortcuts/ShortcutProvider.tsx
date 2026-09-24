@@ -18,6 +18,8 @@ import { matchShortcut, type ShortcutId } from './shortcuts.js';
  *     downloads; we only take it when something is actually listening, so the
  *     list page does not silently break a browser binding it has no use for.
  *   - **A dialog owns the keyboard while it is open.** See `insideDialog`.
+ *   - **So does a field that has its own meaning for the keys.** See
+ *     `insideLocalScope`.
  */
 
 type Handler = () => void;
@@ -38,6 +40,22 @@ type Handler = () => void;
 function insideDialog(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return target.closest('[role="dialog"], [role="alertdialog"]') !== null;
+}
+
+/**
+ * Whether the event came from inside an element that handles its own keys
+ * (ROADMAP P4-15).
+ *
+ * Marked with `data-shortcuts="local"`. The coach's follow-up box is the case:
+ * `Ctrl+Enter` there means "send", and the box used to claim it by stopping
+ * propagation in the capture phase on the input - which cannot work, because
+ * this listener is on the window and the window's capture phase runs first.
+ * The judge ran and the question sat there unsent. Skipping is decided here,
+ * where it can be, and the field handles the keys itself.
+ */
+function insideLocalScope(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.closest('[data-shortcuts="local"]') !== null;
 }
 
 interface Registry {
@@ -75,7 +93,7 @@ export function ShortcutProvider({ children }: { children: ReactNode }) {
       if (event.repeat) return;
       const shortcut = matchShortcut(event);
       if (!shortcut) return;
-      if (insideDialog(event.target)) return;
+      if (insideDialog(event.target) || insideLocalScope(event.target)) return;
 
       const stack = stacks.current.get(shortcut.id);
       const handler = stack?.at(-1);
@@ -100,10 +118,13 @@ export function ShortcutProvider({ children }: { children: ReactNode }) {
 /**
  * Binds one shortcut for as long as the component is mounted.
  *
- * `enabled` exists because the alternative is a handler that checks whether it
- * should have run. A Run shortcut pressed while a run is in flight should do
- * nothing *and* leave `Ctrl+Enter` alone, which is not the same as firing a
- * handler that returns early.
+ * `enabled` unregisters the binding, which hands the keys back to whoever is
+ * underneath - the browser, or Monaco. That is right for a screen that is not
+ * ready; it is wrong for a *busy* one (ROADMAP P4-15). A Run shortcut pressed
+ * while a run is in flight used to fall through to Monaco, whose own
+ * `Ctrl+Enter` inserts a line - so the user's code gained a blank line for
+ * every impatient press. Busy is therefore a handler that does nothing while
+ * staying registered, which still swallows the keys.
  */
 export function useShortcut(id: ShortcutId, handler: Handler, enabled = true): void {
   const registry = useContext(ShortcutContext);

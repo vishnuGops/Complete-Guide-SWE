@@ -1,10 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import type { ProblemListResponse } from '@devpromax/shared';
 import { aList, aProblem, fakeServer, path, renderApp } from '../../test/harness.js';
+import type * as StatusMarkModule from '../../ui/StatusMark.js';
 import { ProblemList } from './ProblemList.js';
+
+/*
+ * Counts how often a status glyph is drawn - one per row - so the test that a
+ * keystroke does not re-render the table (P4-18) has something to count.
+ * Otherwise the real component, untouched.
+ */
+const drawn = vi.hoisted(() => ({ rows: 0 }));
+vi.mock('../../ui/StatusMark.js', async (importOriginal) => {
+  const real = await importOriginal<typeof StatusMarkModule>();
+  return {
+    ...real,
+    StatusMark: (props: Parameters<typeof real.StatusMark>[0]) => {
+      drawn.rows += 1;
+      return real.StatusMark(props);
+    },
+  };
+});
 
 /**
  * The list and its filters (ROADMAP P4-4, P4-5).
@@ -103,6 +121,65 @@ describe('the table', () => {
     renderApp(<ProblemList />, { route: '/?tier=Easy' });
 
     expect(await screen.findByTestId('list-counts')).toHaveTextContent('2 of 20 problems');
+  });
+
+  it('announces the count as it changes, and says when the rows are stale', async () => {
+    // The first answer at once; every later one held until the test lets it go.
+    let release = (): void => undefined;
+    let calls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string) => {
+        const answer = () =>
+          new Response(JSON.stringify(aList(PROBLEMS)), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        // The header's progress counter asks too; it is not what is measured.
+        if (!input.startsWith('/api/problems')) return Promise.resolve(answer());
+        calls += 1;
+        if (calls === 1) return Promise.resolve(answer());
+        return new Promise<Response>((resolve) => {
+          release = () => {
+            resolve(answer());
+          };
+        });
+      }),
+    );
+    renderApp(<ProblemList />);
+
+    // A live region, so ticking a box is heard (P4-17).
+    expect(await screen.findByTestId('list-counts')).toHaveAttribute('role', 'status');
+    const table = screen.getByRole('table');
+    expect(table).toHaveAttribute('aria-busy', 'false');
+
+    await userEvent.setup().click(screen.getByRole('checkbox', { name: /Arrays/ }));
+    // The previous rows stay, dimmed - and marked busy for a screen reader.
+    await waitFor(() => {
+      expect(table).toHaveAttribute('aria-busy', 'true');
+    });
+
+    release();
+    await waitFor(() => {
+      expect(table).toHaveAttribute('aria-busy', 'false');
+    });
+  });
+
+  it('does not re-render the rows for a keystroke in the search box', async () => {
+    serve();
+    renderApp(<ProblemList />);
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+    const box = screen.getByRole('searchbox', { name: 'Search problems' });
+
+    // Synchronous changes, all inside the pause, so nothing reaches the URL:
+    // what is measured is the keystroke alone (P4-18).
+    const before = drawn.rows;
+    fireEvent.change(box, { target: { value: 's' } });
+    fireEvent.change(box, { target: { value: 'st' } });
+    fireEvent.change(box, { target: { value: 'sta' } });
+
+    expect(box).toHaveValue('sta');
+    expect(drawn.rows - before).toBe(0);
   });
 });
 
@@ -214,6 +291,59 @@ describe('filters', () => {
     expect(server.requests.at(-1)?.url.searchParams.get('sort')).toBe('rating');
   });
 
+  it('keeps focus in the filter card when Clear all takes itself away', async () => {
+    serve();
+    renderApp(<ProblemList />, { route: '/?tier=Hard' });
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Clear all' }));
+
+    // The button is gone with the filters it cleared; focus did not go with it (P4-17).
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Clear all' })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('heading', { name: 'Filters' })).toHaveFocus();
+  });
+
+  it('keeps what was typed when a filter is ticked before the search went out', async () => {
+    const server = serve();
+    renderApp(<ProblemList />);
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+    const box = screen.getByRole('searchbox', { name: 'Search problems' });
+
+    // Typed, then a box ticked inside the 200ms pause (P4-17).
+    fireEvent.change(box, { target: { value: 'stack ' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Arrays/ }));
+
+    await waitFor(() => {
+      const sent = server.requests.at(-1)?.url.searchParams;
+      expect(sent?.getAll('topic')).toEqual(['arrays']);
+      expect(sent?.get('q')).toBe('stack');
+    });
+    expect(box).toHaveValue('stack ');
+  });
+
+  it('sends a search trimmed, and spaces alone as no search at all', async () => {
+    const server = serve();
+    renderApp(<ProblemList />);
+    await screen.findByRole('row', { name: /Pair Sum Index/ });
+    const box = screen.getByRole('searchbox', { name: 'Search problems' });
+    const user = userEvent.setup();
+
+    await user.type(box, '  window  ');
+    await waitFor(() => {
+      expect(server.requests.at(-1)?.url.searchParams.get('q')).toBe('window');
+    });
+
+    await user.clear(box);
+    await user.type(box, '   ');
+    await waitFor(() => {
+      expect(server.requests.at(-1)?.url.searchParams.has('q')).toBe(false);
+    });
+    // Not filtered by nothing: no Clear all on offer.
+    expect(screen.queryByRole('button', { name: 'Clear all' })).not.toBeInTheDocument();
+  });
+
   it('searches after the typing stops, not on every keystroke', async () => {
     const server = serve();
     renderApp(<ProblemList />);
@@ -303,6 +433,25 @@ describe('empty states', () => {
 
     expect(await screen.findByText('No problem matches these filters.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear all filters' })).toBeInTheDocument();
+  });
+
+  it('puts focus in the search box when the way out takes itself away', async () => {
+    let filtered = true;
+    fakeServer([
+      {
+        match: path('/api/problems'),
+        body: () => (filtered ? { ...aList([]), total: 20, matched: 0 } : aList(PROBLEMS)),
+      },
+    ]);
+    renderApp(<ProblemList />, { route: '/?tier=Hard' });
+
+    const clear = await screen.findByRole('button', { name: 'Clear all filters' });
+    filtered = false;
+    await userEvent.setup().click(clear);
+
+    // The button leaves with the empty state; focus lands at the top of the list (P4-17).
+    expect(await screen.findByRole('row', { name: /Pair Sum Index/ })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search problems' })).toHaveFocus();
   });
 
   it('says something different when the catalogue itself is empty', async () => {

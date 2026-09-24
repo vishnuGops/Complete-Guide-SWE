@@ -183,6 +183,69 @@ describe('the command palette', () => {
     expect(screen.getByRole('listbox', { name: 'Results' })).toBeInTheDocument();
   });
 
+  it('says why when the server fails, rather than doing nothing (P4-15)', async () => {
+    fakeServer([
+      { match: path('/api/problems'), body: () => aList(PROBLEMS) },
+      { match: path('/api/progress'), body: () => aProgressOverview() },
+      {
+        match: path('/api/next'),
+        body: () =>
+          new Response(JSON.stringify({ error: 'Internal', message: 'The server fell over.' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      },
+    ]);
+    open();
+    const user = await openPalette();
+
+    await user.click(await screen.findByText('Random unsolved problem'));
+
+    expect(await screen.findByText('The server fell over.')).toBeInTheDocument();
+    expect(screen.getByRole('listbox', { name: 'Results' })).toBeInTheDocument();
+  });
+
+  it('asks the server once, however fast Enter is pressed (P4-15)', async () => {
+    let answer: (() => void) | undefined;
+    const server = fakeServer([
+      { match: path('/api/problems'), body: () => aList(PROBLEMS) },
+      { match: path('/api/progress'), body: () => aProgressOverview() },
+      {
+        match: path('/api/next'),
+        body: () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                answer = () => {
+                  controller.enqueue(
+                    new TextEncoder().encode(
+                      JSON.stringify({ problem: PROBLEMS[1], reason: 'Because.' }),
+                    ),
+                  );
+                  controller.close();
+                };
+              },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+      },
+    ]);
+    open();
+    const user = await openPalette();
+
+    // The first row is "Next recommended problem"; Enter on it, twice.
+    await screen.findByRole('combobox', { name: 'Search problems and commands' });
+    await user.keyboard('{Enter}{Enter}');
+    answer?.();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('where')).toHaveTextContent('/problems/clone-the-graph');
+    });
+    expect(server.requests.filter((request) => request.url.pathname === '/api/next')).toHaveLength(
+      1,
+    );
+  });
+
   it('filters the list down to bookmarks', async () => {
     serve();
     open();

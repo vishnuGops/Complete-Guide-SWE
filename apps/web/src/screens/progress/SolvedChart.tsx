@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { ActiveDay } from '@devpromax/shared';
+import { localDay } from '../relativeDay.js';
 
 /**
  * Solves over time (ROADMAP P9-6, docs/DESIGN.md 8).
@@ -47,7 +48,8 @@ export function cumulative(
   range: ChartRange,
   now = new Date(),
 ): ChartPoint[] {
-  const today = new Date(`${utcDay(now)}T00:00:00.000Z`);
+  // The local date (P7-11): the server sends the viewer's own days.
+  const today = new Date(`${localDay(now)}T00:00:00.000Z`);
   const sorted = [...solves].sort((a, b) => a.day.localeCompare(b.day));
   const first = sorted[0]?.day;
   const span =
@@ -74,12 +76,20 @@ export function cumulative(
   return points;
 }
 
-/** Clean ticks: 0 and up to three more, on round numbers. */
-function ticksFor(max: number): number[] {
+/**
+ * Clean ticks: 0 and up to three more, on round numbers.
+ *
+ * Never a step under 1 (P4-17): the axis counts problems, and with one solve
+ * the round step came out at 0.5 - ticks 0, 0.5, 1, rounded for printing to
+ * 0, 1, 1, which drew the label twice and handed React two children with the
+ * same key.
+ */
+export function ticksFor(max: number): number[] {
   if (max <= 0) return [0, 1];
   const rough = max / 3;
   const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const step = [1, 2, 5, 10].map((m) => m * magnitude).find((s) => s >= rough) ?? rough;
+  const round = [1, 2, 5, 10].map((m) => m * magnitude).find((s) => s >= rough) ?? rough;
+  const step = Math.max(1, round);
   const top = Math.ceil(max / step) * step;
   const ticks: number[] = [];
   for (let v = 0; v <= top + step / 2; v += step) ticks.push(Math.round(v));

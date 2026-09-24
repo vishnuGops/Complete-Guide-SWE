@@ -112,6 +112,19 @@ describe('sanitisation', () => {
   });
 });
 
+describe('the link and image overrides (P4-15)', () => {
+  it('do not write the hast node onto the DOM', () => {
+    const { container } = render(
+      <Markdown content={'[a link](https://example.com)\n\n![a grid](grid.png)'} />,
+    );
+
+    // react-markdown passes `node` to custom components; spread onto the
+    // element it became `node="[object Object]"`.
+    expect(container.querySelector('a')).not.toHaveAttribute('node');
+    expect(container.querySelector('img')).not.toHaveAttribute('node');
+  });
+});
+
 describe('images', () => {
   it('resolves a relative image against the problem assets route', () => {
     render(<Markdown content={'![a grid](grid.png)'} assetSlug="min-value-stack" />);

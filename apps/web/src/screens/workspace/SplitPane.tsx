@@ -1,4 +1,11 @@
-import { useCallback, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import {
+  useCallback,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { cn } from '../../ui/index.js';
 
 /**
@@ -13,7 +20,13 @@ import { cn } from '../../ui/index.js';
  * Home/End. Someone practising algorithms by keyboard should be able to give the
  * statement more room without reaching for the mouse (docs/DESIGN.md section 8).
  *
- * The ratio is controlled by the caller, because the caller is what persists it.
+ * The ratio is controlled by the caller, because the caller is what persists it
+ * - but only once a drag has finished (ROADMAP P4-18). While the handle moves,
+ * the ratio lives here: reporting every `pointermove` wrote the layout to
+ * `localStorage` and re-rendered the whole workspace sixty times a second, for
+ * a value nobody reads until the pointer is let go. `first` and `second` are
+ * the same elements throughout a drag, so React skips them and only this
+ * component's two flex boxes move.
  */
 
 export interface SplitPaneProps {
@@ -45,21 +58,31 @@ export function SplitPane({
   className,
 }: SplitPaneProps) {
   const container = useRef<HTMLDivElement>(null);
+  /** The ratio mid-drag, or null when the caller's is the one on screen. */
+  const [dragging, setDragging] = useState<number | null>(null);
+  const shown = dragging ?? ratio;
 
   const clamp = useCallback((value: number) => Math.min(max, Math.max(min, value)), [min, max]);
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    // Only while dragging: the handle captures the pointer on `pointerdown`, so
+    // Only while dragging. The handle captures the pointer on `pointerdown`, so
     // moves keep arriving here even when the cursor is over the editor.
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (dragging === null) return;
     const box = container.current?.getBoundingClientRect();
-    if (!box) return;
+    if (!box || (direction === 'row' ? box.width : box.height) === 0) return;
 
     const fraction =
       direction === 'row'
         ? (event.clientX - box.left) / box.width
         : (event.clientY - box.top) / box.height;
-    onRatio(clamp(fraction * 100));
+    setDragging(clamp(fraction * 100));
+  };
+
+  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragging === null) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setDragging(null);
+    if (dragging !== ratio) onRatio(dragging);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -84,7 +107,7 @@ export function SplitPane({
         className,
       )}
     >
-      <div className="flex min-h-0 min-w-0" style={{ flex: `0 0 ${String(ratio)}%` }}>
+      <div className="flex min-h-0 min-w-0" style={{ flex: `0 0 ${String(shown)}%` }}>
         {first}
       </div>
 
@@ -103,17 +126,19 @@ export function SplitPane({
         tabIndex={0}
         aria-orientation={direction === 'row' ? 'vertical' : 'horizontal'}
         aria-label={label}
-        aria-valuenow={Math.round(ratio)}
+        aria-valuenow={Math.round(shown)}
         aria-valuemin={min}
         aria-valuemax={max}
         onKeyDown={onKeyDown}
         onPointerDown={(event) => {
-          event.currentTarget.setPointerCapture(event.pointerId);
+          // Optional-called: jsdom has no pointer capture, and a drag that
+          // loses the pointer over the editor is still a drag here.
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+          setDragging(ratio);
         }}
         onPointerMove={onPointerMove}
-        onPointerUp={(event) => {
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
         className={cn(
           // The 12px gutter between two cards is the handle (P9-6): wide
           // enough to grab, empty until it is hovered or focused, when a 2px

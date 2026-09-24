@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Braces, ChartLine, ListChecks, MessagesSquare, Settings } from 'lucide-react';
 import { useShortcut } from '../shortcuts/ShortcutProvider.js';
 import { ErrorBoundary, RailItem } from '../ui/index.js';
@@ -29,6 +29,7 @@ import { useAppTheme } from './useAppTheme.js';
 export function AppShell() {
   // Applies the stored theme to the document; the control is in Settings.
   useAppTheme();
+  const { pathname } = useLocation();
 
   /*
    * The palette lives here rather than on a screen (ROADMAP P7-7): `Ctrl+K` has
@@ -75,9 +76,11 @@ export function AppShell() {
           {/*
             A screen that throws must not take the app with it (P4-12). Inside the
             shell rather than around it, so the rail - and with it the way out
-            to another screen - survives.
+            to another screen - survives. Keyed on the path (P4-15), so taking
+            that way out actually shows the other screen instead of the same
+            error under a new URL.
           */}
-          <ErrorBoundary title="This screen stopped working.">
+          <ErrorBoundary title="This screen stopped working." resetKey={pathname}>
             {/*
               Above the outlet (P8-3): the welcome is about the app rather than
               about one screen, and it takes itself off the page for good once

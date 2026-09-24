@@ -141,10 +141,9 @@ describe('Keys and SegmentBar', () => {
     expect(screen.getByRole('button', { name: 'AI Help' })).toBeInTheDocument();
   });
 
-  it('is a picture unless it is given a name', () => {
-    const { container, rerender } = render(<SegmentBar filled={2} total={5} />);
+  it('is a picture of the number printed beside it, hidden from the accessibility tree', () => {
+    const { container } = render(<SegmentBar filled={2} total={5} />);
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true');
-    rerender(<SegmentBar filled={2} total={5} label="2 of 5 solved" />);
-    expect(screen.getByRole('img', { name: '2 of 5 solved' })).toBeInTheDocument();
+    expect(container.firstElementChild?.children).toHaveLength(5);
   });
 });

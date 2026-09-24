@@ -57,6 +57,9 @@ export function buttonClasses(
     'focus-ring inline-flex items-center justify-center font-medium whitespace-nowrap',
     'transition-colors duration-75',
     'disabled:pointer-events-none disabled:opacity-45',
+    // Busy but still focusable: looks like `disabled`, keeps the focus a
+    // disabled button would drop (P4-17). The caller ignores the click.
+    'aria-disabled:cursor-not-allowed aria-disabled:opacity-45',
     VARIANTS[variant],
     pill ? PILL_SIZES[size] : SIZES[size],
   );

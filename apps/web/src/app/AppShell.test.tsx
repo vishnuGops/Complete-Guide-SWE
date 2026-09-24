@@ -93,6 +93,35 @@ describe('navigation', () => {
   });
 });
 
+describe('a screen that throws (P4-15)', () => {
+  function Broken(): never {
+    throw new Error('this screen is broken');
+  }
+
+  it('does not follow the user to the next screen', async () => {
+    serve();
+    // React logs the caught error, and the boundary logs it again on purpose.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderApp(
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Broken />} />
+          <Route path="/progress" element={<PageHeader title="Progress" />} />
+        </Route>
+      </Routes>,
+    );
+
+    expect(screen.getByText('This screen stopped working.')).toBeInTheDocument();
+
+    // The rail survives the error, and is the way out.
+    await userEvent.setup().click(screen.getByRole('link', { name: 'Progress' }));
+
+    expect(await screen.findByRole('heading', { name: 'Progress' })).toBeInTheDocument();
+    expect(screen.queryByText('This screen stopped working.')).not.toBeInTheDocument();
+    vi.mocked(console.error).mockRestore();
+  });
+});
+
 describe('the page header', () => {
   it('opens the palette from its search pill (P9-6)', async () => {
     serve();

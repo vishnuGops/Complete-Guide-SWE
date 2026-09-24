@@ -71,4 +71,35 @@ describe('ErrorBoundary', () => {
     expect(onReset).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Reload the page' })).not.toBeInTheDocument();
   });
+
+  it('clears the error when its reset key changes, without remounting a healthy screen (P4-15)', () => {
+    function Screen({ broken }: { broken: boolean }) {
+      if (broken) throw new Error('boom');
+      return <p>the next screen</p>;
+    }
+
+    const { rerender } = render(
+      <ErrorBoundary title="This screen stopped working." resetKey="/problems/a">
+        <Screen broken />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('This screen stopped working.');
+
+    // Same key, still broken: the error stays - nothing has moved.
+    rerender(
+      <ErrorBoundary title="This screen stopped working." resetKey="/problems/a">
+        <Screen broken={false} />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    // Navigated: the boundary lets the new screen render.
+    rerender(
+      <ErrorBoundary title="This screen stopped working." resetKey="/progress">
+        <Screen broken={false} />
+      </ErrorBoundary>,
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('the next screen')).toBeInTheDocument();
+  });
 });

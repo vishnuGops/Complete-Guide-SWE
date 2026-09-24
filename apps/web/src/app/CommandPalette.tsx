@@ -65,6 +65,13 @@ export function CommandPalette({
   const [query, setQuery] = useState('');
   const [at, setAt] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * An action is already running (ROADMAP P4-15). In a ref for the guard,
+   * because two Enters in one frame both read the same render's state; in
+   * state for `aria-busy`.
+   */
+  const acting = useRef(false);
+  const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -200,10 +207,29 @@ export function CommandPalette({
   function choose(index: number): void {
     const action = shownActions[index];
     if (action) {
-      void action.run().then((message) => {
-        if (message === null) onOpenChange(false);
-        else setNotice(message);
-      });
+      // A second Enter while the first is still asking the server would ask
+      // again - and for "Random", land on a second random problem.
+      if (acting.current) return;
+      acting.current = true;
+      setBusy(true);
+      action
+        .run()
+        .then(
+          (message) => {
+            if (message === null) onOpenChange(false);
+            else setNotice(message);
+          },
+          // Said in the palette, where the user is looking. Before this a
+          // failed request was an unhandled rejection and a key that did
+          // nothing.
+          (error: unknown) => {
+            setNotice(error instanceof Error ? error.message : 'That did not work.');
+          },
+        )
+        .finally(() => {
+          acting.current = false;
+          setBusy(false);
+        });
       return;
     }
     const problem = problems[index - shownActions.length];
@@ -281,6 +307,7 @@ export function CommandPalette({
             id="palette-results"
             role="listbox"
             aria-label="Results"
+            aria-busy={busy}
             className="max-h-96 overflow-y-auto pb-1"
           >
             {rows === 0 && (

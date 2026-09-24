@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes, useNavigate } from 'react-router-dom';
-import { screen, waitFor, within } from '@testing-library/react';
+import { useIsMutating } from '@tanstack/react-query';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Language, ProblemDetail, RunResult, Submission } from '@devpromax/shared';
 import {
@@ -12,6 +13,7 @@ import {
   someSettings,
   type Route as FakeRoute,
 } from '../../test/harness.js';
+import { useProblem } from '../../api/hooks.js';
 import { Workspace } from './Workspace.js';
 
 /**
@@ -21,17 +23,26 @@ import { Workspace } from './Workspace.js';
  * cannot lay out, and none of the behaviour under test is Monaco's: what these
  * assertions are about is the loop around it - which code is loaded, when a
  * draft is written, what Run sends, and what Reset destroys.
+ *
+ * The stand-in also hands its latest `onChange` to `editor`, so a test can type
+ * the way Monaco does - a change event and a keystroke inside one tick, before
+ * React has rendered the change.
  */
+const editor = vi.hoisted(() => ({ onChange: null as ((next: string) => void) | null }));
+
 vi.mock('../../editor/CodeEditor.js', () => ({
-  default: ({ value, onChange }: { value: string; onChange: (next: string) => void }) => (
-    <textarea
-      aria-label="Code"
-      value={value}
-      onChange={(event) => {
-        onChange(event.target.value);
-      }}
-    />
-  ),
+  default: ({ value, onChange }: { value: string; onChange: (next: string) => void }) => {
+    editor.onChange = onChange;
+    return (
+      <textarea
+        aria-label="Code"
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+      />
+    );
+  },
 }));
 
 const SLUG = 'pair-sum-index';
@@ -1193,6 +1204,7 @@ describe('draft integrity', () => {
     renderApp(
       <>
         <Elsewhere to={`/problems/${OTHER}`} />
+        <Mutating />
         <Routes>
           <Route path="/problems/:slug" element={<Workspace />} />
         </Routes>
@@ -1203,6 +1215,7 @@ describe('draft integrity', () => {
     const user = userEvent.setup();
     await screen.findByLabelText('Code');
     await user.click(screen.getByRole('button', { name: 'Run' }));
+    expect(screen.getByTestId('mutating')).toHaveTextContent('1');
 
     // The route changes without unmounting the workspace - same component, new
     // slug - and then the first problem's verdict arrives.
@@ -1210,13 +1223,31 @@ describe('draft integrity', () => {
     await screen.findByRole('heading', { name: 'Shift Right In Place' });
     release?.();
 
+    // Waits for the run to have *settled* before asserting anything (P4-15).
+    // The first version asserted straight away, before the verdict could have
+    // arrived, and so passed against a guard that could never fire.
+    await waitFor(() => {
+      expect(screen.getByTestId('mutating')).toHaveTextContent('0');
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
     // It is not shown: a verdict about code that is no longer on screen would
     // be read as a verdict about the code that is (P4-11).
-    await waitFor(() => {
-      expect(screen.queryByText('Accepted')).not.toBeInTheDocument();
-    });
+    expect(screen.queryByText('Accepted')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Testcases', selected: true })).toBeInTheDocument();
   });
 });
+
+/**
+ * How many mutations are in flight, from the cache rather than from the
+ * workspace - which lets go of a run when the scope changes, so its own
+ * `isPending` cannot say when that run has finished.
+ */
+function Mutating() {
+  return <span data-testid="mutating">{useIsMutating()}</span>;
+}
 
 /** A link out of the workspace, for the stale-result test. */
 function Elsewhere({ to }: { to: string }) {
@@ -1422,5 +1453,401 @@ describe('formatting (P9-5)', () => {
       expect(draftWrites(server).length).toBeGreaterThan(0);
     });
     expect(formatCalls(server)).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P4-14 and P4-15
+// ---------------------------------------------------------------------------
+
+/** A route whose answer waits until the test says so. */
+function heldRoute(match: (url: URL) => boolean, answer: () => unknown) {
+  let release: (() => void) | undefined;
+  const route: FakeRoute = {
+    match,
+    body: () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            release = () => {
+              controller.enqueue(new TextEncoder().encode(JSON.stringify(answer())));
+              controller.close();
+            };
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+  };
+  return {
+    route,
+    release: () => {
+      release?.();
+    },
+  };
+}
+
+/** A drafts route that echoes what it was sent, like the real one. */
+function echoDrafts(fail: () => boolean = () => false): FakeRoute {
+  return {
+    match: (url) => url.pathname.startsWith('/api/drafts/'),
+    body: (url, init) => {
+      if (init?.method === 'PUT' && fail()) {
+        return new Response(JSON.stringify({ error: 'Internal', message: 'The disk is full.' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (init?.method === 'DELETE') return { draft: null };
+      const code = (JSON.parse(String(init?.body ?? '{}')) as { code?: string }).code ?? '';
+      const [, , , slug = '', language = 'python'] = url.pathname.split('/');
+      return { draft: { slug, language, code, updatedAt: '2026-09-24T10:00:00.000Z' } };
+    },
+  };
+}
+
+const puts = (server: ReturnType<typeof serve>, prefix: string) =>
+  server.requests.filter(
+    (request) => request.method === 'PUT' && request.url.pathname.startsWith(prefix),
+  );
+
+const OTHER = 'shift-right-in-place';
+const otherProblem = () =>
+  aProblemDetail({
+    summary: { ...aProblemDetail().summary, slug: OTHER, title: 'Shift Right In Place' },
+  });
+
+describe('one autosave (P4-14)', () => {
+  it('seeds the editor for a problem that was already in the cache', async () => {
+    // The list, then the problem, then the list, then the problem again: the
+    // second mount has the problem on its first render, and used to skip the
+    // seeding and show an empty editor over the saved draft.
+    function WhenLoaded() {
+      const { data } = useProblem(SLUG);
+      return data ? <Workspace /> : <p>waiting</p>;
+    }
+    serve(
+      aProblemDetail({
+        drafts: {
+          python: {
+            slug: SLUG,
+            language: 'python',
+            code: 'half an answer',
+            updatedAt: '2026-09-17T09:00:00.000Z',
+          },
+        },
+      }),
+    );
+    renderApp(
+      <Routes>
+        <Route path="/problems/:slug" element={<WhenLoaded />} />
+      </Routes>,
+      { route: `/problems/${SLUG}` },
+    );
+
+    expect(await screen.findByLabelText('Code')).toHaveValue('half an answer');
+  });
+
+  it('does not file one problem’s code under the next while the next one loads', async () => {
+    const next = heldRoute(path(`/api/problems/${OTHER}`), otherProblem);
+    const server = serve(aProblemDetail(), [
+      next.route,
+      echoDrafts(),
+      { match: path(`/api/problems/${OTHER}/submissions`), body: () => ({ items: [] }) },
+    ]);
+    const view = renderApp(
+      <>
+        <Elsewhere to={`/problems/${OTHER}`} />
+        <Routes>
+          <Route path="/problems/:slug" element={<Workspace />} />
+        </Routes>
+      </>,
+      { route: `/problems/${SLUG}` },
+    );
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'the first problem’s answer');
+    // Inside the debounce, off to a problem that has not arrived yet...
+    await user.click(screen.getByRole('button', { name: 'open the other problem' }));
+    expect(await screen.findByText('Loading the problem')).toBeInTheDocument();
+    // ...and away again before it does. Keyed on the route, the pending save
+    // was now the second problem's, and this flush wrote it there.
+    view.unmount();
+
+    await waitFor(() => {
+      expect(puts(server, `/api/drafts/${SLUG}/`).map((request) => request.body)).toContainEqual({
+        code: 'the first problem’s answer',
+      });
+    });
+    expect(puts(server, `/api/drafts/${OTHER}/`)).toHaveLength(0);
+    next.release();
+  });
+
+  it('says a draft did not save, retries it, and stops saying so once it lands', async () => {
+    let failures = 1;
+    const server = serve(aProblemDetail(), [
+      echoDrafts(() => {
+        failures -= 1;
+        return failures >= 0;
+      }),
+    ]);
+    open();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'worth keeping');
+
+    // The first write fails. It used to be dropped here, with nothing on screen.
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('format-note')).toHaveTextContent('Not saved — retrying');
+      },
+      { timeout: 3000 },
+    );
+
+    // Retried without another keystroke, with the same text.
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('format-note')).toHaveTextContent('');
+      },
+      { timeout: 6000 },
+    );
+    const written = puts(server, '/api/drafts/').map((request) => request.body);
+    expect(written.length).toBeGreaterThanOrEqual(2);
+    expect(written.at(-1)).toEqual({ code: 'worth keeping' });
+  }, 12_000);
+
+  it('writes an unsaved draft with keepalive when the tab closes', async () => {
+    serve(aProblemDetail(), [echoDrafts()]);
+    open();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.clear(code);
+    await user.type(code, 'last words');
+    window.dispatchEvent(new Event('pagehide'));
+
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) => String(url).includes('/api/drafts/') && init?.keepalive === true,
+      );
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ code: 'last words' });
+  });
+
+  it('says a note did not save, and retries it', async () => {
+    let failures = 1;
+    const server = serve(aProblemDetail(), [
+      {
+        match: (url) => url.pathname.startsWith('/api/notes/') && failures-- > 0,
+        body: () =>
+          new Response(JSON.stringify({ error: 'Internal', message: 'The disk is full.' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      },
+    ]);
+    open();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+    await user.type(screen.getByLabelText('Your notes on this problem'), 'remember the empty case');
+
+    expect(
+      await screen.findByText(/Not saved — retrying/, {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/Not saved — retrying/)).not.toBeInTheDocument();
+      },
+      { timeout: 6000 },
+    );
+    const written = puts(server, '/api/notes/').map((request) => request.body);
+    expect(written.at(-1)).toEqual({ body: 'remember the empty case' });
+  }, 12_000);
+
+  it('writes the last of a note with keepalive when the tab closes', async () => {
+    serve();
+    open();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Notes' }));
+    await user.type(screen.getByLabelText('Your notes on this problem'), 'half a thought');
+    window.dispatchEvent(new Event('pagehide'));
+
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) => String(url).includes('/api/notes/') && init?.keepalive === true,
+      );
+    expect(call).toBeDefined();
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ body: 'half a thought' });
+    // With the header every `/api` request needs (D15).
+    expect(new Headers(call?.[1]?.headers).get('X-DevProMax-Client')).toBe('devpromax-web');
+  });
+});
+
+describe('workspace scoping and shortcuts (P4-15)', () => {
+  it('will not restore an attempt in the other language while the judge is working', async () => {
+    const run = heldRoute(path('/api/run'), () => aRunResult());
+    serve(
+      aProblemDetail(),
+      [run.route],
+      [
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          slug: SLUG,
+          language: 'java',
+          code: 'class Solution {}',
+          verdict: 'WA',
+          passed: 0,
+          total: 3,
+          timeMs: 12,
+          problemVersion: 1,
+          solveMs: null,
+          createdAt: '2026-09-17T10:00:00.000Z',
+        },
+      ],
+    );
+    open();
+    const user = userEvent.setup();
+
+    await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await user.click(screen.getByRole('tab', { name: /Submissions/ }));
+    const list = within(await screen.findByRole('list', { name: /Submissions for this problem/ }));
+    await user.click(list.getByRole('button', { expanded: false }));
+
+    // The language switch is locked for the same reason, and a restore across
+    // languages is a switch.
+    expect(screen.getByRole('button', { name: 'Restore, and switch to Java' })).toBeDisabled();
+
+    run.release();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Restore, and switch to Java' })).toBeEnabled();
+    });
+  });
+
+  it('does not let an old run’s error hide a newer submit’s verdict', async () => {
+    serve(aProblemDetail(), [
+      {
+        match: path('/api/run'),
+        body: () =>
+          new Response(JSON.stringify({ error: 'Internal', message: 'The judge fell over.' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      },
+    ]);
+    open();
+    const user = userEvent.setup();
+
+    await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await user.click(screen.getByRole('tab', { name: 'Results' }));
+    expect(await screen.findByText('The judge fell over.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    expect(await screen.findByTestId('verdict')).toHaveTextContent('Accepted');
+    expect(screen.queryByText('The judge fell over.')).not.toBeInTheDocument();
+  });
+
+  it('does not carry a failed run to the next problem', async () => {
+    serve(aProblemDetail(), [
+      {
+        match: path('/api/run'),
+        body: () =>
+          new Response(JSON.stringify({ error: 'Internal', message: 'The judge fell over.' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      },
+      { match: path(`/api/problems/${OTHER}`), body: otherProblem },
+      { match: path(`/api/problems/${OTHER}/submissions`), body: () => ({ items: [] }) },
+    ]);
+    renderApp(
+      <>
+        <Elsewhere to={`/problems/${OTHER}`} />
+        <Routes>
+          <Route path="/problems/:slug" element={<Workspace />} />
+        </Routes>
+      </>,
+      { route: `/problems/${SLUG}` },
+    );
+    const user = userEvent.setup();
+
+    await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await user.click(screen.getByRole('tab', { name: 'Results' }));
+    await screen.findByText('The judge fell over.');
+
+    await user.click(screen.getByRole('button', { name: 'open the other problem' }));
+    await screen.findByRole('heading', { name: 'Shift Right In Place' });
+    await user.click(screen.getByRole('tab', { name: 'Results' }));
+
+    expect(screen.queryByText('The judge fell over.')).not.toBeInTheDocument();
+  });
+
+  it('keeps the interview clock, and the hints shut, through a language switch', async () => {
+    serve();
+    open();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Interview mode' }));
+    await user.click(screen.getByRole('button', { name: 'Stopwatch' }));
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Code')).toHaveValue('class Solution {}\n');
+    });
+    // Same problem, same sitting: switching language is not leaving the interview.
+    expect(screen.getByRole('timer')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Hints' })).not.toBeInTheDocument();
+  });
+
+  it('runs the code as of the last keystroke, not the last render', async () => {
+    const server = serve();
+    open();
+    await screen.findByLabelText('Code');
+
+    // Monaco's change event and the next keystroke, before React renders
+    // between them - which is how Ctrl+Enter straight after typing arrives.
+    act(() => {
+      editor.onChange?.('typed a moment ago');
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { code: 'Enter', ctrlKey: true, cancelable: true }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(server.requests.some((request) => request.url.pathname === '/api/run')).toBe(true);
+    });
+    const run = server.requests.find((request) => request.url.pathname === '/api/run');
+    expect((run?.body as { code: string }).code).toBe('typed a moment ago');
+  });
+
+  it('swallows Ctrl+Enter while a run is in flight, instead of letting the editor have it', async () => {
+    const run = heldRoute(path('/api/run'), () => aRunResult());
+    const server = serve(aProblemDetail(), [run.route]);
+    open();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText('Code');
+    await user.click(screen.getByRole('button', { name: 'Run' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Running…' })).toBeDisabled();
+    });
+
+    // `fireEvent` answers false when the event was cancelled. Unbound while
+    // busy, the keys reached Monaco, whose Ctrl+Enter inserts a line.
+    const reachedEditor = fireEvent.keyDown(code, { key: 'Enter', code: 'Enter', ctrlKey: true });
+    expect(reachedEditor).toBe(false);
+    expect(server.requests.filter((request) => request.url.pathname === '/api/run')).toHaveLength(
+      1,
+    );
+
+    run.release();
+    expect(await screen.findByTestId('verdict')).toHaveTextContent('Accepted');
   });
 });

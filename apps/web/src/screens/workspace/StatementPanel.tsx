@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LANGUAGES,
@@ -10,6 +10,7 @@ import {
   type ProblemDetail,
   type Submission,
 } from '@devpromax/shared';
+import { api } from '../../api/client.js';
 import { useRevealEditorial, useSaveNote, useSubmissions } from '../../api/hooks.js';
 import { Markdown } from '../../markdown/Markdown.js';
 import {
@@ -25,6 +26,7 @@ import {
   cn,
 } from '../../ui/index.js';
 import { CodeDiff } from './CodeDiff.js';
+import { useDebouncedAutosave } from './useDebouncedAutosave.js';
 import { VERDICT_TONE } from './verdict.js';
 
 /**
@@ -256,9 +258,6 @@ function when(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-/** How long after the last keystroke a note is written. Matches the editor's. */
-const NOTE_AUTOSAVE_MS = 800;
-
 /**
  * Per-problem notes (ROADMAP P7-4).
  *
@@ -266,10 +265,11 @@ const NOTE_AUTOSAVE_MS = 800;
  * statement and the editorial are, and because the thing people actually write
  * here is a list with a code fence in it.
  *
- * Autosaved on the same debounce as the editor, and flushed on the way out -
- * the panel is kept mounted (`StickyTabsContent`) so a glance at the statement
- * does not lose the last sentence, but leaving the problem entirely still has
- * to write it.
+ * Autosaved by the same hook as the editor (P4-14): debounced, flushed on the
+ * way out, written with `keepalive` when the tab closes, and retried - with a
+ * note saying so - when a write fails. The panel is kept mounted
+ * (`StickyTabsContent`) so a glance at the statement does not lose the last
+ * sentence, but leaving the problem entirely still has to write it.
  */
 function Notes({ slug, note }: { slug: string; note: string | null }) {
   const save = useSaveNote();
@@ -285,39 +285,22 @@ function Notes({ slug, note }: { slug: string; note: string | null }) {
     setPreviewing(false);
   }
 
-  const saved = note ?? '';
-  // What is unsaved, in a ref so that the flush below is not a reason to
-  // re-run anything - the same three-effect split the editor's autosave uses.
-  const pending = useRef<{ slug: string; body: string } | null>(null);
-  useEffect(() => {
-    pending.current = body === saved ? null : { slug, body };
-  }, [body, saved, slug]);
-
-  const write = save.mutate;
-  const flush = useCallback(() => {
-    const next = pending.current;
-    if (next === null) return;
-    pending.current = null;
-    write(next);
-  }, [write]);
-
-  useEffect(() => {
-    if (body === saved) return;
-    const timer = setTimeout(flush, NOTE_AUTOSAVE_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [body, saved, flush]);
-
-  // Leaving the problem. The cleanup is the only thing that means "we are
-  // going", so it is the only place the last few hundred milliseconds of
-  // typing can still be written.
-  useEffect(
-    () => () => {
-      flush();
-    },
-    [slug, flush],
+  const write = save.mutateAsync;
+  // Only once the body on screen is this problem's: during the render-phase
+  // reset above, `body` briefly still holds the last one's.
+  const scope = useMemo(
+    () => (loadedFrom === slug ? { key: slug, slug } : null),
+    [loadedFrom, slug],
   );
+  const { retrying, error } = useDebouncedAutosave({
+    scope,
+    value: body,
+    saved: note ?? '',
+    write: (target, value) => write({ slug: target.slug, body: value }),
+    writeOnUnload: (target, value) => {
+      void api.saveNoteKeepalive(target.slug, value);
+    },
+  });
 
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
@@ -358,9 +341,9 @@ function Notes({ slug, note }: { slug: string; note: string | null }) {
         />
       )}
 
-      {save.error && (
+      {retrying && (
         <p className="text-danger-fg mt-2 text-sm" role="alert">
-          {save.error.message}
+          Not saved — retrying.{error ? ` ${error.message}` : ''}
         </p>
       )}
     </div>
@@ -453,11 +436,13 @@ function OpenSubmission({
   submission,
   code,
   language,
+  languageLocked,
   onRestore,
 }: {
   submission: Submission;
   code: string;
   language: Language;
+  languageLocked: boolean;
   onRestore: (submission: Submission) => void;
 }) {
   const [comparing, setComparing] = useState(false);
@@ -486,6 +471,9 @@ function OpenSubmission({
         <Button
           size="sm"
           variant="ghost"
+          // Switching language is locked while the judge works (P4-15), and a
+          // restore in the other language is a switch.
+          disabled={differs && languageLocked}
           onClick={() => {
             // Only when there is something to lose. Restoring over the untouched
             // starter, or over the very code being restored, is not a decision
@@ -542,11 +530,13 @@ function Submissions({
   slug,
   code,
   language,
+  languageLocked,
   onRestore,
 }: {
   slug: string;
   code: string;
   language: Language;
+  languageLocked: boolean;
   onRestore: (submission: Submission) => void;
 }) {
   const { data, isPending, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -589,6 +579,7 @@ function Submissions({
               submission={submission}
               code={code}
               language={language}
+              languageLocked={languageLocked}
               onRestore={onRestore}
             />
           )}
@@ -653,6 +644,11 @@ export interface StatementPanelProps {
    * think about, and the point of either mode is to practise without the option.
    */
   hideAssistance: boolean;
+  /**
+   * The judge is working, so the language may not change (P4-15) - which a
+   * restore of an attempt in the other language would do.
+   */
+  languageLocked: boolean;
   coach: ReactNode;
 }
 
@@ -678,6 +674,7 @@ function StatementPanelBody({
   code,
   onRestore,
   hideAssistance,
+  languageLocked,
   coach,
 }: StatementPanelProps) {
   const { summary } = problem;
@@ -780,7 +777,13 @@ function StatementPanelBody({
       </StickyTabsContent>
 
       <TabsContent value="submissions" className="min-h-0 flex-1 overflow-y-auto pt-0">
-        <Submissions slug={summary.slug} code={code} language={language} onRestore={onRestore} />
+        <Submissions
+          slug={summary.slug}
+          code={code}
+          language={language}
+          languageLocked={languageLocked}
+          onRestore={onRestore}
+        />
       </TabsContent>
     </Tabs>
   );

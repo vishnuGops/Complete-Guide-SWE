@@ -46,7 +46,7 @@ of length <code>n</code> and returning it will not pass — and neither will rea
 parameter to a new list, which leaves the caller's array untouched.</p>
 <h2>Input</h2>
 <ul>
-<li><code>values</code> — a list of integers, <code>1 &lt;= values.length &lt;= 10^5</code></li>
+<li><code>values</code> — a list of integers, <code>1 &lt;= values.length &lt;= 10^4</code></li>
 <li><code>shift</code> — a non-negative integer, possibly much larger than <code>values.length</code></li>
 </ul>
 <h2>Output</h2>

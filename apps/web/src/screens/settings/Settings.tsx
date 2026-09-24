@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { editorPrefsSchema, judgePrefsSchema, type ResetProgressResponse } from '@devpromax/shared';
+import {
+  editorPrefsSchema,
+  judgePrefsSchema,
+  type ResetProgressResponse,
+  type SettingsUpdate,
+} from '@devpromax/shared';
 import { useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
 import { ThemeToggle } from '../../app/ThemeToggle.js';
 import { RuntimeSection } from './RuntimeSection.js';
@@ -41,6 +46,18 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
     .map(([count, noun]) => `${String(count)} ${noun}${count === 1 ? '' : 's'}`);
 
   return said.length === 0 ? 'There was nothing to clear.' : `Cleared ${said.join(', ')}.`;
+}
+
+/** The card a write came from. Format on save is an editor field in its own card. */
+type WriteOrigin = 'coach' | 'editor' | 'formatting' | 'judge' | 'other';
+
+function originOf(patch: SettingsUpdate | undefined): WriteOrigin {
+  if (patch?.coach !== undefined) return 'coach';
+  if (patch?.judge !== undefined) return 'judge';
+  if (patch?.editor !== undefined) {
+    return 'formatOnSave' in patch.editor ? 'formatting' : 'editor';
+  }
+  return 'other';
 }
 
 /** The first card's worth of rows, at the height they will be. */
@@ -101,6 +118,13 @@ export function Settings() {
   const editor = settings.editor ?? DEFAULT_EDITOR;
   const judge = settings.judge ?? DEFAULT_JUDGE;
 
+  // A refused write is said in the card it came from (P3-7). The mutation keeps
+  // only the latest write's outcome, which is the one worth reporting: the next
+  // change clears it.
+  const failedIn = update.isError ? originOf(update.variables) : null;
+  const errorFor = (origin: WriteOrigin): Error | null =>
+    failedIn === origin ? update.error : null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {header}
@@ -114,8 +138,9 @@ export function Settings() {
           <CoachSection
             coach={settings.coach}
             saving={update.isPending}
-            onChange={(patch) => {
-              update.mutate(patch);
+            error={errorFor('coach')}
+            onChange={(patch, onSaved) => {
+              update.mutate(patch, onSaved ? { onSuccess: onSaved } : undefined);
             }}
           />
 
@@ -127,7 +152,11 @@ export function Settings() {
             </Row>
           </Section>
 
-          <Section title="Editor" description="How Monaco behaves in the workspace.">
+          <Section
+            title="Editor"
+            description="How Monaco behaves in the workspace."
+            error={errorFor('editor')}
+          >
             <Row label="Font size" hint="10 to 24 pixels.">
               <NumberField
                 label="Editor font size"
@@ -172,6 +201,7 @@ export function Settings() {
 
           <FormattingSection
             formatOnSave={editor.formatOnSave}
+            error={errorFor('formatting')}
             onFormatOnSave={(formatOnSave) => {
               update.mutate({ editor: { formatOnSave } });
             }}
@@ -180,6 +210,7 @@ export function Settings() {
           <Section
             title="Judge"
             description="How your code is run. The defaults suit a machine that is not busy doing something else."
+            error={errorFor('judge')}
           >
             <Row
               label="Time limit multiplier"
@@ -191,6 +222,7 @@ export function Settings() {
                 min={0.5}
                 max={5}
                 step={0.5}
+                fraction
                 onCommit={(timeoutMultiplier) => {
                   update.mutate({ judge: { timeoutMultiplier } });
                 }}
@@ -215,13 +247,18 @@ export function Settings() {
           >
             <Row
               label="Reset all progress"
-              hint="Deletes submissions, statuses, drafts and activity. Your notes and these settings are kept."
+              hint="Deletes submissions, statuses, drafts, activity, coach conversations and mock interviews. Your notes, stars and these settings are kept."
             >
+              {/*
+                Not `disabled` while the reset runs (P4-17): the dialog hands
+                focus back to this button as it closes, and a disabled button
+                cannot take it - focus fell to the page instead.
+              */}
               <Button
                 variant="danger"
-                disabled={reset.isPending}
+                aria-disabled={reset.isPending || undefined}
                 onClick={() => {
-                  setConfirming(true);
+                  if (!reset.isPending) setConfirming(true);
                 }}
               >
                 Reset…
@@ -246,7 +283,7 @@ export function Settings() {
         open={confirming}
         onOpenChange={setConfirming}
         title="Reset all progress?"
-        description="Every submission, status, draft and activity record is deleted. This cannot be undone, and there is no backup until the packaging work lands."
+        description="Every submission, status, draft and activity record is deleted, and every coach conversation and mock interview with them. This cannot be undone. To keep a copy first, run npm run db:backup in the project folder."
         confirmLabel="Delete everything"
         onConfirm={() => {
           reset.mutate();

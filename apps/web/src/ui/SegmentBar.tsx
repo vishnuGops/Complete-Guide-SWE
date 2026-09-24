@@ -10,25 +10,19 @@ import { cn } from './cn.js';
  * behind its review schedule, which the caller must also say in words.
  *
  * The bar is a picture of a number the caller prints beside it, so it is
- * `aria-hidden`; when there is no printed number, pass `label` and it becomes
- * an image with that name.
+ * `aria-hidden`: the caller must print the number. (A `label` that made it a
+ * named image went in P4-17 - no caller ever had a bar without its number.)
  */
 export interface SegmentBarProps {
   filled: number;
   total: number;
   tone?: 'success' | 'warn';
-  label?: string;
   className?: string;
 }
 
-export function SegmentBar({ filled, total, tone = 'success', label, className }: SegmentBarProps) {
+export function SegmentBar({ filled, total, tone = 'success', className }: SegmentBarProps) {
   return (
-    <span
-      role={label === undefined ? undefined : 'img'}
-      aria-label={label}
-      aria-hidden={label === undefined ? true : undefined}
-      className={cn('flex h-1.5 gap-0.5', className)}
-    >
+    <span aria-hidden className={cn('flex h-1.5 gap-0.5', className)}>
       {Array.from({ length: total }, (_, index) => (
         <span
           key={index}

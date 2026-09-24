@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, type ComponentProps } from 'react';
-import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform, type ExtraProps } from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import { rehypeHighlight } from './highlight.js';
@@ -106,7 +106,14 @@ export interface MarkdownProps {
   className?: string;
 }
 
-function anchor({ href, children, ...props }: ComponentProps<'a'>) {
+/*
+ * `node` is taken out of both overrides below (ROADMAP P4-15). react-markdown
+ * hands every custom component the hast node it came from, and spreading the
+ * rest of the props onto the DOM element wrote `node="[object Object]"` onto
+ * every link and image - and React warned about it on every render.
+ */
+
+function anchor({ href, children, node: _node, ...props }: ComponentProps<'a'> & ExtraProps) {
   const external = href !== undefined && /^https?:/i.test(href);
   return (
     <a
@@ -121,7 +128,7 @@ function anchor({ href, children, ...props }: ComponentProps<'a'>) {
   );
 }
 
-function image({ alt, ...props }: ComponentProps<'img'>) {
+function image({ alt, node: _node, ...props }: ComponentProps<'img'> & ExtraProps) {
   // `alt` is required by the markdown syntax but may be empty; jsx-a11y wants it
   // present either way, and an empty one correctly marks a decorative figure.
   return <img alt={alt ?? ''} loading="lazy" {...props} />;

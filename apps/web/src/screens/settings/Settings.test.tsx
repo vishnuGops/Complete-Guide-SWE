@@ -61,6 +61,8 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
     model: null,
     message: 'That key was rejected.',
   };
+  /** When set, every settings write is answered 400 with this message (P3-7). */
+  let refusal: string | null = null;
 
   const server = fakeServer([
     {
@@ -70,6 +72,12 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
 
         const patch = JSON.parse(String(init.body)) as SettingsUpdate;
         writes.push(patch);
+        if (refusal !== null) {
+          return new Response(JSON.stringify({ error: 'BadRequest', message: refusal }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
 
         const coach = { ...state.view.coach };
         if (patch.coach?.provider !== undefined) coach.provider = patch.coach.provider;
@@ -89,6 +97,19 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
     {
       match: path('/api/settings/test-connection'),
       body: () => connection,
+    },
+    {
+      match: path('/api/settings/reset-progress'),
+      body: () => ({
+        cleared: {
+          submissions: 3,
+          progress: 2,
+          drafts: 1,
+          events: 9,
+          coachSessions: 1,
+          interviews: 1,
+        },
+      }),
     },
     {
       // The runtime check (P8-3). Answered from here rather than left to 404,
@@ -139,6 +160,9 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
     setConnection: (next: ConnectionTestResponse) => {
       connection = next;
     },
+    refuseWrites: (message: string | null) => {
+      refusal = message;
+    },
   };
 }
 
@@ -147,14 +171,18 @@ afterEach(() => {
 });
 
 describe('Settings, coach section', () => {
-  it('sends the chosen provider and nothing else', async () => {
-    const { writes } = settingsServer();
+  it('sends the chosen provider, and lets the old vendor model go with it', async () => {
+    const { writes } = settingsServer(
+      someSettings({ coach: { ...someSettings().coach, model: 'claude-sonnet-5' } }),
+    );
     renderApp(<Settings />, { route: '/settings' });
 
     await userEvent.click(await screen.findByRole('button', { name: 'Gemini' }));
 
+    // A Claude model name sent to Gemini is a failed first turn (P3-7); null
+    // is the new provider's own default. Nothing else in the section moves.
     await waitFor(() => {
-      expect(writes).toEqual([{ coach: { provider: 'gemini' } }]);
+      expect(writes).toEqual([{ coach: { provider: 'gemini', model: null } }]);
     });
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Gemini' })).toHaveAttribute(
@@ -283,11 +311,75 @@ describe('Settings, coach section', () => {
     expect(await screen.findByText(/The key was rejected \(401\)\./)).toBeInTheDocument();
   });
 
-  it('cannot test a connection with no key at all', async () => {
+  it('cannot test a connection with no key at all, and says why where it can be read', async () => {
     settingsServer();
     renderApp(<Settings />, { route: '/settings' });
 
     expect(await screen.findByRole('button', { name: 'Test connection' })).toBeDisabled();
+    // In the row, not in a tooltip on a button that takes no hover (P3-7).
+    expect(screen.getByText(/^Add a key first\./)).toBeVisible();
+  });
+
+  it('says a stored key may belong to the provider it was switched from', async () => {
+    settingsServer(
+      someSettings({
+        coach: { ...someSettings().coach, apiKeyMasked: '••••••••3f9a', apiKeySource: 'settings' },
+      }),
+    );
+    renderApp(<Settings />, { route: '/settings' });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Gemini' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      /Keys are per vendor, and the stored key may be for Anthropic rather than Gemini/,
+    );
+  });
+
+  it('says nothing about vendors when there is no key to be wrong', async () => {
+    settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Gemini' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Gemini' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+    expect(screen.queryByText(/Keys are per vendor/)).not.toBeInTheDocument();
+  });
+
+  it('keeps a typed key, and says why, when the server refuses it', async () => {
+    const { refuseWrites } = settingsServer();
+    refuseWrites('The settings file is read-only.');
+    renderApp(<Settings />, { route: '/settings' });
+
+    const field = await screen.findByLabelText('API key');
+    await userEvent.type(field, 'sk-ant-secret-value-3f9a');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Emptied only once the server has it (P3-7): a refused save used to throw
+    // the paste away as well, and never said why.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'That change was not saved: The settings file is read-only.',
+    );
+    expect(field).toHaveValue('sk-ant-secret-value-3f9a');
+  });
+});
+
+describe('Settings, refused writes (P3-7)', () => {
+  it('says so in the card the change was made in', async () => {
+    const { refuseWrites } = settingsServer();
+    refuseWrites('concurrency: Too big.');
+    renderApp(<Settings />, { route: '/settings' });
+
+    const concurrency = await screen.findByLabelText('Concurrent runs');
+    await userEvent.clear(concurrency);
+    await userEvent.type(concurrency, '4{Enter}');
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('concurrency: Too big.');
+    expect(screen.getByRole('region', { name: 'Judge' })).toContainElement(alert);
   });
 });
 
@@ -331,6 +423,33 @@ describe('Settings, number fields', () => {
     // 99 is outside 2..8, so it is not sent and the field stops lying about it.
     expect(writes).toEqual([]);
     expect(tabSize).toHaveValue('4');
+  });
+
+  it('will not send a fraction where the server wants a whole number', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    // The schema says z.int(); 12.5 used to go out and come back a silent 400.
+    const fontSize = await screen.findByLabelText('Editor font size');
+    await userEvent.clear(fontSize);
+    await userEvent.type(fontSize, '12.5');
+    await userEvent.tab();
+
+    expect(writes).toEqual([]);
+    expect(fontSize).toHaveValue('14');
+  });
+
+  it('still takes a fraction where one is meant', async () => {
+    const { writes } = settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    const multiplier = await screen.findByLabelText('Time limit multiplier');
+    await userEvent.clear(multiplier);
+    await userEvent.type(multiplier, '1.5{Enter}');
+
+    await waitFor(() => {
+      expect(writes).toEqual([{ judge: { timeoutMultiplier: 1.5 } }]);
+    });
   });
 
   it('commits on Enter as well as on blur', async () => {
@@ -450,5 +569,28 @@ describe('formatting (P9-5)', () => {
     await waitFor(() => {
       expect(writes).toEqual([{ editor: { formatOnSave: true } }]);
     });
+  });
+});
+
+describe('Settings, reset all progress', () => {
+  it('says what it deletes and where a backup comes from, and keeps focus on the way back', async () => {
+    settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    const user = userEvent.setup();
+    const trigger = await screen.findByRole('button', { name: 'Reset…' });
+    // Everything reset clears, the coach's conversations and interviews included (P4-17).
+    expect(screen.getByText(/coach conversations and mock interviews/)).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent('npm run db:backup');
+    await user.click(screen.getByRole('button', { name: 'Delete everything' }));
+
+    // The dialog hands focus back to its trigger, which was disabled while the
+    // reset ran - so focus fell to the page instead (P4-17).
+    await waitFor(() => {
+      expect(trigger).toHaveFocus();
+    });
+    expect(await screen.findByText(/^Cleared 3 submissions/)).toBeInTheDocument();
   });
 });

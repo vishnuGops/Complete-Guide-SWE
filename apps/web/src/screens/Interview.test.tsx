@@ -46,6 +46,7 @@ function aSitting(overrides: Partial<Sitting> = {}): Sitting {
     createdAt: new Date().toISOString(),
     endedAt: null,
     remainingMs: 45 * 60 * 1000,
+    transcript: [],
     ...overrides,
   };
 }
@@ -70,7 +71,44 @@ function sse(events: CoachStreamEvent[]): Response {
   );
 }
 
-function serve(interview: Sitting | null, turn: CoachStreamEvent[] = []) {
+/**
+ * A turn that stays open until the test lets the reply through, so what the
+ * screen does *while* the interviewer answers can be looked at.
+ */
+function heldTurn(reply: string) {
+  const encoder = new TextEncoder();
+  let release = (): void => undefined;
+  const response = () =>
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          release = () => {
+            const events: CoachStreamEvent[] = [
+              { type: 'markdown', delta: reply },
+              { type: 'reply', content: reply },
+            ];
+            for (const event of events) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(event)}
+
+`),
+              );
+            }
+            controller.close();
+          };
+        },
+      }),
+      { status: 200, headers: { 'content-type': 'text/event-stream' } },
+    );
+  return {
+    response,
+    release: () => {
+      release();
+    },
+  };
+}
+
+function serve(interview: Sitting | null, turn: CoachStreamEvent[] | (() => Response) = []) {
   let current = interview;
   return fakeServer([
     {
@@ -92,14 +130,14 @@ function serve(interview: Sitting | null, turn: CoachStreamEvent[] = []) {
     },
     {
       match: (url) => url.pathname.endsWith('/say'),
-      body: () => sse(turn),
+      body: () => (typeof turn === 'function' ? turn() : sse(turn)),
     },
     {
       match: (url) => url.pathname.endsWith('/finish'),
       body: () => {
         // The server ends the sitting whether or not a debrief arrived.
         current = current ? { ...current, stage: 'done', endedAt: new Date().toISOString() } : null;
-        return sse(turn);
+        return typeof turn === 'function' ? turn() : sse(turn);
       },
     },
   ]);
@@ -261,5 +299,91 @@ describe('the interview screen', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('two unsolved problems');
     });
+  });
+
+  it('counts down from when the answer arrived, not from when the sitting began', async () => {
+    // Twenty minutes in: the server has already taken them off `remainingMs`,
+    // and taking them off again showed 5:00 (P4-16).
+    serve(
+      aSitting({
+        createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        remainingMs: 25 * 60 * 1000,
+      }),
+    );
+    renderApp(<Interview />);
+
+    expect(await screen.findByRole('timer')).toHaveTextContent(/^(25:00|24:5\d)$/);
+  });
+
+  it('picks the conversation up where it was left', async () => {
+    // Leaving for the workspace to write the code is the normal case, and
+    // coming back must not start the conversation over (P4-16).
+    serve(
+      aSitting({
+        sessionId: '22222222-2222-4222-8222-222222222222',
+        transcript: [
+          { from: 'you', text: 'I would sort it first.' },
+          { from: 'them', text: 'What does the sort cost you?' },
+        ],
+      }),
+    );
+    renderApp(<Interview />);
+
+    expect(await screen.findByText('What does the sort cost you?')).toBeInTheDocument();
+    expect(screen.getByText('I would sort it first.')).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing said yet/)).not.toBeInTheDocument();
+  });
+
+  it('abandons a turn still streaming when the screen goes away', async () => {
+    const held = heldTurn('Never read.');
+    serve(aSitting(), held.response);
+    const { unmount } = renderApp(<Interview />);
+
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('What you would say'), 'A hash map.');
+    await user.click(screen.getByRole('button', { name: 'Say it' }));
+    await screen.findByRole('button', { name: 'Listening…' });
+
+    const call = vi.mocked(fetch).mock.calls.find(([input]) => String(input).endsWith('/say'));
+    const signal = call?.[1]?.signal;
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('offers only the end once both problems are done', async () => {
+    // Past the last problem there is no stage to move on to (P4-16).
+    serve(aSitting({ at: 2, stage: 'debrief' }));
+    renderApp(<Interview />);
+
+    const end = await screen.findAllByRole('button', { name: 'End it and get the debrief' });
+    expect(end).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Move on' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the box, read-only and focused, while the interviewer answers', async () => {
+    const held = heldTurn('Why two pointers?');
+    serve(aSitting(), held.response);
+    renderApp(<Interview />);
+
+    const user = userEvent.setup();
+    const box = await screen.findByLabelText('What you would say');
+    await user.type(box, 'Sort, then two pointers.');
+    await user.click(screen.getByRole('button', { name: 'Say it' }));
+
+    // Disabled would have dropped focus to the page (P4-16).
+    await waitFor(() => {
+      expect(box).toHaveAttribute('readonly');
+    });
+    expect(box).toHaveAttribute('aria-disabled', 'true');
+    expect(box).toHaveFocus();
+
+    held.release();
+    expect(await screen.findByText('Why two pointers?')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(box).not.toHaveAttribute('readonly');
+    });
+    expect(box).toHaveFocus();
   });
 });

@@ -308,7 +308,12 @@ function CoachPanelPanel({
         server has nowhere to put.
       */}
       {state.sessionId !== null && (
+        /*
+          `data-shortcuts="local"`: inside this form the app's shortcuts stand
+          aside (P4-15), because Ctrl+Enter here means "send" - see the field.
+        */
         <form
+          data-shortcuts="local"
           className="border-border mt-4 flex items-end gap-2 border-t pt-3"
           onSubmit={(event) => {
             event.preventDefault();
@@ -333,15 +338,16 @@ function CoachPanelPanel({
             /*
               The field claims `Ctrl+Enter` for sending (P4-12).
 
-              The registry listens in the capture phase on the window, so
-              without this the keys the user has just been told mean "run"
-              would run the judge from inside a text box - and the question they
-              typed would sit there unsent. `stopPropagation` in capture on the
-              input itself is what gets in front of the registry.
+              The keys the user has just been told mean "run" would otherwise
+              run the judge from inside a text box, and the question they typed
+              would sit there unsent. The first fix stopped propagation in the
+              capture phase here, which never worked: the registry listens on
+              the window, whose capture phase comes first. The registry now
+              skips anything inside the form's `data-shortcuts="local"` (P4-15),
+              and this handles the keys as an ordinary listener.
             */
-            onKeyDownCapture={(event) => {
+            onKeyDown={(event) => {
               if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
-              event.stopPropagation();
               event.preventDefault();
               const trimmed = question.trim();
               if (trimmed === '' || streaming) return;

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   STAGE_PROMPT,
   TOPIC_LABEL,
+  type InterviewLine,
   type InterviewProblem,
   type InterviewStage,
 } from '@devpromax/shared';
@@ -110,19 +111,49 @@ function ProblemRow({
 }
 
 export function Interview() {
-  const { data, isPending, error, refetch } = useInterview();
+  const { data, dataUpdatedAt, isPending, error, refetch } = useInterview();
   const start = useStartInterview();
   const advance = useAdvanceInterview();
 
   const [said, setSaid] = useState('');
-  const [transcript, setTranscript] = useState<{ from: 'you' | 'them'; text: string }[]>([]);
+  const [transcript, setTranscript] = useState<InterviewLine[]>([]);
   const [streaming, setStreaming] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
 
   const sitting = data?.interview ?? null;
   const live = sitting !== null && sitting.endedAt === null;
   const now = useNow(live);
+
+  /*
+   * The conversation so far, from the server (ROADMAP P4-16).
+   *
+   * The coding happens in the workspace, so leaving this screen mid-sitting is
+   * the normal case - and a transcript held only in this component's state was
+   * gone when the candidate came back to talk about what they wrote. Seeded
+   * once per sitting rather than on every refetch: after that, the lines added
+   * here are the newer ones, and a refetch racing a turn must not take back a
+   * line the candidate has just watched appear.
+   */
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  if (sitting !== null && sitting.id !== seededFor) {
+    setSeededFor(sitting.id);
+    setTranscript(sitting.transcript);
+  }
+
+  /*
+   * A turn still streaming when the screen goes away is abandoned rather than
+   * left running (P4-16): the reader holds the response open, and the reply
+   * would go on costing tokens for a screen nobody is looking at.
+   */
+  const inFlight = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      inFlight.current?.abort();
+    },
+    [],
+  );
 
   /**
    * One exchange, streamed.
@@ -136,12 +167,18 @@ export function Interview() {
       path: `/api/interview/${string}/say` | `/api/interview/${string}/finish`,
       text: string,
     ) => {
+      const controller = new AbortController();
+      inFlight.current = controller;
       setBusy(true);
       setFailure(null);
       setStreaming('');
       let reply = '';
       try {
-        for await (const event of streamCoach(path, { message: text })) {
+        for await (const event of streamCoach(
+          path,
+          { message: text },
+          { signal: controller.signal },
+        )) {
           if (event.type === 'markdown') {
             reply += event.delta;
             setStreaming(reply);
@@ -156,12 +193,24 @@ export function Interview() {
           }
         }
       } catch (streamError) {
-        setFailure(streamError instanceof Error ? streamError.message : 'That turn failed.');
+        if (!controller.signal.aborted) {
+          setFailure(streamError instanceof Error ? streamError.message : 'That turn failed.');
+        }
       } finally {
-        setBusy(false);
-        setStreaming('');
-        if (reply !== '') setTranscript((before) => [...before, { from: 'them', text: reply }]);
-        void refetch();
+        // Aborted means unmounted: nothing left to update, nobody to refetch for.
+        if (!controller.signal.aborted) {
+          inFlight.current = null;
+          setBusy(false);
+          setStreaming('');
+          if (reply !== '') setTranscript((before) => [...before, { from: 'them', text: reply }]);
+          // Back to the box (P4-16): the reply has been read, and the answer to
+          // it is the next thing typed - unless focus has gone somewhere on purpose.
+          const active = document.activeElement;
+          if (active === null || active === document.body || active === box.current) {
+            box.current?.focus();
+          }
+          void refetch();
+        }
       }
     },
     [refetch],
@@ -209,7 +258,17 @@ export function Interview() {
     );
   }
 
-  const left = sitting === null ? 0 : sitting.remainingMs - (now - Date.parse(sitting.createdAt));
+  /*
+   * The server's `remainingMs` is already net of the time since the sitting
+   * began, so the clock runs down from when that answer arrived, not from
+   * `createdAt` (P4-16): subtracting the whole elapsed time a second time made
+   * a sitting reopened after twenty minutes say five were left instead of
+   * twenty-five. Floored at zero, because the first tick can land a moment
+   * before the answer's own timestamp.
+   */
+  const left = sitting === null ? 0 : sitting.remainingMs - Math.max(0, now - dataUpdatedAt);
+  /** Past the last problem: all that is left is to end it and read the debrief. */
+  const atDebrief = sitting?.stage === 'debrief';
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -276,16 +335,20 @@ export function Interview() {
               <Card
                 title="This sitting"
                 action={
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      void send(`/api/interview/${sitting.id}/finish`, '');
-                    }}
-                  >
-                    End it and get the debrief
-                  </Button>
+                  // At the debrief it is the one thing left to do, so it moves
+                  // down into "Now" as the primary action instead.
+                  atDebrief ? undefined : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        void send(`/api/interview/${sitting.id}/finish`, '');
+                      }}
+                    >
+                      End it and get the debrief
+                    </Button>
+                  )
                 }
               >
                 <div className="flex items-end gap-6">
@@ -342,21 +405,40 @@ export function Interview() {
                 <div className="border-border mt-4 border-t pt-4">
                   <p className="text-fg-muted text-xs font-medium">Now</p>
                   <p className="text-fg mt-1 max-w-prose text-sm">{STAGE_PROMPT[sitting.stage]}</p>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="mt-3"
-                    disabled={advance.isPending || busy}
-                    onClick={() => {
-                      advance.mutate(sitting.id);
-                    }}
-                  >
-                    {sitting.stage === 'approach'
-                      ? 'I am ready to write it'
-                      : sitting.stage === 'coding'
-                        ? 'I have written it'
-                        : 'Move on'}
-                  </Button>
+                  {/*
+                    Both problems done: there is no stage after this, and a
+                    "Move on" here only walked the sitting's index past its last
+                    problem (P4-16). Ending it is the step that is left.
+                  */}
+                  {atDebrief ? (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="mt-3"
+                      disabled={busy}
+                      onClick={() => {
+                        void send(`/api/interview/${sitting.id}/finish`, '');
+                      }}
+                    >
+                      End it and get the debrief
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="mt-3"
+                      disabled={advance.isPending || busy}
+                      onClick={() => {
+                        advance.mutate(sitting.id);
+                      }}
+                    >
+                      {sitting.stage === 'approach'
+                        ? 'I am ready to write it'
+                        : sitting.stage === 'coding'
+                          ? 'I have written it'
+                          : 'Move on'}
+                    </Button>
+                  )}
                 </div>
               </Card>
 
@@ -414,17 +496,28 @@ export function Interview() {
                     if (text === '' || busy) return;
                     setTranscript((before) => [...before, { from: 'you', text }]);
                     setSaid('');
+                    // Say it disables itself as the turn starts, and a disabled
+                    // button drops focus to the page; the box is where the next
+                    // words go, so focus waits there.
+                    box.current?.focus();
                     void send(`/api/interview/${sitting.id}/say`, text);
                   }}
                 >
                   <label htmlFor="interview-say" className="sr-only">
                     What you would say
                   </label>
+                  {/*
+                    Read-only while the interviewer answers, not disabled
+                    (P4-16): a disabled field hands focus to the page, and the
+                    candidate's place in the conversation goes with it.
+                  */}
                   <textarea
+                    ref={box}
                     id="interview-say"
                     rows={4}
                     value={said}
-                    disabled={busy}
+                    readOnly={busy}
+                    aria-disabled={busy || undefined}
                     placeholder="Say it the way you would out loud."
                     onChange={(event) => {
                       setSaid(event.target.value);

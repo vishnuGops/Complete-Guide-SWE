@@ -18,11 +18,10 @@ import { cn } from './cn.js';
  * cards that are layout rather than content - the editor's frame.
  */
 
-export type CardPadding = 'default' | 'dense' | 'none';
+export type CardPadding = 'default' | 'none';
 
 const PADDING: Record<CardPadding, string> = {
   default: 'p-5',
-  dense: 'p-4',
   none: '',
 };
 
@@ -32,8 +31,6 @@ export interface CardProps {
   description?: ReactNode;
   /** Beside the title, right-aligned: a link out, a range control. */
   action?: ReactNode;
-  /** The heading level of the title; `h2` under a page's `h1`. */
-  headingLevel?: 2 | 3;
   padding?: CardPadding;
   as?: 'section' | 'div';
   className?: string;
@@ -46,7 +43,6 @@ export function Card({
   title,
   description,
   action,
-  headingLevel = 2,
   padding = 'default',
   as = 'section',
   className,
@@ -55,7 +51,6 @@ export function Card({
 }: CardProps) {
   const titleId = useId();
   const Element = as;
-  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const labelled = title !== undefined && as === 'section' && rest['aria-label'] === undefined;
 
   return (
@@ -72,9 +67,10 @@ export function Card({
         <div className="mb-4 flex min-h-7 items-center gap-3">
           <div className="min-w-0 flex-1">
             {title !== undefined && (
-              <Heading id={titleId} className="text-fg text-sm font-semibold">
+              // `h2`: every card sits directly under its page's `h1`.
+              <h2 id={titleId} className="text-fg text-sm font-semibold">
                 {title}
-              </Heading>
+              </h2>
             )}
             {description !== undefined && (
               <p className="text-fg-muted mt-0.5 text-xs">{description}</p>

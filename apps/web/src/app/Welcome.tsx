@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useSettings, useUpdateSettings } from '../api/hooks.js';
 import { SHORTCUTS } from '../shortcuts/shortcuts.js';
 import { Button, Keys } from '../ui/index.js';
@@ -18,16 +19,68 @@ import { Button, Keys } from '../ui/index.js';
  * it, and clearing site data or opening the app in another browser should not
  * start it again.
  */
+
+/**
+ * Whether this browser last saw the welcome dismissed (2026-09-24 audit).
+ *
+ * The card sits above the page, so one that arrives with Settings pushes the
+ * whole screen down after it has painted - a layout shift every first-time user
+ * saw, and the entire reason the workspace scored under 90 on Lighthouse. So,
+ * like the theme (P4-2), the answer is mirrored into `localStorage` and read
+ * synchronously for the first paint: the card is there from the start for
+ * someone new, and absent from the start for someone this browser saw dismiss
+ * it. The server still wins when it answers; the mirror only decides the first
+ * frame, and is wrong at most once per browser.
+ */
+const WELCOME_CACHE_KEY = 'devpromax.welcomeDismissed';
+
+function cachedDismissed(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(WELCOME_CACHE_KEY) === '1';
+  } catch {
+    // Private-browsing modes throw on access; the card then shows for one
+    // paint, which is the right default for a fresh install.
+    return false;
+  }
+}
+
+function cacheDismissed(dismissed: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(WELCOME_CACHE_KEY, dismissed ? '1' : '0');
+  } catch {
+    // Not being able to remember it costs one shifted paint, nothing more.
+  }
+}
 export function Welcome() {
   const { data: settings } = useSettings();
   const update = useUpdateSettings();
+  const panel = useRef<HTMLElement>(null);
 
-  // Nothing at all until Settings has arrived: a welcome that flashes on every
-  // page load for the user who dismissed it last week is worse than none.
-  if (!settings || settings.welcomeDismissed) return null;
+  /*
+   * Where focus goes once the welcome has gone (P4-17). The button that had it
+   * is removed with the card, and focus on a removed element falls to the page
+   * - so it moves to the page's own heading first, which is also the next
+   * thing a screen-reader user wants to hear: where they are.
+   */
+  const moveFocusTo = (page: ParentNode) => {
+    const heading = page.querySelector('h1');
+    if (!heading) return;
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus();
+  };
+
+  useEffect(() => {
+    if (settings) cacheDismissed(settings.welcomeDismissed);
+  }, [settings]);
+
+  // The server's answer once it has one; the mirror until then, so the first
+  // paint already has the card in it - or not - and nothing moves after.
+  const dismissed = settings ? settings.welcomeDismissed : cachedDismissed();
+  if (dismissed) return null;
 
   return (
     <aside
+      ref={panel}
       className="bg-surface border-border shadow-card mx-6 mt-5 max-w-3xl rounded-xl border p-5"
       aria-label="Welcome"
     >
@@ -36,7 +89,8 @@ export function Welcome() {
         <li>
           <strong className="text-fg">Run</strong> <Keys keys={SHORTCUTS.run.keys} />
           <span className="sr-only">({SHORTCUTS.run.keys.join('+')})</span> tries your code against
-          the visible samples and your own cases. It records nothing.
+          the visible samples and your own cases. It marks the problem In progress, and no verdict
+          is written down.
         </li>
         <li>
           <strong className="text-fg">Submit</strong> <Keys keys={SHORTCUTS.submit.keys} />
@@ -59,9 +113,18 @@ export function Welcome() {
         size="sm"
         variant="secondary"
         className="mt-3"
-        disabled={update.isPending}
+        disabled={update.isPending || !settings}
         onClick={() => {
-          update.mutate({ welcomeDismissed: true });
+          // Found now, while the card is still in the page to search up from.
+          const page = panel.current?.closest('main') ?? document;
+          update.mutate(
+            { welcomeDismissed: true },
+            {
+              onSuccess: () => {
+                moveFocusTo(page);
+              },
+            },
+          );
         }}
       >
         Got it

@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { memo, useId, useRef, type ReactNode } from 'react';
 import {
   LANGUAGES,
   LANGUAGE_LABEL,
@@ -14,7 +14,7 @@ import {
   type Topic,
 } from '@devpromax/shared';
 import { Button, cn } from '../../ui/index.js';
-import { isFiltered, toggle, type ProblemFilters } from './query.js';
+import { CLEARED, isFiltered, toggle, type ProblemFilters } from './query.js';
 
 /**
  * The filter card (ROADMAP P4-5; a card beside the table since P9-6).
@@ -133,8 +133,20 @@ export interface FiltersProps {
   className?: string;
 }
 
-export function Filters({ filters, onChange, counts, className }: FiltersProps) {
+/**
+ * Memoised (P4-18), with the list handing it filters and a callback that keep
+ * their identity until the URL changes - so a keystroke in the search box, or
+ * anything else that re-renders the list, does not re-render twenty-odd rows
+ * of checkboxes that have not changed.
+ */
+export const Filters = memo(function Filters({
+  filters,
+  onChange,
+  counts,
+  className,
+}: FiltersProps) {
   const byTopic = new Map(counts?.byTopic.map((row) => [row.topic, row]) ?? []);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   const set = (patch: Partial<ProblemFilters>) => {
     onChange({ ...filters, ...patch });
@@ -149,24 +161,22 @@ export function Filters({ filters, onChange, counts, className }: FiltersProps) 
       aria-label="Filters"
     >
       <div className="flex h-12 items-center justify-between px-4">
-        <h2 className="text-sm font-semibold">Filters</h2>
+        {/*
+          Focusable from script only: where focus goes when Clear all, which
+          disappears with the filters it cleared, is pressed (P4-17).
+        */}
+        <h2 ref={heading} tabIndex={-1} className="focus-ring rounded-xs text-sm font-semibold">
+          Filters
+        </h2>
         {isFiltered(filters) && (
           <Button
             size="sm"
             variant="ghost"
             onClick={() => {
-              // Sort is not a filter and is deliberately left alone.
-              // Every filter, the view included (P7-7, P9-6). A Clear that
-              // leaves one on is a Clear the user has to do twice.
-              set({
-                topic: [],
-                tier: [],
-                status: [],
-                q: '',
-                language: undefined,
-                bookmarked: false,
-                due: false,
-              });
+              // Every filter, the view included (P7-7, P9-6); sort is not a
+              // filter and is left alone.
+              set(CLEARED);
+              heading.current?.focus();
             }}
           >
             Clear all
@@ -240,7 +250,7 @@ export function Filters({ filters, onChange, counts, className }: FiltersProps) 
       </Section>
     </aside>
   );
-}
+});
 
 function LanguageChoice({
   value,

@@ -53,6 +53,22 @@ export const NO_FILTERS: ProblemFilters = {
   dir: 'asc',
 };
 
+/**
+ * Every filter off: what both Clear buttons apply (P4-17; each had its own copy
+ * of this list). Sort is not a filter and is left alone. `Omit` rather than
+ * `Partial`, so a filter added to `ProblemFilters` is a compile error here until
+ * Clear knows about it - a Clear that leaves one on is a Clear done twice.
+ */
+export const CLEARED = {
+  topic: [],
+  tier: [],
+  status: [],
+  q: '',
+  language: undefined,
+  bookmarked: false,
+  due: false,
+} satisfies Omit<ProblemFilters, 'sort' | 'dir'>;
+
 function known<T extends string>(values: string[], allowed: readonly T[]): T[] {
   return values.filter((value): value is T => (allowed as readonly string[]).includes(value));
 }
@@ -79,7 +95,10 @@ export function filtersFromSearch(params: URLSearchParams): ProblemFilters {
       params.getAll('status').flatMap((value) => value.split(',')),
       PROGRESS_STATUSES,
     ),
-    q: params.get('q')?.slice(0, 120) ?? '',
+    // Trimmed (P4-17): "  stack " is the search "stack", and a query of
+    // spaces alone is no query - not a filter that matches everything while
+    // the list says it is filtered.
+    q: params.get('q')?.trim().slice(0, 120) ?? '',
     language: one(params.get('language'), LANGUAGES),
     bookmarked: params.get('bookmarked') === 'true',
     due: params.get('due') === 'true',

@@ -10,11 +10,22 @@
  * `ErrorState` with P4-10, which is when the fourth screen was waiting on a
  * query and the fourth copy of "Loading…" was about to be written.
  *
- * Version 2 of the design (P9-6) added the pieces its screens share: `Card`,
- * `Segmented`, `Kbd`, `RailItem`, `Stat`, `Callout`, `ListRow`, `SegmentBar`,
- * `CoachMark` and `VerdictTile` (docs/DESIGN.md 10). Each has at least two
- * callers - the list of screens is in DESIGN.md - which is the rule for
- * promoting anything here.
+ * Version 2 of the design (P9-6) added its vocabulary, the patterns named in
+ * docs/DESIGN.md 10: `Card`, `Segmented`, `Kbd`, `RailItem`, `Stat`,
+ * `Callout`, `ListRow`, `SegmentBar`, `CoachMark` and `VerdictTile`. Most have
+ * two screens or more behind them. Four do not, and are here anyway, on
+ * purpose (P4-17 corrected a comment that said otherwise): `Stat`, `ListRow`
+ * and `SegmentBar` are drawn only by Progress, and `RailItem` only by the
+ * shell. They are the design's named parts rather than one screen's markup -
+ * DESIGN.md specifies each, `/dev/kitchen-sink` renders each for review in
+ * both themes, and `v2.test.tsx` holds their behaviour - so the rule for
+ * anything *else* stays the one above: it moves here when a second screen
+ * needs it.
+ *
+ * A variant goes when nothing uses it (P4-17 removed `Stat`'s second size,
+ * `Card`'s `dense` padding and heading level, `Callout`'s `note` role and
+ * `SegmentBar`'s label): an option no screen exercises is a promise no screen
+ * has checked.
  *
  * Everything else - tables, verdict banners, the diff view - is built with the
  * screen that needs it, so it is designed against a real layout rather than

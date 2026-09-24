@@ -14,16 +14,13 @@ import {
   type CustomTestInput,
   type Language,
   type ProgressStatus,
-  type RunResult,
   type Submission,
 } from '@devpromax/shared';
 import { api } from '../../api/client.js';
 import {
   useDeleteDraft,
   useFormatters,
-  useJudge,
   useProblem,
-  useReVerify,
   useRevealHint,
   useSetBookmark,
   useSaveDraft,
@@ -44,9 +41,7 @@ import {
   ErrorBoundary,
   ErrorState,
   Keys,
-  Loading,
   Segmented,
-  Skeleton,
   StatusMark,
   StickyTabsContent,
   Tabs,
@@ -61,9 +56,13 @@ import { ResultsPanel } from './ResultsPanel.js';
 import { StatementPanel } from './StatementPanel.js';
 import { SplitPane } from './SplitPane.js';
 import { TestcasePanel } from './TestcasePanel.js';
+import { WorkspaceSkeleton } from './WorkspaceSkeleton.js';
+import { coachPromptChars } from './coachEstimate.js';
 import { judgeHeadline, judgeSummary } from './judgeSummary.js';
 import { useWorkspaceLayout } from './layout.js';
 import { useCoach } from './useCoach.js';
+import { useDebouncedAutosave } from './useDebouncedAutosave.js';
+import { useJudgeFlow, type JudgeKind } from './useJudgeFlow.js';
 
 /**
  * The problem workspace (ROADMAP P4-6).
@@ -87,6 +86,10 @@ import { useCoach } from './useCoach.js';
  * calls a vendor. It is on-demand by design (D13): nothing on the Run or Submit
  * path touches the coach, and the button opens the Coach tab as it starts so
  * the answer is never streaming somewhere the user cannot see.
+ *
+ * Two hooks carry the parts with the most rules (P4-14, P4-15):
+ * `useDebouncedAutosave` decides when and where a draft is written, and
+ * `useJudgeFlow` decides which verdict may be on screen.
  */
 
 // Monaco is about three megabytes. The list page must not pay for it.
@@ -97,53 +100,19 @@ const DEFAULT_EDITOR_PREFS = editorPrefsSchema.parse({});
 /** Monaco's own binding for Format Document, which the editor action reuses. */
 const FORMAT_KEYS = ['Shift', 'Alt', 'F'] as const;
 
-/** How long after the last keystroke a draft is written. */
-const AUTOSAVE_MS = 800;
+/** No compile errors, as one array: a fresh `[]` per render re-drew the gutter per keystroke. */
+const NO_MARKERS: readonly CompileError[] = [];
 
-/**
- * Roughly the size of the system prompt, for the cost estimate (P5-6).
- *
- * The client does not have the prompt - it is read from disk on the server -
- * and fetching it to put a "~$0.03" on a tooltip would be a round trip for a
- * figure that is approximate by construction. It is a versioned file that
- * changes rarely, so a constant is honest here in a way it would not be for
- * anything the user edits.
- */
-const SYSTEM_PROMPT_CHARS = 5_700;
+/** Where the code in the editor was loaded from, and so where it is saved to. */
+interface DraftScope {
+  key: string;
+  slug: string;
+  language: Language;
+}
 
-/**
- * The workspace, before it has a problem (ROADMAP P4-10).
- *
- * The three panels in their real proportions - statement left, editor right,
- * results below - because the alternative is a blank screen that becomes a
- * three-panel layout, and the eye has to find everything twice.
- */
-function WorkspaceSkeleton() {
-  return (
-    <Loading
-      label="Loading the problem"
-      className="flex h-full min-h-0 flex-col gap-3 py-4 pr-4 pl-3"
-    >
-      <span className="flex h-8 shrink-0 items-center gap-2">
-        <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-6 w-16" />
-        <Skeleton className="ml-auto h-6 w-32" />
-      </span>
-      <span className="flex min-h-0 flex-1 gap-3">
-        <span className="bg-surface border-border w-2/5 shrink-0 rounded-xl border p-4">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="mt-4 h-3 w-full" />
-          <Skeleton className="mt-2 h-3 w-full" />
-          <Skeleton className="mt-2 h-3 w-4/5" />
-        </span>
-        <span className="bg-surface border-border flex-1 rounded-xl border p-4">
-          <Skeleton className="h-3 w-1/2" />
-          <Skeleton className="mt-2 h-3 w-2/3" />
-          <Skeleton className="mt-2 h-3 w-1/3" />
-        </span>
-      </span>
-    </Loading>
-  );
+/** `two-sum:python` is the problem `two-sum`. */
+function slugOf(source: string): string {
+  return source.slice(0, source.lastIndexOf(':'));
 }
 
 export function Workspace() {
@@ -170,12 +139,21 @@ export function Workspace() {
   const language = chosen ?? settings?.lastLanguage ?? 'python';
 
   const [code, setCode] = useState('');
-  const [result, setResult] = useState<RunResult | null>(null);
   const [customInputs, setCustomInputs] = useState<CustomTestInput[]>([]);
   const [tab, setTab] = useState<'testcases' | 'results'>('testcases');
   const [leftTab, setLeftTab] = useState('description');
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [offerMastery, setOfferMastery] = useState(false);
+  /**
+   * Interview mode (ROADMAP P7-6).
+   *
+   * Owned here because three things need it: the header draws the clock, the
+   * statement panel hides the hints and the editorial while it runs, and a
+   * submit records how long it had been going. The clock's ticking is not
+   * owned here (P4-18) - see `InterviewTimer`.
+   */
+  const timer = useInterviewTimer();
+  const stopTimer = timer.stop;
   /**
    * Hint rungs the user has revealed (P4-12, persisted by P7-1).
    *
@@ -191,15 +169,6 @@ export function Workspace() {
    * would make the hint appear only once the POST answered; holding only local
    * state would re-hide it on reload.
    */
-  /**
-   * Interview mode (ROADMAP P7-6).
-   *
-   * Owned here because three things need it: the header draws the clock, the
-   * statement panel hides the hints and the editorial while it runs, and a
-   * submit records how long it had been going.
-   */
-  const timer = useInterviewTimer();
-  const stopTimer = timer.stop;
   const [revealedLocally, setRevealedLocally] = useState(0);
   const revealedHints = Math.max(revealedLocally, problem?.revealedHints ?? 0);
 
@@ -219,15 +188,11 @@ export function Workspace() {
 
   const navigate = useNavigate();
 
-  const run = useJudge('run');
-  const submit = useJudge('submit');
   const saveDraft = useSaveDraft();
   const deleteDraft = useDeleteDraft();
   const revealHint = useRevealHint();
   const setBookmark = useSetBookmark();
-  const reVerify = useReVerify();
   const updateSettings = useUpdateSettings();
-  const busy = run.isPending || submit.isPending;
 
   /**
    * The editor starts from the saved draft if there is one, and from the starter
@@ -237,9 +202,15 @@ export function Workspace() {
    * way to reset state when a prop changes: an effect would render the old
    * language's code once, then immediately render again, and the editor would
    * flash the wrong source in between.
+   *
+   * `loadedFrom` starts empty rather than at `source` (P4-14). Starting at
+   * `source` meant a problem already in the query cache - the list, then the
+   * problem, then the list, then the problem again - mounted with the two equal,
+   * skipped the seeding, and showed an empty editor over the saved draft; and
+   * the first keystroke's autosave wrote that near-empty text over it.
    */
   const source = problem ? `${problem.summary.slug}:${language}` : '';
-  const [loadedFrom, setLoadedFrom] = useState(source);
+  const [loadedFrom, setLoadedFrom] = useState('');
   /** What the server already has: the draft it sent, or the starter when none. */
   const [persisted, setPersisted] = useState('');
   /**
@@ -268,13 +239,13 @@ export function Workspace() {
     const saved = problem.drafts[language]?.code ?? problem.starters[language];
     const restored = restoring?.source === source ? restoring.code : null;
     const starting = restored ?? buffers[source] ?? saved;
+    const sameProblem = loadedFrom !== '' && slugOf(loadedFrom) === problem.summary.slug;
     // Recorded on the way out, not on every keystroke: one entry per switch,
     // and the outgoing code is exactly what `code` still holds here.
-    setBuffers({ ...buffers, [loadedFrom]: code });
+    if (loadedFrom !== '') setBuffers({ ...buffers, [loadedFrom]: code });
     setLoadedFrom(source);
     setCode(starting);
     setPersisted(saved);
-    setResult(null);
     setCustomInputs([]);
     setTab('testcases');
     if (restored === null) {
@@ -285,107 +256,69 @@ export function Workspace() {
       setRestoring(null);
     }
     setOfferMastery(false);
-    // A different problem is a different sitting. Leaving the clock running
-    // across a change would record the first problem's time against the
-    // second one's submission.
-    stopTimer();
-    // Only the overlay: `problem.revealedHints` is what the user has actually
-    // read, and it is per problem rather than per language - the ladder is the
-    // same ladder whichever language they are writing in.
-    setRevealedLocally(0);
+    if (!sameProblem) {
+      // A different problem is a different sitting. Leaving the clock running
+      // across a change would record the first problem's time against the
+      // second one's submission. The other language of the *same* problem is
+      // not (P4-15): an interview in which you switch to Java is still the
+      // same interview, and stopping the clock put the hints back on screen.
+      stopTimer();
+      // Only the overlay: `problem.revealedHints` is what the user has actually
+      // read, and it is per problem rather than per language - the ladder is
+      // the same ladder whichever language they are writing in.
+      setRevealedLocally(0);
+    }
   }
 
-  /**
-   * Autosave, debounced - and flushed rather than dropped.
-   *
-   * `persisted` is what the server already has, so reverting an edit by hand
-   * does not queue a write of a value that is already stored. `mutate` is stable
-   * across renders, which is what stops this timer from being cleared and
-   * restarted on every render and therefore never firing.
-   *
-   * Three effects rather than one, and the split is the whole point (ROADMAP
-   * P4-11):
-   *
-   *   1. `pending` records what is unsaved. In a ref, because the flush must
-   *      not be a reason to re-run anything.
-   *   2. The debounce. Its cleanup only clears the timer - a cleanup that also
-   *      flushed would write on every keystroke, which is the opposite of a
-   *      debounce.
-   *   3. The flush, keyed on the problem and language. Its cleanup is the only
-   *      one that means "we are leaving", and it runs on exactly the three
-   *      things most likely to happen right after typing: pressing Back,
-   *      clicking the other language, and changing problem. Before this, the
-   *      last 800 ms of typing was dropped by all three.
-   *
-   * `persisted` moves in `onSuccess` and not before the request: marking it
-   * saved optimistically meant a failed PUT was never retried and never
-   * noticed - the draft was gone and the editor claimed otherwise.
-   */
-  const save = saveDraft.mutate;
   const ready = problem !== undefined;
+  const loadedSlug = problem?.summary.slug;
 
-  const pending = useRef<{ slug: string; language: Language; code: string } | null>(null);
-  useEffect(() => {
-    pending.current = code === persisted ? null : { slug, language, code };
-  }, [code, persisted, slug, language]);
+  /**
+   * Where the code on screen belongs (P4-14): the scope it was loaded from,
+   * and only once that is the scope being shown. While the next problem loads,
+   * the editor still holds the last one's code, and the autosave keyed on the
+   * *route* used to file it under the new problem's name.
+   */
+  const draftScope = useMemo<DraftScope | null>(
+    () =>
+      loadedSlug !== undefined && loadedFrom === source
+        ? { key: source, slug: loadedSlug, language }
+        : null,
+    [loadedSlug, loadedFrom, source, language],
+  );
 
-  /** Which problem and language the editor is showing *now*, for the flush. */
+  /**
+   * Autosave, debounced - and flushed rather than dropped, and retried rather
+   * than dropped (P4-11, P4-14). The rules live in `useDebouncedAutosave`.
+   *
+   * `persisted` moves only once the server has answered: marking it saved
+   * optimistically meant a failed PUT was never retried and never noticed.
+   */
+  const saveDraftAsync = saveDraft.mutateAsync;
+  const {
+    saveNow: saveDraftNow,
+    discard: discardDraft,
+    retrying: draftRetrying,
+    error: draftError,
+  } = useDebouncedAutosave<DraftScope>({
+    scope: draftScope,
+    value: code,
+    saved: persisted,
+    write: (scope, value) =>
+      saveDraftAsync({ slug: scope.slug, language: scope.language, code: value }),
+    writeOnUnload: (scope, value) => {
+      void api.saveDraftKeepalive(scope.slug, scope.language, value);
+    },
+    onSaved: (_scope, value, current) => {
+      if (current) setPersisted(value);
+    },
+  });
+
+  /** Which problem and language the editor is showing *now*, for late answers. */
   const showing = useRef({ slug, language });
   useEffect(() => {
     showing.current = { slug, language };
   }, [slug, language]);
-
-  const flush = useCallback(() => {
-    const next = pending.current;
-    if (next === null) return;
-    pending.current = null;
-    save(next, {
-      onSuccess: () => {
-        // Only if the editor still holds the code that was saved. A flush on
-        // the way out resolves after the next language is on screen, and
-        // marking *that* code persisted would hide its first edit.
-        if (showing.current.slug === next.slug && showing.current.language === next.language) {
-          setPersisted(next.code);
-        }
-      },
-    });
-  }, [save]);
-
-  useEffect(() => {
-    if (!ready || code === persisted) return;
-    const timer = setTimeout(flush, AUTOSAVE_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [code, persisted, ready, flush]);
-
-  useEffect(
-    () => () => {
-      flush();
-    },
-    [slug, language, flush],
-  );
-
-  /**
-   * The tab closing, which no React cleanup sees.
-   *
-   * `pagehide` fires on close, reload and navigating away, including into the
-   * back-forward cache where `beforeunload` does not. The request has to
-   * outlive the page, which is what `keepalive` is for - a normal `fetch` from
-   * a page being torn down is cancelled with it.
-   */
-  useEffect(() => {
-    const onPageHide = (): void => {
-      const next = pending.current;
-      if (next === null) return;
-      pending.current = null;
-      void api.saveDraftKeepalive(next.slug, next.language, next.code);
-    };
-    window.addEventListener('pagehide', onPageHide);
-    return () => {
-      window.removeEventListener('pagehide', onPageHide);
-    };
-  }, []);
 
   /**
    * Format, and Ctrl+S (ROADMAP P9-5).
@@ -421,7 +354,7 @@ export function Workspace() {
    * that typing - found in a real browser, where the save sent the previous
    * text, the answer was rightly dropped as stale, and the save went with it.
    * The effect covers every other way `code` moves: restore, reset, switching
-   * language.
+   * language. Run, Submit and AI Help read it too (P4-15), for the same reason.
    */
   const codeNow = useRef(code);
   useEffect(() => {
@@ -435,25 +368,13 @@ export function Workspace() {
   /** Saves this code now rather than after the debounce, then says so. */
   const saveNow = useCallback(
     (value: string, said: string, failed = false) => {
-      const target = { slug, language, code: value };
-      const done = (): void => {
-        setFormatNote({ code: value, text: said, failed });
-      };
-      if (value === persisted) {
-        done();
-        return;
-      }
-      pending.current = null;
-      save(target, {
-        onSuccess: () => {
-          if (showing.current.slug === slug && showing.current.language === language) {
-            setPersisted(value);
-            done();
-          }
-        },
+      void saveDraftNow(value).then((landed) => {
+        // Not landed means the scope moved on, or the write failed - and a
+        // failure has its own note, which "Saved" must not paper over.
+        if (landed) setFormatNote({ code: value, text: said, failed });
       });
     },
-    [save, slug, language, persisted],
+    [saveDraftNow],
   );
 
   const formatCode = useCallback(
@@ -519,10 +440,26 @@ export function Workspace() {
     () => (shape ? parseCustomTests(customInputs, shape) : null),
     [customInputs, shape],
   );
-  const customIssues = parsedCustom && !parsedCustom.ok ? parsedCustom.issues : [];
+  const customIssues = useMemo(
+    () => (parsedCustom && !parsedCustom.ok ? parsedCustom.issues : []),
+    [parsedCustom],
+  );
 
-  const judge = (kind: 'run' | 'submit') => {
-    const mutation = kind === 'run' ? run : submit;
+  /*
+   * What a verdict does to the screen once `useJudgeFlow` has let it through.
+   * Read through the hook's ref, so it may close over this render's layout.
+   */
+  const flow = useJudgeFlow(slug, language, (next, kind) => {
+    setTab('results');
+    if (layout.panelCollapsed) setLayout({ panelCollapsed: false });
+    // The mastery nudge (P5-4). Offered, never taken: a coaching turn costs
+    // money, so an accepted submit must not start one by itself.
+    if (kind === 'submit' && next.verdict === 'AC') setOfferMastery(true);
+  });
+  const { result, busy } = flow;
+
+  const judge = (kind: JudgeKind) => {
+    if (draftScope === null) return;
     // A run with a case the server would reject is not worth a round trip, and
     // the panel is already showing why beside the box.
     if (kind === 'run' && parsedCustom && !parsedCustom.ok) {
@@ -530,47 +467,23 @@ export function Workspace() {
       return;
     }
 
-    mutation.mutate(
-      {
-        slug,
-        language,
-        code,
-        ...(kind === 'run' && parsedCustom?.ok && parsedCustom.tests.length > 0
-          ? { customTests: parsedCustom.tests }
-          : {}),
-        // Only on a submit, and only when the clock was running (P7-6). A run
-        // is not an attempt, and an untimed submit records null rather than
-        // zero - "not timed" and "solved instantly" are different facts.
-        ...(kind === 'submit' && timer.running ? { solveMs: timer.elapsedMs } : {}),
-      },
-      {
-        onSuccess: (next, variables) => {
-          // A Java submit that resolves after the user switched to Python was
-          // landing its verdict, its tab switch and its mastery nudge on the
-          // Python screen - advice about code no longer on display (P4-11).
-          // The result is still cached by the mutation; it is only refused the
-          // screen it no longer belongs to.
-          if (variables.slug !== slug || variables.language !== language) return;
-
-          setResult(next);
-          setTab('results');
-          if (layout.panelCollapsed) setLayout({ panelCollapsed: false });
-          // The mastery nudge (P5-4). Offered, never taken: a coaching turn
-          // costs money, so an accepted submit must not start one by itself.
-          if (kind === 'submit' && next.verdict === 'AC') setOfferMastery(true);
-        },
-      },
-    );
+    flow.judge(kind, {
+      slug: draftScope.slug,
+      language: draftScope.language,
+      // As of the last keystroke (P4-15): `Ctrl+Enter` straight after typing
+      // arrives before React has rendered it, and the judge used to run the
+      // code from one character ago.
+      code: codeNow.current,
+      ...(kind === 'run' && parsedCustom?.ok && parsedCustom.tests.length > 0
+        ? { customTests: parsedCustom.tests }
+        : {}),
+      // Only on a submit, and only when the clock was running (P7-6). A run
+      // is not an attempt, and an untimed submit records null rather than
+      // zero - "not timed" and "solved instantly" are different facts.
+      ...(kind === 'submit' && timer.running ? { solveMs: timer.elapsedMs() } : {}),
+    });
   };
 
-  /**
-   * The one call in this component that reaches a vendor.
-   *
-   * Opening the Coach tab is part of asking, not a nicety: a turn that streams
-   * into a hidden tab looks to the user like a button that did nothing, and by
-   * the time they find it the prose they were meant to watch arrive is already
-   * finished.
-   */
   /**
    * What the next coaching turn will roughly cost (ROADMAP P5-6).
    *
@@ -578,28 +491,20 @@ export function Workspace() {
    * before clicking, not one to watch, and a figure that changed on every
    * keystroke in the toolbar would be noise on a bar that is otherwise stable.
    *
-   * Estimated from what the client can see - the prompt, the statement and the
-   * code - plus a constant for the system prompt, which the client does not
-   * have and which barely moves. The whole thing is prefixed "about" for the
-   * same reason the shared helper prefixes its tokens with a tilde.
+   * The input side is everything the server's context will carry
+   * (`coachEstimate.ts`); the output side - the answer and any thinking - is
+   * the shared helper's, so this and the spend cap price a turn the same way.
+   * The whole thing is prefixed "about" for the same reason the shared helper
+   * prefixes its tokens with a tilde.
    */
   const costEstimate = formatUsd(
     estimateTurnCostUsd(
       settings?.coach.provider ?? 'anthropic',
       settings?.coach.model ?? null,
-      SYSTEM_PROMPT_CHARS + code.length + (problem?.statement.length ?? 0),
+      problem ? coachPromptChars(problem, code, revealedHints) : 0,
     ),
   );
 
-  /**
-   * Unlocking a hint (ROADMAP P7-1).
-   *
-   * Optimistic on purpose: the rung appears on the click, and the POST records
-   * it. If that request fails the hint stays open for this sitting and the
-   * server simply never heard - which costs the user nothing, where the
-   * alternative (waiting for the answer, or rolling back on failure) takes back
-   * text they have already read.
-   */
   const interviewMode = timer.running;
   const hideAssistance = interviewMode || reviewing;
   /*
@@ -622,6 +527,15 @@ export function Workspace() {
   if (hideAssistance && (leftTab === 'hints' || leftTab === 'editorial')) {
     setLeftTab('description');
   }
+  /**
+   * Unlocking a hint (ROADMAP P7-1).
+   *
+   * Optimistic on purpose: the rung appears on the click, and the POST records
+   * it. If that request fails the hint stays open for this sitting and the
+   * server simply never heard - which costs the user nothing, where the
+   * alternative (waiting for the answer, or rolling back on failure) takes back
+   * text they have already read.
+   */
   const reveal = revealHint.mutate;
   const onRevealHint = useCallback(
     (next: number) => {
@@ -637,7 +551,9 @@ export function Workspace() {
    * It goes in as a draft like anything else typed there - the autosave picks
    * it up, and Submit is still what records an attempt. An attempt written in
    * the other language brings the language with it, because restoring Java into
-   * a Python editor would be restoring a syntax error.
+   * a Python editor would be restoring a syntax error - and so it is refused
+   * while the judge is working (P4-15), for the same reason the language
+   * switch is: the run in flight belongs to the language that started it.
    */
   const restoreSubmission = useCallback(
     (submission: Submission) => {
@@ -645,42 +561,47 @@ export function Workspace() {
         setCode(submission.code);
         return;
       }
+      if (busy) return;
       setRestoring({ source: `${slug}:${submission.language}`, code: submission.code });
       setChosen(submission.language);
     },
-    [language, slug],
+    [language, slug, busy],
   );
 
   /*
    * Stable identity, because the Coach panel is memoised (ROADMAP P4-13).
    *
-   * `code` is in the dependency list, so this *does* change as the user types -
-   * which is unavoidable: the coach reviews the code that is there when asked.
-   * What it buys is that the panel re-renders only when something it shows
-   * changes, rather than on every keystroke through a freshly built element.
+   * The code is read from `codeNow` at the moment of asking rather than closed
+   * over (P4-15), which also means this no longer changes on every keystroke -
+   * so neither does the coach panel built from it.
    */
   const askCoach = useCallback(
     (options: { masteryCheck?: boolean; newConversation?: boolean } = {}) => {
       setLeftTab('coach');
       setOfferMastery(false);
-      coachAsk({ slug, language, code, revealedHints, interviewMode, ...options });
+      coachAsk({ slug, language, code: codeNow.current, revealedHints, interviewMode, ...options });
     },
-    [coachAsk, slug, language, code, revealedHints, interviewMode],
+    [coachAsk, slug, language, revealedHints, interviewMode],
   );
 
+  /*
+   * Bound while the problem is on screen, busy or not (P4-15). A no-op while
+   * the judge is working, rather than unbound: unbound, the keys fell through
+   * to Monaco, whose own Ctrl+Enter inserts a line.
+   */
   useShortcut(
     'run',
     () => {
-      judge('run');
+      if (!busy) judge('run');
     },
-    !busy && ready,
+    ready,
   );
   useShortcut(
     'submit',
     () => {
-      judge('submit');
+      if (!busy) judge('submit');
     },
-    !busy && ready,
+    ready,
   );
   useShortcut('togglePanel', () => {
     setLayout({ panelCollapsed: !layout.panelCollapsed });
@@ -740,6 +661,25 @@ export function Workspace() {
     ],
   );
 
+  const jumpToLine = useCallback((compileError: CompileError) => {
+    if (compileError.line !== undefined) {
+      editorRef.current?.revealPosition(compileError.line, compileError.column);
+    }
+  }, []);
+
+  const onStatementRatio = useCallback(
+    (next: number) => {
+      setLayout({ statement: next });
+    },
+    [setLayout],
+  );
+  const onEditorRatio = useCallback(
+    (next: number) => {
+      setLayout({ editor: next });
+    },
+    [setLayout],
+  );
+
   if (isPending) return <WorkspaceSkeleton />;
   if (error) {
     return (
@@ -758,25 +698,35 @@ export function Workspace() {
     );
   }
 
-  const failure = run.error ?? submit.error;
+  const failure = flow.failure;
   const status = problem.summary.statusByLanguage[language] ?? 'not_started';
 
   const resetToStarter = () => {
     const starter = problem.starters[language];
-    // Dropped before the DELETE, not after: a pending autosave that landed
-    // second would restore the draft this is deleting (P4-11).
-    pending.current = null;
+    // Dropped before the DELETE, not after: a pending autosave, or a retry of
+    // a failed one, that landed second would restore the draft this is
+    // deleting (P4-11).
+    discardDraft();
     setCode(starter);
     setPersisted(starter);
     deleteDraft.mutate({ slug, language });
     setConfirmingReset(false);
   };
 
-  const jumpToLine = (compileError: CompileError) => {
-    if (compileError.line !== undefined) {
-      editorRef.current?.revealPosition(compileError.line, compileError.column);
-    }
-  };
+  /*
+   * One line beside the toolbar for both kinds of news about saving: a draft
+   * that did not save outranks a note about formatting, because it is the one
+   * the user has to know about (P4-14).
+   */
+  const saveNote = draftRetrying
+    ? {
+        text: 'Not saved — retrying',
+        title: draftError ? `Not saved: ${draftError.message}. Retrying.` : undefined,
+        failed: true,
+      }
+    : formatNote?.code === code
+      ? { text: formatNote.text, title: formatNote.text, failed: formatNote.failed }
+      : null;
 
   const editor = (
     <Card as="div" padding="none" className="min-h-0 w-full overflow-hidden" data-testid="editor">
@@ -798,7 +748,7 @@ export function Workspace() {
             onChange={onEditorChange}
             prefs={editorPrefs}
             theme={theme}
-            markers={result?.compileErrors ?? []}
+            markers={result?.compileErrors ?? NO_MARKERS}
             onFormat={formatter ? formatDocument : undefined}
           />
         </Suspense>
@@ -948,9 +898,7 @@ export function Workspace() {
     <SplitPane
       direction="column"
       ratio={layout.editor}
-      onRatio={(next) => {
-        setLayout({ editor: next });
-      }}
+      onRatio={onEditorRatio}
       label="Editor and results"
       className="w-full flex-1"
       first={editor}
@@ -1083,13 +1031,13 @@ export function Workspace() {
         <p
           className={cn(
             'min-w-0 truncate text-xs',
-            formatNote?.failed === true ? 'text-danger-fg' : 'text-fg-muted',
+            saveNote?.failed === true ? 'text-danger-fg' : 'text-fg-muted',
           )}
           role="status"
           data-testid="format-note"
-          title={formatNote?.code === code ? formatNote.text : undefined}
+          title={saveNote?.title}
         >
-          {formatNote?.code === code ? formatNote.text : ''}
+          {saveNote?.text ?? ''}
         </p>
 
         <div className="ml-auto flex items-center gap-2">
@@ -1101,7 +1049,7 @@ export function Workspace() {
                 judge('run');
               }}
             >
-              {run.isPending ? 'Running…' : 'Run'}
+              {flow.running ? 'Running…' : 'Run'}
             </Button>
           </Tooltip>
           <Tooltip content="Run every test and record the result" keys={SHORTCUTS.submit.keys}>
@@ -1112,7 +1060,7 @@ export function Workspace() {
                 judge('submit');
               }}
             >
-              {submit.isPending ? 'Submitting…' : 'Submit'}
+              {flow.submitting ? 'Submitting…' : 'Submit'}
             </Button>
           </Tooltip>
           {/*
@@ -1163,28 +1111,17 @@ export function Workspace() {
             size="sm"
             variant="secondary"
             className="ml-auto"
-            disabled={reVerify.isPending || busy}
-            onClick={() => {
-              reVerify.mutate(
-                { slug, language },
-                {
-                  onSuccess: (next) => {
-                    if (showing.current.slug !== slug) return;
-                    setResult(next);
-                    setTab('results');
-                  },
-                },
-              );
-            }}
+            disabled={flow.reVerifying || busy}
+            onClick={flow.reVerify}
           >
-            {reVerify.isPending ? 'Re-verifying…' : `Re-verify in ${LANGUAGE_LABEL[language]}`}
+            {flow.reVerifying ? 'Re-verifying…' : `Re-verify in ${LANGUAGE_LABEL[language]}`}
           </Button>
         </div>
       )}
 
-      {reVerify.error && (
+      {flow.reVerifyError && (
         <p className="text-danger-fg shrink-0 px-1 text-xs" role="alert">
-          {reVerify.error.message}
+          {flow.reVerifyError.message}
         </p>
       )}
 
@@ -1216,9 +1153,7 @@ export function Workspace() {
       <SplitPane
         direction="row"
         ratio={layout.statement}
-        onRatio={(next) => {
-          setLayout({ statement: next });
-        }}
+        onRatio={onStatementRatio}
         label="Statement and editor"
         className="flex-1"
         first={
@@ -1232,6 +1167,7 @@ export function Workspace() {
               language={language}
               code={code}
               hideAssistance={hideAssistance}
+              languageLocked={busy}
               onRestore={restoreSubmission}
               coach={coachPanel}
             />

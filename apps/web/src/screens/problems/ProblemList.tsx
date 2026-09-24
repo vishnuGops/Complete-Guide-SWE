@@ -1,4 +1,13 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type RefObject,
+} from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -20,8 +29,15 @@ import {
   StatusMark,
   cn,
 } from '../../ui/index.js';
+import { relativeDay } from '../relativeDay.js';
 import { Filters } from './Filters.js';
-import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters } from './query.js';
+import {
+  CLEARED,
+  filtersFromSearch,
+  isFiltered,
+  searchFromFilters,
+  type ProblemFilters,
+} from './query.js';
 
 /**
  * The problem list (ROADMAP P4-4, P4-5).
@@ -42,17 +58,6 @@ import { filtersFromSearch, isFiltered, searchFromFilters, type ProblemFilters }
  */
 
 type ListView = 'all' | 'due' | 'starred';
-
-/** Every filter off; sort is not a filter and is left alone. */
-const CLEARED = {
-  topic: [],
-  tier: [],
-  status: [],
-  q: '',
-  language: undefined,
-  bookmarked: false,
-  due: false,
-} satisfies Partial<ProblemFilters>;
 
 interface Column {
   key: ProblemSort | 'patterns';
@@ -75,17 +80,15 @@ function sortable(key: Column['key']): key is ProblemSort {
   return (PROBLEM_SORT_KEYS as readonly string[]).includes(key);
 }
 
-/** A date a user reads to mean "recently" or "a while ago", not to the minute. */
-function whenAttempted(iso: string | null): string {
-  if (!iso) return '';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 30) return `${String(days)} days ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
-}
-
-function Row({ problem }: { problem: ProblemSummary }) {
+/**
+ * One problem.
+ *
+ * Memoised (P4-18): its only prop is the summary object from the query's
+ * answer, which keeps its identity until the next answer - so the table's
+ * parent re-rendering for anything else (the filter card opening, a fetch
+ * starting) no longer re-renders every row.
+ */
+const Row = memo(function Row({ problem }: { problem: ProblemSummary }) {
   const navigate = useNavigate();
 
   // The whole row is a click target, and the title is the link that makes it
@@ -157,11 +160,12 @@ function Row({ problem }: { problem: ProblemSummary }) {
       <td className="text-fg-muted px-3 py-0 text-xs">{problem.tier}</td>
       <td className="text-fg-muted tnum px-3 py-0 text-right text-xs">{problem.rating}</td>
       <td className="text-fg-subtle tnum px-3 py-0 pr-4 text-xs">
-        {whenAttempted(problem.lastAttemptedAt)}
+        {/* A day a user reads as "recently" or "a while ago", not to the minute. */}
+        {problem.lastAttemptedAt === null ? '' : relativeDay(problem.lastAttemptedAt)}
       </td>
     </tr>
   );
-}
+});
 
 /**
  * The table, before the table (ROADMAP P4-10).
@@ -185,21 +189,42 @@ function ListSkeleton() {
   );
 }
 
-export function ProblemList() {
-  const [params, setParams] = useSearchParams();
-  const filters = filtersFromSearch(params);
+/** What the list has decided the search box holds; `n` lets the same text land twice. */
+interface Reseed {
+  value: string;
+  n: number;
+}
 
+/**
+ * The search box (ROADMAP P4-5, P4-13), in a component of its own (P4-18).
+ *
+ * It types faster than the server answers, so its text is its own state and
+ * reaches the URL after a pause: every keystroke in the history would make Back
+ * undo the word letter by letter, and a request per character would show four
+ * stale answers for every real one. That state used to live in `ProblemList`,
+ * so each keystroke re-rendered the whole table - 171 rows - to change one
+ * input. Here it re-renders the input.
+ *
+ * What the list still needs from it - text not yet in the URL, when a filter is
+ * clicked mid-pause - it reads from `typedRef`: written here in the change
+ * handler, read there in a click handler, and by neither while rendering.
+ */
+function SearchBox({
+  q,
+  reseed,
+  typedRef,
+  inputRef,
+}: {
+  /** The search the URL holds. */
+  q: string;
+  reseed: Reseed;
+  typedRef: RefObject<string | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
+}) {
+  const [, setParams] = useSearchParams();
+  const [text, setText] = useState(q);
   /**
-   * The search box types faster than the server answers.
-   *
-   * Its own state, pushed into the URL after a pause: writing every keystroke
-   * into the history would make the back button undo the word letter by letter,
-   * and firing a request per character would show four stale answers for every
-   * real one.
-   */
-  const [search, setSearch] = useState(filters.q);
-  /**
-   * Whether the box is holding something the URL has not been told about yet.
+   * Whether the box holds something the URL has not been told about yet.
    *
    * State rather than a ref, because the re-seed below reads it during render
    * (P4-13) - and a ref read during render is the thing React tells you not to
@@ -214,22 +239,37 @@ export function ProblemList() {
    * the *list* and left the text sitting there - the filter and the box saying
    * different things, which is the sort of thing a user works around by
    * reloading. Only while nothing is pending: a re-seed mid-debounce would
-   * fight the typist.
+   * fight the typist. Nor when the box already says it: the URL holds the
+   * search trimmed, and "two " becoming "two" under the cursor would make the
+   * next word "twosum".
    */
-  const [seededFrom, setSeededFrom] = useState(filters.q);
-  if (filters.q !== seededFrom) {
-    setSeededFrom(filters.q);
-    if (!typing) setSearch(filters.q);
+  const [seededFrom, setSeededFrom] = useState(q);
+  if (q !== seededFrom) {
+    setSeededFrom(q);
+    if (!typing && q !== text.trim()) setText(q);
+  }
+
+  // And when the list applies filters itself: a Clear empties the box even
+  // mid-pause, and any other filter has just taken what was typed (P4-17).
+  const [reseededAt, setReseededAt] = useState(reseed.n);
+  if (reseed.n !== reseededAt) {
+    setReseededAt(reseed.n);
+    setText(reseed.value);
+    setTyping(false);
   }
 
   useEffect(() => {
     if (!typing) return;
     const timer = setTimeout(() => {
+      typedRef.current = null;
       setTyping(false);
+      // Trimmed on the way out (P4-17): "stack " is the search "stack", and
+      // spaces alone are no search at all.
+      const value = text.trim();
       setParams(
         (previous) => {
           const next = new URLSearchParams(previous);
-          if (search) next.set('q', search);
+          if (value) next.set('q', value);
           else next.delete('q');
           return next;
         },
@@ -239,16 +279,55 @@ export function ProblemList() {
     return () => {
       clearTimeout(timer);
     };
-  }, [search, typing, setParams]);
+  }, [text, typing, typedRef, setParams]);
+
+  return (
+    <Input
+      ref={inputRef}
+      type="search"
+      value={text}
+      aria-label="Search problems"
+      placeholder="Search titles, patterns and notes"
+      className="max-w-72"
+      onChange={(event) => {
+        typedRef.current = event.target.value;
+        setTyping(true);
+        setText(event.target.value);
+      }}
+    />
+  );
+}
+
+export function ProblemList() {
+  const [params, setParams] = useSearchParams();
+  // One object per URL rather than per render, so the memoised filter card is
+  // handed the same filters until they change (P4-18).
+  const filters = useMemo(() => filtersFromSearch(params), [params]);
 
   const { data, isPending, isFetching, error, refetch } = useProblems(filters);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const apply = (next: ProblemFilters) => {
-    setSearch(next.q);
-    setTyping(false);
-    setParams(new URLSearchParams(searchFromFilters(next)));
-  };
+  const typedRef = useRef<string | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const [reseed, setReseed] = useState<Reseed>({ value: filters.q, n: 0 });
+
+  const apply = useCallback(
+    (next: ProblemFilters) => {
+      /*
+       * A search still inside its pause is part of what the user asked for
+       * (P4-17). Built from the URL alone, ticking a topic within 200ms of
+       * typing threw the typed word away. Unless the change is to the search
+       * itself - a Clear - which means it.
+       */
+      const pending = typedRef.current;
+      typedRef.current = null;
+      const keep = pending !== null && next.q === filters.q;
+      setReseed((before) => ({ value: keep ? pending : next.q, n: before.n + 1 }));
+      const q = keep ? pending.trim() : next.q;
+      setParams(new URLSearchParams(searchFromFilters({ ...next, q })));
+    },
+    [filters, setParams],
+  );
 
   const sortBy = (key: ProblemSort) => {
     // A second click on the same column reverses it; a first click on a new one
@@ -268,9 +347,12 @@ export function ProblemList() {
    * URL like the rest.
    */
   const view: ListView = filters.due ? 'due' : filters.bookmarked ? 'starred' : 'all';
-  const setView = (next: ListView) => {
-    apply({ ...filters, due: next === 'due', bookmarked: next === 'starred' });
-  };
+  const setView = useCallback(
+    (next: ListView) => {
+      apply({ ...filters, due: next === 'due', bookmarked: next === 'starred' });
+    },
+    [apply, filters],
+  );
 
   const narrowed = isFiltered(filters);
   const due = data?.due ?? 0;
@@ -351,17 +433,7 @@ export function ProblemList() {
               Filters
             </Button>
 
-            <Input
-              type="search"
-              value={search}
-              aria-label="Search problems"
-              placeholder="Search titles, patterns and notes"
-              className="max-w-72"
-              onChange={(event) => {
-                setTyping(true);
-                setSearch(event.target.value);
-              }}
-            />
+            <SearchBox q={filters.q} reseed={reseed} typedRef={typedRef} inputRef={searchInput} />
 
             <Segmented
               label="Which problems"
@@ -380,8 +452,17 @@ export function ProblemList() {
               it twice on one page makes both copies read like they might mean
               different things.
             */}
+            {/*
+              A status, so a screen reader hears the count move when a filter
+              is applied (P4-17); otherwise ticking a box changes nothing it
+              can perceive until it goes looking through the table.
+            */}
             {data && (
-              <p className="text-fg-muted tnum ml-auto text-xs" data-testid="list-counts">
+              <p
+                className="text-fg-muted tnum ml-auto text-xs"
+                role="status"
+                data-testid="list-counts"
+              >
                 {narrowed
                   ? `${String(data.matched)} of ${String(data.total)} problems`
                   : `${String(data.total)} problems`}
@@ -406,6 +487,9 @@ export function ProblemList() {
                     className="mt-3"
                     onClick={() => {
                       apply({ ...filters, ...CLEARED });
+                      // This button leaves with the empty state it sits in; the
+                      // search box is the top of what replaces it (P4-17).
+                      searchInput.current?.focus();
                     }}
                   >
                     Clear all filters
@@ -414,6 +498,9 @@ export function ProblemList() {
               </div>
             ) : (
               <table
+                // The old rows stay while the new ones load; this says so to a
+                // screen reader as the dimming does to the eye (P4-17).
+                aria-busy={isFetching}
                 className={cn(
                   'w-full table-fixed text-left text-sm transition-opacity duration-75',
                   // The previous rows stay while the next query runs, dimmed so it

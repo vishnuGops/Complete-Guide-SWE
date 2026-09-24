@@ -22,10 +22,20 @@ const COUNTDOWNS = [
 
 export interface InterviewTimer {
   running: boolean;
-  /** Milliseconds since the timer was started. */
-  elapsedMs: number;
+  /** `Date.now()` when the clock started, or null while it is not running. */
+  startedAt: number | null;
   /** The countdown length, or null for a stopwatch. */
   budgetMs: number | null;
+  /**
+   * Milliseconds since the timer was started, read when it is asked for.
+   *
+   * A function rather than a number that ticks (ROADMAP P4-18). The ticking
+   * lives in the clock on screen (`RunningClock`), so it re-renders one span a
+   * second instead of the whole workspace - editor, panels and all - which is
+   * what a ticking value held here used to do. The only other reader is a
+   * submit, which wants the time at the moment it is sent anyway.
+   */
+  elapsedMs: () => number;
   start: (budgetMs: number | null) => void;
   stop: () => void;
 }
@@ -33,37 +43,23 @@ export interface InterviewTimer {
 export function useInterviewTimer(): InterviewTimer {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [budgetMs, setBudgetMs] = useState<number | null>(null);
-  const [elapsedMs, setElapsedMs] = useState(0);
-
-  /*
-   * Elapsed is computed from the start time rather than accumulated, so a tab
-   * that was backgrounded - and whose interval the browser throttled - still
-   * reads right the moment it comes back. `start` sets it to zero, so the first
-   * tick has nothing to correct.
-   */
-  useEffect(() => {
-    if (startedAt === null) return;
-    const timer = setInterval(() => {
-      setElapsedMs(Date.now() - startedAt);
-    }, 1_000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [startedAt]);
 
   const start = useCallback((budget: number | null) => {
     setBudgetMs(budget);
-    setElapsedMs(0);
     setStartedAt(Date.now());
   }, []);
 
   const stop = useCallback(() => {
     setStartedAt(null);
     setBudgetMs(null);
-    setElapsedMs(0);
   }, []);
 
-  return { running: startedAt !== null, elapsedMs, budgetMs, start, stop };
+  const elapsedMs = useCallback(
+    () => (startedAt === null ? 0 : Date.now() - startedAt),
+    [startedAt],
+  );
+
+  return { running: startedAt !== null, startedAt, budgetMs, elapsedMs, start, stop };
 }
 
 /** `m:ss`, or `h:mm:ss` once it has been an hour. Never a bare number. */
@@ -74,6 +70,48 @@ export function formatClock(ms: number): string {
   const hours = Math.floor(total / 3600);
   if (hours === 0) return `${String(minutes)}:${seconds}`;
   return `${String(hours)}:${String(minutes).padStart(2, '0')}:${seconds}`;
+}
+
+/**
+ * The clock itself, and the only thing that re-renders when it ticks.
+ *
+ * Elapsed is computed from the start time rather than accumulated, so a tab
+ * that was backgrounded - and whose interval the browser throttled - still
+ * reads right the moment it comes back. It starts at zero rather than at
+ * `Date.now() - startedAt`, so a fresh 30-minute countdown reads 30:00 and not
+ * 29:59 on the frame it appears.
+ */
+function RunningClock({ startedAt, budgetMs }: { startedAt: number; budgetMs: number | null }) {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedMs(Date.now() - startedAt);
+    }, 1_000);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [startedAt]);
+
+  const over = budgetMs !== null && elapsedMs >= budgetMs;
+  const shown = budgetMs === null ? elapsedMs : Math.abs(budgetMs - elapsedMs);
+
+  return (
+    /*
+      `role="timer"` with `aria-live="off"`: it is a clock, and a clock that
+      announced itself every second would make the screen unusable. The value
+      is still reachable on demand, which is what a clock should be.
+    */
+    <span
+      role="timer"
+      aria-live="off"
+      aria-label={budgetMs === null ? 'Elapsed time' : over ? 'Time over by' : 'Time remaining'}
+      className={cn('tnum text-sm font-medium', over ? 'text-warn-fg' : 'text-fg')}
+    >
+      {over ? '+' : ''}
+      {formatClock(shown)}
+    </span>
+  );
 }
 
 export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
@@ -92,29 +130,10 @@ export function InterviewTimerControl({ timer }: { timer: InterviewTimer }) {
     };
   }, [choosing]);
 
-  if (timer.running) {
-    const over = timer.budgetMs !== null && timer.elapsedMs >= timer.budgetMs;
-    const shown =
-      timer.budgetMs === null ? timer.elapsedMs : Math.abs(timer.budgetMs - timer.elapsedMs);
-
+  if (timer.startedAt !== null) {
     return (
       <div className="flex items-center gap-1.5">
-        {/*
-          `role="timer"` with `aria-live="off"`: it is a clock, and a clock that
-          announced itself every second would make the screen unusable. The
-          value is still reachable on demand, which is what a clock should be.
-        */}
-        <span
-          role="timer"
-          aria-live="off"
-          aria-label={
-            timer.budgetMs === null ? 'Elapsed time' : over ? 'Time over by' : 'Time remaining'
-          }
-          className={cn('tnum text-sm font-medium', over ? 'text-warn-fg' : 'text-fg')}
-        >
-          {over ? '+' : ''}
-          {formatClock(shown)}
-        </span>
+        <RunningClock startedAt={timer.startedAt} budgetMs={timer.budgetMs} />
         <Button
           variant="secondary"
           onClick={() => {

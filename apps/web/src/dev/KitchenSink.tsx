@@ -403,7 +403,6 @@ export function KitchenSink() {
               label="of 171 problems"
               delta={<DeltaChip good>+3 this week</DeltaChip>}
             />
-            <Stat size="secondary" value={7} label="Due for review" />
           </div>
           <ul className="mt-6 max-w-md">
             {VERDICTS.map((verdict) => (

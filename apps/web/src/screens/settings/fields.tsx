@@ -15,15 +15,29 @@ import { Card, Input, cn } from '../../ui/index.js';
 export function Section({
   title,
   description,
+  error = null,
   children,
 }: {
   title: string;
   description: string;
+  /**
+   * A write from this card the server refused (ROADMAP P3-7). Said in the card
+   * that made it, because a page with no Save button has nowhere else to say
+   * it - and a change that silently did not happen reads as one that did.
+   */
+  error?: Error | null;
   children: ReactNode;
 }) {
   return (
     <Card title={title} description={description}>
-      <div className="flex flex-col gap-4">{children}</div>
+      <div className="flex flex-col gap-4">
+        {children}
+        {error !== null && (
+          <p className="text-danger-fg text-xs" role="alert">
+            That change was not saved: {error.message}
+          </p>
+        )}
+      </div>
     </Card>
   );
 }
@@ -64,12 +78,17 @@ export function Row({
  * to "12" snapped back to the old value, because 1 is below the minimum; and
  * every accepted keystroke was its own PUT. Local text state fixes both - the
  * value is interpreted once, when the user has stopped typing it.
+ *
+ * Whole numbers unless `fraction` says otherwise (P3-7): the server's schema
+ * wants an integer for a font size, and "12.5" used to pass here, go out as a
+ * PUT, come back a 400 and be shown nowhere.
  */
 export function NumberField({
   value,
   min,
   max,
   step = 1,
+  fraction = false,
   label,
   onCommit,
 }: {
@@ -77,6 +96,8 @@ export function NumberField({
   min: number;
   max: number;
   step?: number;
+  /** Accept values between the integers - the time limit multiplier. */
+  fraction?: boolean;
   label: string;
   onCommit: (value: number) => void;
 }) {
@@ -93,7 +114,12 @@ export function NumberField({
   }
 
   const parsed = Number(text);
-  const invalid = text.trim() === '' || !Number.isFinite(parsed) || parsed < min || parsed > max;
+  const invalid =
+    text.trim() === '' ||
+    !Number.isFinite(parsed) ||
+    (!fraction && !Number.isInteger(parsed)) ||
+    parsed < min ||
+    parsed > max;
 
   function commit(): void {
     if (invalid) {
@@ -113,7 +139,7 @@ export function NumberField({
       <Input
         id={id}
         type="text"
-        inputMode="decimal"
+        inputMode={fraction ? 'decimal' : 'numeric'}
         className="tnum w-20 text-right"
         value={text}
         invalid={invalid}
@@ -131,7 +157,7 @@ export function NumberField({
         }}
       />
       <span id={`${id}-range`} className="sr-only">
-        {`Between ${String(min)} and ${String(max)}.`}
+        {`${fraction ? 'Between' : 'A whole number between'} ${String(min)} and ${String(max)}.`}
       </span>
     </>
   );

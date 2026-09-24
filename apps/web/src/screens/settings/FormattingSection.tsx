@@ -49,9 +49,12 @@ function FormatterRow({ status }: { status: FormatterStatus }) {
 
 export function FormattingSection({
   formatOnSave,
+  error = null,
   onFormatOnSave,
 }: {
   formatOnSave: boolean;
+  /** A refused write of the toggle below (P3-7). */
+  error?: Error | null;
   onFormatOnSave: (value: boolean) => void;
 }) {
   const formatters = useFormatters();
@@ -63,6 +66,7 @@ export function FormattingSection({
     <Section
       title="Formatting"
       description="Optional. Format in the workspace, and Ctrl+S when the setting below is on, run these on your code. Neither comes with DevProMax."
+      error={error}
     >
       <Row
         label="Format on save"

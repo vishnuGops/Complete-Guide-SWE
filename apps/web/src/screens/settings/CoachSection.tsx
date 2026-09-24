@@ -10,7 +10,7 @@ import {
   type SettingsView,
 } from '@devpromax/shared';
 import { useTestConnection } from '../../api/hooks.js';
-import { Button, Input, Segmented, Tooltip, cn } from '../../ui/index.js';
+import { Button, Input, Segmented, cn } from '../../ui/index.js';
 import { ControlColumn, Row, Section, OptionalNumberField, TextField } from './fields.js';
 
 /**
@@ -23,10 +23,12 @@ import { ControlColumn, Row, Section, OptionalNumberField, TextField } from './f
  *
  * The key is write-only in both directions. The server has no route that
  * returns it (`SettingsView` has no `apiKey` field at all), and this component
- * never puts the typed value anywhere but the request: after a save the field is
- * cleared and what is shown is the server's own mask. So the thing on screen is
- * never the thing that was typed, which is what makes a screenshot of this page
- * harmless.
+ * never puts the typed value anywhere but the request: once the server has
+ * taken it, the field is cleared and what is shown is the server's own mask
+ * (only then, since P3-7 - a refused save used to empty the field all the same,
+ * and the key had to be found and pasted again to learn why). So the thing on
+ * screen is never the thing that was typed, which is what makes a screenshot
+ * of this page harmless.
  */
 
 const PROVIDER_LABEL: Record<CoachProvider, string> = {
@@ -76,10 +78,16 @@ function ApiKeyRow({
 }: {
   coach: SettingsView['coach'];
   saving: boolean;
-  onSave: (apiKey: string) => void;
+  /** `onSaved` runs once the server has the key, which is when the field empties. */
+  onSave: (apiKey: string, onSaved: () => void) => void;
 }) {
   const id = useId();
   const [typed, setTyped] = useState('');
+  const save = (apiKey: string) => {
+    onSave(apiKey, () => {
+      setTyped('');
+    });
+  };
   const fromEnv = coach.apiKeySource === 'env';
 
   const status =
@@ -97,8 +105,8 @@ function ApiKeyRow({
             API key
           </label>
           <p className="text-fg-subtle mt-0.5 text-xs">
-            Stored in this machine&apos;s database. Never logged, never exported, and no route
-            returns it.
+            The key for the provider above - each vendor issues its own. Stored in this
+            machine&apos;s database; never logged, never exported, and no route returns it.
           </p>
         </div>
         <ControlColumn>
@@ -118,8 +126,7 @@ function ApiKeyRow({
             onKeyDown={(event) => {
               if (event.key === 'Enter' && typed.trim() !== '') {
                 event.preventDefault();
-                onSave(typed);
-                setTyped('');
+                save(typed);
               }
             }}
           />
@@ -128,8 +135,7 @@ function ApiKeyRow({
             variant="secondary"
             disabled={saving || typed.trim() === ''}
             onClick={() => {
-              onSave(typed);
-              setTyped('');
+              save(typed);
             }}
           >
             Save
@@ -152,8 +158,7 @@ function ApiKeyRow({
             disabled={saving}
             onClick={() => {
               // An empty string is how the API clears it (settingsService).
-              onSave('');
-              setTyped('');
+              save('');
             }}
           >
             Clear key
@@ -174,29 +179,54 @@ function ApiKeyRow({
 export function CoachSection({
   coach,
   saving,
+  error,
   onChange,
 }: {
   coach: SettingsView['coach'];
   saving: boolean;
-  onChange: (patch: SettingsUpdate) => void;
+  /** The last write from this card, if the server refused it (P3-7). */
+  error: Error | null;
+  onChange: (patch: SettingsUpdate, onSaved?: () => void) => void;
 }) {
   const test = useTestConnection();
   const hasKey = coach.apiKeyMasked !== null;
+  /**
+   * The provider this screen switched away from while a key was configured.
+   *
+   * A key belongs to one vendor, and there is one key field: after Anthropic
+   * becomes Gemini the stored key is very likely an Anthropic one, and the first
+   * sign of it used to be a rejected turn mid-problem (P3-7).
+   */
+  const [switchedFrom, setSwitchedFrom] = useState<CoachProvider | null>(null);
+  const keyMayBeStale = hasKey && switchedFrom !== null && switchedFrom !== coach.provider;
 
   return (
     <Section
       title="AI coach"
       description="Your own key, your own account. AI Help is the only thing that calls it - nothing here runs on Run or Submit."
+      error={error}
     >
       <Row label="Provider" hint="Which vendor AI Help talks to.">
         <ProviderChoice
           value={coach.provider}
           disabled={saving}
           onChange={(provider) => {
-            onChange({ coach: { provider } });
+            if (hasKey && switchedFrom === null) setSwitchedFrom(coach.provider);
+            // The model goes with the vendor (P3-7): `claude-opus-5` sent to
+            // Gemini is a 404 on the first turn, and the empty field that
+            // replaces it means the new provider's own default.
+            onChange({ coach: { provider, model: null } });
           }}
         />
       </Row>
+
+      {keyMayBeStale && (
+        <p className="text-warn-fg text-xs" role="status">
+          Keys are per vendor, and the stored key may be for {PROVIDER_LABEL[switchedFrom]} rather
+          than {PROVIDER_LABEL[coach.provider]}. Paste the {PROVIDER_LABEL[coach.provider]} one
+          below if so.
+        </p>
+      )}
 
       {needsBaseUrl(coach.provider) && (
         /*
@@ -242,9 +272,13 @@ export function CoachSection({
       <ApiKeyRow
         coach={coach}
         saving={saving}
-        onSave={(apiKey) => {
+        onSave={(apiKey, onSaved) => {
           test.reset();
-          onChange({ coach: { apiKey } });
+          onChange({ coach: { apiKey } }, () => {
+            // A key saved after the switch is the new vendor's.
+            setSwitchedFrom(null);
+            onSaved();
+          });
         }}
       />
 
@@ -269,22 +303,29 @@ export function CoachSection({
         />
       </Row>
 
+      {/*
+        Why the button cannot be pressed is said in the row, where it can be
+        read (P3-7). It was a tooltip on the disabled button, and a disabled
+        button takes no focus and no hover - so nobody could ever see it.
+      */}
       <Row
         label="Test connection"
-        hint="One cheap request to the provider, to find out now rather than mid-problem."
+        hint={
+          hasKey
+            ? 'One cheap request to the provider, to check the key and the model now rather than mid-problem.'
+            : 'Add a key first. Then one cheap request to the provider checks the key and the model.'
+        }
       >
-        <Tooltip content={hasKey ? 'Checks the key and the model' : 'Add a key first'}>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={!hasKey || test.isPending}
-            onClick={() => {
-              test.mutate();
-            }}
-          >
-            {test.isPending ? 'Testing…' : 'Test connection'}
-          </Button>
-        </Tooltip>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!hasKey || test.isPending}
+          onClick={() => {
+            test.mutate();
+          }}
+        >
+          {test.isPending ? 'Testing…' : 'Test connection'}
+        </Button>
       </Row>
 
       {test.data && (

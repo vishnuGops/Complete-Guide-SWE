@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import type { CoachFeedback, CoachStreamEvent } from '@devpromax/shared';
 import { Workspace } from './Workspace.js';
+import { CUT_OFF_MESSAGE } from './useCoach.js';
 import {
   aProblemDetail,
   fakeServer,
@@ -784,5 +785,114 @@ describe('what survives looking at another tab', () => {
     const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url) === '/api/coach/feedback');
     const body = JSON.parse(String((call?.[1] as RequestInit).body)) as { revealedHints: number };
     expect(body.revealedHints).toBe(1);
+  });
+});
+
+/**
+ * Workspace scoping, for the coach (ROADMAP P4-15).
+ */
+describe('the coach and the rest of the workspace', () => {
+  it('sends a follow-up on Ctrl+Enter instead of running the judge', async () => {
+    server = fakeServer(baseRoutes(() => sse([START, { type: 'done', feedback: ANSWER }])));
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText(ANSWER.summary);
+
+    await user.type(screen.getByLabelText(/follow-up/i), 'Why?');
+    await user.keyboard('{Control>}[Enter]{/Control}');
+
+    await waitFor(() => {
+      expect(server.requests.some((r) => r.url.pathname === '/api/coach/chat')).toBe(true);
+    });
+    // The registry used to take the keys first, from the window's capture
+    // phase, and run the code while the question sat there unsent.
+    expect(server.requests.some((r) => r.url.pathname === '/api/run')).toBe(false);
+  });
+
+  it('refreshes the status when the coach calls a problem mastered', async () => {
+    let mastered = false;
+    server = fakeServer([
+      {
+        match: path(`/api/problems/${SLUG}`),
+        body: () =>
+          mastered
+            ? aProblemDetail({
+                summary: {
+                  ...aProblemDetail().summary,
+                  status: 'mastered',
+                  statusByLanguage: { python: 'mastered' },
+                },
+              })
+            : aProblemDetail(),
+      },
+      ...baseRoutes(() => {
+        // The server records mastery as the turn completes.
+        mastered = true;
+        return sse([START, { type: 'done', feedback: { ...ANSWER, mastered: true } }]);
+      }).slice(1),
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText(ANSWER.summary);
+
+    // Not until the problem was refetched - which nothing asked for.
+    await waitFor(() => {
+      expect(screen.getByTestId('problem-status')).toHaveTextContent('Mastered in Python');
+    });
+  });
+
+  it('says so when an answer stops without finishing, and stops claiming to be busy', async () => {
+    server = fakeServer(baseRoutes(() => sse([START, { type: 'markdown', delta: 'Half of it.' }])));
+    const user = userEvent.setup();
+    const { container } = renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(CUT_OFF_MESSAGE);
+    // What arrived is kept, as a finished turn rather than a live one.
+    expect(screen.getByText('Half of it.')).toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
+  });
+
+  it('does not let a turn for one language land in the other’s panel', async () => {
+    server = fakeServer([
+      ...baseRoutes(() =>
+        sse(
+          [
+            START,
+            { type: 'markdown', delta: 'About the Python.' },
+            { type: 'done', feedback: ANSWER },
+          ],
+          { hold: true },
+        ),
+      ),
+      { match: path(`/api/drafts/${SLUG}/java`), body: () => ({ draft: null }) },
+    ]);
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await typeAttempt(user);
+    await user.click(screen.getByRole('button', { name: 'AI Help' }));
+    await screen.findByText('About the Python.');
+
+    await user.click(screen.getByRole('button', { name: 'Java' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Code')).toHaveValue('class Solution {}\n');
+    });
+    // The rest of the Python answer arrives after the switch.
+    release?.();
+
+    await user.click(screen.getByRole('tab', { name: 'Coach' }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText(ANSWER.summary)).not.toBeInTheDocument();
+    expect(screen.getByText(/Ask for feedback on the code in the editor/)).toBeInTheDocument();
   });
 });

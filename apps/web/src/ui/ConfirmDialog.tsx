@@ -1,5 +1,5 @@
 import * as RadixAlertDialog from '@radix-ui/react-alert-dialog';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Button } from './Button.js';
 
 /**
@@ -34,12 +34,32 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
 }: ConfirmDialogProps) {
+  /*
+   * Where focus goes back to (P4-17).
+   *
+   * Radix returns it to the dialog's `Trigger`, and this dialog has none: it
+   * is opened from state, by whatever button the caller owns. So focus went
+   * nowhere - the page - as it closed. What had focus as it opened is kept
+   * instead: a layout effect runs before the dialog's own focus trap takes it.
+   */
+  const returnTo = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement) {
+      returnTo.current = document.activeElement;
+    }
+  }, [open]);
+
   return (
     <RadixAlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixAlertDialog.Portal>
         {/* The scrim is a token, not a raw colour (docs/DESIGN.md item 1). */}
         <RadixAlertDialog.Overlay className="bg-overlay-scrim fixed inset-0 z-50" />
         <RadixAlertDialog.Content
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            returnTo.current?.focus();
+            returnTo.current = null;
+          }}
           className={[
             'bg-surface-raised border-border shadow-overlay fixed top-1/2 left-1/2 z-50',
             'w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',

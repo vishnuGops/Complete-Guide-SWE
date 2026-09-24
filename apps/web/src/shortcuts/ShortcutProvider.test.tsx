@@ -186,3 +186,30 @@ describe('a dialog owns the keyboard', () => {
     expect(onRun).toHaveBeenCalledOnce();
   });
 });
+
+describe('a field that handles its own keys (P4-15)', () => {
+  it('is left alone, and the key is not swallowed', () => {
+    // The coach's follow-up box: Ctrl+Enter there means "send", and the
+    // registry runs first because it listens on the window in capture.
+    const onRun = vi.fn();
+    render(
+      <ShortcutProvider>
+        <Binder onRun={onRun} />
+        <form data-shortcuts="local">
+          <input aria-label="follow-up" />
+        </form>
+      </ShortcutProvider>,
+    );
+
+    const event = new KeyboardEvent('keydown', {
+      code: 'Enter',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.querySelector('input')!.dispatchEvent(event);
+
+    expect(onRun).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+});

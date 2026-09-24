@@ -132,6 +132,48 @@ export function problemQueryString(query: Partial<ProblemListQuery>): string {
   return params.toString();
 }
 
+/**
+ * `tz=<this browser's IANA zone>`, for the dashboard and its report (P7-11).
+ *
+ * The server counts streaks and first solves in the viewer's own days when it
+ * is told which ones they are, and in UTC when it is not - so a browser that
+ * cannot name its zone still gets a dashboard, just a UTC one.
+ */
+function timeZoneQuery(separator: '?' | '&'): string {
+  let zone: string | undefined;
+  try {
+    zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    zone = undefined;
+  }
+  return zone ? `${separator}tz=${encodeURIComponent(zone)}` : '';
+}
+
+/**
+ * A keepalive body is capped at 64 KB by the browser, and a long solution or
+ * note can pass that. Past the cap the request is refused outright - and the
+ * refusal was swallowed with every other unload error, so a big draft was
+ * silently lost on close (P4-14). An ordinary request is the best there is
+ * then: it may not outlive the page, but it is not refused before it starts.
+ */
+const KEEPALIVE_MAX_BYTES = 60_000;
+
+/** A PUT made as the page goes away. Errors are swallowed: there is no one left to tell. */
+async function putOnUnload(url: string, body: object): Promise<void> {
+  const payload = JSON.stringify(body);
+  try {
+    await fetch(url, {
+      method: 'PUT',
+      credentials: 'omit',
+      keepalive: new TextEncoder().encode(payload).length <= KEEPALIVE_MAX_BYTES,
+      headers: { [CLIENT_HEADER]: CLIENT_NAME, 'Content-Type': 'application/json' },
+      body: payload,
+    });
+  } catch {
+    // The page is unloading; there is no one to tell.
+  }
+}
+
 export const api = {
   problems: (query: Partial<ProblemListQuery> = {}): Promise<ProblemListResponse> => {
     const search = problemQueryString(query);
@@ -151,7 +193,7 @@ export const api = {
       body: JSON.stringify({ language }),
     }),
   progress: (): Promise<ProgressResponse> => request('/api/progress'),
-  dashboard: (): Promise<DashboardResponse> => request('/api/dashboard'),
+  dashboard: (): Promise<DashboardResponse> => request(`/api/dashboard${timeZoneQuery('?')}`),
 
   interview: (): Promise<InterviewResponse> => request('/api/interview'),
   startInterview: (): Promise<Interview> => request('/api/interview', { method: 'POST' }),
@@ -174,7 +216,7 @@ export const api = {
    * the tab.
    */
   downloadReport: async (format: ReportFormat): Promise<void> => {
-    const response = await fetch(`/api/dashboard/report?format=${format}`, {
+    const response = await fetch(`/api/dashboard/report?format=${format}${timeZoneQuery('&')}`, {
       credentials: 'omit',
       headers: { [CLIENT_HEADER]: CLIENT_NAME },
     });
@@ -245,19 +287,11 @@ export const api = {
    * be written. Errors are swallowed on purpose - there is nothing left to show
    * one to, and the alternative is an unhandled rejection on the way out.
    */
-  saveDraftKeepalive: async (slug: string, language: Language, code: string): Promise<void> => {
-    try {
-      await fetch(`/api/drafts/${encodeURIComponent(slug)}/${language}`, {
-        method: 'PUT',
-        credentials: 'omit',
-        keepalive: true,
-        headers: { [CLIENT_HEADER]: CLIENT_NAME, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-    } catch {
-      // The page is unloading; there is no one to tell.
-    }
-  },
+  saveDraftKeepalive: (slug: string, language: Language, code: string): Promise<void> =>
+    putOnUnload(`/api/drafts/${encodeURIComponent(slug)}/${language}`, { code }),
+  /** The same, for a note (P4-14): notes are autosaved by the same hook as drafts. */
+  saveNoteKeepalive: (slug: string, body: string): Promise<void> =>
+    putOnUnload(`/api/notes/${encodeURIComponent(slug)}`, { body }),
   /** Reset-to-starter: deleting the draft is what makes the reset survive a reload. */
   deleteDraft: (slug: string, language: Language): Promise<DraftResponse> =>
     request(`/api/drafts/${encodeURIComponent(slug)}/${language}`, { method: 'DELETE' }),

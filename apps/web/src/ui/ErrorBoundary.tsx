@@ -29,6 +29,17 @@ export interface ErrorBoundaryProps {
   title: string;
   /** Offered instead of a reload when the caller can recover in place. */
   onReset?: () => void;
+  /**
+   * Clears a caught error when it changes (ROADMAP P4-15).
+   *
+   * The shell passes the route here. Without it, one screen throwing left
+   * "This screen stopped working" in place of every screen after it: the rail
+   * still navigated, the URL changed, and the boundary went on showing the old
+   * error, because nothing ever told it the screen it was about had gone. The
+   * children are not remounted by this - a key would do that, and would throw
+   * away the workspace's state on every change of problem.
+   */
+  resetKey?: unknown;
   className?: string;
 }
 
@@ -47,6 +58,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // The console is where a developer will look, and this is a local app whose
     // user often is one. Nothing is sent anywhere.
     console.error('Unhandled error in', this.props.title, error, info.componentStack);
+  }
+
+  override componentDidUpdate(previous: ErrorBoundaryProps): void {
+    if (this.state.error !== null && !Object.is(previous.resetKey, this.props.resetKey)) {
+      this.setState({ error: null });
+    }
   }
 
   private readonly reset = (): void => {

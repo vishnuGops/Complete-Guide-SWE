@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DashboardResponse } from '@devpromax/shared';
 import { Progress } from './Progress.js';
+import { localDay } from './relativeDay.js';
 import { fakeServer, path, renderApp } from '../test/harness.js';
 
 /**
@@ -271,12 +272,32 @@ describe('the dashboard', () => {
       (request) => request.url.pathname === '/api/dashboard/report',
     );
     expect(asked?.url.searchParams.get('format')).toBe('markdown');
+    // The file counts the same days the screen showed (P7-11).
+    expect(asked?.url.searchParams.get('tz')).toBe(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
+  });
+
+  it("asks for the dashboard in this browser's time zone (P7-11)", async () => {
+    const server = serve(aDashboard());
+    renderApp(<Progress />);
+
+    await waitFor(() => {
+      expect(server.requests.some((request) => request.url.pathname === '/api/dashboard')).toBe(
+        true,
+      );
+    });
+    const asked = server.requests.find((request) => request.url.pathname === '/api/dashboard');
+    expect(asked?.url.searchParams.get('tz')).toBe(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
   });
 });
 
 describe('the dashboard layout (P9-6)', () => {
   it('leads with the solved count and what this week added', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // The server sends the viewer's own days (P7-11), so today is the local date.
+    const today = localDay();
     serve(aDashboard({ solves: [{ day: today, count: 2 }] }));
     renderApp(<Progress />);
 

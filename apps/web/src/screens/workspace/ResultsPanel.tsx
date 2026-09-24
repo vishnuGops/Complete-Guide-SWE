@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { memo, useMemo, useState, type ReactNode } from 'react';
 import {
   VERDICT_LABEL,
   isAccepted,
@@ -355,7 +355,7 @@ export interface ResultsPanelProps {
   onJumpToLine?: (error: CompileError) => void;
 }
 
-export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
+function ResultsPanelBody({ result, onJumpToLine }: ResultsPanelProps) {
   const [selected, setSelected] = useState(() => firstFailure(result.tests));
 
   // A new run is a new set of tests; the selection follows the new first failure
@@ -512,3 +512,10 @@ export function ResultsPanel({ result, onJumpToLine }: ResultsPanelProps) {
     </div>
   );
 }
+
+/**
+ * Memoised (ROADMAP P4-18). It sits under the editor and every keystroke
+ * re-renders the workspace, while what it shows only changes when a verdict
+ * arrives - so the caller keeps `onJumpToLine` stable and this skips the rest.
+ */
+export const ResultsPanel = memo(ResultsPanelBody);

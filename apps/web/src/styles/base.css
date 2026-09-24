@@ -138,6 +138,51 @@
   }
 
   /*
+   * Forced colours - Windows contrast themes (P4-17). There the browser
+   * replaces every `background-color` with the system's Canvas, and that
+   * erased both the checked fill and the tick, which is a masked background:
+   * a ticked box and an empty one drew the same. So in that mode these
+   * controls opt out of the override and draw in the system's own colours -
+   * the edge in CanvasText, checked filled with Highlight and marked in
+   * HighlightText, the pair the system promises will contrast with each other.
+   */
+  @media (forced-colors: active) {
+    input[type='checkbox'],
+    input[type='radio'] {
+      forced-color-adjust: none;
+      background-color: Canvas;
+      border-color: CanvasText;
+    }
+
+    input[type='checkbox']:hover,
+    input[type='radio']:hover {
+      border-color: Highlight;
+    }
+
+    input[type='checkbox']:checked,
+    input[type='radio']:checked {
+      background-color: Highlight;
+      border-color: Highlight;
+    }
+
+    input[type='checkbox']::before,
+    input[type='radio']::before {
+      background-color: HighlightText;
+    }
+
+    input[type='checkbox']:disabled,
+    input[type='radio']:disabled {
+      border-color: GrayText;
+      opacity: 1;
+    }
+
+    input[type='search']::-webkit-search-cancel-button {
+      forced-color-adjust: none;
+      background-color: ButtonText;
+    }
+  }
+
+  /*
    * The search field's clear button (P9-7): the browser's own was a grey cross
    * drawn for a white page, near-invisible in dark. Same shape, in `fg-muted`,
    * `fg` under the pointer. Firefox draws none, so there is nothing to theme.

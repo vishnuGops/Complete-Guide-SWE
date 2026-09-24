@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DashboardResponse, TopicSkill } from '@devpromax/shared';
 import { coachBrief } from './coachBrief.js';
-import { cumulative } from './SolvedChart.js';
+import { cumulative, ticksFor } from './SolvedChart.js';
 
 /**
  * The two pure halves of the Progress dashboard (ROADMAP P9-6): the sentence
@@ -37,6 +37,29 @@ describe('coachBrief', () => {
     );
     expect(brief.headline).toBe('You are strongest in HashMap and weakest in Graph.');
     expect(brief.signals[0]).toBe('Weakest: Graph, 1.5 of 4 over 2 reviews.');
+  });
+
+  it('does not call one of two equal marks the stronger', () => {
+    // The order between equal marks is the server's tie-break, not a finding (P4-17).
+    const brief = coachBrief(dashboard({ skills: [skill('graph', 2.5), skill('heap', 2.5)] }));
+    expect(brief.headline).toBe('My marks so far are level: Graph and Heap, all at 2.5 of 4.');
+    expect(brief.signals.join(' ')).not.toMatch(/Strongest|Weakest/);
+  });
+
+  it('treats marks that print the same as the same', () => {
+    const brief = coachBrief(
+      dashboard({ skills: [skill('graph', 2.46), skill('heap', 2.54), skill('stack', 3.8)] }),
+    );
+    expect(brief.headline).toBe('You are strongest in Stack and weakest in Graph and Heap.');
+    expect(brief.signals[0]).toBe('Weakest: Graph and Heap, 2.5 of 4.');
+    expect(brief.signals[1]).toBe('Strongest: Stack, 3.8 of 4 over 2 reviews.');
+  });
+
+  it('counts a mastered problem as solved', () => {
+    const brief = coachBrief(
+      dashboard({ byStatus: { not_started: 9, in_progress: 0, solved: 0, mastered: 1 } }),
+    );
+    expect(brief.headline).not.toMatch(/^Nothing solved yet/);
   });
 
   it('says nothing is marked rather than inventing a judgement', () => {
@@ -79,5 +102,19 @@ describe('cumulative', () => {
     const points = cumulative([{ day: '2026-03-01', count: 1 }], 'all', now);
     expect((points[0]?.day ?? '') <= '2026-03-01').toBe(true);
     expect(points.at(-1)?.total).toBe(1);
+  });
+});
+
+describe('ticksFor', () => {
+  it('never repeats a tick, however few solves there are', () => {
+    // One solve used to give 0, 0.5, 1 - printed as 0, 1, 1, with duplicate keys (P4-17).
+    for (let max = 0; max <= 40; max++) {
+      const ticks = ticksFor(max);
+      expect(new Set(ticks).size).toBe(ticks.length);
+      expect(ticks.every(Number.isInteger)).toBe(true);
+      expect(ticks.at(-1) ?? 0).toBeGreaterThanOrEqual(max);
+    }
+    expect(ticksFor(1)).toEqual([0, 1]);
+    expect(ticksFor(2)).toEqual([0, 1, 2]);
   });
 });

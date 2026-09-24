@@ -15,7 +15,8 @@ export function Callout({
 }: {
   children: ReactNode;
   className?: string;
-  role?: 'status' | 'note';
+  /** For a callout that appears in answer to something, and should be heard. */
+  role?: 'status';
 }) {
   return (
     <div role={role} className={cn('bg-accent-subtle text-fg rounded-lg px-4 py-3', className)}>

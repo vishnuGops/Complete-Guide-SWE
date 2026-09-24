@@ -49,6 +49,7 @@ import {
   cn,
 } from '../ui/index.js';
 import { coachBrief } from './progress/coachBrief.js';
+import { calendarDaysAgo, localDay, relativeDay } from './relativeDay.js';
 import { SolvedChart, cumulative, type ChartRange } from './progress/SolvedChart.js';
 
 /**
@@ -99,22 +100,22 @@ function isVerdict(value: string | null): value is Verdict {
   return value !== null && (VERDICTS as readonly string[]).includes(value);
 }
 
-/** "3h ago", "yesterday", "12 Sep" - how long ago, not to the minute. */
-function ago(iso: string, now = Date.now()): string {
-  const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
+/**
+ * "3h ago", "yesterday", "12 Sep" - how long ago, not to the minute. Hours
+ * only within today; from yesterday on it is the shared calendar-day wording
+ * (P4-17), so ten at night and eight the next morning are not both "10h ago".
+ */
+function ago(iso: string, now = new Date()): string {
+  if (calendarDaysAgo(iso, now) > 0) return relativeDay(iso, now);
+  const minutes = Math.floor((now.getTime() - Date.parse(iso)) / 60_000);
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${String(minutes)}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${String(hours)}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${String(days)} days ago`;
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return `${String(Math.floor(minutes / 60))}h ago`;
 }
 
 /** First solves in the last seven days, today included. */
 function thisWeek(solves: readonly ActiveDay[]): number {
-  const since = new Date(Date.now() - 6 * DAY_MS).toISOString().slice(0, 10);
+  const since = utcDay(new Date(Date.parse(`${localDay()}T00:00:00.000Z`) - 6 * DAY_MS));
   return solves.filter((entry) => entry.day >= since).reduce((sum, entry) => sum + entry.count, 0);
 }
 
@@ -515,7 +516,9 @@ function utcDay(date: Date): string {
  */
 function calendarCells(days: readonly ActiveDay[]): { day: string; count: number }[] {
   const counts = new Map(days.map((entry) => [entry.day, entry.count]));
-  const today = new Date(utcDay(new Date()) + 'T00:00:00.000Z');
+  // Today is the local date (P7-11); the cells step through day labels as UTC
+  // midnights, which is date arithmetic, not a time zone.
+  const today = new Date(localDay() + 'T00:00:00.000Z');
   const end = new Date(today);
   end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
   const start = new Date(end);
@@ -539,7 +542,7 @@ function calendarCells(days: readonly ActiveDay[]): { day: string; count: number
  */
 function StreakCard({ streak }: { streak: Streak }) {
   const cells = calendarCells(streak.days);
-  const today = utcDay(new Date());
+  const today = localDay();
   const active = streak.days.length;
 
   return (

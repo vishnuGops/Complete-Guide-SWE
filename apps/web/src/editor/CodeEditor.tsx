@@ -1,7 +1,16 @@
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import type { CompileError, EditorPrefs, Language } from '@devpromax/shared';
 import { MONACO_LANGUAGE } from './monaco.js';
+import { disposeStaleModels, syncMountedValue } from './models.js';
 import { editorTheme, editorThemeName, readPalette } from './theme.js';
 
 /**
@@ -25,6 +34,14 @@ import { editorTheme, editorThemeName, readPalette } from './theme.js';
  *   - **The theme.** Built from the tokens (`theme.ts`, P9-6) rather than
  *     Monaco's stock `vs` / `vs-dark`, and redefined whenever the app's theme
  *     changes, because it is read from the page and the page has just changed.
+ *   - **Models.** One per problem and language (see `path`), and Monaco keeps
+ *     a model until somebody disposes it. So a model left from an earlier
+ *     visit could come back holding that visit's text - `@monaco-editor/react`
+ *     reuses an existing model for a path and ignores `value` when it does -
+ *     and every problem opened in a sitting stayed in memory. The mount now
+ *     makes the model agree with `value`, and models for other problems that
+ *     no editor is showing are disposed (P4-15). The other language of *this*
+ *     problem is kept, so switching back still has its undo history.
  *   - **Vim mode.** Imported only when the preference is on, because it is a
  *     second keymap engine and the people who do not use it should not download
  *     it. It brings its own status line, which is not decoration: without the
@@ -89,6 +106,9 @@ function defineEditorTheme(monaco: MonacoApi, theme: 'light' | 'dark'): void {
 
 const MARKER_OWNER = 'devpromax-judge';
 
+/** No compile errors, as one array rather than a fresh `[]` per render. */
+const NO_MARKERS: readonly CompileError[] = [];
+
 /** What `monaco-vim` hands back; only `dispose` matters to us. */
 interface VimMode {
   dispose: () => void;
@@ -106,6 +126,13 @@ export default function CodeEditor({
   ref,
 }: CodeEditorProps) {
   const editorRef = useRef<MonacoEditor | null>(null);
+  /** Read by `onMount`, which the library captures once, on the first render. */
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  });
   const monacoRef = useRef<MonacoApi | null>(null);
   const statusBarRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -196,7 +223,7 @@ export default function CodeEditor({
     monaco.editor.setModelMarkers(
       model,
       MARKER_OWNER,
-      (markers ?? []).map((error) => ({
+      (markers ?? NO_MARKERS).map((error) => ({
         severity:
           error.severity === 'warning'
             ? monaco.MarkerSeverity.Warning
@@ -211,6 +238,49 @@ export default function CodeEditor({
       })),
     );
   }, [markers, language]);
+
+  // After the library's own effect has swapped the model for this path: child
+  // effects run before the parent's.
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (!monaco || !mounted) return;
+    disposeStaleModels(monaco, path);
+  }, [path, mounted]);
+
+  /*
+   * Stable, both of them (ROADMAP P4-18). The library re-subscribes its change
+   * listener whenever `onChange` changes identity and calls `updateOptions`
+   * whenever `options` does - and an inline arrow and an inline object change
+   * on every render, which here means on every keystroke.
+   */
+  const handleChange = useCallback((next: string | undefined) => {
+    onChangeRef.current(next ?? '');
+  }, []);
+
+  const { fontSize, tabSize, wordWrap } = prefs;
+  const options = useMemo(
+    () => ({
+      fontFamily: "'JetBrains Mono Variable', ui-monospace, monospace",
+      fontSize,
+      tabSize,
+      detectIndentation: false,
+      insertSpaces: true,
+      wordWrap: wordWrap ? ('on' as const) : ('off' as const),
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      renderWhitespace: 'selection' as const,
+      // No overview ruler: it painted a cursor dash at the card's top
+      // right, and the minimap it summarises is off anyway (P9-6).
+      overviewRulerLanes: 0,
+      hideCursorInOverviewRuler: true,
+      overviewRulerBorder: false,
+      // The app owns Ctrl+Enter and friends; Monaco's own command palette
+      // shortcut (F1) stays, because nothing here competes with it.
+      padding: { top: 8, bottom: 8 },
+    }),
+    [fontSize, tabSize, wordWrap],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -228,6 +298,9 @@ export default function CodeEditor({
           onMount={(editor, monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
+            // A model kept from an earlier visit holds that visit's text; the
+            // workspace's `value` is the truth (P4-15).
+            syncMountedValue(editor, valueRef.current);
             // Monaco's own "Format Document" is shown only when a language has
             // a formatting provider, and ours is a server round trip rather
             // than a provider, so it is an action of its own with the same
@@ -248,29 +321,8 @@ export default function CodeEditor({
             // re-run an effect. This is the one thing here that has to be state.
             setMounted(true);
           }}
-          onChange={(next) => {
-            onChange(next ?? '');
-          }}
-          options={{
-            fontFamily: "'JetBrains Mono Variable', ui-monospace, monospace",
-            fontSize: prefs.fontSize,
-            tabSize: prefs.tabSize,
-            detectIndentation: false,
-            insertSpaces: true,
-            wordWrap: prefs.wordWrap ? 'on' : 'off',
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            automaticLayout: true,
-            renderWhitespace: 'selection',
-            // No overview ruler: it painted a cursor dash at the card's top
-            // right, and the minimap it summarises is off anyway (P9-6).
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            // The app owns Ctrl+Enter and friends; Monaco's own command palette
-            // shortcut (F1) stays, because nothing here competes with it.
-            padding: { top: 8, bottom: 8 },
-          }}
+          onChange={handleChange}
+          options={options}
           loading={<div className="text-fg-muted p-4 text-sm">Loading the editor…</div>}
         />
       </div>

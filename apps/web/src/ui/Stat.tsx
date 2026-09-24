@@ -4,10 +4,11 @@ import { cn } from './cn.js';
 /**
  * A number worth reading big (ROADMAP P9-6, docs/DESIGN.md 5 and 10).
  *
- * The numeral, its label, and optionally a delta chip. `primary` is the 36px
- * numeral a card leads with - the largest thing in the app, and the one place
- * a 700 weight is allowed; `secondary` is 28px. Tabular figures and a slight
- * negative tracking, so a count that changes does not shuffle its neighbours.
+ * The numeral, its label, and optionally a delta chip: the 36px numeral a card
+ * leads with - the largest thing in the app, and the one place a 700 weight is
+ * allowed. Tabular figures and a slight negative tracking, so a count that
+ * changes does not shuffle its neighbours. (A 28px `secondary` size went in
+ * P4-17: nothing on any screen used it.)
  *
  * The label comes after the number in the DOM, so "18 Solved" is read in the
  * order it is seen.
@@ -16,23 +17,15 @@ export interface StatProps {
   value: ReactNode;
   label: ReactNode;
   delta?: ReactNode;
-  size?: 'primary' | 'secondary';
   className?: string;
 }
 
-export function Stat({ value, label, delta, size = 'primary', className }: StatProps) {
+export function Stat({ value, label, delta, className }: StatProps) {
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            'text-fg tnum tracking-numeral',
-            // 700 only here, on numerals of 28px and up (DESIGN.md 5).
-            size === 'primary' ? 'text-3xl font-bold' : 'text-2xl font-bold',
-          )}
-        >
-          {value}
-        </span>
+        {/* 700 only here, on numerals of 28px and up (DESIGN.md 5). */}
+        <span className="text-fg tnum tracking-numeral text-3xl font-bold">{value}</span>
         {delta}
       </div>
       <span className="text-fg-muted text-xs">{label}</span>
