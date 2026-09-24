@@ -16,6 +16,11 @@ section 1 and then write down what you decided.
 > `git show 181e5c5:docs/DESIGN.md`. The redesign's run - brief, four reviewed
 > preview rounds, decision - is in `data/design-audit/redesign-cards/`
 > (gitignored).
+>
+> **P9-7 (2026-09-23)** settled what P9-6 left open: the list wins back its rows
+> (sections 6 and 8), the page header is one row, checkboxes and radios are drawn
+> from the tokens, and the spec now says what ships for the workspace toolbar and
+> the Progress sub-stats (sections 5 and 8).
 
 ---
 
@@ -195,13 +200,18 @@ arrive on a plane.
 | `text-sm`   | 13px | Dense UI: buttons, tabs, table cells, card titles                 |
 | `text-base` | 14px | Body text, problem statements                                     |
 | `text-md`   | 16px | Lead paragraphs, coach replies (serif)                            |
-| `text-lg`   | 18px | Panel titles where a card title is not enough                     |
+| `text-lg`   | 18px | Panel titles; the sub-stats under a divider on a card (600)       |
 | `text-xl`   | 22px | Page titles; the coach's brief headline (serif)                   |
-| `text-2xl`  | 28px | Secondary stat numerals                                           |
+| `text-2xl`  | 28px | A stat that stands alone: the interview clock, `Stat` secondary   |
 | `text-3xl`  | 36px | The primary stat numeral on a card. The largest thing in the app. |
 
 `base` stays 14px: the statement is read, and the list is scanned. Nothing below
 12px carries meaning a user must read to work.
+
+The sub-stats under the Solved card's divider (Mastered, Due for review, the
+streak) are `text-lg` 600 beside an icon tile, not 28px: they annotate the 36px
+numeral above them, and three 28px numbers under one 36px number is a KPI row
+with the hierarchy flattened out of it (P9-7 aligned the spec to the code here).
 
 Weights: 400 text, 500 controls and emphasis, 600 headings and card titles.
 **700 only for stat numerals of 28px and up**, where the reference's weight
@@ -216,13 +226,13 @@ Every number read by comparison - counts, timings, ratings, deltas - gets `tnum`
 so even steps land on the grid and odd ones are deliberate half-steps. The
 reference's airiness is spent in chosen places, not by stretching the step:
 
-| Where                 | Space                                                                                                                                                                                                                                                       |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Canvas padding        | 24px (`p-6`)                                                                                                                                                                                                                                                |
-| Gap between cards     | 16px (`gap-4`); 12px in the workspace, where width is scarce                                                                                                                                                                                                |
-| Card padding          | 20px (`p-5`); 16px for dense cards (the list, the results panel)                                                                                                                                                                                            |
-| Card title to content | 16px                                                                                                                                                                                                                                                        |
-| Table rows            | 36px tall (was 33px). Measured after P9-6: with the page header and the card's toolbar, a 1440×900 window shows 19 rows where version 1 showed 24 - more than the "about one row fewer" this table first said. Left for the owner to weigh against the look |
+| Where                 | Space                                                                                                                                                                                                                                                                                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canvas padding        | 24px (`p-6`)                                                                                                                                                                                                                                                                                                                                       |
+| Gap between cards     | 16px (`gap-4`); 12px in the workspace, where width is scarce                                                                                                                                                                                                                                                                                       |
+| Card padding          | 20px (`p-5`); 16px for dense cards (the list, the results panel)                                                                                                                                                                                                                                                                                   |
+| Card title to content | 16px                                                                                                                                                                                                                                                                                                                                               |
+| Table rows            | 34px tall (33px in version 1). P9-6 shipped 36px and a two-line page header, and a 1440×900 window showed 19 rows where version 1 showed 24. The owner chose rows over air (P9-7): a one-row header, a tighter toolbar and table header, and 34px rows bring it to 21 - 12.5% below version 1, inside the ~15% a redesign may spend without asking |
 
 In hand-written CSS a spacing step is `calc(var(--spacing) * 3)`, never
 `var(--spacing-3)`. Tailwind v4 has one `--spacing` variable; the shorter
@@ -303,29 +313,49 @@ and Problems stays active inside a problem. Every item has a tooltip naming it
 (there are no navigation shortcuts to add to it). The rail replaces the top
 navigation bar. The theme choice is in Settings > Appearance, not the chrome: the
 header has room for what is used on every visit, and the theme is chosen once. To the right of
-it, each page has a **header** on the canvas, not in a card: title (`text-xl`,
-600), one muted line of real context beneath ("4 due for review · 1 in
-progress" - what is waiting, never a count the page shows again below), and on the right the search pill (`surface`, `rounded-full`, "Search"
-plus a `Ctrl K` chip, opening the palette) and the solved counter.
+it, each page has a **header** on the canvas, not in a card, one 64px row on every
+page: title (`text-xl`, 600) with one muted line of real context on its baseline
+("4 due for review · 1 in progress" - what is waiting, never a count the page shows
+again below; truncated with the whole sentence in its tooltip), and on the right the
+search pill (`surface`, `rounded-full`, "Search" plus a `Ctrl K` chip, opening the
+palette) and the solved counter. The header is there while the page loads and when
+it fails, so the page says where you are before it says what went wrong. (P9-6 put
+the context on a line of its own; P9-7 moved it up, because that line cost the
+list a row.)
 
 **Problem list.** Two cards: filters (topic, difficulty, status, the language
 progress is counted in) in a narrow card on the left, and the table in a wide
 card beside it, with its own toolbar row (search field, a Segmented control for
 All / Due / Starred, the count). Due is a list filter of its own
 (`?due=true`, from the review queue) and Starred moved out of the filter card
-into the Segmented. Rows 36px, hairline dividers, status glyph first, numbers
+into the Segmented. Rows 34px, hairline dividers, status glyph first, numbers
 `tnum` and right-aligned. The row under the pointer takes `surface-sunken`; the
 row holding keyboard focus - where you are - has a 2px accent bar at its left
 edge. Below 1280px the filter card folds behind a Filters button and the
-Patterns column steps aside.
+Patterns column steps aside. The filter card's checkboxes and radios are the
+native inputs drawn from the tokens (`base.css`): a `border-input` edge on
+`surface`, filled `accent` with an `fg-on-accent` tick when on - the browser's own
+were a white square in dark. The search field's clear button is drawn the same way.
+
+**Command palette.** A `surface-raised` dialog over the scrim: the field, then the
+results in two labelled groups, Commands and Problems (a group with nothing in it
+is not shown). Problem rows keep their columns - a fixed-width status, the title,
+then topic and tier - so titles start at one x whatever the status word is. The
+recommendation's hint is the coach's, so it is serif.
 
 **Workspace.** Three cards with 12px gutters: the statement (tabs across its top,
 Description / Hints / Coach / Editorial / Notes / Submissions), the editor, and
-the results panel under the editor. A toolbar row above the editor card: a
-Segmented control for Python / Java, secondary buttons (Reset, Bookmark,
-Interview mode), and on the right **Run** (secondary, `rounded-md`), **Submit**
-(primary pill) and **AI Help** (primary-outline pill with the coach mark and a
-`Ctrl Shift H` chip) - one filled pill per region. Monaco gets **its own theme**,
+the results panel under the editor. A toolbar row on the canvas across the top
+of both columns: a Segmented control for Python / Java, secondary buttons (Reset,
+Bookmark, Interview mode), the status, and on the right **Run** (secondary,
+`rounded-md`), **Submit** (primary pill) and **AI Help** (primary-outline pill with
+the coach mark and a `Ctrl Shift H` chip) - one filled pill per region. Across both
+columns rather than above the editor card alone, as the first draft said: Bookmark,
+Interview mode and the status are about the problem, not the code, and the divider
+between the columns moves - at 1440 the toolbar is wider than the editor column
+already, and dragging the divider would only take more room from it. Below 1280px Interview mode shows its icon alone
+(its name stays in its tooltip and its accessible name), so AI Help keeps its keys
+at 1024. Monaco gets **its own theme**,
 defined from the tokens with `monaco.editor.defineTheme`: background `surface`,
 line numbers `fg-subtle`, selection `accent-subtle`, and keywords moved to a
 violet (~hue 300) so the code never shares the accent's blue. The verdict line in
@@ -445,7 +475,9 @@ Unchanged in substance from the first version:
   than a spinner. **Loading** is a skeleton in the shape of what is coming, inside
   the card that is coming, never pulsing and invisible for its first 150ms.
   **Empty** says why and offers the way out. **Error** says what failed and offers
-  "Try again" (`ErrorState`).
+  "Try again" (`ErrorState`), in a card under the page's header. The design audit
+  captures the list's and Progress's loading and error states, a coach reply, a
+  running interview and a keyboard-focused list row (P9-7).
 - `styles/contrast.test.ts` measures the token pairs in both themes on every unit
   run, and gains the card-edge pair (section 7). `e2e/a11y.spec.ts` runs axe over
   every screen in both themes and fails on `serious` or `critical`. Monaco is
