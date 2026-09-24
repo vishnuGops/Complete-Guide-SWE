@@ -26,7 +26,7 @@ to write and tells you which case. It bumps `meta.version` only when the tests
 actually changed.
 
 `problems:validate` runs both references against every test in both languages and
-checks the starters compile. This runs in CI as the problem-contract job; a
+checks the starters compile. This runs in CI as the Problem contract step of the `test` job; a
 problem that is not solvable as specified cannot merge.
 
 ---
@@ -77,7 +77,8 @@ Required sections, enforced by the validator: `## Input`, `## Output`,
   them, rather than writing constraints to match what you happened to generate.
 - **Three samples minimum**, each earning its place: a plain case, an edge, and
   one that would catch a plausible wrong approach. Every sample needs an
-  explanation — it is shown in the statement, so it explains rather than repeats.
+  explanation — it is shown in the statement, so it explains rather than repeats —
+  and a `name`, which the results panel labels it with.
 - **Invent the example inputs.** A classic problem's well-known example —
   `[2, 7, 11, 15]`, `"horse"` and `"ros"`, `[3, 9, 20, null, null, 15, 7]` — is
   part of someone else's statement even when the wording around it is ours. The
@@ -123,10 +124,10 @@ Rules the validator enforces:
 
 - `function` mode: a `class Solution` with the entry method, in both languages.
 - `operations` mode: a class named exactly `meta.entry`, in both languages.
-- Java classes are **package-private** — never `public class` — because they are
-  compiled alongside the harness's own `Main`.
-- Never define `ListNode`, `TreeNode` or `Main` yourself; the harness injects
-  them and redefining one breaks deserialisation.
+- Java classes are **package-private** — never `public class` — because the code
+  is always saved as `Solution.java`.
+- Never define `ListNode`, `TreeNode` or any `DevProMax*` class; the harness owns
+  them. The full rules are `docs/PROBLEM_FORMAT.md` §9.
 
 The **starter** is the reference with the body removed. It must compile and
 import — someone's first Run should fail on their logic, not on our scaffold.
@@ -222,7 +223,7 @@ pattern and tier; everything else is the standing brief.
 >   `reference.java`, `generator.py`.
 > - Both references must be idiomatic in their own language, not translations
 >   of each other. Java classes package-private. Do not define `ListNode`,
->   `TreeNode` or `Main`.
+>   `TreeNode` or any `DevProMax*` class.
 > - `generator.py` yields inputs only — never `expected` — covers the edge
 >   cases explicitly before going random, and includes one case at the maximum
 >   size the constraints allow.

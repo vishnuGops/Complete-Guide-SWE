@@ -60,7 +60,7 @@ About $0.25.
 npx vitest run --project server-integration apps/server/src/coach/live.integration.test.ts -t "live vendor|Haiku"
 ```
 
-**Part B: the prompt behaves.** Six fixed attempts, from an untouched starter to
+**Part B: the prompt behaves.** Five fixed attempts, from an untouched starter to
 a clean solution, each of which must score where the rubric ladder says. Run
 this only once Part A is green, and again whenever the prompt changes. About
 $0.75.

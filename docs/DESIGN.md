@@ -357,8 +357,8 @@ already, and dragging the divider would only take more room from it. Below 1280p
 (its name stays in its tooltip and its accessible name), so AI Help keeps its keys
 at 1024. Monaco gets **its own theme**,
 defined from the tokens with `monaco.editor.defineTheme`: background `surface`,
-line numbers `fg-subtle`, selection `accent-subtle`, and keywords moved to a
-violet (~hue 300) so the code never shares the accent's blue. The verdict line in
+line numbers `fg-subtle`, selection `accent-subtle`, and keywords in
+`code-keyword` (violet, hue 315) so the code never shares the accent's blue. The verdict line in
 the results card leads with a verdict tile: a 20px `rounded-sm` square in the
 verdict's subtle tint with its glyph, then the verdict in words.
 
@@ -430,9 +430,10 @@ Focus rules:
 
 ## 10. Components are built with the screen that needs them
 
-Primitives in `apps/web/src/ui/` today: `Button`, `Input`, `Tabs`, `Tooltip`.
-This design adds, each when its first screen is built and promoted to `ui/` when
-a second one needs it:
+Primitives in `apps/web/src/ui/`: `Button`, `Input`, `Tabs`, `Tooltip`,
+`ConfirmDialog`, `ErrorState`, `Loading`, and the version-2 patterns below, all
+shipped by P9-6 (`IconTile` lives in `ListRow.tsx`). Each was built with the
+screen that first needed it and promoted to `ui/` when a second one did:
 
 | Pattern           | First needed by | What it is                                                                                                                                                                                                            |
 | ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

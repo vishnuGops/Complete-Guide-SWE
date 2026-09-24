@@ -1,8 +1,8 @@
 # Curriculum
 
-The content backlog for M3 (ROADMAP P6-1, feeding P6-2 … P6-6). Fourteen topics,
-about two hundred problems, each one planned before it is written so that the
-catalogue is a path rather than a pile.
+The curriculum behind the catalogue (ROADMAP P6-1, delivered by P6-2 … P6-6 at
+M3). Fourteen topics and 171 problems, each planned before it was written, so
+that the catalogue is a path rather than a pile.
 
 Read `AUTHORING.md` before writing any of them, and `PROBLEM_FORMAT.md` for what
 a package contains.
@@ -117,7 +117,7 @@ real in both languages, but `tests.json` is already 110 MB with sixteen files
 over the 2 MB warning, and a dozen more maximum-size cases would multiply that
 for a property the target complexity already states (P6-8, D21).
 
-Ratings are a first estimate. Calibration against solving time is P6-7's job,
+Ratings are a first estimate. Calibration against solving time is P7-10's job,
 and a rating that turns out wrong is a one-line change plus a version bump.
 
 ## 2. Pattern vocabulary
@@ -167,8 +167,8 @@ useful at the end of Batch A and merely larger after each one that follows.
 
 ## 4. Batch A — Arrays, HashMap, Sorting, Binary Search
 
-The foundation, and the batch a new user meets first. Twenty of these are the
-seed (marked **seeded**); the rest extend each topic to a full path.
+The foundation, and the batch a new user meets first. Seventeen of these are
+seed problems (marked **seeded**; the other three seeds are in Stack); the rest extend each topic to a full path.
 
 ### Arrays (`arrays`) — 14 problems
 
@@ -344,7 +344,7 @@ invariants, construction from traversals, and serialisation.
 | 8   | `kth-smallest-in-bst`    | The K-th Smallest In A BST    | Medium | 5      | function | binary search tree, tree traversal               | node       |
 | 9   | `lowest-shared-ancestor` | Their Nearest Shared Ancestor | Medium | 6      | function | lowest common ancestor, depth-first search       | node       |
 | 10  | `build-from-traversals`  | Rebuild From Two Readings     | Medium | 7      | function | tree construction, hash map                      | node, trap |
-| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | function | serialisation, tree traversal                    | node       |
+| 11  | `serialise-tree`         | Write It Down And Back        | Hard   | 8      | function | serialisation, tree traversal                    |            |
 | 12  | `widest-level`           | The Widest Level              | Medium | 5      | function | breadth-first search, tree traversal             | node       |
 | 13  | `flatten-to-chain`       | Flatten Into A Chain          | Medium | 6      | function | tree traversal, in-place, mutated argument       | node       |
 | 14  | `max-path-sum`           | Best Path Through             | Hard   | 9      | function | tree traversal, depth-first search, invariant    | node, trap |
@@ -476,7 +476,7 @@ Patterns to cover: XOR as cancellation, counting bits, masks as sets.
 Mostly `operations` mode: these are problems about a structure's contract rather
 than about one answer.
 
-`union-find-sizes` is gone: `graph-union-find` (Graph 13) is the same structure
+`union-find-sizes` is gone: `graph-union-find` (Graph 12) is the same structure
 with the same contract, group sizes included. Batch E is 12 problems (P6-6).
 
 | #   | Slug                    | Title                       | Tier   | Rating | Mode       | Patterns                         | Flags   |
@@ -524,7 +524,7 @@ problem, and the tables above were cut twice on that rule.
   in the statement that any order is accepted.
 - `meta.json` is the source of truth for tier, rating, patterns and comparator.
   A rating changed there is changed here in the same commit.
-- Ratings are a first estimate; P6-7 calibrates them against solving time.
+- Ratings are a first estimate; P7-10 calibrates them against solving time.
 
 ## 11. Revisions
 

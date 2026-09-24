@@ -124,7 +124,7 @@ Implements ROADMAP **P5-6**. The numbers live in `packages/shared/src/cost.ts` s
 
 **After a turn**, the provider reports what it actually used — Anthropic across `message_start` and `message_delta`, Gemini in `usageMetadata` — and that is what gets stored. An estimate is not good enough to stop someone spending money with.
 
-Three properties are deliberate:
+These properties are deliberate:
 
 - **The price table will go stale, and fails safe.** An unknown model is charged at the _dearest_ rate known for its provider, so a price we do not have trips the cap early rather than late.
 - **Cache traffic is priced, because a cache write costs _more_ than plain input** (1.25x, against 0.1x for a read). P5-6 left it out on the reasoning that caching only lowers a bill; that is true from the second turn onward and wrong for the first, which writes the whole system prompt into the cache. The largest part of a session's opening turn was being counted as free (P5-9).
@@ -180,23 +180,19 @@ Written after the first audit against the real API rather than recorded fixtures
 
 `REDACT_PATHS` in `apps/server/src/logger.ts` is asserted by `logger.test.ts` against a real pino instance, one case per shape the app logs. The trap it exists to document: pino's `*` matches exactly one level, so `*.apiKey` covers `{coach: {apiKey}}` and silently does **not** cover `{settings: {coach: {apiKey}}}` — and the settings object is routinely passed one level deeper than the coach object inside it.
 
-## 10. Scoring a prompt change
+## 9. Scoring a prompt change
 
 A prompt cannot be unit-tested for giving good advice, so there are two things instead.
 
 `prompts/prompts.test.ts` pins the rules other code depends on — every rubric dimension is named, every rung exists, `solution` is gated on both facts, mastery means every dimension is 4. It runs in CI and needs no key.
 
-`coach/live.integration.test.ts` is the other half, and is **off unless asked for**:
-
-```
-COACH_LIVE_TESTS=1 ANTHROPIC_API_KEY=sk-... npm run test:integration
-```
+`coach/live.integration.test.ts` is the other half, and is **off unless asked for**. How to run it, in two passes and with what it costs, is `docs/API_KEY_TESTING.md` Step 1.
 
 It does one real feedback turn, one real cancellation, one follow-up sent the way `streamChat` sends it (two system blocks, a cached history turn, no schema - it must come back as prose) and one interviewer turn per provider that has a key, plus one review on Haiku 4.5 when there is an Anthropic key (the model the capability map exists for), and then scores the five code states in `coach/__fixtures__/rubric.ts` — an untouched starter, a wrong approach, a correct-but-quadratic solution, a right-but-unreadable one, and the reference. Each case says which dimensions must be below 4, the furthest rung the state justifies, and whether mastery is even possible; the wording is never asserted, because two good reviews of the same code share almost no sentences.
 
-The assertions are one-directional on purpose: a coach that is _more_ generous than the fixtures allow fails, and one that is more conservative does not. Run it before bumping the version. It costs a few cents and finds the thing no offline test can — that `v3` hands out approaches to someone who needed a nudge.
+The assertions are one-directional on purpose: a coach that is _more_ generous than the fixtures allow fails, and one that is more conservative does not. Run it before bumping the version. It costs a few cents and finds the thing no offline test can — that a new version hands out approaches to someone who needed a nudge.
 
-## 11. The interviewer
+## 10. The interviewer
 
 The mock interview (ROADMAP P9-1) drives the same provider seam with a different system prompt, `prompts/interviewer/system.md`. It is deliberately **unversioned**: nothing is stored against it, nothing is scored by it, and there is no history of answers to trace back to a wording. `PROMPT_VERSION` exists so a number in the database can be explained; a conversation that leaves no number behind needs no number.
 

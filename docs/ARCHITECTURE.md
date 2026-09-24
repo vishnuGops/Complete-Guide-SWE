@@ -2,7 +2,7 @@
 
 This document covers how DevProMax is put together and, in particular, the
 threat model behind the judge and the local server. The reasoning behind each
-decision lives in `ROADMAP.md` section 2 (D1–D18); this document says how those
+decision lives in `ROADMAP.md` section 2 (D1–D25); this document says how those
 decisions are realised in code.
 
 ---
@@ -14,10 +14,12 @@ browser (127.0.0.1:5173 in dev, served by the server in production)
    │  fetch /api/*  with X-DevProMax-Client
    ▼
 apps/server  (Fastify, 127.0.0.1 only)
-   ├── api/        routes + hardening
+   ├── api/        routes/, services/, hardening, static web
    ├── db/         node:sqlite, migrations, repositories
-   ├── problems/   loader, validator, authoring CLIs
-   ├── coach/      provider adapters (Anthropic, Gemini)
+   ├── problems/   loader, validator, generator runner, scaffold
+   ├── coach/      provider adapters (Anthropic, Gemini, OpenAI-compatible)
+   ├── toolchain/  doctor, optional formatters
+   ├── cli/        npm-script entry points (problems:*, db:*, doctor)
    └── judge/      workspaces, executors, harnesses, comparators
                       │  spawn
                       ▼
@@ -238,7 +240,7 @@ metadata anywhere repeats what the starter already says.
 ### 3.5 Run and Submit
 
 Both go through the same judge; they differ in what they run and what they are
-allowed to write down (`apps/server/src/api/runService.ts`).
+allowed to write down (`apps/server/src/api/services/runService.ts`).
 
 |            | Tests                             | Recorded                                                                                           |
 | ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -322,7 +324,7 @@ harness.
 
 `black` and `google-java-format` (AOSP style, the starters' four-space indent)
 run as subprocesses through the same `runProcess` as the judge, with the code on
-stdin and the allow-listed environment (P9-5, `apps/server/src/formatters.ts`).
+stdin and the allow-listed environment (P9-5, `apps/server/src/toolchain/formatters.ts`).
 They are not the judge: they parse code and never run it, so they run on this
 machine whichever executor is configured, and outside the judge queue. Neither
 ships with the app. Each is found by running it with `--version` - `DEVPROMAX_BLACK`,
@@ -342,7 +344,7 @@ autosave, which fires mid-line.
 
 `node:sqlite` with hand-written SQL and checked-in migrations applied at startup
 (D14). The database is a single file at `data/devpromax.db`, which is gitignored
-along with the judge workspaces. There is no ORM: nine tables do not justify
+along with the judge workspaces. There is no ORM: ten tables do not justify
 one, and removing the last native module from the stack removes the most common
 Windows install failure.
 
@@ -427,36 +429,42 @@ the CLIs read uncached. The review queue and the dashboard read SQL aggregates
 
 ## 5. The HTTP API
 
-Fastify, bound to `127.0.0.1`, behind the four checks in section 2. Every route
-lives in `apps/server/src/api/routes/`, is thin, and delegates to a service in
-`apps/server/src/api/` that can be tested without a server.
+Fastify, bound to `127.0.0.1`, behind the four checks in section 2. Every route but
+`GET /health` (in `index.ts`) lives in `apps/server/src/api/routes/`, is thin,
+and delegates to a service in `apps/server/src/api/services/` that can be
+tested without a server.
 
-| Route                                    | Does                                                                                                            |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `GET /api/problems`                      | List + filters (`topic`, `tier`, `status`, `q`, `language`) + sort                                              |
-| `GET /api/problems/:slug`                | Everything the workspace opens with: statement, samples, hints, starters, drafts, progress, related             |
-| `GET /api/problems/:slug/assets/*`       | Images referenced by a statement, from that problem's `assets/` only                                            |
-| `GET /api/problems/:slug/submissions`    | Submission history, newest first                                                                                |
-| `POST /api/run` · `POST /api/submit`     | The judge, with the Run/Submit semantics of section 3.5                                                         |
-| `GET /api/progress`                      | Per-status, per-topic and per-tier counts over the whole catalogue                                              |
-| `PUT` · `DELETE /api/drafts/:slug/:lang` | Autosave, and reset-to-starter                                                                                  |
-| `PUT /api/progress/:slug/:lang`          | The manual override — the only thing that may move a status down (D11)                                          |
-| `GET` · `PUT /api/settings`              | Settings, with the coach API key write-only (below)                                                             |
-| `POST /api/settings/test-connection`     | One authenticated call to the configured provider                                                               |
-| `POST /api/settings/reset-progress`      | Wipes practice, keeps notes, bookmarks and settings                                                             |
-| `GET /api/settings/doctor`               | Spawns `python`, `java` and `javac` and reports versions and problems (P8-3)                                    |
-| `POST /api/problems/:slug/hints`         | Opens a hint rung; the body names the rung, so a doubled request is idempotent (P7-1)                           |
-| `POST /api/problems/:slug/editorial`     | Unlocks the editorial early, recorded and permanent (P7-2)                                                      |
-| `POST /api/problems/:slug/re-verify`     | Re-submits the last accepted code against the tests as they stand (P7-9)                                        |
-| `PUT` · `DELETE /api/notes/:slug`        | Per-problem notes; a blank body deletes the row (P7-4)                                                          |
-| `PUT` · `DELETE /api/bookmarks/:slug`    | Starred problems (P7-7)                                                                                         |
-| `GET /api/next?mode=`                    | What to do next: `recommended`, `random` or `review` - with the reason (P7-7, P7-8)                             |
-| `GET /api/dashboard?tz=`                 | Streak, recent activity, rubric averages per topic, the review queue (P7-5, P7-8), in the viewer's days (P7-11) |
-| `GET /api/dashboard/report?format=&tz=`  | The skills report as JSON, markdown or one self-contained HTML file (P7-5)                                      |
-| `POST /api/coach/feedback` · `/chat`     | The coach, as a server-sent event stream (P5-3)                                                                 |
+| Route                                     | Does                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/problems`                       | List + filters (`topic`, `tier`, `status`, `q`, `language`) + sort                                                  |
+| `GET /api/problems/:slug`                 | Everything the workspace opens with: statement, samples, hints, starters, drafts, progress, related                 |
+| `GET /api/problems/:slug/assets/*`        | Images referenced by a statement, from that problem's `assets/` only                                                |
+| `GET /api/problems/:slug/submissions`     | Submission history, newest first                                                                                    |
+| `POST /api/run` · `POST /api/submit`      | The judge, with the Run/Submit semantics of section 3.5                                                             |
+| `GET /api/progress`                       | Per-status, per-topic and per-tier counts over the whole catalogue                                                  |
+| `PUT` · `DELETE /api/drafts/:slug/:lang`  | Autosave, and reset-to-starter                                                                                      |
+| `PUT /api/progress/:slug/:lang`           | The manual override — the only thing that may move a status down (D11)                                              |
+| `GET` · `PUT /api/settings`               | Settings, with the coach API key write-only (below)                                                                 |
+| `POST /api/settings/test-connection`      | One authenticated call to the configured provider                                                                   |
+| `POST /api/settings/reset-progress`       | Wipes practice, keeps notes, bookmarks and settings                                                                 |
+| `GET /api/settings/doctor`                | Spawns `python`, `java` and `javac` and reports versions and problems (P8-3); in Docker mode, the daemon and images |
+| `POST /api/problems/:slug/hints`          | Opens a hint rung; the body names the rung, so a doubled request is idempotent (P7-1)                               |
+| `POST /api/problems/:slug/editorial`      | Unlocks the editorial early, recorded and permanent (P7-2)                                                          |
+| `POST /api/problems/:slug/re-verify`      | Re-submits the last accepted code against the tests as they stand (P7-9)                                            |
+| `PUT` · `DELETE /api/notes/:slug`         | Per-problem notes; a blank body deletes the row (P7-4)                                                              |
+| `PUT` · `DELETE /api/bookmarks/:slug`     | Starred problems (P7-7)                                                                                             |
+| `GET /api/next?mode=`                     | What to do next: `recommended`, `random` or `review` - with the reason (P7-7, P7-8)                                 |
+| `GET /api/dashboard?tz=`                  | Streak, recent activity, rubric averages per topic, the review queue (P7-5, P7-8), in the viewer's days (P7-11)     |
+| `GET /api/dashboard/report?format=&tz=`   | The skills report as JSON, markdown or one self-contained HTML file (P7-5)                                          |
+| `POST /api/coach/feedback` · `/chat`      | The coach, as a server-sent event stream (P5-3)                                                                     |
+| `GET` · `POST /api/format`                | Which formatters were found; format a buffer (P9-5, section 3.7)                                                    |
+| `GET` · `POST /api/interview`             | The current mock interview; start one (P9-1)                                                                        |
+| `GET /api/interview/:id`                  | One sitting, with its clock                                                                                         |
+| `POST /api/interview/:id/advance`         | On to the next problem                                                                                              |
+| `POST /api/interview/:id/say` · `/finish` | The interviewer's turn and the debrief, as event streams                                                            |
 
-Two routes in that table answer with something other than JSON: the coach pair
-stream, because the whole point is showing an answer while it is still being
+Four routes in that table answer with something other than JSON: the coach pair
+and the interview's `say` and `finish` stream, because the whole point is showing an answer while it is still being
 written, and the report is an attachment - a file to keep rather than a page to
 look at.
 
@@ -473,7 +481,7 @@ shape to handle rather than two. `error` is a machine-readable tag (`NotFound`,
 `BadRequest`, `NoApiKey`, `JudgeError`); `message` is a sentence fit to show a
 user; `issues` point at the offending field.
 
-**The catalogue** (`api/catalogue.ts`) reads `problems/` once in production and
+**The catalogue** (`api/services/catalogue.ts`) reads `problems/` once in production and
 per request everywhere else, because an author with `npm run dev` open expects an
 edited statement on reload while a running app should not re-read two hundred
 directories per keystroke. A package that does not parse is logged and skipped:
@@ -556,14 +564,15 @@ Two workflows, both in `.github/workflows/`.
 
 `ci.yml` runs on every pull request and every push to `main`:
 
-| Job          | Runners                           | Steps                                                                                                   |
-| ------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `static`     | `ubuntu-latest`, `windows-latest` | `lint`, `format:check`, `typecheck`, schemas, and `build` on Ubuntu only                                |
-| `test`       | `ubuntu-latest`, `windows-latest` | `test:unit`, `test:integration`, `problems:validate` (changed problems on a PR, all of them on `main`)  |
-| `generators` | `ubuntu-latest`                   | `problems:gen --check`: the changed problems on a PR, everything when generation itself changed         |
-| `e2e`        | `ubuntu-latest`                   | `build`, then Playwright - including the production spec, which fails rather than skips without a build |
-| `docker`     | `ubuntu-latest`                   | pulls the judge images, `doctor` and the Docker executor suite                                          |
-| `formatters` | `ubuntu-latest`                   | installs the formatters, `doctor` and the formatter suite                                               |
+| Job          | Runners                                                                   | Steps                                                                                                   |
+| ------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `static`     | `ubuntu-latest`, `windows-latest`                                         | `lint`, `format:check`, `typecheck`, schemas, and `build` on Ubuntu only                                |
+| `test`       | `ubuntu-latest`, `windows-latest` on Python 3.12, `ubuntu-latest` on 3.10 | `test:unit`, `test:integration`, `problems:validate` (changed problems on a PR, all of them on `main`)  |
+| `generators` | `ubuntu-latest`                                                           | `problems:gen --check`: the changed problems on a PR, everything when generation itself changed         |
+| `e2e`        | `ubuntu-latest`                                                           | `build`, then Playwright - including the production spec, which fails rather than skips without a build |
+| `docker`     | `ubuntu-latest`                                                           | pulls the judge images, `doctor` and the Docker executor suite                                          |
+| `formatters` | `ubuntu-latest`                                                           | installs the formatters, `doctor` and the formatter suite                                               |
+| `perf`       | `ubuntu-latest`                                                           | `build`, then `perf:lighthouse`: the performance budgets                                                |
 
 `nightly-e2e.yml` (the "Nightly" workflow) runs at 06:00 UTC and on demand: the
 Playwright suite on `windows-latest` after a build, the whole catalogue's
@@ -581,13 +590,15 @@ systems rather than just the cheap one. `problems:validate` runs the full
 validator, not `--static`: the content gate is that both reference solutions
 pass every test in both languages.
 
-Toolchain versions come from `.nvmrc` (Node), `setup-python` 3.12 and
-`setup-java` temurin 21 — the floor of the supported range, so a feature newer
+Toolchain versions come from `.nvmrc` (Node), `setup-python` 3.12, plus one
+Linux cell on 3.10, and `setup-java` temurin 21 — 3.10 and 21 are the floors of
+the supported range, so a feature newer
 than the floor fails in CI rather than on a user's machine. The judge resolves
 `python`, `javac` and `java` from `PATH`, which is exactly what both setup
 actions provide on both runners, so no `DEVPROMAX_*` overrides are needed.
 
 **Branch protection is a repository setting, not a file.** On GitHub, under
 Settings → Branches → `main`, require these checks before merging:
-`static (ubuntu-latest)`, `static (windows-latest)`, `test (ubuntu-latest)`,
-`test (windows-latest)`, `e2e (ubuntu-latest)`.
+`static (ubuntu-latest)`, `static (windows-latest)`,
+`test (ubuntu-latest, py3.12)`, `test (windows-latest, py3.12)`,
+`test (ubuntu-latest, py3.10)`, `e2e (ubuntu-latest)`.

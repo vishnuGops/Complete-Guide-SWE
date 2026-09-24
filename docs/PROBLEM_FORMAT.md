@@ -57,7 +57,7 @@ truth for it.
   "expect": "return",
   "comparator": "exact",
   "limits": { "timeoutMs": { "python": 4000, "java": 2000 } },
-  "related": ["three-sum-zero"],
+  "related": ["shift-right-in-place"],
   "targetComplexity": { "time": "O(n)", "space": "O(n)" }
 }
 ```
@@ -70,7 +70,7 @@ truth for it.
 | `title`            | yes      | 3–120 chars, title case, original wording.                                                                                                   |
 | `version`          | yes      | Integer ≥ 1. **Bump whenever `tests.json` changes.** Submissions record the version they were judged against so history stays interpretable. |
 | `topic`            | yes      | One of the 14 curriculum topics. Must match the parent directory.                                                                            |
-| `patterns`         | yes      | At least one; free text, searchable (`"two pointers"`, `"monotonic stack"`).                                                                 |
+| `patterns`         | yes      | 1–5 entries from the closed vocabulary in `packages/shared/src/patterns.ts` (see `docs/CURRICULUM.md` §2).                                   |
 | `tier`             | yes      | `Easy` / `Medium` / `Hard`.                                                                                                                  |
 | `rating`           | yes      | Integer 1–10 and **must fall inside the tier's band**: Easy 1–3, Medium 4–7, Hard 8–10. A mismatch is a validation error, not a warning.     |
 | `order`            | yes      | Position within the topic's learning path (0-based).                                                                                         |
@@ -81,6 +81,7 @@ truth for it.
 | `limits`           | no       | Per-language wall-clock budget per test. Defaults: Java 2000 ms, Python 4000 ms.                                                             |
 | `related`          | no       | Slugs of related problems; may not contain this problem's own slug.                                                                          |
 | `targetComplexity` | no       | Quoted to the coach as the bar the user's solution has to meet. Strongly recommended.                                                        |
+| `cycle`            | no       | `function` mode only: `{chain, at}` argument indexes the harness closes into a cycle (§5.2).                                                 |
 
 Unknown keys are rejected. A typo like `"paterns"` fails validation rather than
 being silently dropped.
@@ -118,10 +119,11 @@ checks.
 
 ### Example 1
 
-Input: `nums = [2, 7, 11, 15]`, `target = 9`
+Input: `nums = [4, 9, 1, 7]`, `target = 13`
+
 Output: `[0, 1]`
 
-`nums[0] + nums[1] == 9`, so the indices are returned in ascending order.
+`nums[0] + nums[1] == 13`, so the indices are returned in ascending order.
 ```
 
 Rules:
@@ -147,7 +149,7 @@ The harness constructs `Solution()` once per test and calls `entry` with the
 arguments in `args`, in order.
 
 ```json
-{ "args": [[2, 7, 11, 15], 9], "expected": [0, 1], "explanation": "…" }
+{ "args": [[4, 9, 1, 7], 13], "expected": [0, 1], "explanation": "…" }
 ```
 
 `args` is _always_ an array, one element per parameter, even for a single
@@ -221,8 +223,8 @@ tail is defined.
   three**, each with an `explanation`.
 - `hidden` — run by **Submit**. **At least ten**, normally produced by
   `generator.py` (`npm run problems:gen <slug>`) rather than hand-written.
-- `name` is optional on any test and is shown in the results panel
-  (`"empty input"`, `"all duplicates"`).
+- `name` is required on every sample and optional on hidden tests; it is shown
+  in the results panel (`"empty input"`, `"all duplicates"`).
 
 Every value on the wire is plain JSON. Anything that cannot be expressed in JSON
 cannot be a test input, and `NaN` / `Infinity` are rejected outright — they have
@@ -506,12 +508,13 @@ class Solution {
 ```
 
 - Compiled with `--release 21`. The class is `Solution` (or the `entry` class in
-  `operations` mode) and must not be `public` — the harness compiles it alongside
-  its own entry point.
-- Helper classes in the same file are fine and encouraged; the harness keeps its
-  own out of the way under `DevProMax*` names. The four names the workspace
-  already holds are `DevProMaxMain`, `DevProMaxJson`, `DevProMaxConvert` and the
-  two types below; declaring one is reported as a compile error naming it.
+  `operations` mode) and must not be `public` — the code is always saved as
+  `Solution.java`, and javac accepts a public class only in a file of its own name.
+- Helper classes in the same file are fine and encouraged; the harness owns `ListNode`,
+  `TreeNode` and every class whose name starts `DevProMax` (`DevProMaxMain`,
+  `DevProMaxJson`, `DevProMaxConvert` and internal helpers). Declaring one is a
+  validation error in a problem package and a compile error naming it in a
+  submission.
 - **A non-void Java starter must return something.** An empty body is a compile
   error in Java, and the validator requires starters to compile (§11). Use a
   cheap placeholder with a comment, as above. The payoff is that Run on an
@@ -543,8 +546,7 @@ from typing import Any, Iterator
 
 def generate(rng: random.Random) -> Iterator[dict[str, Any]]:
     """Yield {"args": [...]} dicts. Expected values are filled in by the runner."""
-    yield {"args": [[], 0], "name": "empty"}
-    yield {"args": [[1], 1], "name": "single element"}
+    yield {"args": [[4, 9], 13], "name": "smallest possible input"}
     for _ in range(12):
         n = rng.randint(2, 200)
         nums = [rng.randint(-1000, 1000) for _ in range(n)]
@@ -554,8 +556,9 @@ def generate(rng: random.Random) -> Iterator[dict[str, Any]]:
 
 `npm run problems:gen <slug>` runs `generate`, computes `expected` by calling
 `reference.py`, and rewrites `hidden[]`. Deterministic seeding means regenerating
-without changing the generator produces the same tests. **Bump `meta.version`
-whenever the generated tests change.**
+without changing the generator produces the same tests. `problems:gen` bumps
+`meta.version` itself when the hidden tests change; a hand edit to `tests.json`
+still needs a manual bump.
 
 ---
 
@@ -565,7 +568,7 @@ whenever the generated tests change.**
 npm run problems:validate --static [slug]        # schema and structure only, no subprocesses
 npm run problems:validate [slug]                 # the above, plus both references through the judge
 npm run problems:validate -- --changed <ref>     # reference runs only for problems that differ from <ref>
-npm run problems:schema [--check]                # regenerate (or verify) docs/schema/*.schema.json
+npm run problems:schema [-- --check]             # regenerate (or verify) docs/schema/*.schema.json
 npm run problems:gen -- --check [slug]           # fail if tests no longer match their generator
 ```
 
@@ -573,7 +576,8 @@ Reference runs are four at a time, and `--changed` narrows _them_ only (D23):
 the static rules always cover the whole catalogue, because that is where the
 cross-problem checks live — a duplicate id, a dangling `related`, two problems
 claiming one `order`. A change under `apps/server/src/judge/`,
-`apps/server/src/problems/`, `packages/shared/` or to any `checker.ts` validates
+`apps/server/src/problems/`, `apps/server/src/cli/problems/`, `packages/shared/`
+or to any `checker.ts` validates
 everything, since those decide what "passes" means for problems nobody touched.
 
 `problems:gen --check` regenerates and compares, which is the only thing that
@@ -588,7 +592,7 @@ Static checks (P1-2):
 2. `meta.json` matches the schema, including the tier/rating band and unknown-key rejection.
 3. `slug` matches the directory name; `topic` matches the parent directory.
 4. `id` and `slug` are unique across the catalogue.
-5. `samples.length >= 3`, every sample has an `explanation`; `hidden.length >= 10`.
+5. `samples.length >= 3`, every sample has an `explanation` and a `name`; `hidden.length >= 10`.
 6. Comparator and expect combinations are legal: `operations` implies
    `expect: "return"`; a `checker` comparator requires `checker.ts`;
    `floatTolerance` requires a positive `eps`.
@@ -611,6 +615,14 @@ Static checks (P1-2):
 18. The largest hidden input reaches at least half of any size bound the
     Constraints section states (D21, a warning), and `tests.json` is under 2 MB
     (also a warning).
+19. In `function` mode every test passes the same number of arguments.
+20. A `cycle` names two argument slots every test fills: a chain, and a whole
+    number inside it or -1 (§5.2).
+21. Both starters and both references declare the class the harness
+    instantiates and, in `function` mode, the entry method; Java declares no
+    class the harness owns.
+22. A missing `generator.py` is a warning: the hidden tests can be neither
+    regenerated nor re-checked (D9).
 
 Full checks add (P2-7): both references pass every sample and hidden test in both
 languages, and both starters compile (Java) or import (Python).
