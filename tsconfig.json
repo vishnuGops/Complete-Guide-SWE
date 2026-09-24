@@ -7,7 +7,7 @@
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "jsx": "react-jsx",
-    "types": ["node", "vitest/globals"],
+    "types": ["node"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,

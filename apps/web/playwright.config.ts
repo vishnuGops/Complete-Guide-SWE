@@ -2,16 +2,26 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 5173;
 /*
- * The API's port: 5174 unless DEVPROMAX_PORT says otherwise (P9-6). Run the
- * suite with DEVPROMAX_PORT set when a dev server already holds 5174 - its API
- * is running on your practice database, and the suite's own, which it cannot
- * bind beside it, is the one that should answer. The Vite proxy follows the
- * same variable.
+ * The suite's own ports, never the development ones (ROADMAP P8-6).
+ *
+ * `npm run dev` holds 5173 and 5174 on the owner's practice database. The suite
+ * used to share them - `reuseExistingServer` handed it whatever dev server was
+ * already running, and with it `data/devpromax.db`: `coach.spec.ts` saves an
+ * empty API key, which deletes the real one, and the draft specs delete real
+ * drafts. On ports of its own the two cannot meet, and with reuse off a
+ * leftover server on these ports is an error rather than a stranger's database.
+ *
+ * Read from the suite's own variables, not DEVPROMAX_PORT and
+ * DEVPROMAX_WEB_PORT: a shell set up for development must not be able to point
+ * the suite back at development. They are passed to the children under the
+ * names the server and Vite read.
  */
-const API_PORT = process.env['DEVPROMAX_PORT'] ?? '5174';
+const WEB_PORT = process.env['DEVPROMAX_E2E_WEB_PORT'] ?? '5183';
+const API_PORT = process.env['DEVPROMAX_E2E_API_PORT'] ?? '5184';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+/** Emptied before every run by `e2e/reset-db.mjs`. */
+const E2E_DB = path.join(REPO_ROOT, 'data', 'e2e.db');
 
 export default defineConfig({
   testDir: './e2e',
@@ -36,7 +46,7 @@ export default defineConfig({
       ]
     : [['list']],
   use: {
-    baseURL: `http://127.0.0.1:${PORT}`,
+    baseURL: `http://127.0.0.1:${WEB_PORT}`,
     trace: 'on-first-retry',
     // The editor is filled by pasting rather than typing (see e2e/m0.spec.ts).
     permissions: ['clipboard-read', 'clipboard-write'],
@@ -125,48 +135,62 @@ export default defineConfig({
       dependencies: ['settings', 'interview'],
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    cwd: '../..',
-    url: `http://127.0.0.1:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    /*
-     * A database of its own.
-     *
-     * These tests submit real solutions through the real judge, and every one
-     * of those is a row someone else has to live with: without this the suite
-     * writes its practice history into `data/devpromax.db`, which is the
-     * developer's. `data/` is gitignored, so this file is created on first run
-     * and can be deleted at any time.
-     *
-     * Note `reuseExistingServer`: a dev server already running on this port is
-     * reused as-is and will be using the normal database. The specs are written
-     * to work either way - none of them deletes anything.
-     */
-    env: {
-      DEVPROMAX_DB: path.join(REPO_ROOT, 'data', 'e2e.db'),
+  webServer: [
+    {
       /*
-       * A vendor that is not a vendor.
+       * The API first, on a database of its own, emptied a moment before it is
+       * opened.
        *
-       * `coach.spec.ts` types a fake key into Settings and presses "Test
-       * connection", and that must fail without a packet leaving this machine -
-       * least of all one carrying something key-shaped. Pointed at the API's own
-       * origin, every provider request lands on a path that does not exist and
-       * is answered 403 by the client-header rule (D15), which the provider maps
-       * to "the key was rejected" - the honest answer for a fake key, reached
-       * offline and in the same number of milliseconds every time.
+       * These tests submit real solutions through the real judge, and every one
+       * of those is a row someone else has to live with: without this the suite
+       * writes its practice history into `data/devpromax.db`, which is the
+       * developer's. The reset is part of the command rather than a
+       * `globalSetup` because Playwright starts web servers before global setup
+       * (see `e2e/reset-db.mjs`). `data/` is gitignored.
        *
-       * The `/api` prefix is load-bearing (ROADMAP P8-1). It used to be
-       * `/__no_vendor__`, which worked only while nothing was serving a UI
-       * behind the API: once `apps/web/dist` exists, the server answers any
-       * other path with the single-page app's `index.html`, and a 200 full of
-       * HTML is not a refusal - the provider reported "answered, but not with a
-       * model list" and the spec failed for a reason that had nothing to do with
-       * the coach. Under `/api` the client-header rule runs before any route
-       * and refuses, built UI or not.
+       * Waited on at `/health`, not through Vite: were something else answering
+       * on this port, Vite's proxy would reach it and the suite would never
+       * know whose API it was talking to.
        */
-      DEVPROMAX_COACH_BASE_URL: `http://127.0.0.1:${API_PORT}/api/__no_vendor__`,
+      command: 'node apps/web/e2e/reset-db.mjs && npm run dev:server',
+      cwd: '../..',
+      url: `http://127.0.0.1:${API_PORT}/health`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        DEVPROMAX_PORT: API_PORT,
+        DEVPROMAX_DB: E2E_DB,
+        /*
+         * A vendor that is not a vendor.
+         *
+         * `coach.spec.ts` types a fake key into Settings and presses "Test
+         * connection", and that must fail without a packet leaving this machine -
+         * least of all one carrying something key-shaped. Pointed at the API's own
+         * origin, every provider request lands on a path that does not exist and
+         * is answered 403 by the client-header rule (D15), which the provider maps
+         * to "the key was rejected" - the honest answer for a fake key, reached
+         * offline and in the same number of milliseconds every time.
+         *
+         * The `/api` prefix is load-bearing (ROADMAP P8-1). It used to be
+         * `/__no_vendor__`, which worked only while nothing was serving a UI
+         * behind the API: once `apps/web/dist` exists, the server answers any
+         * other path with the single-page app's `index.html`, and a 200 full of
+         * HTML is not a refusal - the provider reported "answered, but not with a
+         * model list" and the spec failed for a reason that had nothing to do with
+         * the coach. Under `/api` the client-header rule runs before any route
+         * and refuses, built UI or not.
+         */
+        DEVPROMAX_COACH_BASE_URL: `http://127.0.0.1:${API_PORT}/api/__no_vendor__`,
+      },
     },
-  },
+    {
+      // Vite, proxying `/api` to the API above rather than to 5174.
+      command: 'npm run dev:web',
+      cwd: '../..',
+      url: `http://127.0.0.1:${WEB_PORT}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: { DEVPROMAX_WEB_PORT: WEB_PORT, DEVPROMAX_PORT: API_PORT },
+    },
+  ],
 });

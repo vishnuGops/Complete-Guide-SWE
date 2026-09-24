@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { setEditorContents } from './helpers.js';
+import { chooseLanguage, setEditorContents } from './helpers.js';
 
 /**
  * AI Help through the real stack (ROADMAP P5-7, P5-3).
@@ -173,10 +173,6 @@ test.describe('AI Help', () => {
     // under this app's own `/api` prefix, where the client-header rule answers
     // 403 - which the provider maps to "rejected that API key". Honest for a
     // fake key, and reached without a packet leaving the machine.
-    //
-    // Worth knowing if this ever fails again: a *reused* dev server started
-    // without that variable sends the request to the real vendor instead, and
-    // the failure looks like a different bug entirely.
     await expect(page.getByText(/rejected that API key/i)).toBeVisible();
 
     // And the coach no longer sends this user to Settings: with a key present
@@ -190,7 +186,7 @@ test.describe('AI Help', () => {
     // for want of a solution body, before any of that was tested.
     await page.goto(`/problems/${TYPING_PROBLEM.slug}`);
     await expect(page.getByRole('heading', { name: TYPING_PROBLEM.title })).toBeVisible();
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
 
     /*
      * Pasted rather than typed (ROADMAP P8-1's flake budget).

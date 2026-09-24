@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { problemFile, setEditorContents } from './helpers.js';
+import { chooseLanguage, problemFile, setEditorContents } from './helpers.js';
 
 /**
  * The M0 exit criterion, as a test (ROADMAP P4-1).
@@ -18,8 +18,8 @@ const PILOTS = [
 ] as const;
 
 const LANGUAGES = [
-  { label: 'Python', file: 'reference.py' },
-  { label: 'Java', file: 'reference.java' },
+  { id: 'python', label: 'Python', file: 'reference.py' },
+  { id: 'java', label: 'Java', file: 'reference.java' },
 ] as const;
 
 function reference(topic: string, slug: string, file: string): string {
@@ -46,7 +46,7 @@ test.describe('M0: solve the pilot problems from the browser', () => {
         await page.getByRole('link', { name: pilot.title }).click();
 
         await expect(page.getByRole('heading', { name: pilot.title })).toBeVisible();
-        await page.getByRole('button', { name: language.label, exact: true }).click();
+        await chooseLanguage(page, language.id);
 
         await setEditorContents(page, reference(pilot.topic, pilot.slug, language.file));
         await page.getByRole('button', { name: 'Submit' }).click();
@@ -66,7 +66,7 @@ test.describe('M0: solve the pilot problems from the browser', () => {
 
     // Named rather than assumed: the workspace opens in the language last used,
     // which is a setting shared by every test in this file (P3-4).
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
     await setEditorContents(page, reference(pilot.topic, pilot.slug, 'reference.py'));
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.getByTestId('verdict')).toHaveText('Accepted', { timeout: 120_000 });
@@ -80,7 +80,7 @@ test.describe('M0: solve the pilot problems from the browser', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'Pair Sum Index' }).click();
 
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
     await setEditorContents(
       page,
       [

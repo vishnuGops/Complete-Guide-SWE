@@ -7,17 +7,18 @@ import { expect, test } from '@playwright/test';
 /**
  * `npm start`, as a user would run it (ROADMAP P3-6, D24).
  *
- * Every other spec runs against Vite on 5173 with the API on 5174, which is the
- * development shape and not the shipped one. What this covers is the part only
+ * Every other spec runs against Vite with the API behind its proxy, which is
+ * the development shape and not the shipped one. What this covers is the part only
  * production has: **one process, on one port, serving both.** Until P3-6 that
  * process served no UI at all, so the command CLAUDE.md described as "build and
  * serve" opened nothing - and no test noticed, because no test ran it.
  *
  * It runs the built output rather than building it: a build inside a test is
  * half a minute of Playwright timeout and a second copy of the build command to
- * keep in step. With no build present it skips and says which command to run,
- * which is the honest outcome for a suite that is usually run against a dev
- * server.
+ * keep in step. With no build present it skips locally and says which command
+ * to run. In CI it fails instead (ROADMAP P8-7): CI builds before the suite, so
+ * a missing build there is a broken workflow, and a skip is how this spec went
+ * unrun in CI without anyone noticing.
  */
 
 const REPO_ROOT = path.resolve(process.cwd(), '..', '..');
@@ -77,6 +78,11 @@ function statusWithHost(host: string): Promise<number> {
 }
 
 test.describe('the production server', () => {
+  if (!built && process.env.CI) {
+    throw new Error(
+      `no build at ${SERVER_ENTRY} and ${WEB_INDEX}; the CI job must run \`npm run build\` before the e2e suite`,
+    );
+  }
   test.skip(!built, 'run `npm run build` first; this spec runs the built output');
   test.describe.configure({ mode: 'serial' });
 

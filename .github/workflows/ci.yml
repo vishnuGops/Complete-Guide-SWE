@@ -126,13 +126,19 @@ jobs:
 
   # Generated tests are only reproducible on the Python minor they were made
   # with, so this lane pins it rather than sharing the test matrix's (P2-14).
+  #
+  # On pull requests too since P8-7, incrementally like the problem contract
+  # (D23): until then an edited generator.py with a stale tests.json merged
+  # green and was caught on main, after the fact.
   generators:
     name: generators (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The changed-problem diff needs the merge base.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -153,7 +159,41 @@ jobs:
 
       # An edited generator.py with a stale tests.json passes every other check
       # in this file: nothing re-runs the generator. This does.
-      - name: Tests still match their generators
+      #
+      # A pull request checks the problems it touched, or every problem when
+      # what generation runs through changed - the generator runtime and the
+      # loader under problems/, the judge that runs the reference as the
+      # oracle, the shared schemas, or the pinned Python minor. The same rule
+      # `problems:validate --changed` applies, written here because
+      # `problems:gen --check` takes one slug or all of them.
+      - name: Tests still match their generators (changed problems)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only "$BASE_REF...HEAD")
+          if grep -qE '^(apps/server/src/(judge|problems)/|packages/shared/|problems/GENERATED_WITH$)' <<< "$changed"; then
+            echo "Generation itself changed; checking every problem."
+            npm run problems:gen -- --check
+            exit 0
+          fi
+          slugs=$(awk -F/ '$1 == "problems" && NF >= 4 { print $3 }' <<< "$changed" | sort -u)
+          if [ -z "$slugs" ]; then
+            echo "No problem changed; nothing to regenerate."
+            exit 0
+          fi
+          failed=0
+          for slug in $slugs; do
+            # A deleted problem has nothing left to check.
+            if ! compgen -G "problems/*/$slug/meta.json" > /dev/null; then continue; fi
+            npm run problems:gen -- --check "$slug" || failed=1
+          done
+          exit "$failed"
+
+      - name: Tests still match their generators (whole catalogue)
+        if: github.event_name != 'pull_request'
         run: npm run problems:gen -- --check
 
   # The Docker executor (P9-2) against a real daemon. Linux only: the hosted
@@ -188,7 +228,7 @@ jobs:
           DEVPROMAX_EXECUTOR: docker
 
       - name: Docker executor integration tests
-        run: npx vitest run --project server docker.integration.test
+        run: npx vitest run --project server-integration docker.integration.test
         env:
           DEVPROMAX_DOCKER_TESTS: '1'
 
@@ -233,7 +273,7 @@ jobs:
         run: npm run doctor
 
       - name: Formatter integration tests
-        run: npx vitest run --project server formatters.integration.test
+        run: npx vitest run --project server-integration formatters.integration.test
         env:
           DEVPROMAX_FORMATTER_TESTS: '1'
 
@@ -267,9 +307,12 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        working-directory: apps/web
+      - uses: ./.github/actions/playwright-chromium
+
+      # For e2e/production.spec.ts, which runs the built output and fails in CI
+      # without it (ROADMAP P8-7). It used to skip here, so `npm start` - the
+      # command a user actually runs - had no test in CI at all.
+      - run: npm run build
 
       - run: npm run test:e2e
         env:
@@ -309,9 +352,7 @@ jobs:
 
       # The same pinned Chromium the E2E suite uses, so the scores are
       # comparable between machines and between runs.
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-        working-directory: apps/web
+      - uses: ./.github/actions/playwright-chromium
 
       - name: Lighthouse, both themes, performance and accessibility >= 90
         run: npm run perf:lighthouse

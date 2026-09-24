@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { problemFile, setEditorContents } from './helpers.js';
+import { chooseLanguage, problemFile, setEditorContents } from './helpers.js';
 
 /**
  * The golden path (ROADMAP P4-9).
@@ -16,12 +16,13 @@ import { problemFile, setEditorContents } from './helpers.js';
  * Submit are different operations, and that the status a submit produces is
  * written down rather than merely displayed.
  *
- * **Nothing here deletes anything.** The suite runs against `data/e2e.db` (see
- * `playwright.config.ts`), but a dev server already running on the port is
- * reused as-is and will be using the real one. So the assertions are written to
- * hold whether this problem was solved a minute ago or never: "Solved" after a
- * submit is true either way, where "In progress after the first Run" would be a
- * test that passes once and then never again.
+ * **The assertions hold whatever came before.** The suite starts on an empty
+ * `data/e2e.db` (see `playwright.config.ts`), but other specs share it, retries
+ * re-run a test on whatever its first attempt left, and a spec run twice in one
+ * session meets itself. So the assertions are written to hold whether this
+ * problem was solved a minute ago or never: "Solved" after a submit is true
+ * either way, where "In progress after the first Run" would be a test that
+ * passes once and then never again.
  */
 
 /**
@@ -135,7 +136,7 @@ test.describe('the golden path', () => {
     await page.getByRole('tab', { name: 'Description' }).click();
 
     // --- run the samples ----------------------------------------------------
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
     await setEditorContents(page, reference(problem, 'reference.py'));
 
     const before = await submissionCount(page);
@@ -188,7 +189,7 @@ test.describe('the golden path', () => {
     await page.goto(`/problems/${problem.slug}`);
     await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
     await setEditorContents(page, reference(problem, 'reference.py'));
 
     const before = await submissionCount(page);
@@ -284,7 +285,7 @@ test.describe('drafts', () => {
     await clearDrafts(page, problem.slug);
     await page.goto(`/problems/${problem.slug}`);
     await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
     await expect(page.locator('[data-testid="editor"]')).toContainText(starterMarker);
   }
 
@@ -322,9 +323,12 @@ class Solution {}
     await expect(editor).toContainText(PYTHON_MARK);
 
     // And after a reload, which is the only way to prove the server has them
-    // rather than the page.
+    // rather than the page. Python chosen again rather than assumed: a reload
+    // opens on `lastLanguage`, which a worker in another spec may have set to
+    // Java since this test last chose (ROADMAP P8-7).
     await page.reload();
     await expect(page.getByRole('heading', { name: PROBLEM.title })).toBeVisible();
+    await chooseLanguage(page, 'python');
     await expect(editor).toContainText(PYTHON_MARK);
 
     await page.getByRole('button', { name: 'Java' }).click();

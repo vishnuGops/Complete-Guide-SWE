@@ -18,7 +18,9 @@ export default defineConfig({
   },
   server: {
     host: '127.0.0.1',
-    port: 5173,
+    // 5173 unless DEVPROMAX_WEB_PORT says otherwise, which the e2e suite does so
+    // that it never shares a port - or a database - with `npm run dev` (P8-6).
+    port: Number(process.env['DEVPROMAX_WEB_PORT'] ?? 5173),
     strictPort: true,
     proxy: {
       '/api': {

@@ -38,6 +38,27 @@ export async function setEditorContents(page: Page, code: string): Promise<void>
   await page.keyboard.press('ControlOrMeta+v');
 }
 
+const LANGUAGE_LABEL = { python: 'Python', java: 'Java' } as const;
+
+/**
+ * Puts the workspace on `language` as this page's own choice (ROADMAP P8-7).
+ *
+ * The workspace shows the language the page chose, or else `lastLanguage` -
+ * a *server* setting that every worker writes. Clicking the button that is
+ * already pressed does nothing, so "click Python" on a page that opened on
+ * Python left it following the setting, and a settings fetch landing a moment
+ * later with another worker's Java switched the editor under the paste. The
+ * other language first makes the second click a real choice, which nothing
+ * another worker does can take back.
+ */
+export async function chooseLanguage(page: Page, language: 'python' | 'java'): Promise<void> {
+  const other = language === 'python' ? 'java' : 'python';
+  await page.getByRole('button', { name: LANGUAGE_LABEL[other], exact: true }).click();
+  const wanted = page.getByRole('button', { name: LANGUAGE_LABEL[language], exact: true });
+  await wanted.click();
+  await expect(wanted).toHaveAttribute('aria-pressed', 'true');
+}
+
 /** Removes both drafts, so the editor opens on the starter. */
 export async function clearDrafts(page: Page, slug: string): Promise<void> {
   for (const language of ['python', 'java'] as const) {
@@ -55,7 +76,8 @@ export async function clearDrafts(page: Page, slug: string): Promise<void> {
  * "open a problem and paste Python" compiled as Java the moment another spec
  * had chosen Java - and a wrong answer came back as a compile error full of
  * `class, interface, enum, or record expected`. Choosing the language here is
- * what stops that, and it is why every spec that pastes code uses this.
+ * what stops that, and it is why every spec that pastes code uses this - or
+ * `chooseLanguage`, which is how this chooses.
  */
 export async function openOnPython(
   page: Page,
@@ -64,5 +86,5 @@ export async function openOnPython(
   await clearDrafts(page, problem.slug);
   await page.goto(`/problems/${problem.slug}`);
   await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
-  await page.getByRole('button', { name: 'Python', exact: true }).click();
+  await chooseLanguage(page, 'python');
 }

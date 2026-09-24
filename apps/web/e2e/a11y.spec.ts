@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { CLIENT_HEADERS } from './helpers.js';
+import { chooseLanguage, CLIENT_HEADERS } from './helpers.js';
 
 /**
  * The accessibility audit (ROADMAP P4-10).
@@ -219,10 +219,26 @@ function detail(node: { any?: { id: string; data?: unknown }[] }): string {
 test.describe('an interview in progress', () => {
   test('has no serious violations while the clock is running', async ({ page, request }) => {
     const started = await request.post('/api/interview', { headers: CLIENT_HEADERS });
-    test.skip(
-      !started.ok(),
-      'needs two unsolved problems, and this database has fewer than two left',
-    );
+    if (!started.ok()) {
+      /*
+       * One refusal is a fact about the database rather than the app: an
+       * interview needs two unsolved problems, and a database with fewer left
+       * cannot start one. Anything else - a 500, a route that moved, a missing
+       * header - is the app failing, and used to be skipped all the same
+       * (ROADMAP P8-6). The suite starts on an empty database now, so even
+       * this skip should not happen in a normal run.
+       */
+      const body = (await started.json().catch(() => null)) as { message?: string } | null;
+      const tooFewLeft =
+        started.status() === 400 && /two unsolved problems/.test(body?.message ?? '');
+      test.skip(
+        tooFewLeft,
+        'needs two unsolved problems, and this database has fewer than two left',
+      );
+      throw new Error(
+        `starting an interview failed: ${String(started.status())} ${JSON.stringify(body)}`,
+      );
+    }
     const { id } = (await started.json()) as { id: string };
 
     try {
@@ -287,7 +303,7 @@ test.describe('after a run', () => {
     await clearDrafts(page, problem.slug);
     await applyTheme(page, 'light', `/problems/${problem.slug}`);
     await expect(page.getByRole('heading', { name: problem.title })).toBeVisible();
-    await page.getByRole('button', { name: 'Python', exact: true }).click();
+    await chooseLanguage(page, 'python');
   }
 
   /** Removes both drafts, so the editor opens on the starter. */

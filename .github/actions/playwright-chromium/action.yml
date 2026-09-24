@@ -1,0 +1,41 @@
+name: Playwright Chromium (cached)
+description: >-
+  Installs the Chromium build the checked-out Playwright pins, from the Actions
+  cache when this runner OS has seen that Playwright version before. Run after
+  `npm ci`.
+
+# The browser is ~150 MB and the same bytes every run until Playwright itself
+# moves, so the cache key is the Playwright version and nothing else: a new
+# release changes the key, and an unchanged lockfile never re-downloads
+# (ROADMAP P8-7). The operating-system packages Chromium links against are not
+# in the cache - apt installs them outside the home directory - so a hit on
+# Linux still runs `install-deps`, which is the fast half.
+
+runs:
+  using: composite
+  steps:
+    - name: Read the Playwright version
+      id: version
+      shell: bash
+      working-directory: apps/web
+      run: echo "playwright=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the browser cache
+      id: cache
+      uses: actions/cache@v4
+      with:
+        # Playwright's default download location on each hosted runner OS.
+        path: ${{ runner.os == 'Windows' && '~/AppData/Local/ms-playwright' || '~/.cache/ms-playwright' }}
+        key: playwright-chromium-${{ runner.os }}-${{ steps.version.outputs.playwright }}
+
+    - name: Install Chromium and its system dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: apps/web
+      run: npx playwright install --with-deps chromium
+
+    - name: Install Chromium's system dependencies
+      if: steps.cache.outputs.cache-hit == 'true' && runner.os == 'Linux'
+      shell: bash
+      working-directory: apps/web
+      run: npx playwright install-deps chromium

@@ -10,9 +10,10 @@ import { CLIENT_HEADERS } from './helpers.js';
  * preference that only holds until the page is refreshed is not a preference.
  *
  * **Reset all progress is opened and cancelled, never confirmed.** It deletes
- * every submission in the database, and `reuseExistingServer` means that
- * database can be the developer's own. The confirmed path is covered in
- * `settingsService.test.ts`, where the database is a throwaway.
+ * every submission in the database, and that database is shared by every spec
+ * running beside this one - the golden path would find its Solved gone halfway
+ * through. The confirmed path is covered in `settingsService.test.ts`, where
+ * the database belongs to that test alone.
  */
 
 test.describe('settings', () => {

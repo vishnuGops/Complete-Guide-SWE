@@ -1,0 +1,31 @@
+# Dependency updates (ROADMAP P8-8).
+#
+# Weekly rather than daily: one reviewer, and a PR a day per ecosystem is a
+# queue nobody keeps up with. npm minor and patch updates arrive as one PR,
+# because CI proves them the same way either way; an npm major is its own PR,
+# since that is the one that needs reading. Actions move a major tag at a
+# time, so they are one PR a week too.
+#
+# The actions stay on their major tags (`@v4`), and this is what keeps those
+# current. Pinning them to commit SHAs is a reasonable next step, done by a
+# tool that resolves the SHAs rather than by hand.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    # The workflows, and the local composite action they share.
+    directories: ['/', '/.github/actions/*']
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
