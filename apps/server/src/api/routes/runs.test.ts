@@ -7,9 +7,9 @@ import { createDatabase, IN_MEMORY, type Repositories } from '../../db/index.js'
 import { JudgeUnavailableError } from '../../judge/executors/launcher.js';
 import type { RunProblemOptions } from '../../judge/index.js';
 import { silentLogger } from '../../logger.js';
-import type { Catalogue } from '../catalogue.js';
+import type { Catalogue } from '../services/catalogue.js';
 import { HttpError, applyErrorHandling } from '../errors.js';
-import { CustomTestError, ProblemNotFoundError } from '../runService.js';
+import { CustomTestError, ProblemNotFoundError } from '../services/runService.js';
 import { registerRunRoutes, runErrorToHttp } from './runs.js';
 
 /**

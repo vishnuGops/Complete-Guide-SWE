@@ -4,7 +4,7 @@ import { clearDrafts, openOnPython, problemFile, setEditorContents } from './hel
 /**
  * Every verdict the judge can reach, through the real UI (ROADMAP P8-1).
  *
- * `m0.spec.ts` proves an accepted solution is accepted. What this covers is the
+ * `pilots.spec.ts` proves an accepted solution is accepted. What this covers is the
  * other five: that a wrong answer, a crash, a syntax error and a runaway loop
  * each come back as themselves rather than as each other, and that the two test
  * *modes* the judge supports - operations and mutated arguments - work end to

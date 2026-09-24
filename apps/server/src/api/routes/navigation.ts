@@ -7,7 +7,7 @@ import {
   type NextProblemResponse,
 } from '@devpromax/shared';
 import { notFound, parseInput } from '../errors.js';
-import { nextProblem } from '../nextService.js';
+import { nextProblem } from '../services/nextService.js';
 import type { ApiDeps } from './types.js';
 
 const bookmarkParams = z.object({ slug: slugSchema });

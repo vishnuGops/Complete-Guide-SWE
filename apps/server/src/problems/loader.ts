@@ -6,7 +6,7 @@ import { paths } from '../config.js';
 import type { ProblemLocation, ProblemPackage, ProblemTests, ValidationIssue } from './types.js';
 
 /** Files every problem must ship (ROADMAP D7 / docs/PROBLEM_FORMAT.md §1). */
-export const REQUIRED_FILES = [
+const REQUIRED_FILES = [
   'meta.json',
   'statement.md',
   'tests.json',
@@ -17,8 +17,6 @@ export const REQUIRED_FILES = [
   'reference.py',
   'reference.java',
 ] as const;
-
-export const OPTIONAL_FILES = ['generator.py', 'checker.ts'] as const;
 
 function isHidden(name: string): boolean {
   return name.startsWith('.') || name.startsWith('_');
@@ -87,7 +85,7 @@ export function stampFiles(dir: string, files: readonly string[]): Stamp {
 }
 
 /** Whether a read stamped `cached` at `takenAt` still describes files stamped `current`. */
-export function stillFresh(cached: Stamp, takenAt: number, current: Stamp): boolean {
+function stillFresh(cached: Stamp, takenAt: number, current: Stamp): boolean {
   return cached.key === current.key && cached.newest < takenAt - RACY_MS;
 }
 

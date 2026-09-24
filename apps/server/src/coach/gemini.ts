@@ -282,7 +282,7 @@ function extractText(chunk: Record<string, unknown>): string {
  * Merged here rather than papered over in the caller because it is this
  * vendor's rule: Anthropic accepts the same history unchanged.
  */
-export function toGeminiContents(
+function toGeminiContents(
   messages: readonly CoachTurn[],
 ): { role: string; parts: { text: string }[] }[] {
   const contents: { role: string; parts: { text: string }[] }[] = [];

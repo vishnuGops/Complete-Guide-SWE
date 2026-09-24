@@ -9,7 +9,7 @@ import { chooseLanguage, problemFile, setEditorContents } from './helpers.js';
  * against the samples, submit it, and watch the status follow you back to the
  * list and survive a reload.
  *
- * It is deliberately the *boring* path. `m0.spec.ts` proves the judge accepts
+ * It is deliberately the *boring* path. `pilots.spec.ts` proves the judge accepts
  * every pilot in both languages and that a wrong answer is reported as one;
  * what is untested until here is everything between those: that the filters
  * send what they claim, that a row opens the problem it names, that Run and
@@ -28,7 +28,7 @@ import { chooseLanguage, problemFile, setEditorContents } from './helpers.js';
 /**
  * A problem each, and neither of them a pilot.
  *
- * `m0.spec.ts` submits all three pilots, the two tests below run in parallel,
+ * `pilots.spec.ts` submits all three pilots, the two tests below run in parallel,
  * and all of it shares one server and one database. Two tests solving the same
  * problem at once is two tests writing its status at once - and the second one
  * then finds a problem that is already Solved, which is a different problem

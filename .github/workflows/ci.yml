@@ -174,7 +174,7 @@ jobs:
         run: |
           set -euo pipefail
           changed=$(git diff --name-only "$BASE_REF...HEAD")
-          if grep -qE '^(apps/server/src/(judge|problems)/|packages/shared/|problems/GENERATED_WITH$)' <<< "$changed"; then
+          if grep -qE '^(apps/server/src/(judge|problems|cli/problems)/|packages/shared/|problems/GENERATED_WITH$)' <<< "$changed"; then
             echo "Generation itself changed; checking every problem."
             npm run problems:gen -- --check
             exit 0

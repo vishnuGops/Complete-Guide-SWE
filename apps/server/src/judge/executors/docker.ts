@@ -94,7 +94,7 @@ export interface DockerRunSpec {
  * server's user did not already have. Docker Desktop (Windows, macOS) shares
  * files through a layer that ignores ownership, so there it is `nobody`.
  */
-export function containerUser(): string {
+function containerUser(): string {
   if (process.platform === 'linux' && process.getuid && process.getgid) {
     return `${String(process.getuid())}:${String(process.getgid())}`;
   }

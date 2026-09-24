@@ -8,7 +8,7 @@ import { nullableText, num, text, type Row } from './rows.js';
  *
  * Storage only, like every repository here. Which problems to ask, when the
  * clock has run out and what the debrief says are decided in
- * `api/interviewService.ts`; this puts rows in and takes rows out.
+ * `api/services/interviewService.ts`; this puts rows in and takes rows out.
  */
 export interface InterviewRow {
   id: string;

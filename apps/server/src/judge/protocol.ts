@@ -114,7 +114,7 @@ const fatalRecordSchema = z.object({
  */
 const readyRecordSchema = z.object({ event: z.literal('ready') });
 
-export const harnessRecordSchema = z.union([fatalRecordSchema, testRecordSchema]);
+const harnessRecordSchema = z.union([fatalRecordSchema, testRecordSchema]);
 export type HarnessTestRecord = z.infer<typeof testRecordSchema>;
 export type HarnessFatalRecord = z.infer<typeof fatalRecordSchema>;
 export type HarnessRecord = z.infer<typeof harnessRecordSchema>;

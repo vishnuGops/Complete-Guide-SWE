@@ -29,7 +29,7 @@ import {
   StatusMark,
   cn,
 } from '../../ui/index.js';
-import { relativeDay } from '../relativeDay.js';
+import { relativeDay } from '../../lib/relativeDay.js';
 import { Filters } from './Filters.js';
 import {
   CLEARED,

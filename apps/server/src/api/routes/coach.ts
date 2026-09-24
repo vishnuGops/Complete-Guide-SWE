@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { coachChatRequestSchema, coachFeedbackRequestSchema } from '@devpromax/shared';
-import { streamChat, streamFeedback } from '../coachService.js';
+import { streamChat, streamFeedback } from '../services/coachService.js';
 import { parseInput } from '../errors.js';
 import { streamEvents } from './stream.js';
 import type { ApiDeps } from './types.js';

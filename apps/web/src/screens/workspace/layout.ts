@@ -21,7 +21,7 @@ export interface WorkspaceLayout {
   panelCollapsed: boolean;
 }
 
-export const DEFAULT_LAYOUT: WorkspaceLayout = {
+const DEFAULT_LAYOUT: WorkspaceLayout = {
   statement: 40,
   editor: 62,
   panelCollapsed: false,

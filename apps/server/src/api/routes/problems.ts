@@ -17,8 +17,8 @@ import {
   type SubmissionListResponse,
 } from '@devpromax/shared';
 import { badRequest, notFound, parseInput } from '../errors.js';
-import { listProblems, problemDetail } from '../problemService.js';
-import { executeRun } from '../runService.js';
+import { listProblems, problemDetail } from '../services/problemService.js';
+import { executeRun } from '../services/runService.js';
 import { runErrorToHttp } from './runs.js';
 import type { ApiDeps } from './types.js';
 

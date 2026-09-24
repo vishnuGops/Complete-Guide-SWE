@@ -31,10 +31,10 @@ const Workspace = lazy(() =>
   import('./screens/workspace/Workspace.js').then((module) => ({ default: module.Workspace })),
 );
 const Progress = lazy(() =>
-  import('./screens/Progress.js').then((module) => ({ default: module.Progress })),
+  import('./screens/progress/Progress.js').then((module) => ({ default: module.Progress })),
 );
 const Interview = lazy(() =>
-  import('./screens/Interview.js').then((module) => ({ default: module.Interview })),
+  import('./screens/interview/Interview.js').then((module) => ({ default: module.Interview })),
 );
 const Settings = lazy(() =>
   import('./screens/settings/Settings.js').then((module) => ({ default: module.Settings })),

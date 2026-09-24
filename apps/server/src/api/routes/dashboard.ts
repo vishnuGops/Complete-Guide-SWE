@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { dashboardQuerySchema, reportQuerySchema, type DashboardResponse } from '@devpromax/shared';
-import { dashboard } from '../dashboardService.js';
+import { dashboard } from '../services/dashboardService.js';
 import { parseInput } from '../errors.js';
-import { buildReport } from '../reportService.js';
+import { buildReport } from '../services/reportService.js';
 import type { ApiDeps } from './types.js';
 
 /**

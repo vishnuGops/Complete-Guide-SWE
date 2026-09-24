@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.js';
-import { applyTheme, cachedTheme } from './theme.js';
-import './styles.css';
+import { applyTheme, cachedTheme } from './app/theme.js';
+import './styles/index.css';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('#root not found');

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { Theme } from '@devpromax/shared';
 import { useSettings, useUpdateSettings } from '../api/hooks.js';
-import { applyTheme, cacheTheme, cachedTheme } from '../theme.js';
+import { applyTheme, cacheTheme, cachedTheme } from './theme.js';
 
 /**
  * The theme, from settings to the `<html>` attribute (ROADMAP P4-2).

@@ -6,9 +6,14 @@ import {
   type RuntimeReport,
   type SettingsView,
 } from '@devpromax/shared';
-import { runDoctor } from '../../doctor.js';
+import { runDoctor } from '../../toolchain/doctor.js';
 import { parseInput } from '../errors.js';
-import { readSettings, resetProgress, testConnection, updateSettings } from '../settingsService.js';
+import {
+  readSettings,
+  resetProgress,
+  testConnection,
+  updateSettings,
+} from '../services/settingsService.js';
 import type { ApiDeps } from './types.js';
 
 /**

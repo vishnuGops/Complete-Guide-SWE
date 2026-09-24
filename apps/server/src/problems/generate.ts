@@ -43,7 +43,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNNER = path.resolve(HERE, 'generator', 'run_generator.py');
 
 /** A generator that yields forever must not fill the disk. */
-export const DEFAULT_CASE_LIMIT = 60;
+const DEFAULT_CASE_LIMIT = 60;
 
 /** Wall-clock for the generator itself; it is our code, not the user's. */
 const GENERATOR_TIMEOUT_MS = 60_000;
@@ -96,7 +96,7 @@ const generatedCaseSchema = testCaseSchema
   .omit({ expected: true, expectedMutatedArgs: true })
   .strict();
 
-export async function runGenerator(
+async function runGenerator(
   pkg: ProblemPackage,
   options: GenerateOptions = {},
 ): Promise<TestCase[]> {
@@ -416,7 +416,7 @@ const WRAP_WIDTH = 100;
  * readable but collapses anything that fits on one line, which is most of a test
  * case and all of its numbers.
  */
-export function formatJson(value: unknown, indent = 0): string {
+function formatJson(value: unknown, indent = 0): string {
   const pad = ' '.repeat(indent);
   const compact = JSON.stringify(value);
   if (compact === undefined) return 'null';

@@ -25,7 +25,7 @@ interface Shell {
 const ShellContext = createContext<Shell>({ openPalette: () => undefined });
 export const ShellProvider = ShellContext.Provider;
 
-export function useShell(): Shell {
+function useShell(): Shell {
   return useContext(ShellContext);
 }
 
@@ -36,7 +36,7 @@ export function useShell(): Shell {
  * this must not be: a header that says "Solved 2 / 3" because the user filtered
  * to three problems is a header that has stopped meaning anything.
  */
-export function GlobalProgress() {
+function GlobalProgress() {
   const { data } = useProgress();
   if (!data) return null;
 
@@ -68,7 +68,7 @@ export function GlobalProgress() {
  * is a palette nobody uses; the chips are hidden from its name, which stays
  * "Search".
  */
-export function SearchPill({ className }: { className?: string }) {
+function SearchPill({ className }: { className?: string }) {
   const { openPalette } = useShell();
   return (
     <button

@@ -48,7 +48,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${WEB_PORT}`,
     trace: 'on-first-retry',
-    // The editor is filled by pasting rather than typing (see e2e/m0.spec.ts).
+    // The editor is filled by pasting rather than typing (see e2e/pilots.spec.ts).
     permissions: ['clipboard-read', 'clipboard-write'],
   },
   projects: [

@@ -10,6 +10,7 @@ import {
   type TestCase,
 } from '@devpromax/shared';
 import { paths } from '../config.js';
+import { isHarnessClassName } from '../judge/executors/compileErrors.js';
 import { discoverProblems, loadProblem, relFile } from './loader.js';
 import { checkReferences, type ReferenceCheckOptions } from './references.js';
 import type { ProblemPackage, ProblemValidation, ValidationIssue } from './types.js';
@@ -460,15 +461,19 @@ function checkSources(pkg: ProblemPackage): ValidationIssue[] {
       issues.push(
         error(
           file,
-          `class ${pythonClass} must not be public; it is compiled alongside the harness's own Main`,
+          `class ${pythonClass} must not be public; the code is always saved as Solution.java`,
         ),
       );
     }
     if (meta.mode === 'function' && !new RegExp(`\\b${meta.entry}\\s*\\(`).test(body)) {
       issues.push(error(file, `must define the entry method "${meta.entry}"`));
     }
-    if (/\bclass\s+Main\b/.test(body)) {
-      issues.push(error(file, 'a class named Main collides with the judge harness'));
+    for (const [, declared] of body.matchAll(/\bclass\s+(\w+)/g)) {
+      if (declared !== undefined && isHarnessClassName(declared)) {
+        issues.push(
+          error(file, `class ${declared} is owned by the judge harness; do not declare it`),
+        );
+      }
     }
   }
 

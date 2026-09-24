@@ -3,7 +3,7 @@ import { runBodySchema, type Language, type RunKind, type RunResult } from '@dev
 import { HttpError, badRequest, notFound, parseInput } from '../errors.js';
 import { JudgeUnavailableError } from '../../judge/executors/launcher.js';
 import { isAbortError } from '../../judge/process.js';
-import { CustomTestError, ProblemNotFoundError, executeRun } from '../runService.js';
+import { CustomTestError, ProblemNotFoundError, executeRun } from '../services/runService.js';
 import type { ApiDeps } from './types.js';
 
 /**

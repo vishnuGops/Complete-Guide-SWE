@@ -29,10 +29,10 @@ import { useEffect, useState } from 'react';
  */
 
 /** How long after the last keystroke text is written. */
-export const AUTOSAVE_MS = 800;
+const AUTOSAVE_MS = 800;
 
 /** The first retry of a failed write, doubling each time up to the ceiling. */
-export const RETRY_FIRST_MS = 2_000;
+const RETRY_FIRST_MS = 2_000;
 const RETRY_MAX_MS = 30_000;
 
 export interface AutosaveScope {

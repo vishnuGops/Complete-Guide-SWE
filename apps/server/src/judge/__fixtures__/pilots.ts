@@ -31,7 +31,7 @@ const SOURCE_FILES: Record<Language, { starter: string; reference: string }> = {
   java: { starter: 'starter.java', reference: 'reference.java' },
 };
 
-export function loadPilot(topic: string, slug: string, hiddenLimit = 4): Pilot {
+function loadPilot(topic: string, slug: string, hiddenLimit = 4): Pilot {
   const dir = path.join(paths.problems, topic, slug);
   const meta = problemMetaSchema.parse(
     JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8')),

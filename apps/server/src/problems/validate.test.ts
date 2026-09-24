@@ -566,7 +566,7 @@ describe('starters and references', () => {
     expectError(root, 'injected by the harness');
   });
 
-  it('rejects a public Java class, which cannot be compiled beside Main', () => {
+  it('rejects a public Java class, which cannot be saved as Solution.java', () => {
     const root = catalogue({
       files: {
         'starter.java':
@@ -576,14 +576,24 @@ describe('starters and references', () => {
     expectError(root, 'must not be public');
   });
 
-  it('rejects a Java class named Main, which collides with the harness', () => {
+  it('rejects a Java class the harness owns', () => {
     const root = catalogue({
       files: {
         'reference.java':
-          'import java.util.*;\n\nclass Main {}\n\nclass Solution {\n    public int[] pairSumIndex(int[] nums, int target) { return null; }\n}\n',
+          'import java.util.*;\n\nclass DevProMaxJson {}\n\nclass Solution {\n    public int[] pairSumIndex(int[] nums, int target) { return null; }\n}\n',
       },
     });
-    expectError(root, 'collides with the judge harness');
+    expectError(root, 'class DevProMaxJson is owned by the judge harness');
+  });
+
+  it('accepts a Java helper class named Main, which the harness no longer uses', () => {
+    const root = catalogue({
+      files: {
+        'reference.java':
+          'import java.util.*;\n\nclass Main {}\n\nclass Solution {\n    public int[] pairSumIndex(int[] nums, int target) { return new int[] {0, 1}; }\n}\n',
+      },
+    });
+    expect(messages(errors(root))).not.toContain('harness');
   });
 });
 

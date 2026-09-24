@@ -195,7 +195,7 @@ export interface RestoreResult {
 }
 
 /** Thrown when something still has the database open; the caller should stop it first. */
-export class DatabaseInUseError extends Error {
+class DatabaseInUseError extends Error {
   constructor(file: string) {
     super(`${file} is in use. Stop DevProMax (and anything else using it) and try again.`);
     this.name = 'DatabaseInUseError';

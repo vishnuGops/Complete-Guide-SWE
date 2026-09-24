@@ -76,7 +76,7 @@ interface Resolved extends Required<Omit<ScaffoldOptions, 'title' | 'entry'>> {
   entry: string;
 }
 
-export function resolveOptions(options: ScaffoldOptions): Resolved {
+function resolveOptions(options: ScaffoldOptions): Resolved {
   const tier = options.tier ?? 'Easy';
   const mode = options.mode;
   return {

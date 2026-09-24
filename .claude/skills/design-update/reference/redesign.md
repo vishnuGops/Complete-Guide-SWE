@@ -296,7 +296,7 @@ On a branch, so the whole redesign is one revertible unit:
    its comments where the reasoning changed - they explain the values, and a
    comment defending the old accent next to the new one is a lie.
 2. New font: `npm install @fontsource-variable/<family> -w @devpromax/web`, import it
-   in `apps/web/src/styles.css` next to Inter, and keep Inter / JetBrains Mono
+   in `apps/web/src/styles/index.css` next to Inter, and keep Inter / JetBrains Mono
    only if still used.
 3. Component changes from `rationale.md`, including the Monaco theme.
 4. Update every place the old design is written down, in the same change:

@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { ActiveDay } from '@devpromax/shared';
-import { localDay } from '../relativeDay.js';
+import { localDay } from '../../lib/relativeDay.js';
 
 /**
  * Solves over time (ROADMAP P9-6, docs/DESIGN.md 8).

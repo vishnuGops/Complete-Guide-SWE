@@ -5,7 +5,7 @@ import {
   type FormatResponse,
   type FormattersResponse,
 } from '@devpromax/shared';
-import { formatters as defaultFormatters } from '../../formatters.js';
+import { formatters as defaultFormatters } from '../../toolchain/formatters.js';
 import { parseInput } from '../errors.js';
 import type { ApiDeps } from './types.js';
 

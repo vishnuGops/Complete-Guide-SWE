@@ -1,8 +1,8 @@
 import type { ProviderOptions } from '../../coach/index.js';
 import type { Repositories } from '../../db/index.js';
-import type { Formatters } from '../../formatters.js';
-import type { Catalogue } from '../catalogue.js';
-import type { JudgeFn } from '../runService.js';
+import type { Formatters } from '../../toolchain/formatters.js';
+import type { Catalogue } from '../services/catalogue.js';
+import type { JudgeFn } from '../services/runService.js';
 
 /**
  * What every route needs, passed in rather than imported.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { doctorSummary, runDoctor } from '../doctor.js';
-import { formatters } from '../formatters.js';
+import { doctorSummary, runDoctor } from '../toolchain/doctor.js';
+import { formatters } from '../toolchain/formatters.js';
 
 /**
  * `npm run doctor` (ROADMAP P8-3).

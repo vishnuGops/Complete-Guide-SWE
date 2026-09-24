@@ -11,7 +11,7 @@ import {
 } from '@devpromax/shared';
 import { transaction } from '../../db/index.js';
 import { notFound, parseInput } from '../errors.js';
-import { progressOverview } from '../problemService.js';
+import { progressOverview } from '../services/problemService.js';
 import type { ApiDeps } from './types.js';
 
 const overrideParams = z.object({ slug: slugSchema, language: languageSchema });

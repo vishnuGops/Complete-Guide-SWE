@@ -42,7 +42,7 @@ const SOLUTION_FILE = 'Solution.java';
 const HARNESS_FILE = 'DevProMaxMain.java';
 
 /** Language level users write against (CLAUDE.md > Environment). */
-export const JAVA_RELEASE = '21';
+const JAVA_RELEASE = '21';
 
 /**
  * Heap ceiling. This is what makes MLE a verdict we can honestly report for

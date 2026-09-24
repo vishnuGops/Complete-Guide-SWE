@@ -96,7 +96,7 @@ async function setTheme(theme) {
  */
 async function chromePath() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
-  const { chromium } = await import('playwright');
+  const { chromium } = await import('@playwright/test');
   return chromium.executablePath();
 }
 

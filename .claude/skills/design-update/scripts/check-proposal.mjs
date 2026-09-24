@@ -342,7 +342,10 @@ for (const [themeName, theme] of [
 // ---------------------------------------------------------------------------
 // 4. Platform: offline fonts, reduced motion.
 
-const fontsCss = fs.readFileSync(path.join(REPO_ROOT, 'apps', 'web', 'src', 'styles.css'), 'utf8');
+const fontsCss = fs.readFileSync(
+  path.join(REPO_ROOT, 'apps', 'web', 'src', 'styles', 'index.css'),
+  'utf8',
+);
 const families = /--font-sans:\s*([^;]+);/.exec(proposal)?.[1] ?? '';
 const firstFamily = families.split(',')[0].replaceAll(/["']/g, '').trim();
 const selfHosted =
@@ -359,7 +362,7 @@ check(
   selfHosted,
   selfHosted
     ? ''
-    : 'add @fontsource-variable/<family> and import it in apps/web/src/styles.css when applying',
+    : 'add @fontsource-variable/<family> and import it in apps/web/src/styles/index.css when applying',
 );
 
 // ---------------------------------------------------------------------------

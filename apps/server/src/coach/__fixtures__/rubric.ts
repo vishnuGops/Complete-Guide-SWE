@@ -178,7 +178,7 @@ export function rubricContext(rubricCase: RubricCase): string {
 }
 
 /** Ladder order, so "no further than this rung" is a comparison. */
-export const RUNG_ORDER: HintLevel[] = ['nudge', 'concept', 'approach', 'pseudocode', 'solution'];
+const RUNG_ORDER: HintLevel[] = ['nudge', 'concept', 'approach', 'pseudocode', 'solution'];
 
 export function rungRank(level: HintLevel | null): number {
   return level === null ? -1 : RUNG_ORDER.indexOf(level);

@@ -100,7 +100,7 @@ export function killLiveChildren(): number {
  * directory undeletable. `taskkill /T /F` walks the tree; on POSIX the child is
  * its own process-group leader (`detached`) so a negative PID signals the group.
  */
-export function killTree(child: ChildProcess): void {
+function killTree(child: ChildProcess): void {
   const pid = child.pid;
   if (pid === undefined) return;
 
@@ -316,23 +316,4 @@ export function isAbortError(error: unknown): boolean {
 /** Throws the signal's reason, as an Error, if it has been aborted. */
 export function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw abortReason(signal);
-}
-
-/** True when the command exists and can be started at all. */
-export async function commandAvailable(
-  command: string,
-  args: string[] = ['--version'],
-): Promise<boolean> {
-  try {
-    const result = await runProcess({
-      command,
-      args,
-      cwd: process.cwd(),
-      timeoutMs: 10_000,
-      outputCap: 4096,
-    });
-    return result.code === 0;
-  } catch {
-    return false;
-  }
 }

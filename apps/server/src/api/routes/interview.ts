@@ -8,7 +8,7 @@ import {
   getInterview,
   sayToInterviewer,
   startInterview,
-} from '../interviewService.js';
+} from '../services/interviewService.js';
 import { parseInput } from '../errors.js';
 import { streamEvents } from './stream.js';
 import type { ApiDeps } from './types.js';

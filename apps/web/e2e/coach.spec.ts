@@ -6,9 +6,9 @@ import { chooseLanguage, setEditorContents } from './helpers.js';
  *
  * Everything between the button and the server is tested elsewhere - the UI
  * over a fake `fetch` in `coach.test.tsx`, the routes over `app.inject` in
- * `coachRoutes.test.ts`. What neither of those exercises is a browser reading a
- * real `text/event-stream` off a real socket: `inject` never opens one, and the
- * component tests hand the client a stream they built themselves.
+ * `api/routes/coach.test.ts`. What neither of those exercises is a browser
+ * reading a real `text/event-stream` off a real socket: `inject` never opens
+ * one, and the component tests hand the client a stream they built themselves.
  *
  * **No vendor is involved, and none is stubbed.** The two paths below are the
  * ones the server answers entirely on its own - the local pre-check and the

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Award, Flame } from 'lucide-react';
 import { PROGRESS_STATUSES, THEMES, VERDICTS, type Theme } from '@devpromax/shared';
-import { applyTheme } from '../theme.js';
+import { applyTheme } from '../app/theme.js';
 import {
   Button,
   Callout,

@@ -316,7 +316,7 @@ test.describe('after a run', () => {
     }
   }
 
-  /** Replaces the editor's contents, as `m0.spec.ts` does. */
+  /** Replaces the editor's contents, as `pilots.spec.ts` does. */
   async function setEditorContents(page: Page, code: string): Promise<void> {
     await expect(page.locator('[data-testid="editor"] .monaco-editor')).toBeVisible();
     await page.locator('[data-testid="editor"] .view-lines').click();

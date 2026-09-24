@@ -44,7 +44,7 @@ export interface Repositories {
   close(): void;
 }
 
-export function createRepositories(db: Database): Repositories {
+function createRepositories(db: Database): Repositories {
   return {
     db,
     submissions: createSubmissionRepo(db),

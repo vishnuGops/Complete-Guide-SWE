@@ -28,8 +28,6 @@ export interface SettingsRepo {
   get(): Settings;
   /** Merges a partial update into the stored settings and returns the result. */
   update(patch: SettingsUpdate): Settings;
-  /** Drops every stored value, returning settings to their defaults. */
-  reset(): Settings;
 }
 
 export function createSettingsRepo(db: Database): SettingsRepo {
@@ -38,7 +36,6 @@ export function createSettingsRepo(db: Database): SettingsRepo {
     `INSERT INTO settings (key, value) VALUES (?, ?)
      ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
   );
-  const clearStmt = db.prepare('DELETE FROM settings');
 
   function read(): Settings {
     const stored: Record<string, unknown> = {};
@@ -84,11 +81,6 @@ export function createSettingsRepo(db: Database): SettingsRepo {
         }
         return next;
       });
-    },
-
-    reset() {
-      clearStmt.run();
-      return read();
     },
   };
 }

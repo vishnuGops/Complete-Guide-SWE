@@ -75,11 +75,4 @@ describe('settings', () => {
     repos.db.prepare("INSERT INTO settings (key, value) VALUES ('leftover', '1')").run();
     expect(repos.settings.get()).toEqual(settingsSchema.parse({}));
   });
-
-  it('resets everything to defaults', () => {
-    repos.settings.update({ theme: 'dark', coach: { apiKey: 'sk-ant-secret' } });
-
-    expect(repos.settings.reset()).toEqual(settingsSchema.parse({}));
-    expect(repos.settings.get().coach.apiKey).toBeNull();
-  });
 });
