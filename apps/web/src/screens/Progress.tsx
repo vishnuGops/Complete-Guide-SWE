@@ -620,22 +620,28 @@ function ExportCard() {
 
 // ---------------------------------------------------------------------------
 
-/** The cards, in their places, before the numbers arrive. */
+/**
+ * The cards, in their places, before the numbers arrive - under the real
+ * header, which needs no numbers to say which page this is (P9-7).
+ */
 function ProgressSkeleton() {
   return (
-    <Loading label="Loading progress" className="grid grid-cols-3 gap-4 px-6 pt-5 pb-6">
-      <span className="col-span-3 block pb-2">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="mt-2 h-4 w-56" />
-      </span>
-      <span className="bg-surface border-border col-span-2 block h-80 rounded-xl border p-5">
-        <Skeleton className="h-9 w-24" />
-        <Skeleton className="mt-6 h-40 w-full" />
-      </span>
-      <span className="bg-surface border-border block h-80 rounded-xl border p-5">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="mt-4 h-5 w-full" />
-        <Skeleton className="mt-2 h-5 w-4/5" />
+    <Loading label="Loading progress" className="px-6 pb-6">
+      {/*
+        The grid on this span rather than on `Loading`: `Loading` wraps its
+        children in one hidden span, so a grid there had a single cell and the
+        two cards stacked in a third of the width (found by P9-7's capture).
+      */}
+      <span className="grid grid-cols-3 gap-4">
+        <span className="bg-surface border-border col-span-2 block h-80 rounded-xl border p-5">
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="mt-6 h-40 w-full" />
+        </span>
+        <span className="bg-surface border-border block h-80 rounded-xl border p-5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="mt-4 h-5 w-full" />
+          <Skeleton className="mt-2 h-5 w-4/5" />
+        </span>
       </span>
     </Loading>
   );
@@ -644,16 +650,32 @@ function ProgressSkeleton() {
 export function Progress() {
   const { data, isPending, error, refetch } = useDashboard();
 
-  if (isPending) return <ProgressSkeleton />;
-  if (error) {
+  /*
+   * Loading and failing keep the page's header and its card (P9-7), as the
+   * problem list does: the page says where you are before it says what went
+   * wrong, and the header does not jump down when the answer arrives.
+   */
+  if (isPending || error) {
     return (
-      <ErrorState
-        title="Your progress could not load."
-        error={error}
-        onRetry={() => {
-          void refetch();
-        }}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <PageHeader title="Progress" />
+        {isPending ? (
+          <ProgressSkeleton />
+        ) : (
+          <div className="px-6 pb-6">
+            <Card>
+              <ErrorState
+                className="p-0"
+                title="Your progress could not load."
+                error={error}
+                onRetry={() => {
+                  void refetch();
+                }}
+              />
+            </Card>
+          </div>
+        )}
+      </div>
     );
   }
 

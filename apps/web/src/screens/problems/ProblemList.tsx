@@ -97,13 +97,14 @@ function Row({ problem }: { problem: ProblemSummary }) {
   };
 
   /*
-   * 36px rows (DESIGN.md 6). The row under the pointer takes `surface-sunken`;
+   * 34px rows (DESIGN.md 6; 36px until P9-7 won back the rows the redesign
+   * cost). The row under the pointer takes `surface-sunken`;
    * the row holding keyboard focus - where you are - gets a 2px accent bar at
    * its left edge, drawn as the first cell's border so nothing shifts.
    */
   return (
     <tr
-      className="border-border hover:bg-surface-sunken group h-9 cursor-pointer border-b last:border-b-0"
+      className="border-border hover:bg-surface-sunken group h-8.5 cursor-pointer border-b last:border-b-0"
       onClick={openRow}
     >
       <td className="group-focus-within:border-l-accent border-l-2 border-l-transparent py-0 pr-3 pl-3.5">
@@ -331,7 +332,7 @@ export function ProblemList() {
           padding="none"
           className="flex min-w-0 flex-1 flex-col overflow-hidden"
         >
-          <div className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-3">
+          <div className="border-border flex shrink-0 items-center gap-3 border-b px-4 py-2">
             {/*
               At 1024px the filter card folds away behind this button
               (DESIGN.md 11) and comes back beside the table when asked. CSS
@@ -439,7 +440,7 @@ export function ProblemList() {
                           <button
                             type="button"
                             className={cn(
-                              'focus-ring-inset hover:text-fg flex w-full items-center gap-1 px-3 py-2',
+                              'focus-ring-inset hover:text-fg flex w-full items-center gap-1 px-3 py-1.5',
                               column.key === 'rating' ? 'justify-end' : 'text-left',
                               index === 0 && 'pl-4',
                             )}
@@ -457,7 +458,7 @@ export function ProblemList() {
                             </span>
                           </button>
                         ) : (
-                          <span className="block px-3 py-2">{column.label}</span>
+                          <span className="block px-3 py-1.5">{column.label}</span>
                         )}
                       </th>
                     ))}

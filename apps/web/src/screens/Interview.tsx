@@ -167,27 +167,44 @@ export function Interview() {
     [refetch],
   );
 
+  const header = (
+    <PageHeader
+      title="Mock interview"
+      context="Two problems, forty-five minutes, the approach before the code."
+    />
+  );
+
+  // The header in every state (P9-7), so loading and failing still say where you are.
   if (isPending) {
     return (
-      <Loading label="Loading the interview" className="max-w-3xl px-6 pt-5">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="mt-3 h-4 w-full" />
-      </Loading>
+      <div className="flex h-full min-h-0 flex-col">
+        {header}
+        <Loading label="Loading the interview" className="max-w-3xl px-6">
+          <span className="bg-surface border-border block rounded-xl border p-5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="mt-4 h-4 w-full" />
+            <Skeleton className="mt-2 h-4 w-4/5" />
+          </span>
+        </Loading>
+      </div>
     );
   }
   if (error) {
     return (
-      <div className="px-6 pt-5">
-        <Card>
-          <ErrorState
-            className="p-0"
-            title="The interview could not load."
-            error={error}
-            onRetry={() => {
-              void refetch();
-            }}
-          />
-        </Card>
+      <div className="flex h-full min-h-0 flex-col">
+        {header}
+        <div className="max-w-3xl px-6">
+          <Card>
+            <ErrorState
+              className="p-0"
+              title="The interview could not load."
+              error={error}
+              onRetry={() => {
+                void refetch();
+              }}
+            />
+          </Card>
+        </div>
       </div>
     );
   }
@@ -196,10 +213,7 @@ export function Interview() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader
-        title="Mock interview"
-        context="Two problems, forty-five minutes, the approach before the code."
-      />
+      {header}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
         <div className="flex max-w-3xl flex-col gap-4">

@@ -43,6 +43,16 @@ afterEach(() => {
 });
 
 describe('the dashboard', () => {
+  it('keeps its header when the dashboard fails, with a way to try again (P9-7)', async () => {
+    // Nothing answers /api/dashboard, so the harness says 404.
+    fakeServer([]);
+    renderApp(<Progress />);
+
+    expect(await screen.findByText('Your progress could not load.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Progress' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
   it('leads with how much is solved', async () => {
     serve();
     renderApp(<Progress />);

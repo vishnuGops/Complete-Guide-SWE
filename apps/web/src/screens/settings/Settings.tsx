@@ -46,9 +46,8 @@ function clearedSummary(cleared: ResetProgressResponse['cleared']): string {
 /** The first card's worth of rows, at the height they will be. */
 function SettingsSkeleton() {
   return (
-    <Loading label="Loading settings" className="max-w-3xl px-6 pt-5 pb-6">
-      <Skeleton className="h-6 w-28" />
-      <span className="bg-surface border-border mt-8 block rounded-xl border p-5">
+    <Loading label="Loading settings" className="max-w-3xl px-6 pb-6">
+      <span className="bg-surface border-border block rounded-xl border p-5">
         {Array.from({ length: 5 }, (_, index) => (
           <span key={index} className="flex items-center gap-6 py-3">
             <Skeleton className="h-3 flex-1" />
@@ -67,20 +66,34 @@ export function Settings() {
   const { theme, setTheme } = useAppTheme();
   const [confirming, setConfirming] = useState(false);
 
-  if (isPending) return <SettingsSkeleton />;
-  if (error) {
+  const header = (
+    <PageHeader
+      title="Settings"
+      context="Saved as you change them, in a database on this machine."
+    />
+  );
+
+  // The header in every state (P9-7), so loading and failing still say where you are.
+  if (isPending || error) {
     return (
-      <div className="px-6 pt-5">
-        <Card>
-          <ErrorState
-            className="p-0"
-            title="Settings could not load."
-            error={error}
-            onRetry={() => {
-              void refetch();
-            }}
-          />
-        </Card>
+      <div className="flex h-full min-h-0 flex-col">
+        {header}
+        {isPending ? (
+          <SettingsSkeleton />
+        ) : (
+          <div className="max-w-3xl px-6">
+            <Card>
+              <ErrorState
+                className="p-0"
+                title="Settings could not load."
+                error={error}
+                onRetry={() => {
+                  void refetch();
+                }}
+              />
+            </Card>
+          </div>
+        )}
       </div>
     );
   }
@@ -90,10 +103,7 @@ export function Settings() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader
-        title="Settings"
-        context="Saved as you change them, in a database on this machine."
-      />
+      {header}
       {/*
         One column of cards, one per section (DESIGN.md 8), left-aligned under
         the title rather than centred: the page reads top to bottom and the

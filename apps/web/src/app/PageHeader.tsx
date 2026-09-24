@@ -95,13 +95,24 @@ export interface PageHeaderProps {
   children?: ReactNode;
 }
 
+/*
+ * One row, and the same height on every page (P9-7). The context sits on the
+ * title's baseline rather than on a line of its own: a second line cost the
+ * problem list a row of problems for a sentence that fits beside the title, and
+ * a page with no context (Not found) came out shorter than the rest.
+ */
 export function PageHeader({ title, context, children }: PageHeaderProps) {
   return (
-    <header className="flex shrink-0 items-center gap-4 px-6 pt-5 pb-4">
-      <div className="min-w-0 flex-1">
-        <h1 className="tracking-title text-xl font-semibold">{title}</h1>
+    <header className="flex h-16 shrink-0 items-center gap-4 px-6">
+      <div className="flex min-w-0 flex-1 items-baseline gap-3">
+        <h1 className="tracking-title shrink-0 text-xl font-semibold">{title}</h1>
         {context !== undefined && (
-          <p className="text-fg-muted tnum mt-0.5 truncate text-sm">{context}</p>
+          <p
+            className="text-fg-muted tnum min-w-0 truncate text-sm"
+            title={typeof context === 'string' ? context : undefined}
+          >
+            {context}
+          </p>
         )}
       </div>
       {children}
