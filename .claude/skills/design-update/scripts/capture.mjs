@@ -118,6 +118,89 @@ const ALSO_SOLVED = [
 ];
 
 /*
+ * Answers the browser is given for states the audit server cannot produce on
+ * its own: a coach reply needs a vendor, and a loading or failed screen needs a
+ * server that is slow or broken. Fulfilled in the page, never written to the
+ * audit database.
+ */
+const SERVER_ERROR = {
+  status: 500,
+  json: { error: 'Internal', message: 'The server could not read the database.' },
+};
+
+/** A text/event-stream body in the coach's framing (`api/coachStream.ts`). */
+function sse(events) {
+  return {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+    body: events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''),
+  };
+}
+
+const COACH_SESSION = '6f1c2a4e-8d3b-4c7a-9e2f-1b5d7c9a3e60';
+const COACH_BODY = [
+  'The running total is the right idea, and the loop reads cleanly.',
+  '',
+  'You compute `sum(values)` once and then walk left to right, which keeps it **O(n)**. The one',
+  'thing to check is the empty row: `range(len(values))` never runs, and the function returns',
+  '`-1` - which is what the statement asks for, so say so in a comment.',
+].join('\n');
+const COACH_TURN = [
+  { type: 'start', sessionId: COACH_SESSION },
+  { type: 'markdown', delta: COACH_BODY },
+  {
+    type: 'done',
+    feedback: {
+      summary: 'Linear, correct, and one comment away from finished.',
+      scores: {
+        correctness: 4,
+        timeComplexity: 4,
+        spaceComplexity: 4,
+        edgeCases: 3,
+        readability: 4,
+      },
+      feedbackMarkdown: COACH_BODY,
+      nextHintLevel: null,
+      nextStep: 'Add a line saying why an empty row returns -1.',
+      mastered: false,
+    },
+  },
+];
+
+const CANDIDATE_TURN =
+  'I would keep a map from each value to its index, and for each new value look up target minus it.';
+const INTERVIEWER_TURN =
+  'That works for the pair. What does the map hold when the same value appears twice, and does the order you insert in change the answer?';
+
+/** An interview forty minutes from its end, on two problems nobody has solved. */
+async function runningSitting() {
+  const response = await fetch(`${base}/api/problems?status=not_started`, {
+    headers: CLIENT_HEADERS,
+  });
+  const { items } = await response.json();
+  return {
+    id: '3b9e5c1d-2f4a-4e8b-a7c6-5d0e1f2a3b4c',
+    problems: items.slice(0, 2).map((problem) => ({
+      slug: problem.slug,
+      title: problem.title,
+      topic: problem.topic,
+      tier: problem.tier,
+      rating: problem.rating,
+      attempted: false,
+      solved: false,
+    })),
+    budgetMs: 45 * 60_000,
+    at: 0,
+    stage: 'approach',
+    sessionId: COACH_SESSION,
+    debrief: null,
+    createdAt: new Date(Date.now() - 5 * 60_000).toISOString(),
+    endedAt: null,
+    remainingMs: 45 * 60_000,
+  };
+}
+
+/*
  * The token scale, in pixels, as tokens.css and DESIGN.md sections 4-5 define it.
  * Colours are not listed here: they are read from the running page, so a token
  * edit is picked up without touching this file.
@@ -278,6 +361,48 @@ const SHOTS = [
     },
   },
   {
+    // A coached answer: summary and body in the coach's serif, the next step, the rubric.
+    name: 'workspace-coach-reply',
+    async setup(page) {
+      await page.route('**/api/coach/feedback', (route) => route.fulfill(sse(COACH_TURN)));
+      await page.goto(`${base}/problems/${SOLVED}`);
+      await page.locator('[data-testid="editor"] .monaco-editor').waitFor();
+      await page.getByRole('tab', { name: 'Coach' }).click();
+      await page.getByRole('button', { name: /Ask for help/i }).click();
+      await page.getByText(COACH_TURN.at(-1).feedback.summary).waitFor();
+    },
+  },
+  {
+    // The row holding keyboard focus: its 2px accent bar and the link's ring.
+    name: 'list-keyboard',
+    async setup(page) {
+      await page.goto(`${base}/`);
+      await page.getByRole('row').nth(3).waitFor();
+      await page.keyboard.press('Shift');
+      await page.getByRole('link', { name: 'Highest So Far' }).focus();
+    },
+  },
+  {
+    // Held in flight, so the skeleton (shown after 150ms) is what is on screen.
+    name: 'list-loading',
+    async setup(page) {
+      await page.route('**/api/problems?*', () => new Promise(() => undefined));
+      await page.route('**/api/problems', () => new Promise(() => undefined));
+      await page.goto(`${base}/`);
+      await page.getByText('Loading problems').waitFor({ state: 'attached' });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: 'list-error',
+    async setup(page) {
+      await page.route('**/api/problems?*', (route) => route.fulfill(SERVER_ERROR));
+      await page.route('**/api/problems', (route) => route.fulfill(SERVER_ERROR));
+      await page.goto(`${base}/`);
+      await page.getByRole('button', { name: 'Try again' }).waitFor();
+    },
+  },
+  {
     name: 'progress',
     async setup(page) {
       await page.goto(`${base}/progress`);
@@ -285,10 +410,55 @@ const SHOTS = [
     },
   },
   {
+    name: 'progress-loading',
+    async setup(page) {
+      await page.route('**/api/dashboard*', () => new Promise(() => undefined));
+      await page.goto(`${base}/progress`);
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    name: 'progress-error',
+    async setup(page) {
+      await page.route('**/api/dashboard*', (route) => route.fulfill(SERVER_ERROR));
+      await page.goto(`${base}/progress`);
+      await page.getByRole('button', { name: 'Try again' }).waitFor();
+    },
+  },
+  {
     name: 'interview',
     async setup(page) {
       await page.goto(`${base}/interview`);
       await page.getByRole('heading', { name: 'Mock interview' }).waitFor();
+    },
+  },
+  {
+    /*
+     * A sitting under way, with one exchange in the transcript. Both the sitting
+     * and the interviewer's turn are answered in the browser, so the audit
+     * database never holds a running interview for the idle shot above to find.
+     */
+    name: 'interview-running',
+    async setup(page) {
+      const sitting = await runningSitting();
+      await page.route('**/api/interview', (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill({ json: { interview: sitting } })
+          : route.fallback(),
+      );
+      await page.route('**/api/interview/*/say', (route) =>
+        route.fulfill(
+          sse([
+            { type: 'start', sessionId: sitting.sessionId },
+            { type: 'markdown', delta: INTERVIEWER_TURN },
+          ]),
+        ),
+      );
+      await page.goto(`${base}/interview`);
+      await page.getByRole('timer', { name: 'Time remaining' }).waitFor();
+      await page.getByLabel('What you would say').fill(CANDIDATE_TURN);
+      await page.getByRole('button', { name: 'Say it' }).click();
+      await page.getByText(INTERVIEWER_TURN.slice(0, 40)).waitFor();
     },
   },
   {

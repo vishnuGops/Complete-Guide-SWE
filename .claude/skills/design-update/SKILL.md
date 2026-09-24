@@ -60,10 +60,14 @@ node .claude/skills/design-update/scripts/token-audit.mjs
 ```
 
 `capture.mjs` starts the production server on its own database (inside the run
-folder), seeds a few solves, a draft and a note, and captures 13 states (list,
-filtered-empty, first-run welcome, command palette, workspace idle / accepted /
-failed / hints / coach, progress, interview, settings, 404) plus the too-narrow
-notice, in light and dark, at 1440x900 and 1024x768. For each it writes:
+folder), seeds a few solves, a draft and a note, and captures 20 states (list,
+filtered-empty, first-run welcome, keyboard-focused row, loading, error; command
+palette; workspace idle / accepted / failed / focus / hints / coach / coach reply;
+progress, its loading and error; interview idle and running; settings; 404) plus
+the too-narrow notice, in light and dark, at 1440x900 and 1024x768. The coach
+reply, the running interview and the loading and error states are answered in
+the browser (`page.route`), so the audit database never holds them. For each it
+writes:
 
 - `<width>/<theme>/<shot>.png`
 - `report.json` - per shot: every colour, font size, weight, radius, spacing,
