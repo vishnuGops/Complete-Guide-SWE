@@ -41,11 +41,21 @@ export const interviewProblemSchema = z.object({
 });
 export type InterviewProblem = z.infer<typeof interviewProblemSchema>;
 
+/** One line of an interview conversation, as the screen draws it. */
+export const interviewLineSchema = z.object({
+  from: z.enum(['you', 'them']),
+  text: z.string(),
+});
+export type InterviewLine = z.infer<typeof interviewLineSchema>;
+
 export const interviewSchema = z.object({
   id: z.uuid(),
   problems: z.array(interviewProblemSchema),
   budgetMs: z.int().min(1),
-  /** 0-based index into `problems`; equal to its length once the last is done. */
+  /**
+   * 0-based index into `problems`; equal to its length once the last is done,
+   * and never more than that.
+   */
   at: z.int().min(0),
   stage: interviewStageSchema,
   /** The coach conversation the interviewer's turns live in, once there is one. */
@@ -56,6 +66,13 @@ export const interviewSchema = z.object({
   endedAt: z.iso.datetime().nullable(),
   /** Milliseconds left on the clock, or 0 once it is over. */
   remainingMs: z.int().min(0),
+  /**
+   * What has been said so far, oldest first: the candidate's own words and the
+   * interviewer's replies, read back from the sitting's coach session. The
+   * screen seeds from this, so leaving for the workspace to write the code and
+   * coming back does not start the conversation over.
+   */
+  transcript: z.array(interviewLineSchema),
 });
 export type Interview = z.infer<typeof interviewSchema>;
 
@@ -81,8 +98,11 @@ export function nextStage(stage: InterviewStage): InterviewStage {
 /**
  * What the screen tells the candidate to do now.
  *
- * In shared rather than in the UI because the interviewer's prompt is built
- * from the same fact on the server, and two descriptions of one state drift.
+ * Addressed to the candidate, and only to them. The interviewer used to be
+ * handed these same sentences as its description of the stage - "the
+ * interviewer will push back" is an odd thing to tell the interviewer - so it
+ * now has its own notes, written for the other side of the table, in
+ * `interviewService.ts` (ROADMAP P5-12).
  */
 export const STAGE_PROMPT: Record<InterviewStage, string> = {
   approach:

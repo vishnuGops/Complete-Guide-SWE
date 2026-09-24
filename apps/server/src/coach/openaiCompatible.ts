@@ -58,9 +58,11 @@ interface ChatChunk {
   usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } | null;
 }
 
-function toMessages(system: string, turns: readonly CoachTurn[]) {
+function toMessages(system: string, instructions: string | undefined, turns: readonly CoachTurn[]) {
   return [
-    { role: 'system', content: system },
+    // Joined into the one system message: plenty of the small servers this is
+    // for accept exactly one, first (P5-12).
+    { role: 'system', content: instructions ? `${system}\n\n${instructions}` : system },
     ...turns.map((turn) => ({
       // The two roles both other vendors share, in this API's spelling.
       role: turn.role === 'coach' ? 'assistant' : 'user',
@@ -155,7 +157,16 @@ export function createOpenAiCompatibleProvider(options: ProviderOptions = {}): C
       return judgeModel('openai-compatible', wanted, available);
     },
 
-    async *stream({ apiKey, model, system, messages, schema, signal, onUsage }: StreamOptions) {
+    async *stream({
+      apiKey,
+      model,
+      system,
+      instructions,
+      messages,
+      schema,
+      signal,
+      onUsage,
+    }: StreamOptions) {
       const wanted = model ?? OPENAI_COMPATIBLE_DEFAULT_MODEL;
       const timeout = AbortSignal.timeout(STREAM_TIMEOUT_MS);
       const abort = signal ? AbortSignal.any([signal, timeout]) : timeout;
@@ -170,7 +181,7 @@ export function createOpenAiCompatibleProvider(options: ProviderOptions = {}): C
             },
             body: JSON.stringify({
               model: wanted,
-              messages: toMessages(system, messages),
+              messages: toMessages(system, instructions, messages),
               stream: true,
               // Without this the stream reports no usage at all, and the spend
               // cap would treat every turn as unpriced (P5-6).

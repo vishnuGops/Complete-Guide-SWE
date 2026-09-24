@@ -2,6 +2,7 @@ import {
   COACH_SKIP_MESSAGE,
   applyProgressEvent,
   costUsd,
+  hintLevelRank,
   initialProgress,
   meetsMastery,
   priceFor,
@@ -20,17 +21,19 @@ import {
   createCoachProvider,
   describeDelta,
   diffCode,
+  followUpPrompt,
   precheck,
   streamCoachFeedback,
   systemPrompt,
   type AttemptMemory,
   type CoachTurn,
   type ProviderOptions,
+  type SubmissionSummary,
 } from '../coach/index.js';
 import type { CoachMessage, Repositories } from '../db/index.js';
 import type { Catalogue } from './catalogue.js';
 import { notFound } from './errors.js';
-import { resolveApiKey } from './settingsService.js';
+import { providerOptionsFor, resolveApiKey } from './settingsService.js';
 
 /**
  * The coaching turn, end to end (ROADMAP P5-3, D13).
@@ -110,6 +113,66 @@ function recallAttempts(
   });
 }
 
+/** Whitespace at line ends and around the whole is not a different program. */
+function sameCode(a: string, b: string): boolean {
+  const tidy = (code: string) =>
+    code
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .join('\n')
+      .trim();
+  return tidy(a) === tidy(b);
+}
+
+/**
+ * What the judge last said about this problem in this language (ROADMAP P5-12).
+ *
+ * The context has always had a "Latest judge result" section and nothing ever
+ * filled it, so every review opened with "they have not run this code yet" -
+ * including the review of code that had just failed eleven of twelve tests, and
+ * the mastery check straight after an Accepted. The stored submission is the
+ * one record of a verdict the server keeps; a Run is not persisted.
+ *
+ * Offered to the coach only as evidence about the code it was produced from.
+ * When the editor has moved on, the context says so rather than passing off an
+ * old verdict as this version's.
+ */
+function latestSubmission(
+  repos: Repositories,
+  slug: string,
+  language: Language,
+  code: string,
+): SubmissionSummary | undefined {
+  const [latest] = repos.submissions.list({ slug, language, limit: 1 });
+  if (!latest) return undefined;
+  return {
+    verdict: latest.verdict,
+    passed: latest.passed,
+    total: latest.total,
+    at: latest.createdAt,
+    sameCode: sameCode(latest.code, code),
+  };
+}
+
+/**
+ * The solution gate, enforced where the model cannot argue with it
+ * (ROADMAP P5-12).
+ *
+ * The prompt says `solution` needs the problem solved *and* an explicit
+ * request, and a model that follows its prompt will never set it otherwise. But
+ * "will never" is a claim about a model, and this rung is the one product rule
+ * the whole ladder exists for, so the server holds it too: past the gate, the
+ * rung is clamped to `pseudocode` - the highest one that stays shut. What was
+ * already written in the prose cannot be unsaid; what the panel and the stored
+ * history record as the rung given can be.
+ */
+export function gateHintLevel(feedback: CoachFeedback, solutionAllowed: boolean): CoachFeedback {
+  if (solutionAllowed || feedback.nextHintLevel === null) return feedback;
+  if (hintLevelRank(feedback.nextHintLevel) <= hintLevelRank('pseudocode')) return feedback;
+  return { ...feedback, nextHintLevel: 'pseudocode' };
+}
+
 /**
  * Whether this conversation has already spent its allowance (ROADMAP P5-6).
  *
@@ -160,7 +223,16 @@ export function windowHistory(messages: readonly CoachMessage[]): CoachTurn[] {
   );
   const from = lastFeedback <= 0 ? 0 : lastFeedback - 1;
 
-  return messages.slice(from).map((message) => ({ role: message.role, content: message.content }));
+  return (
+    messages
+      .slice(from)
+      // An empty turn is one no vendor will take back (P5-11): Anthropic
+      // answers 400 to an empty assistant message, so a single blank reply
+      // stored before that was refused broke every later turn in its
+      // conversation. None is stored now; this keeps the ones that were.
+      .filter((message) => message.content.trim() !== '')
+      .map((message) => ({ role: message.role, content: message.content }))
+  );
 }
 
 /**
@@ -226,6 +298,8 @@ export async function* streamFeedback(
     pkg.hints.hints.length,
   );
 
+  const submission = latestSubmission(deps.repos, request.slug, request.language, request.code);
+
   const context = buildContext({
     meta: pkg.meta,
     statement: pkg.statement,
@@ -236,6 +310,7 @@ export async function* streamFeedback(
     ...(pkg.hints.hints[revealed] !== undefined
       ? { nextAuthoredHint: pkg.hints.hints[revealed] }
       : {}),
+    ...(submission ? { lastSubmission: submission } : {}),
     priorAttempts: recallAttempts(deps.repos, request.slug, request.language, request.code),
     masteryCheck: request.masteryCheck,
     requestFullSolution: request.requestFullSolution,
@@ -253,7 +328,11 @@ export async function* streamFeedback(
     content: context,
   });
 
-  const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
+  const provider = createCoachProvider(
+    settings.coach.provider,
+    providerOptionsFor(settings, deps.provider),
+  );
+  const solutionAllowed = solved && request.requestFullSolution;
 
   let spent: number | null = null;
   let answered = false;
@@ -274,21 +353,23 @@ export async function* streamFeedback(
         continue;
       }
 
+      const feedback = gateHintLevel(chunk.feedback, solutionAllowed);
+
       // Persisted before it is announced: a `done` the client acted on but the
       // database never saw would leave a rubric card that vanishes on reload.
       deps.repos.coach.addMessage(session.id, {
         role: 'coach',
-        content: chunk.feedback.feedbackMarkdown,
-        feedback: chunk.feedback,
+        content: feedback.feedbackMarkdown,
+        feedback,
         // The code this feedback is about, so the next turn can diff against it.
         code: request.code,
         // Null when the vendor reported nothing; the cap reads that as unknown,
         // not as free (P5-6).
         ...(spent === null ? {} : { costUsd: spent }),
       });
-      applyMastery(chunk.feedback, request, deps);
+      applyMastery(feedback, request, deps);
       answered = true;
-      yield { type: 'done', feedback: chunk.feedback };
+      yield { type: 'done', feedback };
     }
   } catch (error) {
     // A cancelled turn is not an error to report: the user closed the panel or
@@ -356,14 +437,30 @@ function applyMastery(
  * asking about it, so there is nothing to refuse and nothing new to score. The
  * reply is plain prose, which is why this does not go through
  * `streamCoachFeedback` - there is no structured document to assemble.
+ *
+ * Under the rubric prompt, so the ladder and the solution gate still hold, plus
+ * the follow-up block that says this turn answers in prose (P5-12).
  */
 export async function* streamChat(
   request: CoachChatRequest,
   deps: CoachServiceDeps,
   signal?: AbortSignal,
 ): AsyncGenerator<CoachStreamEvent> {
+  // An interview's conversation is continued through the interview, under the
+  // interviewer's prompt; continuing it here would hand the interviewer's
+  // exchange to the coach (P5-12).
+  const session = deps.repos.coach.getSession(request.sessionId);
+  if (session?.kind !== 'coach') {
+    throw notFound('That coaching conversation no longer exists.');
+  }
+
   yield* streamCoachTurn(
-    { sessionId: request.sessionId, system: systemPrompt(), message: request.message },
+    {
+      sessionId: request.sessionId,
+      system: systemPrompt(),
+      instructions: followUpPrompt(),
+      message: request.message,
+    },
     deps,
     signal,
   );
@@ -374,6 +471,8 @@ export interface CoachTurnRequest {
   sessionId: string;
   /** The system prompt for this turn. The coach's, or the interviewer's (P9-1). */
   system: string;
+  /** An uncached second system block for this kind of turn (P5-12). */
+  instructions?: string;
   /** What the provider is asked. */
   message: string;
   /**
@@ -419,10 +518,19 @@ export async function* streamCoachTurn(
   }
 
   const history = windowHistory(deps.repos.coach.listMessages(session.id));
+  // The breakpoint goes on the last turn of history, not on the new message
+  // (P5-13): history is what the next turn resends unchanged, and the new
+  // message is the one part never sent the same way twice - an interview's
+  // carries the clock, and what is stored of it is only what was typed.
+  const last = history.at(-1);
+  if (last) history[history.length - 1] = { ...last, cacheBreakpoint: true };
 
   yield { type: 'start', sessionId: session.id };
 
-  const provider = createCoachProvider(settings.coach.provider, deps.provider ?? {});
+  const provider = createCoachProvider(
+    settings.coach.provider,
+    providerOptionsFor(settings, deps.provider),
+  );
 
   let reply = '';
   let spent: number | null = null;
@@ -432,6 +540,7 @@ export async function* streamCoachTurn(
       apiKey: resolved.key,
       model: settings.coach.model,
       system: request.system,
+      ...(request.instructions ? { instructions: request.instructions } : {}),
       // No schema: prose, not a document. The schema that makes a review
       // parseable would make a one-sentence answer arrive quoted and escaped,
       // and the panel would render the escapes.
@@ -443,6 +552,13 @@ export async function* streamCoachTurn(
     })) {
       reply += chunk;
       yield { type: 'markdown', delta: chunk };
+    }
+
+    // A reply with nothing in it is a failed turn, not an answer (P5-11).
+    // Stored, it became an empty assistant message that Anthropic refuses, and
+    // every later turn in the conversation failed with it.
+    if (reply.trim() === '') {
+      throw new CoachProviderError('The coach returned an empty answer.', { retryable: true });
     }
   } catch (error) {
     // The question is stored with whatever it spent and no reply, so the cap

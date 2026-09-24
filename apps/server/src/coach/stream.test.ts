@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MASTERY_THRESHOLD, type CoachFeedback, type TokenUsage } from '@devpromax/shared';
+import {
+  ESTIMATED_THINKING_TOKENS,
+  MASTERY_THRESHOLD,
+  type CoachFeedback,
+  type TokenUsage,
+} from '@devpromax/shared';
 import { createAnthropicProvider } from './anthropic.js';
 import { createGeminiProvider } from './gemini.js';
 import { coachFeedbackJsonSchema, parseFeedback, streamCoachFeedback } from './feedback.js';
@@ -470,6 +475,9 @@ describe('usage reporting', () => {
     // only on success recorded a failed turn as free (P5-9).
     expect(seen).toHaveLength(1);
     expect(seen[0]?.inputTokens).toBe(700);
+    // And the output is an estimate, not the one-token placeholder from
+    // `message_start`: the turn was most likely stopped mid-think (P5-13).
+    expect(seen[0]?.outputTokens).toBeGreaterThanOrEqual(ESTIMATED_THINKING_TOKENS);
   });
 
   it('refuses to call a truncated answer retryable', async () => {
@@ -520,6 +528,357 @@ describe('Gemini history', () => {
     expect(body.contents).toEqual([
       { role: 'user', parts: [{ text: 'first question' }, { text: 'second question' }] },
       { role: 'model', parts: [{ text: 'an answer' }] },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The request meets the real API (ROADMAP P5-11)
+// ---------------------------------------------------------------------------
+
+/** Every object node of a JSON document, with where it is. */
+function objectsIn(node: unknown, path = '$'): { path: string; value: Record<string, unknown> }[] {
+  if (Array.isArray(node)) return node.flatMap((item, i) => objectsIn(item, `${path}[${i}]`));
+  if (typeof node !== 'object' || node === null) return [];
+  const value = node as Record<string, unknown>;
+  return [
+    { path, value },
+    ...Object.entries(value).flatMap(([key, child]) => objectsIn(child, `${path}.${key}`)),
+  ];
+}
+
+/** An Anthropic stream built from raw frames, for the shapes the happy path never shows. */
+function frames(...parts: string[]): Response {
+  return new Response(parts.join(''), {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+}
+
+const MESSAGE_START =
+  'event: message_start\ndata: {"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","model":"claude-opus-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":1}}}\n\n';
+const TEXT_START =
+  'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n';
+const textDelta = (text: string) =>
+  `event: content_block_delta\ndata: ${JSON.stringify({
+    type: 'content_block_delta',
+    index: 0,
+    delta: { type: 'text_delta', text },
+  })}\n\n`;
+
+/** Runs a stream to the end, for the cases where only the failure matters. */
+async function run(provider: CoachProvider, overrides: Partial<StreamOptions> = {}) {
+  for await (const _ of provider.stream({ ...options(), ...overrides }));
+}
+
+describe('the structured-output schema Anthropic is sent', () => {
+  async function sentSchema(): Promise<unknown> {
+    const { fetch, calls } = stub(() => anthropicSse([ANSWER_JSON]));
+    await drain(createAnthropicProvider({ fetch }));
+    return (calls[0]?.body as { output_config: { format: { schema: unknown } } }).output_config
+      .format.schema;
+  }
+
+  it('closes every object, as structured outputs require', async () => {
+    // Without `additionalProperties: false` on every object the vendor answers
+    // 400 - on every AI Help click, since every one sends this schema.
+    const objects = objectsIn(await sentSchema()).filter(({ value }) => value['type'] === 'object');
+
+    expect(objects.length).toBeGreaterThanOrEqual(2); // the answer and its scores
+    for (const { path, value } of objects) {
+      expect(value['additionalProperties'], path).toBe(false);
+    }
+  });
+
+  it('carries none of the keywords the vendor refuses', async () => {
+    const refused = ['$schema', 'minimum', 'maximum', 'minLength', 'maxLength', 'default'];
+    for (const { path, value } of objectsIn(await sentSchema())) {
+      // `properties` maps field names, not keywords; none of ours collide.
+      for (const keyword of refused) expect(Object.keys(value), path).not.toContain(keyword);
+    }
+  });
+
+  it('keeps every field, and the dropped limits where the model can still read them', async () => {
+    const schema = (await sentSchema()) as {
+      properties: Record<string, { description?: string }>;
+      required: string[];
+    };
+
+    expect(Object.keys(schema.properties)).toEqual(
+      expect.arrayContaining([
+        'summary',
+        'scores',
+        'feedbackMarkdown',
+        'nextHintLevel',
+        'mastered',
+      ]),
+    );
+    expect(schema.required).toEqual(expect.arrayContaining(['summary', 'scores', 'mastered']));
+    // The SDK's transform moves a constraint it drops into the description.
+    expect(schema.properties['summary']?.description).toMatch(/maxLength: 280/);
+  });
+});
+
+describe('what each model is asked for (P5-11)', () => {
+  async function bodyFor(model: string, schema = true) {
+    const { fetch, calls } = stub(() => anthropicSse([ANSWER_JSON]));
+    const provider = createAnthropicProvider({ fetch });
+    for await (const _ of provider.stream({ ...(schema ? options() : BASE), model }));
+    return calls[0]?.body as {
+      max_tokens: number;
+      thinking?: { type: string };
+      output_config?: { effort?: string; format?: unknown };
+    };
+  }
+
+  it('asks a thinking model to think adaptively, at an effort', async () => {
+    const body = await bodyFor('claude-opus-5');
+    expect(body.thinking).toEqual({ type: 'adaptive' });
+    expect(body.output_config?.effort).toBe('medium');
+  });
+
+  it('asks Haiku 4.5 for neither, which it would refuse with a 400', async () => {
+    const body = await bodyFor('claude-haiku-4-5');
+
+    expect(body.thinking).toBeUndefined();
+    expect(body.output_config?.effort).toBeUndefined();
+    // Still structured: the schema is not a thinking feature.
+    expect(body.output_config?.format).toBeDefined();
+    expect(body.max_tokens).toBeLessThanOrEqual(8_192);
+  });
+
+  it('sends no output_config at all to an old model on a prose turn', async () => {
+    expect(await bodyFor('claude-haiku-4-5', false)).not.toHaveProperty('output_config');
+  });
+
+  it('asks a prose turn for low effort, and a review for medium (P5-13)', async () => {
+    expect((await bodyFor('claude-opus-5', false)).output_config?.effort).toBe('low');
+    expect((await bodyFor('claude-opus-5', true)).output_config?.effort).toBe('medium');
+  });
+});
+
+describe('what a failed request tells the user (P5-11)', () => {
+  it('says there is no such model on a 404, rather than blaming the key', async () => {
+    const { fetch } = stub(
+      () =>
+        new Response(
+          JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: 'model' } }),
+          { status: 404, headers: { 'content-type': 'application/json' } },
+        ),
+    );
+
+    const error = await rejection(
+      run(createAnthropicProvider({ fetch }), { model: 'claude-opus-9-typo' }),
+    );
+
+    expect(error.message).toContain('no model called "claude-opus-9-typo"');
+    expect(error.message).not.toMatch(/different product/);
+    expect(error.retryable).toBe(false);
+  });
+
+  it('surfaces the explanation the vendor gave for a 400, trimmed and without the key', async () => {
+    const vendorSays = `messages.0.content: text content blocks must be non-empty (key ${API_KEY}) ${'x'.repeat(600)}`;
+    const { fetch } = stub(
+      () =>
+        new Response(
+          JSON.stringify({
+            type: 'error',
+            error: { type: 'invalid_request_error', message: vendorSays },
+          }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        ),
+    );
+
+    const error = await rejection(drain(createAnthropicProvider({ fetch })));
+
+    // What the old generic "refused the request (HTTP 400)" left out.
+    expect(error.message).toContain('text content blocks must be non-empty');
+    expect(error.message).not.toContain(API_KEY);
+    expect(error.message.length).toBeLessThan(400);
+    expect(error.retryable).toBe(false);
+  });
+
+  it('calls a mid-stream overload retryable, not "failed unexpectedly"', async () => {
+    const { fetch } = stub(() =>
+      frames(
+        MESSAGE_START,
+        TEXT_START,
+        textDelta('{"summary":"'),
+        'event: error\ndata: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}\n\n',
+      ),
+    );
+
+    const error = await rejection(drain(createAnthropicProvider({ fetch })));
+
+    expect(error.message).toMatch(/overloaded/i);
+    expect(error.retryable).toBe(true);
+  });
+
+  it('calls a mid-stream api_error retryable, and theirs', async () => {
+    const { fetch } = stub(() =>
+      frames(
+        MESSAGE_START,
+        'event: error\ndata: {"type":"error","error":{"type":"api_error","message":"Internal"}}\n\n',
+      ),
+    );
+
+    const error = await rejection(drain(createAnthropicProvider({ fetch })));
+    expect(error.message).toMatch(/their side/i);
+    expect(error.retryable).toBe(true);
+  });
+
+  it('reports a refusal as final, and says the key is fine', async () => {
+    const { fetch } = stub(() =>
+      frames(
+        MESSAGE_START,
+        TEXT_START,
+        textDelta('{"summary":"'),
+        `event: message_delta\ndata: ${JSON.stringify({
+          type: 'message_delta',
+          delta: {
+            stop_reason: 'refusal',
+            stop_sequence: null,
+            stop_details: { type: 'refusal', category: 'cyber', explanation: null },
+          },
+          usage: { output_tokens: 5 },
+        })}\n\n`,
+        'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+      ),
+    );
+
+    const error = await rejection(drain(createAnthropicProvider({ fetch })));
+
+    expect(error.message).toMatch(/safety/i);
+    expect(error.message).toMatch(/nothing is wrong with your key/i);
+    // The same code meets the same filter; "try again" would pay to learn that.
+    expect(error.retryable).toBe(false);
+  });
+
+  it('retries a failed stream once, not twice', async () => {
+    const { fetch, calls } = stub(
+      () => new Response('{}', { status: 529, headers: { 'retry-after-ms': '1' } }),
+    );
+
+    await rejection(drain(createAnthropicProvider({ fetch })));
+
+    // Each retry of a streamed turn is a new turn, billed from the start.
+    expect(calls).toHaveLength(2);
+  });
+});
+
+describe('the idle watchdog (P5-11)', () => {
+  /** A stream that opens, says one thing, and then goes silent without closing. */
+  function silentAfterStart(): FetchLike {
+    return (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const encoder = new TextEncoder();
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(MESSAGE_START + TEXT_START + textDelta('{"sum')));
+          init?.signal?.addEventListener('abort', () => {
+            controller.error(new DOMException('aborted', 'AbortError'));
+          });
+        },
+      });
+      return new Response(body, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      });
+    }) as FetchLike;
+  }
+
+  it('abandons a stream that has gone quiet, and offers a retry', async () => {
+    const seen: TokenUsage[] = [];
+    const provider = createAnthropicProvider({ fetch: silentAfterStart(), streamIdleMs: 50 });
+
+    const error = await rejection(run(provider, { onUsage: (usage) => seen.push(usage) }));
+
+    // Before the watchdog nothing ended this turn: the SDK's timeout only
+    // covers the wait for headers, which had long since arrived.
+    expect(error.message).toMatch(/stopped sending/i);
+    expect(error.retryable).toBe(true);
+    // And what it spent before going quiet is still reported.
+    expect(seen[0]?.inputTokens).toBe(10);
+  });
+
+  it('does not fire on a stream that keeps talking', async () => {
+    const { fetch } = stub(() => anthropicSse(inChunks(ANSWER_JSON, 40)));
+    expect(await drain(createAnthropicProvider({ fetch, streamIdleMs: 50 }))).toBe(ANSWER_JSON);
+  });
+});
+
+describe('caching a conversation (P5-13)', () => {
+  it('puts a breakpoint on the turn the caller marks, and nowhere else', async () => {
+    const { fetch, calls } = stub(() => anthropicSse(['Because.']));
+
+    await run(createAnthropicProvider({ fetch }), {
+      schema: undefined,
+      messages: [
+        { role: 'user', content: 'the review context' },
+        { role: 'coach', content: 'the review', cacheBreakpoint: true },
+        { role: 'user', content: 'why?' },
+      ],
+    });
+
+    const body = calls[0]?.body as { messages: { role: string; content: unknown }[] };
+    expect(body.messages[0]?.content).toBe('the review context');
+    expect(body.messages[1]?.content).toEqual([
+      { type: 'text', text: 'the review', cache_control: { type: 'ephemeral' } },
+    ]);
+    // The new question is the one part that differs next time.
+    expect(body.messages[2]?.content).toBe('why?');
+  });
+
+  it('sends the instructions for a turn as a second, uncached system block (P5-12)', async () => {
+    const { fetch, calls } = stub(() => anthropicSse(['Because.']));
+
+    await run(createAnthropicProvider({ fetch }), {
+      schema: undefined,
+      instructions: 'Answer in prose.',
+    });
+
+    const body = calls[0]?.body as { system: unknown[] };
+    // The cached prefix is byte-identical to a review's.
+    expect(body.system).toEqual([
+      { type: 'text', text: 'You are a coach.', cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: 'Answer in prose.' },
+    ]);
+  });
+});
+
+describe('Gemini thinking and instructions', () => {
+  it('counts the thinking tokens as output, which is how they are billed (P5-13)', async () => {
+    const { fetch } = stub(
+      () =>
+        new Response(
+          `data: ${JSON.stringify({
+            candidates: [{ content: { parts: [{ text: ANSWER_JSON }] } }],
+            usageMetadata: {
+              promptTokenCount: 100,
+              candidatesTokenCount: 50,
+              thoughtsTokenCount: 700,
+            },
+          })}\n\n`,
+          { status: 200 },
+        ),
+    );
+
+    const seen: TokenUsage[] = [];
+    await run(createGeminiProvider({ fetch }), { onUsage: (usage) => seen.push(usage) });
+
+    expect(seen).toEqual([{ inputTokens: 100, outputTokens: 750 }]);
+  });
+
+  it('sends instructions as a second system part (P5-12)', async () => {
+    const { fetch, calls } = stub(() => geminiSse(['Because.']));
+    await run(createGeminiProvider({ fetch }), {
+      schema: undefined,
+      instructions: 'Answer in prose.',
+    });
+
+    const body = calls[0]?.body as { systemInstruction: { parts: { text: string }[] } };
+    expect(body.systemInstruction.parts).toEqual([
+      { text: 'You are a coach.' },
+      { text: 'Answer in prose.' },
     ]);
   });
 });

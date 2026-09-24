@@ -8,19 +8,23 @@ The wording itself lives in `apps/server/src/coach/prompts/<version>/system.md`.
 
 ## 1. The shape of a request
 
-Every coaching turn is three things, assembled in `apps/server/src/coach/`:
+Every coaching turn is built from these, assembled in `apps/server/src/coach/`:
 
-| Part          | Built by                                  | Changes between requests? |
-| ------------- | ----------------------------------------- | ------------------------- |
-| System prompt | `prompts/index.ts` reading `v4/system.md` | Never                     |
+| Part                          | Built by                                                         | Changes between requests? |
+| ----------------------------- | ---------------------------------------------------------------- | ------------------------- |
+| System prompt                 | `prompts/index.ts` reading `v4/system.md`                        | Never                     |
+| Follow-up block (chat only)   | `prompts/index.ts` reading `followup/system.md`                  | Never                     |
+| User turn                     | `context.ts` → `buildContext()`                                  | Every time                |
+| Response schema (review only) | `feedback.ts` → `coachFeedbackJsonSchema()`, narrowed per vendor | Never                     |
 
 The split matters differently per provider (P9-4). Anthropic takes the system
 prompt as its own parameter and caches it; Gemini has `systemInstruction`; the
 OpenAI chat API has no such field, so it goes in as `messages[0]` - once, first,
 and still built separately on our side of the seam, because the reason to keep
-it apart is that rebuilding it is what breaks caching.
-| User turn | `context.ts` → `buildContext()` | Every time |
-| Response schema | `feedback.ts` → `coachFeedbackJsonSchema()` | Never |
+it apart is that rebuilding it is what breaks caching. The follow-up block is a
+second system block on Anthropic, a second `systemInstruction` part on Gemini,
+and joined onto the one system message for OpenAI-compatible servers, many of
+which accept exactly one.
 
 The split is not cosmetic. The system prompt is the largest stable part of the request, so it is what `cache_control` is pointed at on the Anthropic side (D12), and caching is a prefix match — anything volatile mixed into it would cost a cache miss on every AI Help click. That is why `CoachProvider.stream()` takes `system` and `messages` as separate parameters rather than one list.
 
@@ -29,6 +33,8 @@ The split is not cosmetic. The system prompt is the largest stable part of the r
 `PROMPT_VERSION` (currently `v4`) names the directory the prompt is read from, and is recorded alongside stored feedback so an answer can always be traced to the wording that produced it.
 
 **Bump the version when a change would change the advice.** Fixing a typo is not a bump; changing what a score of 3 means is. To bump: copy the current directory to the next one, edit, change `PROMPT_VERSION`, and update the assertions in `prompts/prompts.test.ts` that no longer hold. Old directories stay on disk, so feedback recorded against them can still be traced to the wording that produced it.
+
+The **follow-up block** (`prompts/followup/system.md`, ROADMAP P5-12) is deliberately outside that scheme, like the interviewer. A chat turn used to be sent the rubric prompt alone, which ends "return JSON matching the required schema" - to a turn that sends no schema - and the model had to guess which half of its instructions to break; sometimes it answered a one-line question with a scored JSON document. The block says the turn answers in plain Markdown, scores nothing, and that the ladder and both halves of the solution gate still hold. It is its own uncached block rather than a line in `system.md` because `system.md` is the cached prefix of every review and this is not part of those, and it is unversioned because nothing it produces is stored with a score. It narrows the format and leaves every rule `PROMPT_VERSION` tracks where it was, so `v4` is still `v4`.
 
 `v4` (ROADMAP P7-6) added interview mode. When the context says the user worked against a clock, the feedback ends with a **Saying it out loud** section: the one-sentence statement of the approach, the complexity with its reason attached ("O(n log n), because the sort dominates" is an answer; "O(n log n)" is a number), and the question an interviewer would ask next. Gated on the flag rather than added to every turn, because most practice is not against a clock and a paragraph about explaining yourself on every review is padding.
 
@@ -64,23 +70,31 @@ Two hard gates, both stated in the prompt as non-negotiable:
 
 Alongside those five rungs sits the problem's _own_ four-rung ladder from `hints.json`, and P7-1 connected the two. The rungs the user has read are passed in so the coach starts above them rather than repeating what they have already been told, and the single rung ahead of them is passed in as the direction to point in. One rung ahead and no further: that is enough to keep the coach and the author pointing the same way, where the whole remaining ladder would just be the answer.
 
+**The server holds the gate too** (ROADMAP P5-12). A model that follows its prompt will never set `solution` past the gate, but "will never" is a claim about a model, and this is the one product rule the ladder exists for. So `gateHintLevel` in `coachService.ts` clamps `nextHintLevel` to `pseudocode` unless the problem is solved _and_ the request asked for the full solution, before the answer is stored or sent. The prose already streamed cannot be unsaid; what the panel and the history record as the rung given can be.
+
 Which rungs those are is the server's own count (`events.highestHintRevealed`), taken together with the count the client sent - each can be the fresher one. The client is a round trip ahead just after a click; the store is ahead when the coach is asked from a tab that has not reloaded since a reveal elsewhere.
 
 ## 5. What the coach is told
 
 `buildContext()` assembles the user turn in a fixed order, which is also the reverse of the order things are dropped in:
 
-| #   | Section                                                   | Droppable                      | Why                                                                                        |
-| --- | --------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------ |
-| 1   | Problem (title, topic, tier, patterns, target complexity) | No                             | Complexity cannot be scored against a target that was not sent.                            |
-| 2   | Statement                                                 | No (capped at 8k)              | The coach has to know what the code is meant to do.                                        |
-| 3   | The user's code                                           | **Never, and never truncated** | The one input the whole answer is about.                                                   |
-| 4   | Latest judge result                                       | No                             | Including an explicit "they have not run this yet" — silence would be read as "it passes". |
-| 5   | Hints already read                                        | No                             | Prevents repetition.                                                                       |
-| 6   | The author's next hint, marked SECRET (P7-1)              | Yes                            | The direction the ladder points; never handed over, because it is an unspent rung.         |
-| 7   | Request flags                                             | No                             | The `solution` gate, and whether the clock was running (P7-6).                             |
-| 8   | Editorial approach, marked SECRET                         | Yes                            | Steers the hints; the coach is told never to quote it or mention having it.                |
-| 9   | Prior coaching (P5-5)                                     | Yes                            | Lets the coach say "you fixed X, now Y" instead of repeating itself.                       |
+| #   | Section                                                   | Droppable                      | Why                                                                                                   |
+| --- | --------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| 1   | Problem (title, topic, tier, patterns, target complexity) | No                             | Complexity cannot be scored against a target that was not sent.                                       |
+| 2   | Statement                                                 | No (capped at 8k)              | The coach has to know what the code is meant to do.                                                   |
+| 3   | The user's code                                           | **Never, and never truncated** | The one input the whole answer is about.                                                              |
+| 4   | Latest judge result                                       | No                             | Including an explicit "they have not run this yet" — silence would be read as "it passes". See below. |
+| 5   | Hints already read                                        | No                             | Prevents repetition.                                                                                  |
+| 6   | The author's next hint, marked SECRET (P7-1)              | Yes                            | The direction the ladder points; never handed over, because it is an unspent rung.                    |
+| 7   | Request flags                                             | No                             | The `solution` gate, and whether the clock was running (P7-6).                                        |
+| 8   | Editorial approach, marked SECRET                         | Yes                            | Steers the hints; the coach is told never to quote it or mention having it.                           |
+| 9   | Prior coaching (P5-5)                                     | Yes                            | Lets the coach say "you fixed X, now Y" instead of repeating itself.                                  |
+
+### The judge result
+
+The section existed from P5-2 and nothing filled it until P5-12, so every review opened with "they have not run this code yet" — including the one straight after eleven failing tests, and the mastery check after an Accepted. It now comes from the **latest stored submission** for the problem and language, because a Run is not persisted and a submission is the one verdict the server keeps. Only the totals survive in the store, and the context says so, so the coach does not reason about failing tests it has not been shown.
+
+It is offered only as evidence about the code it came from. When the editor holds something else (compared ignoring trailing whitespace), the context says the latest submission was of different code and that this version has not been judged: an old WA is not evidence about the fix that followed it, and presenting it as this code's result would have the coach hunting a bug that is gone.
 
 ### The budget
 
@@ -106,7 +120,7 @@ This is a design decision, not a preference. `docs/DESIGN.md` rules out decorati
 
 Implements ROADMAP **P5-6**. The numbers live in `packages/shared/src/cost.ts` so that the estimate under the AI Help button and the figure the cap is enforced against are computed the same way.
 
-**Before a turn**, the tooltip shows an estimate: characters ÷ 4 for the prompt, plus a constant for the answer, priced against the configured model. It is prefixed "about" because none of those three inputs is exact.
+**Before a turn**, the tooltip shows an estimate: characters ÷ 4 for the prompt, plus a constant for the answer (`ESTIMATED_OUTPUT_TOKENS`, 900) and, on a model that thinks, a constant for the thinking (`ESTIMATED_THINKING_TOKENS`, 3,000), priced against the configured model. It is prefixed "about" because none of those inputs is exact. The thinking allowance is P5-13's: thinking is billed as output, never appears in the answer, and on a rubric review at medium effort it is the larger half of the turn — the estimate without it was a quarter of what the first real bill said. Whether a model thinks is `modelThinks` in `cost.ts`, which reads the same capability map the Anthropic adapter dispatches on (below), so the estimate and the request cannot disagree about it.
 
 **After a turn**, the provider reports what it actually used — Anthropic across `message_start` and `message_delta`, Gemini in `usageMetadata` — and that is what gets stored. An estimate is not good enough to stop someone spending money with.
 
@@ -117,6 +131,8 @@ Three properties are deliberate:
 - **A model of `null` is not unknown.** It resolves through `COACH_DEFAULT_MODEL` to the specific model the provider will actually use. Charging the default configuration — the one most users never change — at the unknown-model rate would overstate every estimate they ever see.
 - **A vendor that reports nothing is recorded as `NULL`, not `0`**, and the cap charges such a turn at the dearest known rate over a full-sized prompt (`unreportedTurnCostUsd`). Summing `NULL` as zero made the cap ignore exactly the turns that went wrong, so a conversation that kept failing expensively never reached it (P5-9).
 - **Chat is under the same cap and the same accounting as feedback.** It was under neither, so a tripped cap could be walked around by phrasing the next question as a follow-up (P5-9).
+- **A price the table carries as more than two numbers.** Cache reads are a tenth of input for every model except `claude-opus-5-5`, whose reads are a twentieth ($0.20 against $4); `ModelPrice.cacheReadPerMTok` overrides the multiplier for it. Before P5-11 that model was not in the table at all and was charged at Fable's rate, double the real one.
+- **Gemini's thinking is output.** 2.5-series models report it as `thoughtsTokenCount`, separately from the answer, and bill it at the output rate. Only the answer was being counted (P5-13).
 
 ### What "session" means
 
@@ -136,11 +152,29 @@ A conversation, for prompt purposes, is **the latest feedback context plus every
 
 Stop, a second AI Help click and navigating away all close the connection, and the route turns that into an `AbortController` that cancels the vendor request (P5-9). What the vendor reported before it stopped is recorded against the context row the turn opened with, and no half answer is stored: the cost is real, the advice is not.
 
+Anthropic reports the final output count only in `message_delta`, at the end; the figure on `message_start` is a placeholder of about one token. So a turn stopped after a minute of thinking used to be recorded as having written one token. When the final count never arrives, the adapter now charges what it saw streamed (text and thinking, at four characters a token) plus, on a model that thinks, the thinking allowance — what it was most likely doing when it stopped (P5-13). Pessimistic on purpose, for the same reason the unreported turn is.
+
+### What a follow-up resends, and what it caches
+
+A follow-up resends its whole window (D20) every turn, and until P5-13 only the system prompt was cached, so the review being discussed was paid for at the full input rate on every question about it. `streamCoachTurn` now marks the **last turn of history** as a cache breakpoint — never the new message, which is the one part guaranteed to differ next time (an interview's carries the clock, and what is stored of it is only what was typed). One breakpoint in the history, one on the system prompt: two of the four Anthropic allows. Vendors without explicit caching ignore the mark.
+
+Prose turns — follow-ups and the interviewer — also ask for `effort: 'low'` where a review asks for `'medium'`. Scoring five dimensions is reasoning; "why is that O(n)?" is a paragraph about reasoning already done, and medium-effort thinking was most of what a chat turn cost.
+
 ### Without a key
 
 The Coach tab still answers "help me". `judgeSummary` derives what can be said from the run result alone — the verdict, the failing count, a compile error's line, a pass that came close to the time limit, and one pattern that is provable from the data ("every failing case returned the same value").
 
 It deliberately does not guess. An earlier draft also reported "every failing input is empty or minimal", and that was removed rather than tuned: whether `target = 0` counts as minimal depends on the problem, and a local heuristic that guesses at causes reads exactly like coaching with no way for the reader to tell the difference.
+
+### What Anthropic is actually sent (P5-11)
+
+Written after the first audit against the real API rather than recorded fixtures, which only ever proved the request was the one we built — not that the vendor would take it.
+
+- **The schema in the vendor's dialect.** zod's JSON Schema carries `$schema`, `minLength`/`maxLength`, `minimum`/`maximum`, `default` and no `additionalProperties: false`; structured outputs refuse every one, so every AI Help click would have been a 400. `toAnthropicSchema` runs it through the SDK's own `transformJSONSchema` (`@anthropic-ai/sdk/lib/transform-json-schema`), which closes every object and moves each constraint it drops into the field's description, where the model still reads it. The SDK's copy of the vendor's rules rather than ours, because ours would be out of date the first time they change. The transform is conservative: it also demotes a string `enum` to description text, so `nextHintLevel`'s rungs are guidance to the model rather than a hard constraint — the prompt names them, and the answer is parsed against the real zod schema either way, so an off-list rung fails as "an unexpected shape" rather than being stored. Gemini narrows the unmodified schema its own way (`toGeminiSchema`), and the OpenAI-compatible path is unchanged.
+- **A capability map, not one request for every model.** `anthropicCapabilities` in `packages/shared/src/cost.ts` reads the model id: Opus and Sonnet 4.6 and everything since take adaptive thinking and `effort`, and only those; Haiku 4.5 and older refuse both with a 400, so they are asked without thinking, without effort, and with an 8k `max_tokens` (the older ones cap output below 32k). An id it cannot read is treated as not thinking — a request without thinking is accepted by every model, and one with it is refused by every model that predates it.
+- **Errors that say what to do.** A 404 on the messages endpoint is the model, not the key ("has no model called X"). A 400 now carries the vendor's own explanation, trimmed to 300 characters and with the key scrubbed out of it — the one status where only the vendor knows what was wrong. An `error` event mid-stream (status line already sent as 200) is mapped by its `type`: `overloaded_error`, `rate_limit_error`, `api_error` and `timeout_error` are retryable, where they used to be "failed unexpectedly" with no retry offered. `stop_reason: "refusal"` is final and says the key is fine; `model_context_window_exceeded` says to start a new conversation.
+- **An idle watchdog, and one retry.** The SDK's `timeout` covers the wait for headers only, and a streaming response sends those at once, so nothing ended a stream that went silent without closing. The adapter wraps `fetch` and re-arms a 90-second timer on every chunk of _bytes_ — not events, because the SDK drops `ping` before our loop sees it, and a long think is a stretch of pings. Retries are 1 rather than the SDK's 2: each is a whole new turn, billed from the start.
+- **One place that knows where the vendor lives.** `providerOptionsFor` in `settingsService.ts` feeds both "Test connection" and every turn. The stored base URL applies only to a provider whose address is a setting (`needsBaseUrl`, i.e. OpenAI-compatible); before, the test sent it to any provider (an Anthropic key went to a leftover `127.0.0.1:11434`) and the turns sent it to none (an endpoint that passed the test was never used).
 
 ### Keys and logs
 
@@ -158,7 +192,7 @@ A prompt cannot be unit-tested for giving good advice, so there are two things i
 COACH_LIVE_TESTS=1 ANTHROPIC_API_KEY=sk-... npm run test:integration
 ```
 
-It does one real feedback turn and one real cancellation per provider that has a key, and then scores the five code states in `coach/__fixtures__/rubric.ts` — an untouched starter, a wrong approach, a correct-but-quadratic solution, a right-but-unreadable one, and the reference. Each case says which dimensions must be below 4, the furthest rung the state justifies, and whether mastery is even possible; the wording is never asserted, because two good reviews of the same code share almost no sentences.
+It does one real feedback turn, one real cancellation, one follow-up sent the way `streamChat` sends it (two system blocks, a cached history turn, no schema - it must come back as prose) and one interviewer turn per provider that has a key, plus one review on Haiku 4.5 when there is an Anthropic key (the model the capability map exists for), and then scores the five code states in `coach/__fixtures__/rubric.ts` — an untouched starter, a wrong approach, a correct-but-quadratic solution, a right-but-unreadable one, and the reference. Each case says which dimensions must be below 4, the furthest rung the state justifies, and whether mastery is even possible; the wording is never asserted, because two good reviews of the same code share almost no sentences.
 
 The assertions are one-directional on purpose: a coach that is _more_ generous than the fixtures allow fails, and one that is more conservative does not. Run it before bumping the version. It costs a few cents and finds the thing no offline test can — that `v3` hands out approaches to someone who needed a nudge.
 
@@ -175,5 +209,11 @@ It is a different job, not a different tone. The coach reviews finished work and
 The debrief is one turn like any other, streamed and then stored on the interview row. It is told that a debrief saying everything went well is worth nothing - an honest one is the only part of the sitting with any value afterwards.
 
 The context-is-data rule from `v2` applies here too, and for the same reason: the statement, the candidate's own code and their drafts all arrive as material, and none of them can talk the interviewer into giving the answer.
+
+The stage is described to it in **its own words** (`INTERVIEWER_STAGE_NOTE`, P5-12), not in the sentence on the candidate's screen: `STAGE_PROMPT.approach` ends "the interviewer will push back", and an interviewer handed the candidate's instructions is being asked to play both parts.
+
+**Its conversation is its own** (P5-12, migration 007). An interview's turns live in `coach_messages` like any other conversation — one cap, one ledger, one history window — but `coach_sessions.kind` now says `'interview'`, and the AI Help button's "latest conversation" only ever finds `'coach'` ones. Before, the next AI Help click on the interview's first problem continued the interview: the interviewer's exchange went to the coach as history and the review was charged against the interview's spend. A follow-up cannot be sent into an interview session either.
+
+**The transcript is read back from it.** `GET /api/interview` carries `transcript`, oldest first: the candidate's stored words (not the stage-and-clock preamble sent with them) as `you`, the interviewer's replies as `them`, blank turns skipped, and the debrief exchange left out because the debrief is its own field and its own section on the screen.
 
 What the interviewer is told about the sitting is assembled in `interviewService.ts` and goes **with the message rather than into history** - the stage, the clock, what has been submitted, the current statement and the drafts are all true _now_, and a stale copy three turns back would have it asking about a stage the candidate has left.

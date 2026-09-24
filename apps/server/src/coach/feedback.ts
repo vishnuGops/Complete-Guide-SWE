@@ -32,6 +32,11 @@ export type FeedbackChunk =
  * Generated rather than hand-written so it cannot drift from the parser that
  * checks the answer: a schema that asked for a field the parser rejects would
  * fail on every request, and only in production.
+ *
+ * This is zod's full JSON Schema, which no vendor takes as it stands. Each
+ * adapter narrows it to its own dialect on the way out - `toAnthropicSchema`,
+ * `toGeminiSchema` - because what each one refuses is that vendor's rule
+ * (ROADMAP P5-11).
  */
 export function coachFeedbackJsonSchema(): JsonSchema {
   return z.toJSONSchema(coachFeedbackSchema, { io: 'input' }) as JsonSchema;

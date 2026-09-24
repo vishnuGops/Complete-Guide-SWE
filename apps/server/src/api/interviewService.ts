@@ -1,16 +1,17 @@
 import {
   INTERVIEW_BUDGET_MS,
   INTERVIEW_PROBLEM_COUNT,
-  STAGE_PROMPT,
   nextStage,
   statusRank,
   type CoachStreamEvent,
   type Interview,
+  type InterviewLine,
   type InterviewProblem,
   type InterviewStage,
   type ProblemSummary,
 } from '@devpromax/shared';
 import { interviewerPrompt } from '../coach/index.js';
+import type { CoachSession } from '../db/index.js';
 import { nowIso } from '../db/open.js';
 import type { InterviewRow } from '../db/repos/interviews.js';
 import { badRequest, notFound } from './errors.js';
@@ -63,6 +64,67 @@ export function chooseProblems(
   return main ? [warmUp, main] : [warmUp];
 }
 
+/**
+ * What the interviewer is told each stage means (ROADMAP P5-12).
+ *
+ * Written for the interviewer's side of the table. It used to be sent
+ * `STAGE_PROMPT` - the sentence on the candidate's screen - so at `approach` it
+ * read "the interviewer will push back", an instruction about itself in the
+ * third person, and at `coding` "come back when you have something you would
+ * show an interviewer". A model told to be the interviewer and handed the
+ * candidate's instructions is being asked to play both parts.
+ */
+export const INTERVIEWER_STAGE_NOTE: Record<InterviewStage, string> = {
+  approach:
+    'They have the statement and have not written code yet. Get their approach in words and push on it before they start.',
+  coding:
+    'They are writing the code now. If they ask something, answer it briefly; otherwise let them work.',
+  review:
+    'They have written something. Probe it: the complexity with its reason, an input it gets wrong if there is one, what they would change.',
+  debrief:
+    'Both problems are behind them and the debrief has not been written yet. Answer briefly; the debrief comes when they end the sitting.',
+  done: 'The interview is over.',
+};
+
+/** What the candidate's side of the debrief exchange is stored as. */
+const DEBRIEF_ASK = 'That is time. How did I do?';
+
+/**
+ * The conversation so far, as the screen draws it (ROADMAP P5-12).
+ *
+ * Read back from the sitting's coach session, oldest first: what the candidate
+ * typed - the stored words, not the stage-and-clock preamble sent with them -
+ * and what the interviewer said back. Without it, leaving for the workspace to
+ * write the code and coming back opened on an empty conversation.
+ *
+ * Empty turns are skipped, and so is the debrief exchange: the debrief is its
+ * own field, drawn as its own section, and a second copy of it in the
+ * transcript would be the same essay twice.
+ */
+function transcriptOf(row: InterviewRow, deps: InterviewDeps): InterviewLine[] {
+  if (row.sessionId === null) return [];
+
+  const messages = deps.repos.coach
+    .listMessages(row.sessionId)
+    .filter((message) => message.content.trim() !== '');
+
+  const last = messages.at(-1);
+  if (row.debrief !== null && last?.role === 'coach' && last.content === row.debrief) {
+    messages.pop();
+  }
+  // The ask goes too - including when the debrief failed and there is no
+  // answer after it: it is the app's line, not something the candidate typed.
+  const ask = messages.at(-1);
+  if (row.endedAt !== null && ask?.role === 'user' && ask.content === DEBRIEF_ASK) {
+    messages.pop();
+  }
+
+  return messages.map((message) => ({
+    from: message.role === 'user' ? 'you' : 'them',
+    text: message.content,
+  }));
+}
+
 /** How much of the budget is left, floored at zero. */
 function remaining(row: InterviewRow, now: string): number {
   const elapsed = new Date(now).getTime() - new Date(row.createdAt).getTime();
@@ -104,6 +166,7 @@ function describe(row: InterviewRow, deps: InterviewDeps, now = nowIso()): Inter
     createdAt: row.createdAt,
     endedAt: row.endedAt,
     remainingMs: row.endedAt === null ? remaining(row, now) : 0,
+    transcript: transcriptOf(row, deps),
   };
 }
 
@@ -156,13 +219,25 @@ export function advanceInterview(id: string, deps: InterviewDeps): Interview {
   if (row === null) throw notFound('That interview no longer exists.');
   if (row.endedAt !== null) throw badRequest('That interview is over.');
 
+  /*
+   * Nothing comes after the debrief but the end, and the end is `finish`
+   * (ROADMAP P5-12). Advancing from here used to fall through to "next
+   * problem" and count `at` past the last one, so a second click on the last
+   * review's button left the sitting pointing at a problem that does not
+   * exist. Answered with the sitting as it stands rather than an error: the
+   * click that caused it is a double-click, not a mistake worth a message.
+   */
+  if (row.stage === 'debrief' || row.stage === 'done') return describe(row, deps);
+
   const after: InterviewStage = nextStage(row.stage);
   if (after !== row.stage) {
     return describe(deps.repos.interviews.update(id, { stage: after }) ?? row, deps);
   }
 
   // `review` is the last stage of a problem, so advancing from it is moving on.
-  const at = row.at + 1;
+  // Never past the count: "equal to its length once the last is done" is the
+  // most `at` may say.
+  const at = Math.min(row.at + 1, row.slugs.length);
   if (at >= row.slugs.length) {
     return describe(deps.repos.interviews.update(id, { at, stage: 'debrief' }) ?? row, deps);
   }
@@ -177,7 +252,7 @@ function situation(row: InterviewRow, deps: InterviewDeps, forDebrief: boolean):
   lines.push(
     forDebrief
       ? 'The interview is over. Write the debrief.'
-      : `Stage: ${row.stage}. ${STAGE_PROMPT[row.stage]}`,
+      : `Stage: ${row.stage}. ${INTERVIEWER_STAGE_NOTE[row.stage]}`,
   );
   lines.push(
     `Time: ${String(Math.round(view.remainingMs / 60_000))} minute(s) left of ${String(Math.round(row.budgetMs / 60_000))}.`,
@@ -222,6 +297,25 @@ function situation(row: InterviewRow, deps: InterviewDeps, forDebrief: boolean):
 }
 
 /**
+ * The coach session a sitting's turns live in, created on first use.
+ *
+ * Marked as an interview's (P5-12), so the AI Help button on the same problem
+ * never mistakes it for its own latest conversation - and linked to the row
+ * whichever turn creates it, the debrief included, so the transcript can find
+ * it again.
+ */
+function sittingSession(row: InterviewRow, slug: string, deps: InterviewDeps): CoachSession {
+  const existing = row.sessionId === null ? null : deps.repos.coach.getSession(row.sessionId);
+  const session =
+    existing ??
+    deps.repos.coach.createSession(slug, deps.repos.settings.get().lastLanguage, 'interview');
+  if (row.sessionId !== session.id) {
+    deps.repos.interviews.update(row.id, { sessionId: session.id });
+  }
+  return session;
+}
+
+/**
  * One exchange: the candidate says something, the interviewer answers.
  *
  * Goes through the coach's own streaming path, so the spend cap, the usage
@@ -241,12 +335,7 @@ export async function* sayToInterviewer(
   const slug = row.slugs[Math.min(row.at, row.slugs.length - 1)];
   if (slug === undefined) throw badRequest('That interview has no problems in it.');
 
-  const session =
-    (row.sessionId === null ? null : deps.repos.coach.getSession(row.sessionId)) ??
-    deps.repos.coach.createSession(slug, deps.repos.settings.get().lastLanguage);
-  if (row.sessionId !== session.id) {
-    deps.repos.interviews.update(id, { sessionId: session.id });
-  }
+  const session = sittingSession(row, slug, deps);
 
   yield* streamCoachTurn(
     {
@@ -282,9 +371,7 @@ export async function* finishInterview(
   const slug = row.slugs[0];
   if (slug === undefined) throw badRequest('That interview has no problems in it.');
 
-  const session =
-    (row.sessionId === null ? null : deps.repos.coach.getSession(row.sessionId)) ??
-    deps.repos.coach.createSession(slug, deps.repos.settings.get().lastLanguage);
+  const session = sittingSession(row, slug, deps);
 
   let debrief = '';
   for await (const event of streamCoachTurn(
@@ -292,7 +379,7 @@ export async function* finishInterview(
       sessionId: session.id,
       system: interviewerPrompt(),
       message: situation(row, deps, true),
-      stored: 'That is time. How did I do?',
+      stored: DEBRIEF_ASK,
     },
     deps,
     signal,

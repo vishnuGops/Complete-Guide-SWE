@@ -269,3 +269,37 @@ describe('the budget', () => {
     expect(context).toContain(CODE);
   });
 });
+
+describe('the latest submission (P5-12)', () => {
+  const submission = {
+    verdict: 'WA' as const,
+    passed: 3,
+    total: 12,
+    at: '2026-09-24T09:00:00.000Z',
+  };
+
+  it('reports the verdict on this code, and says only the totals survive', () => {
+    const context = buildContext(input({ lastSubmission: { ...submission, sameCode: true } }));
+
+    expect(context).toContain('Verdict: Wrong Answer (WA) on Submit, for exactly this code');
+    expect(context).toContain('Tests passed: 3/12');
+    // So the coach does not reason about failing tests it has not been shown.
+    expect(context).toContain('which tests failed, and how, is not available');
+    expect(context).not.toContain('have not run this code yet');
+  });
+
+  it('refuses to pass off a verdict on other code as this one', () => {
+    const context = buildContext(input({ lastSubmission: { ...submission, sameCode: false } }));
+
+    expect(context).toContain('was of different code');
+    expect(context).toContain('This version has not been judged');
+    expect(context).not.toContain('Verdict: Wrong Answer');
+  });
+
+  it('prefers a live run, which carries the failing tests, over the stored totals', () => {
+    const context = buildContext(
+      input({ lastRun: run(), lastSubmission: { ...submission, sameCode: true } }),
+    );
+    expect(context).not.toContain('Tests passed: 3/12');
+  });
+});

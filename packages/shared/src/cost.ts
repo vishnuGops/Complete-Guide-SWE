@@ -60,6 +60,16 @@ export interface ModelPrice {
   inputPerMTok: number;
   /** USD per million output tokens. */
   outputPerMTok: number;
+  /**
+   * USD per million tokens read from the prompt cache, when the vendor prices
+   * it as something other than `CACHE_READ_MULTIPLIER` times input.
+   *
+   * Optional because it almost never is: one pair of multipliers covers the
+   * table. `claude-opus-5-5` is the exception - its cache reads are a twentieth
+   * of input, not a tenth - and a multiplier that overstated them would make
+   * the cap trip early on exactly the long conversations caching is for.
+   */
+  cacheReadPerMTok?: number;
 }
 
 /**
@@ -81,6 +91,7 @@ export interface ModelPrice {
 export const MODEL_PRICES: Record<CoachProvider, Record<string, ModelPrice>> = {
   anthropic: {
     'claude-opus-5': { inputPerMTok: 5, outputPerMTok: 25 },
+    'claude-opus-5-5': { inputPerMTok: 4, outputPerMTok: 20, cacheReadPerMTok: 0.2 },
     'claude-opus-4-8': { inputPerMTok: 5, outputPerMTok: 25 },
     'claude-opus-4-7': { inputPerMTok: 5, outputPerMTok: 25 },
     'claude-opus-4-6': { inputPerMTok: 5, outputPerMTok: 25 },
@@ -161,12 +172,73 @@ export const CACHE_READ_MULTIPLIER = 0.1;
 
 export function costUsd(usage: TokenUsage, price: ModelPrice): number {
   const inputRate = price.inputPerMTok / 1_000_000;
+  const cacheReadRate =
+    price.cacheReadPerMTok === undefined
+      ? inputRate * CACHE_READ_MULTIPLIER
+      : price.cacheReadPerMTok / 1_000_000;
   return (
     usage.inputTokens * inputRate +
     (usage.cacheWriteTokens ?? 0) * inputRate * CACHE_WRITE_MULTIPLIER +
-    (usage.cacheReadTokens ?? 0) * inputRate * CACHE_READ_MULTIPLIER +
+    (usage.cacheReadTokens ?? 0) * cacheReadRate +
     (usage.outputTokens * price.outputPerMTok) / 1_000_000
   );
+}
+
+/**
+ * What an Anthropic model accepts beyond the basics (ROADMAP P5-11).
+ *
+ * Here beside the price table rather than in the server's adapter, for the
+ * reason `COACH_DEFAULT_MODEL` is: the estimate under the AI Help button has to
+ * know whether the model will think, and the adapter has to know whether it may
+ * ask it to. Two copies of that fact would disagree the first time a model is
+ * added to one of them.
+ *
+ * Adaptive thinking and `effort` arrived together with Opus and Sonnet 4.6, and
+ * every model since takes them - and *only* adaptive thinking, not a token
+ * budget. Haiku 4.5 and everything older answer a request carrying either with
+ * a 400, which on the first real key is the whole feature failing.
+ */
+export interface AnthropicCapabilities {
+  /** `thinking: {type: 'adaptive'}` and `output_config.effort` are accepted. */
+  adaptiveThinking: boolean;
+}
+
+/**
+ * Read off the model id rather than listed per model, so a model released
+ * after this table was written gets the modern request without an edit.
+ *
+ * The one direction it errs in on purpose: an id it cannot read is treated as
+ * *not* thinking. A request without thinking is accepted by every model and is
+ * merely a less careful review; a request with it is refused outright by every
+ * model that predates it.
+ */
+export function anthropicCapabilities(model: string): AnthropicCapabilities {
+  const match = /^claude-(opus|sonnet|haiku|fable)-(\d+)(?:-(\d{1,2}))?(?:-|$)/.exec(model);
+  if (!match) return { adaptiveThinking: false };
+
+  const family = match[1];
+  const major = Number(match[2]);
+  const minor = match[3] === undefined ? 0 : Number(match[3]);
+
+  // No Haiku takes adaptive thinking yet; the first that does will need this
+  // line, and until then the cost of being wrong is a less careful answer.
+  if (family === 'haiku') return { adaptiveThinking: false };
+  return { adaptiveThinking: major > 4 || (major === 4 && minor >= 6) };
+}
+
+/**
+ * Whether a turn on this model spends tokens thinking before it answers.
+ *
+ * Anthropic's thinking models are asked to (adaptive, at an effort level);
+ * Gemini's 2.5 series thinks by default and bills it as output. An
+ * OpenAI-compatible endpoint might or might not, and is priced at zero either
+ * way (P9-4), so the answer there changes nothing.
+ */
+export function modelThinks(provider: CoachProvider, model: string | null): boolean {
+  const resolved = model ?? COACH_DEFAULT_MODEL[provider];
+  if (provider === 'anthropic') return anthropicCapabilities(resolved).adaptiveThinking;
+  if (provider === 'gemini') return true;
+  return false;
 }
 
 /**
@@ -179,6 +251,40 @@ export function costUsd(usage: TokenUsage, price: ModelPrice): number {
  */
 export const ESTIMATED_OUTPUT_TOKENS = 900;
 
+/**
+ * What a review spends thinking before it writes a word (ROADMAP P5-13).
+ *
+ * Billed as output, invisible in the answer, and the larger half of a turn on
+ * any model that thinks: scoring five dimensions at medium effort runs to a few
+ * thousand tokens of reasoning for a few hundred of prose. An estimate built on
+ * the prose alone put a number under the button that the first real bill was
+ * several times over, which is the one thing an estimate is for not doing.
+ */
+export const ESTIMATED_THINKING_TOKENS = 3_000;
+
+/**
+ * The sizes the coach's context is cut to (P5-2), shared so that the estimate
+ * beside AI Help and the context the server builds cannot drift apart (P5-13).
+ * They were two copies, one in each app, until the audit found the client's
+ * figure for the system prompt a third short of the real one.
+ */
+export const COACH_STATEMENT_CAP = 8_000;
+export const COACH_EDITORIAL_CAP = 4_000;
+/** Prior attempts are summaries already; this bounds how many, not how long. */
+export const COACH_MAX_PRIOR_ATTEMPTS = 3;
+/**
+ * The rubric system prompt's length, give or take. The client does not have
+ * the prompt - it is read from disk on the server - and a round trip for a
+ * figure that is approximate by construction is not worth it; a server test
+ * fails when the real prompt drifts more than a tenth away from this.
+ */
+export const COACH_SYSTEM_PROMPT_CHARS = 9_200;
+
+/** The output side of the estimate: the answer, and the thinking when there is any. */
+export function estimatedOutputTokens(provider: CoachProvider, model: string | null): number {
+  return ESTIMATED_OUTPUT_TOKENS + (modelThinks(provider, model) ? ESTIMATED_THINKING_TOKENS : 0);
+}
+
 /** The estimate shown beside the AI Help button, in whole cents-ish precision. */
 export function estimateTurnCostUsd(
   provider: CoachProvider,
@@ -186,7 +292,10 @@ export function estimateTurnCostUsd(
   promptChars: number,
 ): number {
   return costUsd(
-    { inputTokens: estimateTokensFromChars(promptChars), outputTokens: ESTIMATED_OUTPUT_TOKENS },
+    {
+      inputTokens: estimateTokensFromChars(promptChars),
+      outputTokens: estimatedOutputTokens(provider, model),
+    },
     priceFor(provider, model),
   );
 }
@@ -219,7 +328,9 @@ export function formatUsd(amount: number): string {
  */
 export const UNREPORTED_TURN_TOKENS: TokenUsage = {
   inputTokens: 30_000,
-  outputTokens: ESTIMATED_OUTPUT_TOKENS,
+  // With the thinking allowance, because the dearest model thinks: a turn
+  // that died before reporting most likely died mid-think (P5-13).
+  outputTokens: ESTIMATED_OUTPUT_TOKENS + ESTIMATED_THINKING_TOKENS,
 };
 
 export function unreportedTurnCostUsd(provider: CoachProvider): number {

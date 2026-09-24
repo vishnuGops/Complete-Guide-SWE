@@ -54,6 +54,27 @@ export function systemPrompt(): string {
 }
 
 /**
+ * What a follow-up question is answered under, on top of the rubric prompt
+ * (ROADMAP P5-12).
+ *
+ * Chat turns used to be sent the rubric prompt alone, which ends "return JSON
+ * matching the required schema" - to a turn that sends no schema. The model was
+ * left to guess which half of its instructions to break, and sometimes answered
+ * a one-line question with a scored JSON document.
+ *
+ * Its own file rather than a line in `system.md`, because `system.md` is the
+ * cached prefix of every feedback turn and this is not part of those; and
+ * unversioned, like the interviewer, because nothing it produces is stored with
+ * a score to be traced back. It narrows the format, and leaves the rules that
+ * `PROMPT_VERSION` tracks exactly where they were.
+ */
+const FOLLOW_UP_PROMPT = readFileSync(path.join(here, 'followup', 'system.md'), 'utf8').trim();
+
+export function followUpPrompt(): string {
+  return FOLLOW_UP_PROMPT;
+}
+
+/**
  * The interviewer (ROADMAP P9-1).
  *
  * A separate prompt rather than a section of the coach's, because the two jobs

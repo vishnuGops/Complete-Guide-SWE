@@ -6,10 +6,23 @@ import { nullableNumber, nullableText, text, type Row } from './rows.js';
 export const COACH_ROLES = ['user', 'coach'] as const;
 export type CoachRole = (typeof COACH_ROLES)[number];
 
+/**
+ * What a conversation is for (ROADMAP P5-12, migration 007).
+ *
+ * A mock interview's turns live in `coach_messages` like any other, and until
+ * this existed nothing told its session apart from an AI Help one: the next AI
+ * Help click on the interview's first problem picked the interview up as "the
+ * latest conversation", sent the interviewer's exchange to the coach as
+ * history, and charged the review against the interview's spend.
+ */
+export const SESSION_KINDS = ['coach', 'interview'] as const;
+export type SessionKind = (typeof SESSION_KINDS)[number];
+
 export interface CoachSession {
   id: string;
   slug: string;
   language: Language;
+  kind: SessionKind;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +68,7 @@ function toSession(row: Row): CoachSession {
     id: text(row, 'id'),
     slug: text(row, 'slug'),
     language: text(row, 'language') as Language,
+    kind: text(row, 'kind') as SessionKind,
     createdAt: text(row, 'created_at'),
     updatedAt: text(row, 'updated_at'),
   };
@@ -75,9 +89,13 @@ function toMessage(row: Row): CoachMessage {
 }
 
 export interface CoachRepo {
-  createSession(slug: string, language: Language): CoachSession;
+  /** A new conversation; an AI Help one unless the caller says otherwise. */
+  createSession(slug: string, language: Language, kind?: SessionKind): CoachSession;
   getSession(id: string): CoachSession | null;
-  /** The conversation the AI Help button continues, or null if there is none yet. */
+  /**
+   * The conversation the AI Help button continues, or null if there is none
+   * yet. Never an interview's, whatever problem that was about (P5-12).
+   */
   latestSession(slug: string, language: Language): CoachSession | null;
   listSessions(slug: string): CoachSession[];
   addMessage(sessionId: string, message: NewCoachMessage): CoachMessage;
@@ -116,16 +134,16 @@ export interface CoachRepo {
 }
 
 const MESSAGE_COLUMNS = 'id, session_id, role, content, feedback, code, cost_usd, created_at';
-const SESSION_COLUMNS = 'id, slug, language, created_at, updated_at';
+const SESSION_COLUMNS = 'id, slug, language, kind, created_at, updated_at';
 
 export function createCoachRepo(db: Database): CoachRepo {
   const insertSession = db.prepare(
-    `INSERT INTO coach_sessions (${SESSION_COLUMNS}) VALUES (?, ?, ?, ?, ?)`,
+    `INSERT INTO coach_sessions (${SESSION_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?)`,
   );
   const getSession = db.prepare(`SELECT ${SESSION_COLUMNS} FROM coach_sessions WHERE id = ?`);
   const latestSession = db.prepare(
     `SELECT ${SESSION_COLUMNS} FROM coach_sessions
-     WHERE slug = ? AND language = ?
+     WHERE slug = ? AND language = ? AND kind = 'coach'
      ORDER BY created_at DESC, rowid DESC LIMIT 1`,
   );
   const listSessions = db.prepare(
@@ -177,12 +195,13 @@ export function createCoachRepo(db: Database): CoachRepo {
   const clearSessions = db.prepare('DELETE FROM coach_sessions');
 
   return {
-    createSession(slug, language) {
+    createSession(slug, language, kind = 'coach') {
       const now = nowIso();
       const session: CoachSession = {
         id: randomUUID(),
         slug,
         language,
+        kind,
         createdAt: now,
         updatedAt: now,
       };
@@ -190,6 +209,7 @@ export function createCoachRepo(db: Database): CoachRepo {
         session.id,
         session.slug,
         session.language,
+        session.kind,
         session.createdAt,
         session.updatedAt,
       );

@@ -97,7 +97,16 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
      *     narrowed on the way in rather than sent as-is.
      *   - No thinking parameter: 2.5-series models reason by default.
      */
-    async *stream({ apiKey, model, system, messages, schema, signal, onUsage }: StreamOptions) {
+    async *stream({
+      apiKey,
+      model,
+      system,
+      instructions,
+      messages,
+      schema,
+      signal,
+      onUsage,
+    }: StreamOptions) {
       const wanted = stripPrefix(model ?? GEMINI_DEFAULT_MODEL);
       const timeout = AbortSignal.timeout(STREAM_TIMEOUT_MS);
 
@@ -112,7 +121,11 @@ export function createGeminiProvider(options: ProviderOptions = {}): CoachProvid
               'content-type': 'application/json',
             },
             body: JSON.stringify({
-              systemInstruction: { parts: [{ text: system }] },
+              // A second part rather than a longer first one, so the rubric
+              // prompt stays byte-identical for Gemini's implicit cache (P5-12).
+              systemInstruction: {
+                parts: [{ text: system }, ...(instructions ? [{ text: instructions }] : [])],
+              },
               contents: toGeminiContents(messages),
               generationConfig: {
                 ...(schema
@@ -218,15 +231,23 @@ function toGeminiSchema(schema: JsonSchema): JsonSchema {
 
 interface GeminiChunk {
   candidates?: { content?: { parts?: { text?: unknown }[] } }[];
-  usageMetadata?: { promptTokenCount?: unknown; candidatesTokenCount?: unknown };
+  usageMetadata?: {
+    promptTokenCount?: unknown;
+    candidatesTokenCount?: unknown;
+    thoughtsTokenCount?: unknown;
+  };
 }
 
 function extractUsage(chunk: Record<string, unknown>): TokenUsage | null {
   const meta = (chunk as GeminiChunk).usageMetadata;
   if (!meta) return null;
   const inputTokens = typeof meta.promptTokenCount === 'number' ? meta.promptTokenCount : 0;
-  const outputTokens =
-    typeof meta.candidatesTokenCount === 'number' ? meta.candidatesTokenCount : 0;
+  const answer = typeof meta.candidatesTokenCount === 'number' ? meta.candidatesTokenCount : 0;
+  // 2.5-series models think by default, report it separately, and bill it as
+  // output (P5-13). Counting only the answer recorded the larger half of every
+  // turn as free.
+  const thoughts = typeof meta.thoughtsTokenCount === 'number' ? meta.thoughtsTokenCount : 0;
+  const outputTokens = answer + thoughts;
   return inputTokens === 0 && outputTokens === 0 ? null : { inputTokens, outputTokens };
 }
 

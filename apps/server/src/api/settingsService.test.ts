@@ -4,6 +4,7 @@ import type { FetchLike } from '../coach/index.js';
 import { createDatabase, IN_MEMORY, type Repositories } from '../db/index.js';
 import { HttpError } from './errors.js';
 import {
+  providerOptionsFor,
   readSettings,
   resetProgress,
   resolveApiKey,
@@ -215,5 +216,65 @@ describe('reset all progress', () => {
 
     expect(repos.notes.get('pair-sum-index')?.body).toBe('my own notes');
     expect(repos.settings.get().coach.apiKey).toBe(KEY);
+  });
+});
+
+describe('where the provider lives (P5-11)', () => {
+  it('ignores a base URL left over from another provider', async () => {
+    // Someone tried a local endpoint, then switched to Anthropic. The leftover
+    // address used to go with the Anthropic key - to 127.0.0.1:11434 - and
+    // the answer was "the key was rejected".
+    updateSettings(
+      { coach: { provider: 'openai-compatible', baseUrl: 'http://127.0.0.1:11434/v1' } },
+      { repos, env: {} },
+    );
+    updateSettings({ coach: { provider: 'anthropic', apiKey: KEY } }, { repos, env: {} });
+
+    const urls: string[] = [];
+    const fetch = stubFetch();
+    await testConnection({
+      repos,
+      env: {},
+      provider: {
+        fetch: ((input: RequestInfo | URL, init?: RequestInit) => {
+          urls.push(String(input));
+          return fetch(input, init);
+        }) as FetchLike,
+      },
+    });
+
+    expect(urls[0]).toMatch(/^https:\/\/api\.anthropic\.com\//);
+  });
+
+  it('applies the stored address to the provider whose address it is', () => {
+    const settings = updateSettings(
+      { coach: { provider: 'openai-compatible', baseUrl: 'http://127.0.0.1:1234/v1' } },
+      { repos, env: {} },
+    );
+    expect(settings.coach.baseUrl).toBe('http://127.0.0.1:1234/v1');
+
+    expect(providerOptionsFor(repos.settings.get())).toEqual({
+      baseUrl: 'http://127.0.0.1:1234/v1',
+    });
+  });
+
+  it('lets an injected address win over a stored one', () => {
+    updateSettings(
+      { coach: { provider: 'openai-compatible', baseUrl: 'http://127.0.0.1:1234/v1' } },
+      { repos, env: {} },
+    );
+    expect(
+      providerOptionsFor(repos.settings.get(), { baseUrl: 'http://127.0.0.1:5174' }).baseUrl,
+    ).toBe('http://127.0.0.1:5174');
+  });
+
+  it('gives Anthropic and Gemini no stored address at all', () => {
+    for (const provider of ['anthropic', 'gemini'] as const) {
+      updateSettings(
+        { coach: { provider, baseUrl: 'http://127.0.0.1:1234/v1' } },
+        { repos, env: {} },
+      );
+      expect(providerOptionsFor(repos.settings.get())).toEqual({});
+    }
   });
 });

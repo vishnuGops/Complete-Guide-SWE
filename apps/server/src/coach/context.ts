@@ -1,10 +1,14 @@
 import {
+  COACH_EDITORIAL_CAP,
+  COACH_MAX_PRIOR_ATTEMPTS,
+  COACH_STATEMENT_CAP,
   VERDICT_LABEL,
   type CoachFeedback,
   type Language,
   type ProblemMeta,
   type RunResult,
   type TestResult,
+  type Verdict,
 } from '@devpromax/shared';
 
 /**
@@ -34,6 +38,32 @@ export interface AttemptMemory {
   delta?: string;
 }
 
+/**
+ * The latest submission for this problem and language, as the store keeps it
+ * (ROADMAP P5-12).
+ *
+ * Totals only: a submission row records the verdict and the pass count, not
+ * the per-test detail a live `RunResult` carries. That is still the difference
+ * between a coach that knows the code fails eleven of twelve tests and one that
+ * was told, on every click, that it had never been run.
+ */
+export interface SubmissionSummary {
+  verdict: Verdict;
+  passed: number;
+  total: number;
+  /** ISO timestamp of the submit. */
+  at: string;
+  /**
+   * Whether it was *this* code that was submitted.
+   *
+   * The verdict of different code is not evidence about the code in front of
+   * the coach - a WA from before the fix would have it hunting a bug that is
+   * gone - so when the two differ the context says only that, and that there
+   * is no result for this version.
+   */
+  sameCode: boolean;
+}
+
 export interface ContextInput {
   meta: ProblemMeta;
   statement: string;
@@ -43,6 +73,8 @@ export interface ContextInput {
   code: string;
   /** The most recent Run or Submit, when there has been one this session. */
   lastRun?: RunResult;
+  /** The latest stored submission, used when there is no `lastRun` (P5-12). */
+  lastSubmission?: SubmissionSummary;
   /** Hint rungs the user has already read, in order. The coach must start above them. */
   revealedHints?: readonly string[];
   /**
@@ -77,9 +109,12 @@ export interface ContextInput {
  */
 export const CONTEXT_BUDGET_CHARS = 120_000;
 
-/** Past this, a "statement" is a document and the coach does not need all of it. */
-const STATEMENT_CAP = 8_000;
-const EDITORIAL_CAP = 4_000;
+/**
+ * Past this, a "statement" is a document and the coach does not need all of it.
+ * Shared with the web app's estimate, so the two cannot disagree (P5-13).
+ */
+const STATEMENT_CAP = COACH_STATEMENT_CAP;
+const EDITORIAL_CAP = COACH_EDITORIAL_CAP;
 
 /** How many failing tests are worth showing. Beyond a few they repeat themselves. */
 const MAX_FAILURES_SHOWN = 3;
@@ -88,7 +123,7 @@ const MAX_FAILURES_SHOWN = 3;
 const VALUE_CAP = 600;
 
 /** Prior attempts are summaries already; this bounds how many, not how long. */
-const MAX_PRIOR_ATTEMPTS = 3;
+const MAX_PRIOR_ATTEMPTS = COACH_MAX_PRIOR_ATTEMPTS;
 
 function truncate(text: string, cap: number, note = 'truncated'): string {
   const trimmed = text.trim();
@@ -167,6 +202,22 @@ function renderFailure(test: TestResult): string[] {
   return lines;
 }
 
+/** A stored submission, which is all the judge's verdict survives as (P5-12). */
+function renderSubmission(submission: SubmissionSummary): string {
+  const verdict = `${VERDICT_LABEL[submission.verdict]} (${submission.verdict})`;
+  if (!submission.sameCode) {
+    return [
+      `Their latest submission (${submission.at}) was of different code from what is above: ${verdict}, ${submission.passed}/${submission.total} tests passed.`,
+      'This version has not been judged, so there is no result for it. Do not assume it passes, and do not assume it still fails the same way.',
+    ].join('\n');
+  }
+  return [
+    `Verdict: ${verdict} on Submit, for exactly this code (${submission.at})`,
+    `Tests passed: ${submission.passed}/${submission.total}`,
+    '(Only the totals are kept for a submission; which tests failed, and how, is not available.)',
+  ].join('\n');
+}
+
 function renderPriorAttempts(attempts: readonly AttemptMemory[]): string {
   const lines = [
     'Earlier feedback on this problem, newest first. Do not repeat it; say what has changed since.',
@@ -237,19 +288,15 @@ export function buildContext(input: ContextInput): string {
     droppable: false,
   });
 
-  if (input.lastRun) {
-    sections.push({
-      title: 'Latest judge result',
-      body: renderRun(input.lastRun),
-      droppable: false,
-    });
-  } else {
-    sections.push({
-      title: 'Latest judge result',
-      body: 'They have not run this code yet, so there is no judge result. Do not assume it passes.',
-      droppable: false,
-    });
-  }
+  sections.push({
+    title: 'Latest judge result',
+    body: input.lastRun
+      ? renderRun(input.lastRun)
+      : input.lastSubmission
+        ? renderSubmission(input.lastSubmission)
+        : 'They have not run this code yet, so there is no judge result. Do not assume it passes.',
+    droppable: false,
+  });
 
   if (input.revealedHints && input.revealedHints.length > 0) {
     sections.push({

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  anthropicCapabilities,
   costUsd,
+  ESTIMATED_OUTPUT_TOKENS,
+  ESTIMATED_THINKING_TOKENS,
+  estimatedOutputTokens,
   estimateTokens,
   estimateTurnCostUsd,
   fallbackPrice,
@@ -135,5 +139,82 @@ describe('unreportedTurnCostUsd', () => {
   it('is at least as dear as a turn on the default model', () => {
     const onDefault = costUsd(UNREPORTED_TURN_TOKENS, priceFor('anthropic', null));
     expect(unreportedTurnCostUsd('anthropic')).toBeGreaterThanOrEqual(onDefault);
+  });
+});
+
+describe('claude-opus-5-5 (P5-11)', () => {
+  it('is priced from the table, not at the unknown-model fallback', () => {
+    // It used to fall through to Fable's $10/$50: double the real rate, and a
+    // cap that tripped at half the spend it was set for.
+    expect(priceFor('anthropic', 'claude-opus-5-5')).toMatchObject({
+      inputPerMTok: 4,
+      outputPerMTok: 20,
+    });
+  });
+
+  it('charges its cache reads at their own rate, not a tenth of input', () => {
+    const read = costUsd(
+      { inputTokens: 0, outputTokens: 0, cacheReadTokens: 1_000_000 },
+      priceFor('anthropic', 'claude-opus-5-5'),
+    );
+    expect(read).toBeCloseTo(0.2);
+  });
+});
+
+describe('anthropicCapabilities (P5-11)', () => {
+  it('gives adaptive thinking to every model since Opus and Sonnet 4.6', () => {
+    for (const model of [
+      'claude-opus-5',
+      'claude-opus-5-5',
+      'claude-sonnet-5',
+      'claude-fable-5-1',
+      'claude-opus-4-7',
+      'claude-sonnet-4-6',
+    ]) {
+      expect(anthropicCapabilities(model).adaptiveThinking, model).toBe(true);
+    }
+  });
+
+  it('withholds it from Haiku 4.5 and everything older, which answer it with a 400', () => {
+    for (const model of [
+      'claude-haiku-4-5',
+      'claude-haiku-4-5-20251001',
+      'claude-sonnet-4-5-20250929',
+      'claude-opus-4-20250514',
+      'claude-3-5-sonnet-20241022',
+    ]) {
+      expect(anthropicCapabilities(model).adaptiveThinking, model).toBe(false);
+    }
+  });
+
+  it('errs toward the request every model accepts when the id is unreadable', () => {
+    expect(anthropicCapabilities('my-proxy-alias').adaptiveThinking).toBe(false);
+  });
+});
+
+describe('the estimate accounts for thinking (P5-13)', () => {
+  it('adds the thinking allowance on a model that thinks', () => {
+    expect(estimatedOutputTokens('anthropic', 'claude-opus-5')).toBe(
+      ESTIMATED_OUTPUT_TOKENS + ESTIMATED_THINKING_TOKENS,
+    );
+    // The default configuration is the one most people see.
+    expect(estimatedOutputTokens('anthropic', null)).toBe(
+      ESTIMATED_OUTPUT_TOKENS + ESTIMATED_THINKING_TOKENS,
+    );
+    expect(estimatedOutputTokens('gemini', null)).toBe(
+      ESTIMATED_OUTPUT_TOKENS + ESTIMATED_THINKING_TOKENS,
+    );
+  });
+
+  it('does not on one that does not', () => {
+    expect(estimatedOutputTokens('anthropic', 'claude-haiku-4-5')).toBe(ESTIMATED_OUTPUT_TOKENS);
+  });
+
+  it('prices the button at what a review with thinking really costs', () => {
+    // Output alone, on Opus 5: 3,900 tokens at $25/MTok. The old figure priced
+    // 900 of them, a quarter of the bill the first real turn produced.
+    expect(estimateTurnCostUsd('anthropic', 'claude-opus-5', 0)).toBeCloseTo(
+      ((ESTIMATED_OUTPUT_TOKENS + ESTIMATED_THINKING_TOKENS) * 25) / 1_000_000,
+    );
   });
 });

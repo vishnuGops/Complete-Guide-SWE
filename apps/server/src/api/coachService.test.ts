@@ -1,9 +1,21 @@
 import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { COACH_API_KEY_ENV, type CoachFeedback, type CoachStreamEvent } from '@devpromax/shared';
+import {
+  COACH_API_KEY_ENV,
+  ESTIMATED_THINKING_TOKENS,
+  estimateTokensFromChars,
+  type CoachFeedback,
+  type CoachStreamEvent,
+} from '@devpromax/shared';
 import type { FetchLike } from '../coach/index.js';
 import { createCatalogue, type Catalogue } from './catalogue.js';
-import { streamChat, streamFeedback, type CoachServiceDeps } from './coachService.js';
+import {
+  gateHintLevel,
+  streamChat,
+  streamFeedback,
+  windowHistory,
+  type CoachServiceDeps,
+} from './coachService.js';
 import { createDatabase, IN_MEMORY, type Repositories } from '../db/index.js';
 import { makeCatalogue, writeProblem } from '../problems/__fixtures__/factory.js';
 
@@ -695,7 +707,14 @@ describe('cancellation', () => {
     // Stop a free way to spend money.
     expect(messages).toHaveLength(1);
     expect(messages[0]?.role).toBe('user');
-    expect(messages[0]?.costUsd).toBeCloseTo(5);
+    // A million input tokens at $5, plus an *estimated* output: the vendor
+    // never sent its final count, and the one-token placeholder it opened with
+    // is not what a turn stopped mid-think wrote (P5-13).
+    const written = estimateTokensFromChars('{"feedbackMarkdown":"half'.length);
+    expect(messages[0]?.costUsd).toBeCloseTo(
+      5 + ((ESTIMATED_THINKING_TOKENS + written) * 25) / 1_000_000,
+      6,
+    );
     expect(messages.some((m) => m.feedback !== null)).toBe(false);
   });
 
@@ -828,5 +847,251 @@ describe('new conversation', () => {
       streamFeedback(feedbackRequest({ newConversation: true }), deps(fetch)),
     );
     expect(fresh.some((e) => e.type === 'done')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// What the coach is told (ROADMAP P5-12)
+// ---------------------------------------------------------------------------
+
+function submit(code: string, overrides: Record<string, unknown> = {}) {
+  repos.submissions.insert({
+    slug: SLUG,
+    language: 'python',
+    code,
+    verdict: 'WA',
+    passed: 1,
+    total: 12,
+    timeMs: 3,
+    problemVersion: 1,
+    solveMs: null,
+    ...overrides,
+  });
+}
+
+describe('the latest judge result (P5-12)', () => {
+  const ask = async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    return requests[0]!;
+  };
+
+  it('tells the coach the verdict on exactly this code', async () => {
+    // Trailing whitespace is not a different program.
+    submit(`${ATTEMPT}   \n\n`);
+    const sent = await ask();
+
+    // Before P5-12 every review said "they have not run this code yet", the
+    // one straight after eleven failing tests included.
+    expect(sent).toContain('Wrong Answer (WA) on Submit, for exactly this code');
+    expect(sent).toContain('Tests passed: 1/12');
+    expect(sent).not.toContain('have not run this code yet');
+  });
+
+  it('says the verdict was about other code once the editor has moved on', async () => {
+    submit(ATTEMPT.replace('return [0, 1]', 'return []'));
+    const sent = await ask();
+
+    // An old WA is not evidence about the fix that followed it.
+    expect(sent).toContain('was of different code');
+    expect(sent).toContain('This version has not been judged');
+    expect(sent).not.toContain('Tests passed: 1/12');
+  });
+
+  it('takes the newest submission, and only in this language', async () => {
+    submit(ATTEMPT, { verdict: 'TLE' });
+    submit(ATTEMPT, { verdict: 'AC', passed: 12, language: 'java' });
+    const sent = await ask();
+
+    expect(sent).toContain('Time Limit Exceeded (TLE)');
+    expect(sent).not.toContain('(AC)');
+  });
+
+  it('still says nothing has run when nothing has', async () => {
+    expect(await ask()).toContain('have not run this code yet');
+  });
+});
+
+describe('the solution gate, held by the server (P5-12)', () => {
+  const withSolution = { ...ANSWER, nextHintLevel: 'solution' as const };
+
+  it('clamps a solution rung the gate does not open to pseudocode', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(withSolution)));
+    const events = await collect(
+      streamFeedback(feedbackRequest({ requestFullSolution: true }), deps(fetch)),
+    );
+
+    // Asked, but not solved: the prompt's rule, enforced where no model can
+    // talk its way past it.
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.type === 'done' && done.feedback.nextHintLevel).toBe('pseudocode');
+
+    const session = repos.coach.latestSession(SLUG, 'python')!;
+    const stored = repos.coach.listMessages(session.id).find((m) => m.feedback !== null);
+    expect(stored?.feedback?.nextHintLevel).toBe('pseudocode');
+  });
+
+  it('lets it through when the problem is solved and the user asked', async () => {
+    repos.progress.put({
+      slug: SLUG,
+      language: 'python',
+      status: 'solved',
+      attempts: 1,
+      solvedAt: '2026-09-17T00:00:00.000Z',
+      masteredAt: null,
+      lastAttemptedAt: '2026-09-17T00:00:00.000Z',
+    });
+    const fetch = providerFetch(anthropicStream(JSON.stringify(withSolution)));
+    const events = await collect(
+      streamFeedback(feedbackRequest({ requestFullSolution: true }), deps(fetch)),
+    );
+
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.type === 'done' && done.feedback.nextHintLevel).toBe('solution');
+  });
+
+  it('leaves every rung below the gate alone', () => {
+    for (const level of ['nudge', 'concept', 'approach', 'pseudocode', null] as const) {
+      expect(gateHintLevel({ ...ANSWER, nextHintLevel: level }, false).nextHintLevel).toBe(level);
+    }
+  });
+});
+
+describe('follow-up turns (P5-12, P5-13)', () => {
+  async function chatBody(reply = 'Because the map is never read.') {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    const sessionId = repos.coach.latestSession(SLUG, 'python')!.id;
+
+    requests.length = 0;
+    const events = await collect(
+      streamChat({ sessionId, message: 'Why?' }, deps(providerFetch(anthropicStream(reply)))),
+    );
+    return { sessionId, events, body: JSON.parse(requests[0]!) as ChatBody };
+  }
+
+  interface ChatBody {
+    system: { text: string; cache_control?: unknown }[];
+    messages: { role: string; content: unknown }[];
+  }
+
+  it('answers under the rubric prompt plus a follow-up block that asks for prose', async () => {
+    const { body } = await chatBody();
+
+    // The rubric prompt ends "return JSON matching the required schema", and a
+    // chat turn sends no schema; the second block is what resolves that.
+    expect(body.system).toHaveLength(2);
+    expect(body.system[0]?.cache_control).toEqual({ type: 'ephemeral' });
+    expect(body.system[1]?.text).toMatch(/follow-up/i);
+    expect(body.system[1]?.text).toMatch(/No JSON/);
+    // Uncached, so the prefix every review caches is untouched by it.
+    expect(body.system[1]).not.toHaveProperty('cache_control');
+  });
+
+  it('keeps a review to the rubric prompt alone', async () => {
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+    expect((JSON.parse(requests[0]!) as ChatBody).system).toHaveLength(1);
+  });
+
+  it('caches the history it resends, and not the new question', async () => {
+    const { body } = await chatBody();
+
+    // The review is the last turn of history: the part every later question
+    // resends unchanged, and the part that was paid for in full each time.
+    expect(body.messages.at(-2)?.content).toEqual([
+      expect.objectContaining({ type: 'text', cache_control: { type: 'ephemeral' } }),
+    ]);
+    expect(body.messages.at(-1)).toEqual({ role: 'user', content: 'Why?' });
+    // One breakpoint in the history, not one per turn.
+    expect(body.messages.filter((m) => Array.isArray(m.content))).toHaveLength(1);
+  });
+
+  it('treats an empty reply as a failed turn, and stores no blank answer (P5-11)', async () => {
+    const { sessionId, events } = await chatBody('   ');
+
+    expect(events.find((e) => e.type === 'error')).toMatchObject({ retryable: true });
+    const messages = repos.coach.listMessages(sessionId);
+    // A stored blank would be an empty assistant turn, which Anthropic refuses
+    // on every later request in the conversation.
+    expect(messages.some((m) => m.role === 'coach' && m.content.trim() === '')).toBe(false);
+    expect(messages.at(-1)).toMatchObject({ role: 'user', content: 'Why?' });
+  });
+
+  it('leaves out blank turns stored before that was refused', () => {
+    const base = {
+      sessionId: 's',
+      feedback: null,
+      code: null,
+      costUsd: null,
+      createdAt: '2026-09-17T00:00:00.000Z',
+    };
+    const history = windowHistory([
+      { ...base, id: '1', role: 'user', content: 'first' },
+      { ...base, id: '2', role: 'coach', content: '' },
+      { ...base, id: '3', role: 'user', content: 'second' },
+    ]);
+
+    expect(history.map((turn) => turn.content)).toEqual(['first', 'second']);
+  });
+});
+
+describe('an interview is not an AI Help conversation (P5-12)', () => {
+  function interviewSession(): string {
+    const session = repos.coach.createSession(SLUG, 'python', 'interview');
+    repos.coach.addMessage(session.id, { role: 'user', content: 'I would use a hash map.' });
+    repos.coach.addMessage(session.id, { role: 'coach', content: 'What does that cost?' });
+    return session.id;
+  }
+
+  it('starts its own conversation rather than continuing the interview', async () => {
+    const interview = interviewSession();
+
+    const fetch = providerFetch(anthropicStream(JSON.stringify(ANSWER)));
+    const events = await collect(streamFeedback(feedbackRequest(), deps(fetch)));
+
+    const start = events.find((e) => e.type === 'start');
+    expect(start?.type === 'start' && start.sessionId).not.toBe(interview);
+    // Nothing the interviewer said went to the coach, and nothing was added to
+    // the interview's history or its spend.
+    expect(requests[0]).not.toContain('What does that cost?');
+    expect(repos.coach.listMessages(interview)).toHaveLength(2);
+  });
+
+  it('refuses a follow-up sent into an interview session', async () => {
+    const interview = interviewSession();
+    await expect(
+      collect(streamChat({ sessionId: interview, message: 'hi' }, deps(providerFetch('')))),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    expect(requests).toHaveLength(0);
+  });
+});
+
+describe('where the provider lives (P5-11)', () => {
+  it('sends an OpenAI-compatible turn to the address configured in Settings', async () => {
+    repos.settings.update({
+      coach: { provider: 'openai-compatible', baseUrl: 'http://127.0.0.1:9/v1' },
+    });
+    const session = repos.coach.createSession(SLUG, 'python');
+    repos.coach.addMessage(session.id, { role: 'user', content: 'context' });
+    repos.coach.addMessage(session.id, { role: 'coach', content: 'review', feedback: ANSWER });
+
+    const urls: string[] = [];
+    const fetch = (async (input: RequestInfo | URL) => {
+      urls.push(String(input));
+      return new Response('data: {"choices":[{"delta":{"content":"Yes."}}]}\n\ndata: [DONE]\n\n', {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      });
+    }) as FetchLike;
+
+    const events = await collect(
+      streamChat({ sessionId: session.id, message: 'Why?' }, deps(fetch)),
+    );
+
+    expect(events.at(-1)).toEqual({ type: 'reply', content: 'Yes.' });
+    // It used to go to the default Ollama address whatever Settings said, so
+    // an endpoint that passed "Test connection" failed on every turn.
+    expect(urls).toEqual(['http://127.0.0.1:9/v1/chat/completions']);
   });
 });

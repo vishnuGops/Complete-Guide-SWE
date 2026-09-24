@@ -1,6 +1,7 @@
 import {
   COACH_API_KEY_ENV,
   maskApiKey,
+  needsBaseUrl,
   type ConnectionTestResponse,
   type ResetProgressResponse,
   type Settings,
@@ -56,6 +57,33 @@ export function resolveApiKey(
   if (stored) return { key: stored, source: 'settings' };
 
   return { key: null, source: 'none' };
+}
+
+/**
+ * How to reach the configured provider (ROADMAP P5-11).
+ *
+ * One function for the connection test and for every coaching turn, because
+ * they had drifted in both directions at once. The test passed the stored base
+ * URL to *any* provider, so someone who had tried Ollama and switched to
+ * Anthropic sent their Anthropic key to `127.0.0.1:11434` and was told the key
+ * was wrong. The turns passed it to *none*, so an OpenAI-compatible endpoint
+ * configured in Settings tested fine and then every AI Help click went to the
+ * default address instead.
+ *
+ * The stored address applies only to a provider whose address is a setting
+ * (`needsBaseUrl`); for the vendors it is a fact, and a leftover value from
+ * another provider is exactly that - leftover. Injected options (tests, the
+ * end-to-end suite's stand-in vendor) win over both.
+ */
+export function providerOptionsFor(
+  settings: Settings,
+  injected: ProviderOptions = {},
+): ProviderOptions {
+  const stored =
+    needsBaseUrl(settings.coach.provider) && settings.coach.baseUrl
+      ? { baseUrl: settings.coach.baseUrl }
+      : {};
+  return { ...stored, ...injected };
 }
 
 /** The only shape of settings the API is allowed to send. */
@@ -124,15 +152,10 @@ export async function testConnection(deps: SettingsServiceDeps): Promise<Connect
     );
   }
 
-  /*
-   * The stored base URL wins over nothing and loses to an injected one
-   * (ROADMAP P9-4). For `openai-compatible` it is the whole configuration; for
-   * the other two it is unset and the vendor's own address applies.
-   */
-  const provider = createCoachProvider(settings.coach.provider, {
-    ...(settings.coach.baseUrl ? { baseUrl: settings.coach.baseUrl } : {}),
-    ...(deps.provider ?? {}),
-  });
+  const provider = createCoachProvider(
+    settings.coach.provider,
+    providerOptionsFor(settings, deps.provider),
+  );
   const result = await provider.testConnection({
     apiKey: resolved.key,
     model: settings.coach.model,

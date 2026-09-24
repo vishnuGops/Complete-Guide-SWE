@@ -51,6 +51,16 @@ export interface ConnectionResult {
 export interface CoachTurn {
   role: 'user' | 'coach';
   content: string;
+  /**
+   * Cache the conversation up to and including this turn (ROADMAP P5-13).
+   *
+   * Set by the caller on the last turn of *history* - never on the new message,
+   * which is the one part guaranteed to differ next time. A follow-up resends
+   * the whole window every turn, and without this only the system prompt was
+   * cached, so the review being discussed was paid for at the full input rate
+   * on every question about it. Vendors without explicit caching ignore it.
+   */
+  cacheBreakpoint?: boolean;
 }
 
 export interface StreamOptions {
@@ -62,6 +72,17 @@ export interface StreamOptions {
    * on every request so Anthropic can cache it (D12); see `anthropic.ts`.
    */
   system: string;
+  /**
+   * A second, uncached system block for this kind of turn (ROADMAP P5-12).
+   *
+   * A follow-up question is answered under the same rubric prompt as the
+   * review - the hint ladder and the solution gate still hold - but that prompt
+   * ends "return JSON matching the required schema", and a prose turn has no
+   * schema. This is where the turn says so. Separate from `system` rather than
+   * appended to it, because `system` is the cached prefix and a different
+   * suffix on it would be a different prefix.
+   */
+  instructions?: string;
   /** Problem, code, judge results and prior attempts. Different every time. */
   messages: readonly CoachTurn[];
   /**
@@ -123,6 +144,12 @@ export interface ProviderOptions {
    * gateway. Unset in production, where the SDK's own default applies.
    */
   baseUrl?: string;
+  /**
+   * How long an open stream may go without a byte before it is abandoned
+   * (ROADMAP P5-11). The adapter's own default in production; shortened in
+   * tests, which cannot wait ninety seconds to watch a hang be noticed.
+   */
+  streamIdleMs?: number;
 }
 
 /**
@@ -175,6 +202,47 @@ export function describeStatus(id: CoachProviderId, status: number): string {
     return `${vendor} returned a server error (${status}). That is their side, not yours.`;
   }
   return `${vendor} refused the request (HTTP ${status}).`;
+}
+
+/**
+ * A 404 on the messages endpoint (ROADMAP P5-11).
+ *
+ * The endpoint exists - the key check reached it - so what the vendor did not
+ * find is the model. "Does not recognise that endpoint, the key may be for a
+ * different product" sent someone with a typo in the model name off to replace
+ * a perfectly good key.
+ */
+export function describeUnknownModel(id: CoachProviderId, model: string): string {
+  return `${COACH_PROVIDER_LABEL[id]} has no model called "${model}". Check the model name in Settings, or clear it to use the default.`;
+}
+
+/** Past this, a vendor's explanation is a paragraph nobody reads in a panel. */
+const VENDOR_MESSAGE_CAP = 300;
+
+/**
+ * A 400, with the vendor's own explanation attached (ROADMAP P5-11).
+ *
+ * The one status where `describeStatus`'s rule - never forward the vendor's
+ * wording - does more harm than good. A 400 means the request itself was
+ * wrong, only the vendor knows which part, and "refused the request (HTTP
+ * 400)" left the only person able to act on it with nothing to act on. So the
+ * message comes through, trimmed to a sentence or two and with the key
+ * scrubbed out of it: a vendor echoing a header back in an error is rare, and
+ * this app's rule about the key does not depend on how rare.
+ */
+export function describeRefusedRequest(
+  id: CoachProviderId,
+  vendorMessage: string | null,
+  apiKey: string,
+): string {
+  const vendor = COACH_PROVIDER_LABEL[id];
+  const cleaned = (vendorMessage ?? '').replace(/\s+/g, ' ').trim();
+  if (cleaned === '') return describeStatus(id, 400);
+
+  const scrubbed = apiKey === '' ? cleaned : cleaned.split(apiKey).join('[key]');
+  const trimmed =
+    scrubbed.length > VENDOR_MESSAGE_CAP ? `${scrubbed.slice(0, VENDOR_MESSAGE_CAP)}…` : scrubbed;
+  return `${vendor} refused the request: ${trimmed}`;
 }
 
 export function describeNetworkError(id: CoachProviderId, error: unknown): string {

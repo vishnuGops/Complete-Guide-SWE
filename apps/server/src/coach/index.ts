@@ -23,8 +23,14 @@ export {
   CONTEXT_BUDGET_CHARS,
   type AttemptMemory,
   type ContextInput,
+  type SubmissionSummary,
 } from './context.js';
-export { PROMPT_VERSION, interviewerPrompt, systemPrompt } from './prompts/index.js';
+export {
+  PROMPT_VERSION,
+  followUpPrompt,
+  interviewerPrompt,
+  systemPrompt,
+} from './prompts/index.js';
 export { describeDelta, diffCode, type CodeDelta } from './codeDelta.js';
 export {
   hasMeaningfulBody,
