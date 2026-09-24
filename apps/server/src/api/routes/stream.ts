@@ -47,8 +47,13 @@ export async function streamEvents(
     if (finished) return;
     controller.abort();
     // `return()` runs the generator's own `finally` blocks, which is what makes
-    // a cancelled turn record its cost and skip persisting a half answer.
-    void events.return(undefined);
+    // a cancelled turn record its cost and skip persisting a half answer. Its
+    // promise rejects if one of those blocks throws, and nothing else awaits
+    // it: unhandled, that rejection would take the whole server down over a
+    // closed browser tab (P3-10).
+    events.return(undefined).catch((error: unknown) => {
+      logger.error({ err: error }, 'cancelling a stream failed');
+    });
   };
   raw.on('close', onClose);
 

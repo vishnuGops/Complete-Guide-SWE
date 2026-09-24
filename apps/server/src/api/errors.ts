@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { ApiError, ApiIssue } from '@devpromax/shared';
 import { JudgeUnavailableError } from '../judge/executors/launcher.js';
+import { isApiRequest } from './hardening.js';
 
 /**
  * One error shape for the whole API (`ApiError` in `packages/shared`).
@@ -93,11 +94,7 @@ export function applyErrorHandling(app: FastifyInstance): void {
      * not-found handler per instance, and this is it.
      */
     const server = request.server as FastifyInstance & { devpromaxWeb?: boolean };
-    if (
-      server.devpromaxWeb === true &&
-      request.method === 'GET' &&
-      !request.url.startsWith('/api')
-    ) {
+    if (server.devpromaxWeb === true && request.method === 'GET' && !isApiRequest(request)) {
       await reply.type('text/html').header('cache-control', 'no-cache').sendFile('index.html');
       return;
     }

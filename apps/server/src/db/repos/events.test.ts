@@ -80,6 +80,20 @@ describe('events', () => {
     ]);
   });
 
+  it('counts per day as the caller defines a day (P7-11)', () => {
+    repos.events.record({ type: 'run', createdAt: '2026-09-17T01:00:00.000Z' });
+    repos.events.record({ type: 'submit', createdAt: '2026-09-17T23:59:59.999Z' });
+
+    // A day that starts five hours late, as it does in UTC-5.
+    const shifted = (iso: string) =>
+      new Date(Date.parse(iso) - 5 * 3_600_000).toISOString().slice(0, 10);
+
+    expect(repos.events.dailyCounts(undefined, shifted)).toEqual([
+      { day: '2026-09-17', count: 1 },
+      { day: '2026-09-16', count: 1 },
+    ]);
+  });
+
   it('rejects a language value outside the two supported ones', () => {
     expect(() =>
       repos.db
@@ -183,6 +197,15 @@ describe('events', () => {
 
       expect(repos.events.wasEditorialRevealed('pair-sum-index')).toBe(false);
     });
+  });
+
+  it('counts events of one type without listing them (P3-9)', () => {
+    repos.events.record({ type: 'editorial_revealed', slug: 'pair-sum-index' });
+    repos.events.record({ type: 'editorial_revealed', slug: 'shift-right-in-place' });
+    repos.events.record({ type: 'run', slug: 'pair-sum-index' });
+
+    expect(repos.events.countByType('editorial_revealed')).toBe(2);
+    expect(repos.events.countByType('hint_revealed')).toBe(0);
   });
 
   it('clears the log', () => {

@@ -24,7 +24,7 @@ import {
 import type { Repositories } from '../db/index.js';
 import type { Catalogue } from './catalogue.js';
 import { notFound } from './errors.js';
-import { reviewQueue } from './reviewService.js';
+import { metaBySlug, reviewQueue } from './reviewService.js';
 
 /**
  * Reading the catalogue (ROADMAP P3-1).
@@ -184,19 +184,19 @@ export function listProblems(
   const starred = deps.repos.bookmarks.slugs();
   const passedVersions = deps.repos.submissions.acceptedVersions();
   // Metadata only (ROADMAP P2-14): a title, a tier and a topic do not need the
-  // statement, the editorial or a megabyte of tests.
-  const all = deps.catalogue
-    .listMeta()
-    .map(({ meta }) =>
-      summarise(
-        meta,
-        grouped.get(meta.slug) ?? [],
-        query.language,
-        noted.has(meta.slug),
-        starred.has(meta.slug),
-        passedVersions.get(meta.slug) ?? null,
-      ),
-    );
+  // statement, the editorial or a megabyte of tests. Read once and shared with
+  // the review queue below (P3-9).
+  const metas = metaBySlug(deps.catalogue);
+  const all = [...metas.values()].map((meta) =>
+    summarise(
+      meta,
+      grouped.get(meta.slug) ?? [],
+      query.language,
+      noted.has(meta.slug),
+      starred.has(meta.slug),
+      passedVersions.get(meta.slug) ?? null,
+    ),
+  );
 
   // Searched in the database rather than by reading every note into memory: it
   // is the one query here that is not answerable from metadata, and `instr`
@@ -211,7 +211,7 @@ export function listProblems(
    * Derived from the submission archive like everything else about reviews;
    * cheap, because only solved problems are in it.
    */
-  const dueNow = new Set(reviewQueue(deps).due.map((item) => item.slug));
+  const dueNow = new Set(reviewQueue(deps, undefined, metas).due.map((item) => item.slug));
 
   const matched = all.filter((summary) => {
     if (query.topic.length > 0 && !query.topic.includes(summary.topic)) return false;
@@ -233,7 +233,7 @@ export function listProblems(
     total: all.length,
     byStatus: countByStatus(all.map((summary) => summary.status)),
     byTopic: countTopics(all),
-    due: [...dueNow].filter((slug) => all.some((summary) => summary.slug === slug)).length,
+    due: [...dueNow].filter((slug) => metas.has(slug)).length,
   };
 }
 
@@ -344,11 +344,16 @@ export function problemDetail(slug: string, deps: ProblemServiceDeps): ProblemDe
  * with no attempts has to appear as "0 / 12", and a table of what the user has
  * touched cannot say what they have not.
  */
-export function progressOverview(deps: ProblemServiceDeps): ProgressResponse {
+export function progressOverview(
+  deps: ProblemServiceDeps,
+  metas: ReadonlyMap<string, ProblemMeta> = metaBySlug(deps.catalogue),
+): ProgressResponse {
   const grouped = progressBySlug(deps.repos);
-  const summaries = deps.catalogue
-    .list()
-    .map((pkg) => summarise(pkg.meta, grouped.get(pkg.meta.slug) ?? []));
+  // Metadata, not whole packages (P3-9): a count by topic and tier never
+  // needed a statement or an editorial.
+  const summaries = [...metas.values()].map((meta) =>
+    summarise(meta, grouped.get(meta.slug) ?? []),
+  );
 
   return {
     rows: [...grouped.values()].flat(),

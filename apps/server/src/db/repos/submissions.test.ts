@@ -92,6 +92,40 @@ describe('submissions', () => {
     expect(repos.submissions.get(old.id)?.problemVersion).toBe(2);
   });
 
+  it('summarises accepted submissions per problem in one query (P3-9)', () => {
+    const insertAt = repos.db.prepare(
+      `INSERT INTO submissions (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+       VALUES (?, ?, ?, '', ?, 1, 1, 1, 1, ?)`,
+    );
+    const at = (day: number) => `2026-09-0${String(day)}T09:00:00.000Z`;
+    insertAt.run('a1', 'pair-sum-index', 'python', 'WA', at(1));
+    insertAt.run('a2', 'pair-sum-index', 'python', 'AC', at(2));
+    // Either language counts: a Java re-solve is a review of the same idea.
+    insertAt.run('a3', 'pair-sum-index', 'java', 'AC', at(4));
+    insertAt.run('b1', 'shift-right-in-place', 'python', 'TLE', at(3));
+
+    expect(repos.submissions.acceptedSummary()).toEqual(
+      new Map([['pair-sum-index', { count: 2, firstAt: at(2), lastAt: at(4) }]]),
+    );
+  });
+
+  it('pages past rows that share a timestamp when given the boundary row (P3-10)', () => {
+    const insertAt = repos.db.prepare(
+      `INSERT INTO submissions (id, slug, language, code, verdict, passed, total, time_ms, problem_version, created_at)
+       VALUES (?, 'pair-sum-index', 'python', '', 'AC', 1, 1, 1, 1, ?)`,
+    );
+    const id = (n: number) => `00000000-0000-4000-8000-00000000000${String(n)}`;
+    const tied = '2026-09-01T09:00:00.000Z';
+    for (const n of [1, 2, 3]) insertAt.run(id(n), tied);
+    insertAt.run(id(0), '2026-08-31T09:00:00.000Z');
+
+    // Newest first, ties by insertion order reversed: 3, 2, 1, then 0.
+    const after = repos.submissions.list({ before: tied, beforeId: id(3) }).map((s) => s.id);
+    expect(after).toEqual([id(2), id(1), id(0)]);
+    // The timestamp alone is still "strictly older".
+    expect(repos.submissions.list({ before: tied }).map((s) => s.id)).toEqual([id(0)]);
+  });
+
   it('rejects a verdict the domain does not define', () => {
     // The CHECK constraint is the backstop for a bug upstream of the repository.
     expect(() =>

@@ -27,6 +27,19 @@ export interface OpenOptions {
 }
 
 export function openDatabase(options: OpenOptions = {}): Database {
+  /*
+   * A test that forgets to pass a file must fail, not quietly migrate the
+   * owner's practice history (ROADMAP P3-8). `hardening.test.ts` did exactly
+   * that for months: it built the server without `repositories`, so every run
+   * opened and migrated the real `data/devpromax.db`. Vitest sets VITEST in
+   * every worker; a test that means to use a file says which one.
+   */
+  if (options.file === undefined && process.env.VITEST !== undefined) {
+    throw new Error(
+      `openDatabase() was called without a file under Vitest, which would open ${paths.db}. ` +
+        'Pass { file: IN_MEMORY } or a temporary path.',
+    );
+  }
   const file = options.file ?? paths.db;
 
   if (file !== IN_MEMORY) {

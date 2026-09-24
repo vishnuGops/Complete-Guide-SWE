@@ -235,6 +235,56 @@ describe('formatting', () => {
     ]);
   });
 
+  it('runs one formatter process per language at a time (P3-10)', async () => {
+    let running = 0;
+    let most = 0;
+    const run = async (options: SpawnOptions): Promise<SpawnResult> => {
+      if (options.args.includes('--version')) {
+        return result({ stdout: options.command === 'black' ? BLACK_VERSION : GJF_VERSION });
+      }
+      running += 1;
+      most = Math.max(most, running);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      running -= 1;
+      return result({ stdout: options.input ?? '' });
+    };
+    const formatters = createFormatters({ env: {}, run });
+
+    // A burst of saves: five Python requests at once.
+    const answers = await Promise.all(
+      [1, 2, 3, 4, 5].map((n) => formatters.format('python', `x = ${String(n)}\n`)),
+    );
+
+    expect(most).toBe(1);
+    // Each still gets its own answer, in its own order.
+    expect(answers.map((answer) => (answer.outcome === 'formatted' ? answer.code : null))).toEqual([
+      'x = 1\n',
+      'x = 2\n',
+      'x = 3\n',
+      'x = 4\n',
+      'x = 5\n',
+    ]);
+  });
+
+  it('does not make one language wait for the other', async () => {
+    let running = 0;
+    let most = 0;
+    const run = async (options: SpawnOptions): Promise<SpawnResult> => {
+      if (options.args.includes('--version')) {
+        return result({ stdout: options.command === 'black' ? BLACK_VERSION : GJF_VERSION });
+      }
+      running += 1;
+      most = Math.max(most, running);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      running -= 1;
+      return result({ stdout: options.input ?? '' });
+    };
+    const formatters = createFormatters({ env: {}, run });
+
+    await Promise.all([formatters.format('python', 'x\n'), formatters.format('java', 'y\n')]);
+    expect(most).toBe(2);
+  });
+
   it('says when nothing changed', async () => {
     const { run } = fakeRunner(bothInstalled());
     expect(await createFormatters({ env: {}, run }).format('python', 'ALREADY\n')).toEqual({

@@ -17,33 +17,7 @@
 import { execFileSync } from 'node:child_process';
 import { validateCatalogue, validateCatalogueFull, type CatalogueValidation } from '../validate.js';
 import type { ValidationIssue } from '../types.js';
-
-interface Args {
-  staticOnly: boolean;
-  slug?: string;
-  /** Base ref for `--changed`. */
-  changedFrom?: string;
-}
-
-function parseArgs(argv: readonly string[]): Args {
-  // `npm run problems:validate --static` makes npm swallow the flag into its own
-  // config rather than passing it through, so honour both that and the
-  // `-- --static` form.
-  const staticOnly = argv.includes('--static') || process.env['npm_config_static'] === 'true';
-
-  const changedAt = argv.indexOf('--changed');
-  const changedFrom =
-    changedAt !== -1 ? argv[changedAt + 1] : (process.env['npm_config_changed'] ?? undefined);
-
-  const positional = argv.filter((arg, index) => !arg.startsWith('-') && index !== changedAt + 1);
-  const slug = positional[0];
-
-  return {
-    staticOnly,
-    ...(slug ? { slug } : {}),
-    ...(changedFrom && changedFrom !== 'true' ? { changedFrom } : {}),
-  };
-}
+import { parseValidateArgs, type ValidateArgs } from './validateArgs.js';
 
 /**
  * Paths whose change invalidates every problem, not just its own.
@@ -125,7 +99,7 @@ function formatIssue(issue: ValidationIssue): string {
   return `  ${tag}  ${where}\n         ${issue.message}`;
 }
 
-function report(args: Args, result: CatalogueValidation): void {
+function report(args: ValidateArgs, result: CatalogueValidation): void {
   for (const problem of result.results) {
     if (problem.issues.length === 0) continue;
     console.log(`\n${problem.location.relDir}`);
@@ -152,7 +126,7 @@ function report(args: Args, result: CatalogueValidation): void {
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseValidateArgs(process.argv.slice(2));
 
   /*
    * `--changed` narrows the *reference* runs, never the static rules (D23).

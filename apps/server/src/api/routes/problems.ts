@@ -4,9 +4,11 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
   hintRevealSchema,
+  parseSubmissionCursor,
   problemListQuerySchema,
   reVerifySchema,
   slugSchema,
+  submissionCursor,
   submissionListQuerySchema,
   type HintRevealResponse,
   type ProblemDetail,
@@ -17,6 +19,7 @@ import {
 import { badRequest, notFound, parseInput } from '../errors.js';
 import { listProblems, problemDetail } from '../problemService.js';
 import { executeRun } from '../runService.js';
+import { runErrorToHttp } from './runs.js';
 import type { ApiDeps } from './types.js';
 
 const slugParams = z.object({ slug: slugSchema });
@@ -62,17 +65,20 @@ export function registerProblemRoutes(app: FastifyInstance, deps: ApiDeps): void
      * query, and without the off-by-one where a list whose length happens to
      * equal the limit offers a page that turns out to be empty.
      */
+    const cursor = query.before !== undefined ? parseSubmissionCursor(query.before) : null;
     const rows = deps.repos.submissions.list({
       slug,
       ...(query.language ? { language: query.language } : {}),
-      ...(query.before ? { before: query.before } : {}),
+      ...(cursor ? { before: cursor.createdAt } : {}),
+      ...(cursor?.id !== undefined ? { beforeId: cursor.id } : {}),
       limit: query.limit + 1,
     });
     const items = rows.slice(0, query.limit);
+    const last = items.at(-1);
 
     return {
       items,
-      nextCursor: rows.length > query.limit ? (items.at(-1)?.createdAt ?? null) : null,
+      nextCursor: rows.length > query.limit && last ? submissionCursor(last) : null,
     };
   });
 
@@ -95,14 +101,21 @@ export function registerProblemRoutes(app: FastifyInstance, deps: ApiDeps): void
       throw notFound(`No accepted ${language} submission for "${slug}" to re-verify.`);
     }
 
-    return executeRun(
-      { slug, language, code: last.code, kind: 'submit' },
-      {
-        repos: deps.repos,
-        ...(deps.judge ? { judge: deps.judge } : {}),
-        ...(deps.problemsRoot ? { problemsRoot: deps.problemsRoot } : {}),
-      },
-    );
+    try {
+      return await executeRun(
+        { slug, language, code: last.code, kind: 'submit' },
+        {
+          repos: deps.repos,
+          ...(deps.judge ? { judge: deps.judge } : {}),
+          ...(deps.problemsRoot ? { problemsRoot: deps.problemsRoot } : {}),
+        },
+      );
+    } catch (error) {
+      // The same mapping as Run and Submit (P3-10): a missing runtime is a
+      // JudgeError that says so, not a 500 carrying Node's own message and the
+      // absolute path it tried.
+      throw runErrorToHttp(error, language, request.log);
+    }
   });
 
   /**

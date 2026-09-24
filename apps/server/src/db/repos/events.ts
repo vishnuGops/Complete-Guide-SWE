@@ -63,8 +63,11 @@ function toRecord(row: Row): ActivityRecord {
 export interface EventRepo {
   record(event: NewActivity): ActivityRecord;
   list(query?: ActivityQuery): ActivityRecord[];
-  /** Counts per UTC day, newest first. */
-  dailyCounts(since?: string): DailyCount[];
+  /**
+   * Counts per day, newest first: UTC days, or the days `dayOf` names (P7-11),
+   * which is how the dashboard counts in the practiser's own time zone.
+   */
+  dailyCounts(since?: string, dayOf?: (createdAt: string) => string): DailyCount[];
   /**
    * The highest hint rung revealed for a problem, which is how many are visible.
    *
@@ -80,6 +83,8 @@ export interface EventRepo {
    * (P7-2). Derived from the log for the same reason the hint count is.
    */
   wasEditorialRevealed(slug: string): boolean;
+  /** How many events of one type there are, counted in SQL rather than in a list (P3-9). */
+  countByType(type: ActivityEvent): number;
   /** Returns how many rows went, which reset-all-progress reports back. */
   clear(): number;
 }
@@ -95,6 +100,7 @@ export function createEventRepo(db: Database): EventRepo {
   const editorialRevealedStmt = db.prepare(
     "SELECT 1 FROM events WHERE type = 'editorial_revealed' AND slug = ? LIMIT 1",
   );
+  const countByTypeStmt = db.prepare('SELECT COUNT(*) AS n FROM events WHERE type = ?');
   const highestHintStmt = db.prepare(
     `SELECT MAX(json_extract(payload, '$.revealed')) AS highest FROM events
       WHERE type = 'hint_revealed' AND slug = ?`,
@@ -152,11 +158,33 @@ export function createEventRepo(db: Database): EventRepo {
       return typeof highest === 'number' || typeof highest === 'bigint' ? Number(highest) : 0;
     },
 
+    countByType(type) {
+      const row = countByTypeStmt.get(type) as Row | undefined;
+      return row ? num(row, 'n') : 0;
+    },
+
     wasEditorialRevealed(slug) {
       return editorialRevealedStmt.get(slug) !== undefined;
     },
 
-    dailyCounts(since) {
+    dailyCounts(since, dayOf) {
+      if (dayOf !== undefined) {
+        // SQLite knows no IANA zones, so a local day is decided here. It reads
+        // one short column for at most a year of events, which is a few
+        // thousand strings for someone practising daily.
+        const sql =
+          'SELECT created_at FROM events' + (since !== undefined ? ' WHERE created_at >= ?' : '');
+        const stmt = db.prepare(sql);
+        const rows = (since !== undefined ? stmt.all(since) : stmt.all()) as Row[];
+        const perDay = new Map<string, number>();
+        for (const row of rows) {
+          const day = dayOf(text(row, 'created_at'));
+          perDay.set(day, (perDay.get(day) ?? 0) + 1);
+        }
+        return [...perDay]
+          .map(([day, count]) => ({ day, count }))
+          .sort((a, b) => b.day.localeCompare(a.day));
+      }
       // The first ten characters of an ISO-8601 UTC timestamp are its date, so
       // the grouping needs no date functions and no timezone assumptions beyond
       // the one this database already makes everywhere: timestamps are UTC.

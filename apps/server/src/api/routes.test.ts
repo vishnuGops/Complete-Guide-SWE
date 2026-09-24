@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import {
   COACH_API_KEY_ENV,
@@ -160,6 +160,20 @@ describe('hardening applies to real routes', () => {
 
     expect(response.statusCode).toBe(403);
     expect(response.json()).toMatchObject({ error: 'Forbidden' });
+  });
+
+  it('refuses a percent-encoded path to a real route (P3-8)', async () => {
+    // The audit's reproduction: this used to reset progress with a 200.
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/%61pi/settings/reset-progress',
+      headers: { host: '127.0.0.1:5174', 'content-type': 'text/plain' },
+      payload: 'x',
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(repos.progress.get(EASY, 'python')).not.toBeNull();
   });
 
   it('refuses a request addressed to somebody else’s host', async () => {
@@ -795,6 +809,37 @@ describe('problem version drift (P7-9)', () => {
       (await api('POST', `/api/problems/${EASY}/re-verify`, { language: 'rust' })).statusCode,
     ).toBe(400);
   });
+
+  it('answers a judge that cannot start the way Submit does (P3-10)', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    const failing = await buildServer({
+      logger: silentLogger,
+      repositories: repos,
+      problemsRoot: root,
+      judge: () =>
+        Promise.reject(
+          Object.assign(new Error('spawn C:\\secret\\path\\python.exe ENOENT'), {
+            code: 'ENOENT',
+          }),
+        ),
+      env: {},
+    });
+    await failing.ready();
+
+    const response = await failing.inject({
+      method: 'POST',
+      url: `/api/problems/${EASY}/re-verify`,
+      headers: { host: '127.0.0.1:5174', [serverConfig.clientHeader]: 'web' },
+      payload: { language: 'python' },
+    });
+    await failing.close();
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ error: 'JudgeError' });
+    expect(response.json().message).toContain('could not start Python');
+    // Node's message names a path on this machine; the browser is not told it.
+    expect(response.body).not.toContain('secret');
+  });
 });
 
 describe('submission pagination (P7-9)', () => {
@@ -846,6 +891,37 @@ describe('submission pagination (P7-9)', () => {
 
     expect(seen).toHaveLength(5);
     expect(new Set(seen).size).toBe(5);
+  });
+
+  it('does not skip rows that share the boundary millisecond (P3-10)', async () => {
+    // A timestamp-only cursor said "strictly older" and lost the tied rows
+    // after the page break: five rows at one instant came back as two.
+    for (let i = 1; i <= 5; i += 1) passed(i, '2026-09-01T09:00:00.000Z');
+
+    const seen: string[] = [];
+    let cursor: string | null | undefined;
+    do {
+      const page = (
+        await api(
+          'GET',
+          `/api/problems/${EASY}/submissions?limit=2${cursor ? `&before=${encodeURIComponent(cursor)}` : ''}`,
+        )
+      ).json() as SubmissionListResponse;
+      seen.push(...page.items.map((item) => item.id));
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    expect(seen).toHaveLength(5);
+    expect(new Set(seen).size).toBe(5);
+  });
+
+  it('still accepts a bare timestamp as a cursor', async () => {
+    for (let i = 1; i <= 3; i += 1) passed(i, `2026-09-0${String(i)}T09:00:00.000Z`);
+
+    const page = (
+      await api('GET', `/api/problems/${EASY}/submissions?before=2026-09-03T09:00:00.000Z`)
+    ).json() as SubmissionListResponse;
+    expect(page.items).toHaveLength(2);
   });
 
   it('rejects a cursor that is not a timestamp', async () => {
@@ -1039,6 +1115,45 @@ describe('the dashboard (P7-5)', () => {
     expect(
       ((await api('GET', '/api/dashboard')).json() as DashboardResponse).editorialsRevealed,
     ).toBe(1);
+  });
+
+  it('reads neither the submission archive nor the event log in full (P3-9)', async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+    const archive = vi.spyOn(repos.submissions, 'list');
+    const log = vi.spyOn(repos.events, 'list');
+
+    const body = (await api('GET', '/api/dashboard')).json() as DashboardResponse;
+    await api('GET', '/api/problems');
+
+    // The numbers still come out: they are aggregates now, not loops.
+    expect(body.solves).toEqual([{ day: expect.any(String), count: 1 }]);
+    expect(body.reviews.upcoming.map((item) => item.slug)).toEqual([EASY]);
+    expect(archive).not.toHaveBeenCalled();
+    // Only the bounded "recent" list reads events row by row.
+    expect(log.mock.calls).toEqual([[{ limit: expect.any(Number) }]]);
+  });
+
+  it("counts days in the viewer's time zone when it names one (P7-11)", async () => {
+    await api('POST', '/api/submit', { slug: EASY, language: 'python', code: 'x = 1' });
+
+    // UTC+14 and UTC-11 are 25 hours apart, so "today" is never the same date
+    // in both, whatever time the test runs.
+    const east = (
+      await api('GET', '/api/dashboard?tz=Pacific/Kiritimati')
+    ).json() as DashboardResponse;
+    const west = (
+      await api('GET', '/api/dashboard?tz=Pacific/Pago_Pago')
+    ).json() as DashboardResponse;
+
+    expect(east.solves[0]?.day).not.toBe(west.solves[0]?.day);
+    // The submit is today wherever you are, so each streak has started.
+    expect(east.streak.current).toBe(1);
+    expect(west.streak.current).toBe(1);
+  });
+
+  it('refuses a time zone it does not know rather than quietly using UTC', async () => {
+    expect((await api('GET', '/api/dashboard?tz=Not/AZone')).statusCode).toBe(400);
+    expect((await api('GET', '/api/dashboard/report?tz=Not/AZone')).statusCode).toBe(400);
   });
 
   it('has no skills to report before the coach has scored anything', async () => {
@@ -1322,6 +1437,40 @@ describe('settings', () => {
 
     expect(body.coach.apiKeySource).toBe('env');
     await withEnv.close();
+  });
+
+  it('keeps the provider and key when a later write changes only the model (P3-7)', async () => {
+    await api('PUT', '/api/settings', {
+      coach: { provider: 'gemini', apiKey: 'AIza-abcdefghijklmnop' },
+    });
+    const written = await api('PUT', '/api/settings', { coach: { model: 'gemini-3-pro' } });
+    expect(written.statusCode).toBe(200);
+
+    const body = (await api('GET', '/api/settings')).json() as SettingsView;
+    expect(body.coach).toMatchObject({
+      provider: 'gemini',
+      model: 'gemini-3-pro',
+      apiKeyMasked: '••••••••mnop',
+      apiKeySource: 'settings',
+    });
+  });
+
+  it('keeps the other editor and judge fields when one of them changes (P3-7)', async () => {
+    await api('PUT', '/api/settings', {
+      editor: { fontSize: 18, tabSize: 2, wordWrap: true },
+      judge: { timeoutMultiplier: 2, concurrency: 3 },
+    });
+    await api('PUT', '/api/settings', { editor: { vimKeybindings: true } });
+    await api('PUT', '/api/settings', { judge: { concurrency: 1 } });
+
+    const body = (await api('GET', '/api/settings')).json() as SettingsView;
+    expect(body.editor).toMatchObject({
+      fontSize: 18,
+      tabSize: 2,
+      wordWrap: true,
+      vimKeybindings: true,
+    });
+    expect(body.judge).toEqual({ timeoutMultiplier: 2, concurrency: 1 });
   });
 
   it('rejects an out-of-range preference', async () => {

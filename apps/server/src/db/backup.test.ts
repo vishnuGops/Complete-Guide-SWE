@@ -101,6 +101,47 @@ describe('backupTo', () => {
     expect(fs.readFileSync(target, 'utf8')).toBe('not a database');
   });
 
+  it('leaves the API key out, down to the bytes, and says so (P3-10)', () => {
+    const key = 'sk-ant-api03-backup-must-not-carry-this';
+    repos.settings.update({ coach: { provider: 'gemini', apiKey: key, model: 'm' } });
+
+    const target = path.join(dir, 'no-key.db');
+    const result = backupTo(repos.db, target);
+
+    expect(result.keyOmitted).toBe(true);
+    // Not only null in the row: absent from the file, freed pages included.
+    expect(fs.readFileSync(target).includes(Buffer.from(key))).toBe(false);
+    // Nothing written beside it on the way, such as a rollback journal.
+    expect(fs.readdirSync(dir).filter((name) => name.startsWith('no-key'))).toEqual(['no-key.db']);
+
+    const copy = createDatabase({ file: target });
+    // Everything else in the section survives.
+    expect(copy.settings.get().coach).toMatchObject({
+      provider: 'gemini',
+      model: 'm',
+      apiKey: null,
+    });
+    copy.close();
+    // And the live database still has it.
+    expect(repos.settings.get().coach.apiKey).toBe(key);
+  });
+
+  it('keeps the key when asked to', () => {
+    repos.settings.update({ coach: { apiKey: 'sk-ant-kept' } });
+
+    const target = path.join(dir, 'with-key.db');
+    const result = backupTo(repos.db, target, { includeKey: true });
+
+    expect(result.keyOmitted).toBe(false);
+    const copy = createDatabase({ file: target });
+    expect(copy.settings.get().coach.apiKey).toBe('sk-ant-kept');
+    copy.close();
+  });
+
+  it('does not claim to have left out a key there was none of', () => {
+    expect(backupTo(repos.db, path.join(dir, 'nothing.db')).keyOmitted).toBe(false);
+  });
+
   it('creates the directory it was pointed at', () => {
     const target = path.join(dir, 'nested', 'deeper', 'copy.db');
     backupTo(repos.db, target);
@@ -181,6 +222,42 @@ describe('restoreFrom', () => {
     const restored = createDatabase({ file: dbFile });
     expect(restored.submissions.list().map((row) => row.slug)).toEqual(['pair-sum-index']);
     restored.close();
+  });
+
+  it('keeps the displaced database whole, last writes included (P3-10)', () => {
+    aSubmission('pair-sum-index');
+    const backup = path.join(dir, 'before.db');
+    backupTo(repos.db, backup);
+    // Written after the backup and, in WAL mode, possibly only in the log.
+    aSubmission('shift-right-in-place');
+    repos.close();
+
+    const result = restoreFrom(backup, dbFile);
+
+    const displaced = createDatabase({ file: result.displaced });
+    expect(
+      displaced.submissions
+        .list()
+        .map((row) => row.slug)
+        .sort(),
+    ).toEqual(['pair-sum-index', 'shift-right-in-place']);
+    displaced.close();
+  });
+
+  it('refuses while another connection is reading the database', () => {
+    aSubmission('pair-sum-index');
+    const backup = path.join(dir, 'before.db');
+    backupTo(repos.db, backup);
+    aSubmission('shift-right-in-place');
+    // An open read transaction is what a running server looks like mid-request,
+    // and a checkpoint cannot complete under it.
+    repos.db.exec('BEGIN');
+    repos.submissions.list();
+
+    expect(() => restoreFrom(backup, dbFile)).toThrow(/in use/);
+    repos.db.exec('COMMIT');
+    // Nothing moved.
+    expect(repos.submissions.list()).toHaveLength(2);
   });
 
   it('clears a stale write-ahead log so it cannot be replayed over the restore', () => {

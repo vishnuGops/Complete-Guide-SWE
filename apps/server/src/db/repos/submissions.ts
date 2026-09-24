@@ -23,6 +23,11 @@ export interface SubmissionQuery {
   limit?: number;
   /** Only rows older than this timestamp, for the cursor pagination in P7-9. */
   before?: string;
+  /**
+   * With `before`: the id of the row the previous page ended on, so rows that
+   * share its timestamp and come after it in the list are kept (P3-10).
+   */
+  beforeId?: string;
 }
 
 function toSubmission(row: Row): Submission {
@@ -39,6 +44,13 @@ function toSubmission(row: Row): Submission {
     solveMs: nullableNumber(row, 'solve_ms'),
     createdAt: text(row, 'created_at'),
   });
+}
+
+/** One problem's accepted submissions, summarised (see `acceptedSummary`). */
+export interface AcceptedSummary {
+  count: number;
+  firstAt: string;
+  lastAt: string;
 }
 
 const COLUMNS =
@@ -59,6 +71,16 @@ export interface SubmissionRepo {
    * go up, so they are the same number, and MAX needs no ordering.
    */
   acceptedVersions(): Map<string, number>;
+  /**
+   * Accepted submissions per problem, either language: how many, the first and
+   * the latest (P3-9).
+   *
+   * The review queue counts passes and the dashboard dates first solves, and
+   * both used to do it by reading the whole archive - every row's code, parsed
+   * through zod - to look at three columns. This is the same answer as one
+   * GROUP BY.
+   */
+  acceptedSummary(): Map<string, AcceptedSummary>;
   /** Wipes the archive; returns how many rows went. Used by reset-all-progress. */
   clear(): number;
 }
@@ -73,6 +95,10 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
   const acceptedVersionsStmt = db.prepare(
     `SELECT slug, MAX(problem_version) AS version FROM submissions
       WHERE verdict = 'AC' GROUP BY slug`,
+  );
+  const acceptedSummaryStmt = db.prepare(
+    `SELECT slug, COUNT(*) AS n, MIN(created_at) AS first_at, MAX(created_at) AS last_at
+       FROM submissions WHERE verdict = 'AC' GROUP BY slug`,
   );
   const latestAcceptedStmt = db.prepare(
     `SELECT ${COLUMNS} FROM submissions
@@ -109,6 +135,16 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
       return new Map(rows.map((row) => [text(row, 'slug'), num(row, 'version')]));
     },
 
+    acceptedSummary() {
+      const rows = acceptedSummaryStmt.all() as Row[];
+      return new Map(
+        rows.map((row) => [
+          text(row, 'slug'),
+          { count: num(row, 'n'), firstAt: text(row, 'first_at'), lastAt: text(row, 'last_at') },
+        ]),
+      );
+    },
+
     get(id) {
       const row = getStmt.get(id) as Row | undefined;
       return row ? toSubmission(row) : null;
@@ -121,7 +157,17 @@ export function createSubmissionRepo(db: Database): SubmissionRepo {
         where.push('slug = ?');
         params.push(query.slug);
       }
-      if (query.before !== undefined) {
+      if (query.before !== undefined && query.beforeId !== undefined) {
+        // After the cursor row in the list's own order - created_at, then
+        // rowid - so a row sharing the boundary millisecond is on the next page
+        // rather than on neither (P3-10). A cursor row that has since been
+        // deleted gives a NULL rowid, and the comparison falls back to
+        // strictly older.
+        where.push(
+          '(created_at < ? OR (created_at = ? AND rowid < (SELECT rowid FROM submissions WHERE id = ?)))',
+        );
+        params.push(query.before, query.before, query.beforeId);
+      } else if (query.before !== undefined) {
         // Strictly older. Timestamps are ISO-8601 UTC and sort as text, which
         // is the one assumption this whole schema already makes.
         where.push('created_at < ?');

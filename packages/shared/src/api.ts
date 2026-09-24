@@ -301,25 +301,56 @@ export type HintRevealResponse = z.infer<typeof hintRevealResponseSchema>;
 // GET /api/problems/:slug/submissions
 // ---------------------------------------------------------------------------
 
+/**
+ * Where a page of submission history ends: the last row's `createdAt` and `id`,
+ * as `<createdAt>|<id>` (ROADMAP P3-10).
+ *
+ * The timestamp alone skipped rows. Two submissions can share a millisecond,
+ * and "strictly older than the last row" then drops the other one at the
+ * page boundary. The id says which of the tied rows the page ended on. A bare
+ * timestamp is still accepted and means what it used to.
+ */
+export interface SubmissionCursor {
+  createdAt: string;
+  id?: string;
+}
+
+const isoDateTime = z.iso.datetime();
+const cursorId = z.uuid();
+
+export function parseSubmissionCursor(cursor: string): SubmissionCursor | null {
+  const [createdAt = '', id, ...rest] = cursor.split('|');
+  if (rest.length > 0 || !isoDateTime.safeParse(createdAt).success) return null;
+  if (id === undefined) return { createdAt };
+  return cursorId.safeParse(id).success ? { createdAt, id } : null;
+}
+
+export function submissionCursor(row: { createdAt: string; id: string }): string {
+  return `${row.createdAt}|${row.id}`;
+}
+
 export const submissionListQuerySchema = z.object({
   language: languageSchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   /**
-   * Cursor: only submissions older than this one (P7-9).
+   * Cursor: only submissions after this one in newest-first order (P7-9).
    *
-   * The previous page's `nextCursor`, which is a `created_at` timestamp. A
-   * cursor rather than an offset, because the list is newest-first and a submit
-   * made while someone is reading page two would shift every offset by one and
-   * show them a row they had already seen.
+   * The previous page's `nextCursor`. A cursor rather than an offset, because
+   * the list is newest-first and a submit made while someone is reading page
+   * two would shift every offset by one and show them a row they had already
+   * seen.
    */
-  before: z.iso.datetime().optional(),
+  before: z
+    .string()
+    .refine((value) => parseSubmissionCursor(value) !== null, 'Not a submission cursor.')
+    .optional(),
 });
 export type SubmissionListQuery = z.infer<typeof submissionListQuerySchema>;
 
 export const submissionListResponseSchema = z.object({
   items: z.array(submissionSchema),
   /** Pass back as `before` for the next page. Null when this is the last one. */
-  nextCursor: z.iso.datetime().nullable(),
+  nextCursor: z.string().nullable(),
 });
 export type SubmissionListResponse = z.infer<typeof submissionListResponseSchema>;
 
@@ -439,9 +470,39 @@ export type RuntimeReport = z.infer<typeof runtimeReportSchema>;
 // GET /api/dashboard
 // ---------------------------------------------------------------------------
 
-/** One UTC day of the streak calendar. */
+/** Whether this runtime knows `name` as an IANA time zone ("Asia/Kolkata"). */
+export function isTimeZone(name: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The viewer's time zone, which is what a "day" on the dashboard means (P7-11).
+ *
+ * Timestamps are stored in UTC and stay that way; only the bucketing into days
+ * moves. A streak is a promise about the practiser's own days, and a UTC day
+ * splits an evening in the Americas or a late night in India across two of
+ * them. Optional, so a client that sends none gets the UTC days it always did.
+ */
+export const timeZoneSchema = z.string().min(1).max(64).refine(isTimeZone, {
+  message: 'not a time zone this machine knows',
+});
+
+export const dashboardQuerySchema = z.object({
+  tz: timeZoneSchema.optional(),
+});
+export type DashboardQuery = z.infer<typeof dashboardQuerySchema>;
+
+/** One day of the streak calendar. */
 export const activeDaySchema = z.object({
-  /** `YYYY-MM-DD`, UTC, which is how the events table stores its timestamps. */
+  /**
+   * `YYYY-MM-DD` in the time zone the request named (P7-11), or in UTC when it
+   * named none.
+   */
   day: z.string(),
   count: z.int().min(0),
 });
@@ -505,7 +566,7 @@ export const dashboardResponseSchema = z.object({
   byTier: z.array(tierCountSchema),
   streak: streakSchema,
   /**
-   * First solves per UTC day, newest first (P9-6): the day each problem was
+   * First solves per day, newest first (P9-6): the day each problem was
    * first accepted, in any language. What the Solved chart draws, cumulatively.
    * Every day with a first solve, not a window: the catalogue is a few hundred
    * problems, so this is at most a few hundred rows.
@@ -531,6 +592,8 @@ export type ReportFormat = z.infer<typeof reportFormatSchema>;
 
 export const reportQuerySchema = z.object({
   format: reportFormatSchema.default('markdown'),
+  /** The same days the screen showed, so the file agrees with it (P7-11). */
+  tz: timeZoneSchema.optional(),
 });
 export type ReportQuery = z.infer<typeof reportQuerySchema>;
 

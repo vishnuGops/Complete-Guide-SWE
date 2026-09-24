@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { reportQuerySchema, type DashboardResponse } from '@devpromax/shared';
+import { dashboardQuerySchema, reportQuerySchema, type DashboardResponse } from '@devpromax/shared';
 import { dashboard } from '../dashboardService.js';
 import { parseInput } from '../errors.js';
 import { buildReport } from '../reportService.js';
@@ -13,11 +13,16 @@ import type { ApiDeps } from './types.js';
  * sends to a recruiter cannot disagree.
  */
 export function registerDashboardRoutes(app: FastifyInstance, deps: ApiDeps): void {
-  app.get('/api/dashboard', async (): Promise<DashboardResponse> => dashboard(deps));
+  app.get('/api/dashboard', async (request): Promise<DashboardResponse> => {
+    // The viewer's time zone decides what a day is (P7-11); an unknown one is a
+    // 400 rather than a quiet fall back to UTC, which would look like a bug.
+    const { tz } = parseInput(dashboardQuerySchema, request.query, 'query');
+    return dashboard(deps, tz);
+  });
 
   app.get('/api/dashboard/report', async (request, reply) => {
-    const { format } = parseInput(reportQuerySchema, request.query, 'query');
-    const report = buildReport(dashboard(deps), format);
+    const { format, tz } = parseInput(reportQuerySchema, request.query, 'query');
+    const report = buildReport(dashboard(deps, tz), format);
 
     // `attachment` with a name, because this is a file to keep rather than a
     // page to look at - and the HTML one in particular must not be rendered by

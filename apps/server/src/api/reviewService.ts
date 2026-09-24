@@ -2,11 +2,25 @@ import {
   DAY_MS,
   reviewDueAt,
   statusRank,
+  type ProblemMeta,
+  type ProblemProgress,
   type ReviewItem,
   type ReviewQueue,
 } from '@devpromax/shared';
 import { nowIso } from '../db/open.js';
+import type { Catalogue } from './catalogue.js';
 import type { ProblemServiceDeps } from './problemService.js';
+
+/**
+ * Every problem's metadata by slug, read once (P3-9).
+ *
+ * The services that need titles and tiers for many problems build this once
+ * per request and pass it along, rather than each asking the catalogue per
+ * slug - a question that used to mean a directory walk every time.
+ */
+export function metaBySlug(catalogue: Catalogue): Map<string, ProblemMeta> {
+  return new Map(catalogue.listMeta().map(({ meta }) => [meta.slug, meta]));
+}
 
 /**
  * The review queue (ROADMAP P7-8).
@@ -23,34 +37,41 @@ import type { ProblemServiceDeps } from './problemService.js';
  * remembered.
  */
 
-export function reviewQueue(deps: ProblemServiceDeps, now = nowIso()): ReviewQueue {
-  const { repos, catalogue } = deps;
+export function reviewQueue(
+  deps: ProblemServiceDeps,
+  now = nowIso(),
+  metas: ReadonlyMap<string, ProblemMeta> = metaBySlug(deps.catalogue),
+): ReviewQueue {
+  const { repos } = deps;
   const at = new Date(now).getTime();
 
-  const passes = new Map<string, { count: number; last: string }>();
-  for (const submission of repos.submissions.list()) {
-    if (submission.verdict !== 'AC') continue;
-    const entry = passes.get(submission.slug) ?? { count: 0, last: submission.createdAt };
-    entry.count += 1;
-    // The list is newest first, so the first accepted row seen is the latest.
-    if (submission.createdAt > entry.last) entry.last = submission.createdAt;
-    passes.set(submission.slug, entry);
+  /*
+   * Two queries, whatever the size of the archive (P3-9). This used to read
+   * every submission - code and all - to count the accepted ones, then read the
+   * whole package and the progress rows once per solved problem.
+   */
+  const passes = repos.submissions.acceptedSummary();
+  const progress = new Map<string, ProblemProgress[]>();
+  for (const row of repos.progress.list()) {
+    const existing = progress.get(row.slug);
+    if (existing) existing.push(row);
+    else progress.set(row.slug, [row]);
   }
 
   const items: ReviewItem[] = [];
   for (const [slug, entry] of passes) {
-    const meta = catalogue.get(slug)?.meta;
+    const meta = metas.get(slug);
     // A problem that has left the catalogue cannot be reviewed, and a queue row
     // pointing at a 404 is worse than a shorter queue.
     if (meta === undefined) continue;
 
-    const rows = repos.progress.listByProblem(slug);
+    const rows = progress.get(slug) ?? [];
     const mastered = rows.some((row) => statusRank(row.status) >= statusRank('mastered'));
     const best = rows.reduce(
       (acc, row) => (statusRank(row.status) > statusRank(acc) ? row.status : acc),
       'not_started' as ReviewItem['status'],
     );
-    const dueAt = reviewDueAt(entry.last, entry.count, mastered);
+    const dueAt = reviewDueAt(entry.lastAt, entry.count, mastered);
 
     items.push({
       slug,
@@ -58,7 +79,7 @@ export function reviewQueue(deps: ProblemServiceDeps, now = nowIso()): ReviewQue
       topic: meta.topic,
       tier: meta.tier,
       status: best,
-      lastPassedAt: entry.last,
+      lastPassedAt: entry.lastAt,
       passes: entry.count,
       dueAt,
       // Whole days, floored, so "due today" reads as 0 rather than as 0.4.

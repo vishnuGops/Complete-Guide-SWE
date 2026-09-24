@@ -84,6 +84,13 @@ export async function buildServer(options: BuildOptions = {}) {
     }
   });
 
+  // Fastify also parses text/plain out of the box, and text/plain is one of the
+  // three content types a cross-origin page can send without a preflight. The
+  // hook in api/hardening.ts refuses it on /api, but the parser is the second
+  // lock: with it gone, Fastify itself answers 415 to a text/plain body on any
+  // route, whatever the hook decided (ROADMAP P3-8, D15).
+  app.removeContentTypeParser('text/plain');
+
   const catalogue =
     options.catalogue ??
     createCatalogue(options.problemsRoot ? { root: options.problemsRoot } : {});
@@ -127,11 +134,16 @@ export async function buildServer(options: BuildOptions = {}) {
  *
  * `once` per signal, and a second signal exits immediately: someone pressing
  * Ctrl+C twice means it now.
+ *
+ * SIGHUP too (ROADMAP P3-10). On Windows, closing the console window is how
+ * most people stop a program, and Node reports it as SIGHUP - then Windows ends
+ * the process a few seconds later whatever it is doing. Without a handler the
+ * default was to die at once, with none of the three steps above.
  */
 function installShutdown(app: Awaited<ReturnType<typeof buildServer>>): void {
   let closing = false;
 
-  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
     process.on(signal, () => {
       if (closing) {
         process.exit(130);

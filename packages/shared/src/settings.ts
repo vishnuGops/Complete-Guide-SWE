@@ -70,11 +70,39 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
+/** Every field of `S` optional, with its `.default()` taken off. */
+type PatchShape<S extends z.ZodRawShape> = {
+  [K in keyof S]: z.ZodOptional<S[K] extends z.ZodDefault<infer Inner> ? Inner : S[K]>;
+};
+
+/**
+ * The patch form of a settings section: every field optional and none
+ * defaulted.
+ *
+ * Not `.partial()`. In zod 4 a `.default()` still fires inside `.partial()`, so
+ * `{ coach: { model: 'm' } }` parsed as `{ coach: { model: 'm', provider:
+ * 'anthropic', apiKey: null, ... } }` and a one-field PUT reset every sibling in
+ * the section - the stored API key included (ROADMAP P3-7). A patch has to
+ * carry exactly what the client sent, because the settings service reads
+ * `'apiKey' in patch.coach` as "the user touched the key".
+ */
+function patchOf<S extends z.ZodRawShape>(section: z.ZodObject<S>): z.ZodObject<PatchShape<S>> {
+  const shape: Record<string, z.ZodType> = {};
+  for (const [key, field] of Object.entries(section.shape)) {
+    // Every settings field is a classic schema; the shape's type is the core one.
+    const inner = (field instanceof z.ZodDefault ? field.unwrap() : field) as z.ZodType;
+    shape[key] = inner.optional();
+  }
+  // The loop builds exactly `PatchShape<S>`; TypeScript cannot follow a mapped
+  // type through Object.entries.
+  return z.object(shape) as unknown as z.ZodObject<PatchShape<S>>;
+}
+
 /** Partial update accepted by `PUT /api/settings`. */
 export const settingsUpdateSchema = z.object({
-  coach: coachSettingsSchema.partial().optional(),
-  editor: editorPrefsSchema.partial().optional(),
-  judge: judgePrefsSchema.partial().optional(),
+  coach: patchOf(coachSettingsSchema).optional(),
+  editor: patchOf(editorPrefsSchema).optional(),
+  judge: patchOf(judgePrefsSchema).optional(),
   theme: themeSchema.optional(),
   lastLanguage: languageSchema.optional(),
   welcomeDismissed: z.boolean().optional(),

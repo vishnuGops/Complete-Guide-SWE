@@ -1,8 +1,13 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { paths } from '../config.js';
 import { logger } from '../logger.js';
-import { discoverProblems, loadMeta, loadProblem } from '../problems/loader.js';
+import {
+  clearLoaderCaches,
+  discoverProblemsCached,
+  loadMeta,
+  loadProblem,
+  locateProblem,
+  stampFiles,
+} from '../problems/loader.js';
 import type { ProblemLocation, ProblemPackage } from '../problems/types.js';
 import type { ProblemMeta } from '@devpromax/shared';
 
@@ -73,7 +78,7 @@ export interface CatalogueOptions {
   cache?: boolean;
 }
 
-/** Files whose modification time decides whether a cached read is stale. */
+/** Files whose modification time decides whether a cached package is stale. */
 const WATCHED = [
   'meta.json',
   'tests.json',
@@ -87,25 +92,22 @@ const WATCHED = [
 ] as const;
 
 /**
+ * The list reads `meta.json` and nothing else, so nothing else can make its
+ * entry stale (ROADMAP P3-9). Stamping all nine files per problem per list was
+ * fifteen hundred stats for a hundred and seventy problems, every time the list
+ * page loaded, to guard files the list never reads.
+ */
+const META_ONLY = ['meta.json'] as const;
+
+/**
  * A number that changes when the problem does.
  *
- * The newest mtime across the files a package is built from, plus the count of
+ * The newest mtime across the files an entry is built from, plus the count of
  * those that exist - so deleting a file invalidates the entry even if nothing
- * else was touched. Nine stats per problem is well under a millisecond and is
- * the whole price of never serving a stale statement.
+ * else was touched.
  */
-function stampOf(dir: string): number {
-  let newest = 0;
-  let present = 0;
-  for (const file of WATCHED) {
-    try {
-      newest = Math.max(newest, fs.statSync(path.join(dir, file)).mtimeMs);
-      present += 1;
-    } catch {
-      // Missing: the loader reports it, and its absence is part of the stamp.
-    }
-  }
-  return newest * 16 + present;
+function stampOf(dir: string, files: readonly string[]): number {
+  return stampFiles(dir, files).key;
 }
 
 interface CachedMeta {
@@ -126,7 +128,7 @@ export function createCatalogue(options: CatalogueOptions = {}): Catalogue {
   const packageCache = new Map<string, CachedPackage>();
 
   function readMeta(location: ProblemLocation): CatalogueEntry | undefined {
-    const stamp = stampOf(location.dir);
+    const stamp = stampOf(location.dir, META_ONLY);
     const cached = metaCache.get(location.dir);
     if (caching && cached && cached.stamp === stamp) return cached.entry;
 
@@ -143,7 +145,7 @@ export function createCatalogue(options: CatalogueOptions = {}): Catalogue {
   }
 
   function readPackage(location: ProblemLocation): ProblemPackage | undefined {
-    const stamp = stampOf(location.dir);
+    const stamp = stampOf(location.dir, WATCHED);
     const cached = packageCache.get(location.dir);
     if (caching && cached && cached.stamp === stamp) return cached.pkg;
 
@@ -162,20 +164,21 @@ export function createCatalogue(options: CatalogueOptions = {}): Catalogue {
 
   function locate(slug: string): ProblemLocation | undefined {
     // Matched on the directory name, which the validator requires to equal the
-    // slug: one directory is read rather than the whole catalogue.
-    return discoverProblems(root).find((candidate) => candidate.slugDir === slug);
+    // slug, and remembered (P3-9): a workspace load used to walk the whole tree
+    // once for the problem and once more per related problem.
+    return locateProblem(slug, root);
   }
 
   return {
     listMeta() {
-      return discoverProblems(root).flatMap((location) => {
+      return discoverProblemsCached(root).flatMap((location) => {
         const entry = readMeta(location);
         return entry ? [entry] : [];
       });
     },
 
     list() {
-      return discoverProblems(root).flatMap((location) => {
+      return discoverProblemsCached(root).flatMap((location) => {
         const pkg = readPackage(location);
         return pkg ? [pkg] : [];
       });
@@ -194,6 +197,7 @@ export function createCatalogue(options: CatalogueOptions = {}): Catalogue {
     reload() {
       metaCache.clear();
       packageCache.clear();
+      clearLoaderCaches();
     },
   };
 }

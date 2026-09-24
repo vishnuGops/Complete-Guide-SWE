@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { skillsFrom, solvesFrom, streakFrom } from './dashboardService.js';
+import { calendarDay, skillsFrom, solvesFrom, streakFrom } from './dashboardService.js';
 
 /**
  * The two derivations the dashboard does that are not a count (ROADMAP P7-5).
@@ -131,5 +131,39 @@ describe('solvesFrom (P9-6)', () => {
 
   it('is empty before anything is accepted', () => {
     expect(solvesFrom([at('a', 'WA', '2026-09-22T10:00:00.000Z')])).toEqual([]);
+  });
+
+  it("puts a solve on the solver's own day (P7-11)", () => {
+    // 01:30 UTC on the 21st is still the evening of the 20th in New York.
+    const solves = solvesFrom(
+      [at('a', 'AC', '2026-09-21T01:30:00.000Z')],
+      calendarDay('America/New_York'),
+    );
+    expect(solves).toEqual([{ day: '2026-09-20', count: 1 }]);
+  });
+});
+
+describe('calendarDay (P7-11)', () => {
+  it('is the UTC date when no zone is given', () => {
+    expect(calendarDay()('2026-09-21T23:30:00.000Z')).toBe('2026-09-21');
+  });
+
+  it('moves a timestamp to the local date on either side of UTC', () => {
+    expect(calendarDay('America/Los_Angeles')('2026-09-21T03:00:00.000Z')).toBe('2026-09-20');
+    expect(calendarDay('Asia/Kolkata')('2026-09-20T20:00:00.000Z')).toBe('2026-09-21');
+  });
+
+  it('keeps a late-night streak unbroken where UTC would split it', () => {
+    // Two sessions in India: 23:00 on the 20th and 05:00 on the 21st, local
+    // time - two days of practice. Both are the 20th in UTC, so counted in UTC
+    // they were one active day and the streak read 1 on the 21st.
+    const sessions = ['2026-09-20T17:30:00.000Z', '2026-09-20T23:30:00.000Z'];
+    const toDays = (dayOf: (iso: string) => string) =>
+      sessions.map(dayOf).map((day) => ({ day, count: 1 }));
+
+    expect(streakFrom(toDays(calendarDay('Asia/Kolkata')), '2026-09-21').current).toBe(2);
+    expect(new Set(toDays(calendarDay()).map((entry) => entry.day))).toEqual(
+      new Set(['2026-09-20']),
+    );
   });
 });

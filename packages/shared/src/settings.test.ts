@@ -42,6 +42,33 @@ describe('settingsUpdateSchema', () => {
     expect(parsed.editor).toBeUndefined();
   });
 
+  it('carries only the fields that were sent, with no defaults filled in (P3-7)', () => {
+    // Before P3-7 this came back with provider, apiKey, spendCapUsd and baseUrl
+    // defaulted, and the merge in the settings repo wrote them over the stored
+    // values - a model change deleted the API key.
+    expect(settingsUpdateSchema.parse({ coach: { model: 'm' } })).toStrictEqual({
+      coach: { model: 'm' },
+    });
+    expect(settingsUpdateSchema.parse({ editor: { fontSize: 18 } })).toStrictEqual({
+      editor: { fontSize: 18 },
+    });
+    expect(settingsUpdateSchema.parse({ judge: { concurrency: 3 } })).toStrictEqual({
+      judge: { concurrency: 3 },
+    });
+  });
+
+  it('keeps apiKey out of the patch unless the client sent it', () => {
+    const withoutKey = settingsUpdateSchema.parse({ coach: { provider: 'gemini' } });
+    expect('apiKey' in (withoutKey.coach ?? {})).toBe(false);
+    const cleared = settingsUpdateSchema.parse({ coach: { apiKey: null } });
+    expect(cleared.coach).toStrictEqual({ apiKey: null });
+  });
+
+  it('still validates the fields it does carry', () => {
+    expect(settingsUpdateSchema.safeParse({ editor: { fontSize: 4 } }).success).toBe(false);
+    expect(settingsUpdateSchema.safeParse({ coach: { provider: 'nope' } }).success).toBe(false);
+  });
+
   it('accepts an empty update', () => {
     expect(settingsUpdateSchema.parse({})).toEqual({});
   });

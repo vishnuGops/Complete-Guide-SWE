@@ -9,7 +9,7 @@ import {
 } from '@devpromax/shared';
 import { nowIso } from '../db/open.js';
 import { progressOverview, type ProblemServiceDeps } from './problemService.js';
-import { reviewQueue } from './reviewService.js';
+import { metaBySlug, reviewQueue } from './reviewService.js';
 
 /**
  * The progress dashboard (ROADMAP P7-5).
@@ -27,6 +27,31 @@ const CALENDAR_DAYS = 365;
 
 function utcDay(iso: string): string {
   return iso.slice(0, 10);
+}
+
+/**
+ * The calendar day a UTC timestamp falls on for someone in `timeZone` (P7-11).
+ *
+ * UTC when no zone is given, which is what the dashboard did before and what a
+ * client that sends none still gets. One formatter per request rather than per
+ * timestamp: building an `Intl.DateTimeFormat` is the expensive part.
+ */
+export function calendarDay(timeZone?: string): (iso: string) => string {
+  if (timeZone === undefined) return utcDay;
+  const format = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return (iso) => {
+    // Assembled from parts, because the order a locale writes a date in is the
+    // locale's business and `YYYY-MM-DD` is this schema's.
+    const parts = format.formatToParts(new Date(iso));
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((entry) => entry.type === type)?.value ?? '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  };
 }
 
 function dayBefore(day: string): string {
@@ -71,11 +96,11 @@ export function streakFrom(days: readonly ActiveDay[], today: string): Streak {
  *
  * The earliest accepted submission of each problem, in either language, is the
  * day it was solved; later accepts are reviews and re-solves and do not move
- * the line. Grouped by the first ten characters of the timestamp, which is the
- * UTC day, as everywhere else in this schema.
+ * the line. Grouped by `dayOf`: the viewer's own days (P7-11), UTC by default.
  */
 export function solvesFrom(
   submissions: readonly { slug: string; verdict: string; createdAt: string }[],
+  dayOf: (iso: string) => string = utcDay,
 ): ActiveDay[] {
   const first = new Map<string, string>();
   for (const submission of submissions) {
@@ -88,7 +113,7 @@ export function solvesFrom(
 
   const perDay = new Map<string, number>();
   for (const at of first.values()) {
-    const day = utcDay(at);
+    const day = dayOf(at);
     perDay.set(day, (perDay.get(day) ?? 0) + 1);
   }
   return [...perDay]
@@ -146,16 +171,23 @@ export function skillsFrom(
   return skills.sort((a, b) => a.average - b.average || b.samples - a.samples);
 }
 
-export function dashboard(deps: ProblemServiceDeps): DashboardResponse {
+export function dashboard(deps: ProblemServiceDeps, timeZone?: string): DashboardResponse {
   const { repos } = deps;
-  const overview = progressOverview(deps);
+  // One read of the catalogue's metadata for the whole response (P3-9).
+  const titles = metaBySlug(deps.catalogue);
+  const overview = progressOverview(deps, titles);
   const generatedAt = nowIso();
+  const dayOf = calendarDay(timeZone);
 
+  // A day further back than the calendar shows: a local day can begin up to 14
+  // hours before its UTC namesake, and its first events must not be cut off.
   const since = new Date(generatedAt);
-  since.setUTCDate(since.getUTCDate() - (CALENDAR_DAYS - 1));
-  const days = repos.events.dailyCounts(`${since.toISOString().slice(0, 10)}T00:00:00.000Z`);
+  since.setUTCDate(since.getUTCDate() - CALENDAR_DAYS);
+  const days = repos.events.dailyCounts(
+    `${since.toISOString().slice(0, 10)}T00:00:00.000Z`,
+    timeZone === undefined ? undefined : dayOf,
+  );
 
-  const titles = new Map(deps.catalogue.listMeta().map(({ meta }) => [meta.slug, meta]));
   const recent: RecentActivity[] = repos.events.list({ limit: RECENT_LIMIT }).map((event) => ({
     kind: event.type,
     slug: event.slug,
@@ -170,13 +202,21 @@ export function dashboard(deps: ProblemServiceDeps): DashboardResponse {
     byStatus: overview.byStatus,
     byTopic: overview.byTopic,
     byTier: overview.byTier,
-    streak: streakFrom(days, utcDay(generatedAt)),
-    solves: solvesFrom(repos.submissions.list()),
+    streak: streakFrom(days, dayOf(generatedAt)),
+    // The first accepted submission per problem, from one GROUP BY rather than
+    // the whole archive (P3-9).
+    solves: solvesFrom(
+      [...repos.submissions.acceptedSummary()].map(([slug, summary]) => ({
+        slug,
+        verdict: 'AC',
+        createdAt: summary.firstAt,
+      })),
+      dayOf,
+    ),
     recent,
     skills: skillsFrom(repos.coach.scoredTurns(), (slug) => titles.get(slug)?.topic),
-    editorialsRevealed: repos.events.list().filter((event) => event.type === 'editorial_revealed')
-      .length,
-    reviews: reviewQueue(deps, generatedAt),
+    editorialsRevealed: repos.events.countByType('editorial_revealed'),
+    reviews: reviewQueue(deps, generatedAt, titles),
     /*
      * Counted apart from the solved total (P7-9), not deducted from it. The
      * work was done; what changed is the bar it was measured against, and

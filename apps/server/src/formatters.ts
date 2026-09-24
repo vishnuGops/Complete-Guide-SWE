@@ -236,47 +236,73 @@ export function createFormatters(options: FormattersOptions = {}): Formatters {
     return found;
   };
 
+  /*
+   * One run at a time per language (ROADMAP P3-10).
+   *
+   * Every save with format-on-save is a request, and a held Ctrl+S or a burst
+   * of saves used to start one formatter process each - a JVM apiece for Java,
+   * on a four-core machine that is also running the judge. Queued behind each
+   * other they cost the same in total and never more than one process per
+   * language at once.
+   */
+  const lanes = new Map<Language, Promise<unknown>>();
+
+  function oneAtATime(language: Language, job: () => Promise<FormatResponse>) {
+    const previous = lanes.get(language) ?? Promise.resolve();
+    const turn = previous.then(job);
+    // The lane waits for this run to finish, not for it to succeed.
+    lanes.set(
+      language,
+      turn.catch(() => undefined),
+    );
+    return turn;
+  }
+
+  async function formatNow(language: Language, code: string): Promise<FormatResponse> {
+    const { command, status } = (await detectAll(false))[language];
+    if (command === null) {
+      return {
+        outcome: 'unavailable',
+        message: `${status.name} is not installed on this machine.`,
+      };
+    }
+
+    let result: SpawnResult;
+    try {
+      result = await spawnWith(command, formatArgs(status.name), code);
+    } catch {
+      // It answered `--version` once and cannot be started now: uninstalled
+      // since. Forget it, so Settings and the next save both find out.
+      found = null;
+      return {
+        outcome: 'unavailable',
+        message: `${status.name} could not be started. Check it again in Settings.`,
+      };
+    }
+
+    if (result.killed) {
+      return {
+        outcome: 'unavailable',
+        message: `${status.name} did not finish within ${String(FORMAT_TIMEOUT_MS / 1000)} seconds.`,
+      };
+    }
+    if (result.outputTruncated) {
+      return { outcome: 'unavailable', message: `${status.name} wrote more than it was given.` };
+    }
+    if (result.code !== 0) {
+      return { outcome: 'invalid', ...parseFormatterError(status.name, result.stderr) };
+    }
+    return { outcome: 'formatted', code: result.stdout, changed: result.stdout !== code };
+  }
+
   return {
     async status(refresh = false) {
       const all = await detectAll(refresh);
       return LANGUAGES.map((language) => all[language].status);
     },
 
-    async format(language, code) {
-      const { command, status } = (await detectAll(false))[language];
-      if (command === null) {
-        return {
-          outcome: 'unavailable',
-          message: `${status.name} is not installed on this machine.`,
-        };
-      }
-
-      let result: SpawnResult;
-      try {
-        result = await spawnWith(command, formatArgs(status.name), code);
-      } catch {
-        // It answered `--version` once and cannot be started now: uninstalled
-        // since. Forget it, so Settings and the next save both find out.
-        found = null;
-        return {
-          outcome: 'unavailable',
-          message: `${status.name} could not be started. Check it again in Settings.`,
-        };
-      }
-
-      if (result.killed) {
-        return {
-          outcome: 'unavailable',
-          message: `${status.name} did not finish within ${String(FORMAT_TIMEOUT_MS / 1000)} seconds.`,
-        };
-      }
-      if (result.outputTruncated) {
-        return { outcome: 'unavailable', message: `${status.name} wrote more than it was given.` };
-      }
-      if (result.code !== 0) {
-        return { outcome: 'invalid', ...parseFormatterError(status.name, result.stderr) };
-      }
-      return { outcome: 'formatted', code: result.stdout, changed: result.stdout !== code };
+    format(language, code) {
+      return oneAtATime(language, () => formatNow(language, code));
     },
   };
 }

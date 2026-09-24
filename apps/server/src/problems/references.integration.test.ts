@@ -131,16 +131,32 @@ describe('checkReferences', () => {
   }, 60_000);
 });
 
+/**
+ * The whole catalogue, opt-in with `DEVPROMAX_CATALOGUE_TESTS=1` (ROADMAP P8-7).
+ *
+ * It is `npm run problems:validate` under another name - the same function over
+ * the same 171 problems - and it made every `npm run test:integration` about
+ * five minutes longer on the slower machine to learn nothing that command does
+ * not already say. CI's validation lanes run that command over everything on
+ * `main` and nightly (D23), which is where the guarantee lives; what stays
+ * here unconditionally is the machinery, against copies broken on purpose.
+ */
+const wholeCatalogue = process.env['DEVPROMAX_CATALOGUE_TESTS'] === '1';
+
 describe('validateCatalogueFull', () => {
-  it('passes the shipped catalogue', async () => {
-    const report = await validateCatalogueFull({ workspaceRoot });
-    expect(report.ok).toBe(true);
-    expect(report.errorCount).toBe(0);
-    // Not a speed budget - P8-2 owns those - just long enough for 171 problems
-    // in two languages. Measured at 278 s on a 4-core 2017 Xeon, which the
-    // earlier 180 s did not survive; a timeout here also leaves judge children
-    // running, which is what then fails the cleanup with EPERM on Windows.
-  }, 600_000);
+  it.runIf(wholeCatalogue)(
+    'passes the shipped catalogue',
+    async () => {
+      const report = await validateCatalogueFull({ workspaceRoot });
+      expect(report.ok).toBe(true);
+      expect(report.errorCount).toBe(0);
+      // Not a speed budget - P8-2 owns those - just long enough for 171 problems
+      // in two languages. Measured at 278 s on a 4-core 2017 Xeon, which the
+      // earlier 180 s did not survive; a timeout here also leaves judge children
+      // running, which is what then fails the cleanup with EPERM on Windows.
+    },
+    600_000,
+  );
 
   it('skips reference execution for a problem that is already statically broken', async () => {
     // Spawning six interpreters to confirm that a package missing its tests.json

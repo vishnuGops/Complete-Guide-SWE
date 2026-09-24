@@ -2,21 +2,35 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildServer } from '../index.js';
 import { serverConfig } from '../config.js';
+import { createDatabase, IN_MEMORY, openDatabase, type Repositories } from '../db/index.js';
 import { silentLogger } from '../logger.js';
 import { __testing } from './hardening.js';
 
 const CLIENT_HEADER = serverConfig.clientHeader;
 let app: FastifyInstance;
+let repos: Repositories;
 
 beforeEach(async () => {
-  app = await buildServer({ logger: silentLogger });
+  // In memory: without it buildServer opens data/devpromax.db, and this suite
+  // used to migrate the owner's real database on every run (P3-8).
+  repos = createDatabase({ file: IN_MEMORY });
+  app = await buildServer({ logger: silentLogger, repositories: repos });
   app.post('/api/echo', async (request) => ({ body: request.body }));
   app.get('/api/ping', async () => ({ ok: true }));
+  app.post('/outside', async (request) => ({ body: request.body }));
   await app.ready();
 });
 
 afterEach(async () => {
   await app.close();
+  repos.close();
+});
+
+describe('test isolation', () => {
+  it('refuses to open the default database file under Vitest', () => {
+    expect(() => openDatabase()).toThrow(/without a file under Vitest/);
+    expect(() => createDatabase()).toThrow(/without a file under Vitest/);
+  });
 });
 
 describe('isLoopbackHost', () => {
@@ -166,6 +180,76 @@ describe('request bodies', () => {
       payload: 'hello',
     });
     expect(response.statusCode).toBe(415);
+  });
+
+  it('has no text/plain parser at all, so a route outside /api refuses it too', async () => {
+    // The second lock behind the hook (P3-8): whatever the hook decides about a
+    // path, Fastify cannot turn a text/plain body into something a route reads.
+    const response = await app.inject({
+      method: 'POST',
+      url: '/outside',
+      headers: { host: '127.0.0.1:5174', 'content-type': 'text/plain' },
+      payload: 'hello',
+    });
+    expect(response.statusCode).toBe(415);
+  });
+});
+
+describe('the matched route decides, not the raw URL (P3-8)', () => {
+  // Each of these reaches /api/echo through the router, and before P3-8 each
+  // skipped the /api checks because the raw URL did not start with "/api".
+  const disguised = ['/%61pi/echo', '/%61%70%69/echo', '/api%2Fecho'];
+
+  it.each(disguised)('refuses %s without the client header', async (url) => {
+    const response = await app.inject({
+      method: 'POST',
+      url,
+      headers: { host: '127.0.0.1:5174', 'content-type': 'application/json' },
+      payload: '{}',
+    });
+    expect(response.statusCode).toBe(403);
+  });
+
+  it('refuses a percent-encoded path carrying a text/plain body', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/%61pi/echo',
+      headers: { host: '127.0.0.1:5174', [CLIENT_HEADER]: '1', 'content-type': 'text/plain' },
+      payload: 'hello',
+    });
+    expect(response.statusCode).toBe(415);
+  });
+
+  it('refuses a chunked text/plain body, which carries no length header', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/echo',
+      headers: {
+        host: '127.0.0.1:5174',
+        [CLIENT_HEADER]: '1',
+        'content-type': 'text/plain',
+        'transfer-encoding': 'chunked',
+      },
+      payload: 'hello',
+    });
+    expect(response.statusCode).toBe(415);
+  });
+
+  it('treats an unmatched API-looking path as API, so it still needs the header', async () => {
+    for (const url of ['/%61pi/nope', '//api/nope', '/API/nope']) {
+      const response = await app.inject({
+        method: 'GET',
+        url,
+        headers: { host: '127.0.0.1:5174' },
+      });
+      expect(response.statusCode, url).toBe(403);
+    }
+  });
+
+  it('does not mistake a sibling path for the prefix', () => {
+    expect(__testing.isUnder('/api', '/api')).toBe(true);
+    expect(__testing.isUnder('/api/run', '/api')).toBe(true);
+    expect(__testing.isUnder('/apiary', '/api')).toBe(false);
   });
 });
 

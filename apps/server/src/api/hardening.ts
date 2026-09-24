@@ -49,6 +49,41 @@ function isLoopbackHost(host: string | undefined): boolean {
   return lowered === 'localhost' || lowered === '127.0.0.1' || lowered === '::1';
 }
 
+/** `path` is `prefix` itself or something below it - `/api/x`, not `/apiary`. */
+function isUnder(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
+/**
+ * Whether a request is addressed to `prefix`, keyed on what the router matched
+ * rather than on the raw URL (ROADMAP P3-8).
+ *
+ * `request.url` is the path as it was sent, and the router decodes it before
+ * matching: `/%61pi/settings/reset-progress` reached the reset route while
+ * `startsWith('/api')` said it was not an API request, so it skipped the client
+ * header and the content-type check - the two checks that stop another tab. The
+ * matched route pattern is what the router will actually run, so it comes
+ * first. The decoded path is the fallback for requests that matched nothing (a
+ * 404) or matched a wildcard such as the static files' `/*`, and it is read
+ * generously - repeated slashes collapsed, case ignored - because the cost of
+ * treating a stray path as an API request is a 403 on something that would
+ * have been a 404 anyway. A path that does not even decode is treated as API:
+ * refusing is the safe way to be wrong.
+ */
+export function isApiRequest(request: FastifyRequest, prefix = '/api'): boolean {
+  const route = request.routeOptions.url;
+  if (route !== undefined && isUnder(route, prefix)) return true;
+
+  const rawPath = request.url.split('?', 1)[0] ?? '';
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(rawPath);
+  } catch {
+    return true;
+  }
+  return isUnder(decoded.replace(/\/{2,}/g, '/').toLowerCase(), prefix.toLowerCase());
+}
+
 export interface HardeningOptions {
   /** Paths the checks apply to. Everything else (e.g. /health) is left alone. */
   prefix?: string;
@@ -68,7 +103,7 @@ export function applyHardening(app: FastifyInstance, options: HardeningOptions =
       return;
     }
 
-    if (!request.url.startsWith(prefix)) return;
+    if (!isApiRequest(request, prefix)) return;
 
     if (request.headers[serverConfig.clientHeader] === undefined) {
       await reply.code(403).send({
@@ -80,10 +115,12 @@ export function applyHardening(app: FastifyInstance, options: HardeningOptions =
 
     if (JSON_BODY_METHODS.has(request.method)) {
       const contentType = request.headers['content-type'];
-      // A body is optional; a body in the wrong format is not.
+      // A body is optional; a body in the wrong format is not. A chunked body
+      // has no length header and is still a body.
       const hasBody =
-        request.headers['content-length'] !== undefined &&
-        request.headers['content-length'] !== '0';
+        (request.headers['content-length'] !== undefined &&
+          request.headers['content-length'] !== '0') ||
+        request.headers['transfer-encoding'] !== undefined;
       if (hasBody && !contentType?.toLowerCase().startsWith('application/json')) {
         await reply.code(415).send({
           error: 'UnsupportedMediaType',
@@ -103,4 +140,4 @@ export function applyHardening(app: FastifyInstance, options: HardeningOptions =
   });
 }
 
-export const __testing = { isLoopbackHost };
+export const __testing = { isLoopbackHost, isUnder };
