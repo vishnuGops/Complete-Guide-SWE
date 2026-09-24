@@ -76,7 +76,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], "a single node")
     yield _case([1, 2], "a root with one child")
     yield _case([1, None, 2], "the child on the other side")
-    yield _case([3, 9, 20, None, None, 15, 7], "an uneven tree")
+    yield _case([8, 3, 6, None, None, 1, None, 2], "an uneven tree")
     yield _case(_encode(_chain(rng, 5, -(10**9), 10**9)), "a chain of five")
 
     for n in (3, 7, 12, 40, 150):

@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "two paths that add up",
-      "args": [[5,4,8,11,null,13,4,7,2,null,null,5,1],22],
-      "expected": [[5,4,11,2],[5,8,4,5]],
-      "explanation": "Left-first order puts the path through the 4 before the one through the 8."
+      "args": [[6,2,4,5,1,null,3,null,null,6],13],
+      "expected": [[6,2,5],[6,4,3]],
+      "explanation": "Left-first order puts the path through the 2 before the one through the 4."
     },
     {
-      "name": "no path adds up",
-      "args": [[1,2,3],5],
-      "expected": [],
-      "explanation": "The two paths sum to 3 and 4."
+      "name": "a negative value on the way",
+      "args": [[1,-2,3,4],3],
+      "expected": [[1,-2,4]],
+      "explanation": "1 - 2 + 4 reaches the leaf at 3; the other path sums to 4."
     },
     {
       "name": "the root is not a path",
@@ -24,6 +24,12 @@
     {"name":"the empty tree","args":[[],0],"expected":[]},
     {"name":"a single node that matches","args":[[1],1],"expected":[[1]]},
     {"name":"a single node that does not","args":[[1],2],"expected":[]},
+    {"name":"no path adds up","args":[[1,2,3],5],"expected":[]},
+    {
+      "name": "two paths that add up",
+      "args": [[7,1,3,4,-2,2,5,null,null,3],12],
+      "expected": [[7,1,4],[7,3,2]]
+    },
     {"name":"every path sums to zero","args":[[0,0,0],0],"expected":[[0,0],[0,0]]},
     {
       "name": "the extremes of the stated value range",

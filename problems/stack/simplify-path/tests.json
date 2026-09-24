@@ -3,29 +3,32 @@
   "samples": [
     {
       "name": "doubled and trailing slashes",
-      "args": ["/home//user/"],
-      "expected": "/home/user",
+      "args": ["/music///jazz/"],
+      "expected": "/music/jazz",
       "explanation": "Runs of slashes are one separator and the path does not end in one."
     },
     {
       "name": "dots and double dots",
-      "args": ["/a/./b/../../c/"],
-      "expected": "/c",
-      "explanation": "`.` drops out, and two `..` undo `a` and `b`."
+      "args": ["/usr/local/./bin/../../lib/"],
+      "expected": "/usr/lib",
+      "explanation": "`.` drops out, and two `..` undo `bin` and `local`."
     },
     {
       "name": "going above the root",
-      "args": ["/../"],
-      "expected": "/",
+      "args": ["/../docs"],
+      "expected": "/docs",
       "explanation": "The root has no parent, so the `..` is discarded."
     }
   ],
   "hidden": [
     {"name":"the root itself","args":["/"],"expected":"/"},
     {"name":"two slashes and nothing else","args":["//"],"expected":"/"},
+    {"name":"going above the root","args":["/.."],"expected":"/"},
     {"name":"going above the root repeatedly","args":["/../../../"],"expected":"/"},
     {"name":"three dots is an ordinary folder","args":["/..."],"expected":"/..."},
     {"name":"the same folder entered and left twice","args":["/a/../a/../a"],"expected":"/a"},
+    {"name":"doubled and trailing slashes","args":["/var//log/"],"expected":"/var/log"},
+    {"name":"dots and double dots","args":["/p/./q/../../r/"],"expected":"/r"},
     {"args":["/home"],"expected":"/home"},
     {"args":["//.."],"expected":"/"},
     {"args":["/home///_///_//"],"expected":"/home/_/_"},

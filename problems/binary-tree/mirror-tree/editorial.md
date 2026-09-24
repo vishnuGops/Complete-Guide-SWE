@@ -43,3 +43,6 @@ the nodes directly avoids the question.
 - **Forgetting the empty tree**, which is its own reflection.
 - **Checking values but not shape.** Example 2 has matching values at every
   present position.
+- **Reading the tree in order and testing for a palindrome.** `[1, 2, 2, 2, null, 2]`
+  reads `2, 2, 1, 2, 2`, which is a palindrome, but both lower 2s are left
+  children. An in-order reading forgets which side a node hung from.

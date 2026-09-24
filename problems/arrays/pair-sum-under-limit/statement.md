@@ -21,7 +21,8 @@ The number of pairs whose weights sum to `limit` or less.
 - `-10^9 <= limit <= 10^9`
 - Weights may repeat, and two parcels of the same weight at different positions
   are a pair.
-- Testing every pair is `O(n^2)` and will not finish the largest tests in time.
+- Testing every pair is `O(n^2)`: too slow for the largest tests in Python,
+  though Java's JIT gets through them. Either way it misses the `O(n)` target.
 
 ## Examples
 

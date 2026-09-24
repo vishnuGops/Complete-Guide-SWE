@@ -19,11 +19,11 @@ def _case(digits: str, name: str = None) -> Dict[str, Any]:
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("0", "a single zero")
     yield _case("1", "a single digit")
-    yield _case("06", "a leading zero")
+    yield _case("09", "a leading zero")
     yield _case("10", "a zero that must pair up")
     yield _case("20", "the other zero that can pair up")
     yield _case("30", "a zero that cannot pair up")
-    yield _case("226", "three readings")
+    yield _case("118", "three readings")
     yield _case("2101", "zeroes in the middle")
     yield _case("27", "a pair that is too large")
     yield _case("100", "two zeroes in a row")

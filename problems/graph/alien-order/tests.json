@@ -2,16 +2,16 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "name": "five words, five letters",
-      "args": [["wrt","wrf","er","ett","rftt"]],
-      "expected": "wertf",
-      "explanation": "Each neighbouring pair fixes one letter before another."
+      "name": "six words, five letters",
+      "args": [["pt","pm","tm","tr","mrs","ms"]],
+      "expected": "ptmrs",
+      "explanation": "Each neighbouring pair fixes one letter before another, and together they chain all five."
     },
     {
-      "name": "a contradiction",
-      "args": [["z","x","z"]],
-      "expected": "",
-      "explanation": "`z` before `x` and `x` before `z` cannot both hold."
+      "name": "several orders fit",
+      "args": [["b","a","ac"]],
+      "expected": "bac",
+      "explanation": "Only `b` before `a` is known; `bac` is the first valid order in our alphabet."
     },
     {
       "name": "a word before its own prefix",
@@ -23,8 +23,10 @@
   "hidden": [
     {"name":"one word of one letter","args":[["a"]],"expected":"a"},
     {"name":"one word, two letters, in an unknown order","args":[["ab"]],"expected":"ab"},
-    {"name":"one fact","args":[["z","x"]],"expected":"zx"},
+    {"name":"one fact","args":[["n","m"]],"expected":"nm"},
+    {"name":"a contradiction","args":[["k","h","k"]],"expected":""},
     {"name":"a prefix before its word, which is fine","args":[["ab","abc"]],"expected":"abc"},
+    {"name":"five words, five letters","args":[["sq","sw","qw","qe","ej"]],"expected":"jsqwe"},
     {"name":"facts from two positions","args":[["ba","bc","ac"]],"expected":"bac"},
     {"args":[["b","c","cbc"]],"expected":"bc"},
     {"args":[["abb","acb","b","bac","bb","cc"]],"expected":"abc"},

@@ -3,7 +3,7 @@
   "id": "same-shape-trees",
   "slug": "same-shape-trees",
   "title": "The Same Tree Twice",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree traversal", "depth-first search"],
   "tier": "Easy",

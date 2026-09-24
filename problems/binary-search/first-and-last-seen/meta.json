@@ -3,7 +3,7 @@
   "id": "first-and-last-seen",
   "slug": "first-and-last-seen",
   "title": "First And Last Sighting",
-  "version": 1,
+  "version": 2,
   "topic": "binary-search",
   "patterns": ["boundary binary search", "sorted input"],
   "tier": "Medium",

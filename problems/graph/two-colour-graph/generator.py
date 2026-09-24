@@ -107,6 +107,9 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case(6, _ring(6), "a ring of six")
     yield _case(7, _ring(4) + [[4, 5]], "an even ring and a separate pair")
     yield _case(7, _ring(3) + [[3, 4], [5, 6]], "an odd ring among innocent pairs")
+    # Vertex 0 splits fine; the clash is in a group it cannot reach. A search
+    # started only from vertex 0 never sees it (the editorial's pitfall).
+    yield _case(5, [[0, 1], [2, 3], [3, 4], [4, 2]], "an odd ring vertex 0 cannot reach")
 
     for n, m in ((6, 5), (16, 14), (50, 60), (150, 200)):
         yield _case(n, _bipartite(rng, n, m))

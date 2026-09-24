@@ -95,7 +95,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], 2, "a single node that does not")
     yield _case([1, 2], 1, "the root is not a path")
     yield _case([1, 2, 3], 5, "no path adds up")
-    yield _case([5, 4, 8, 11, None, 13, 4, 7, 2, None, None, 5, 1], 22, "two paths that add up")
+    yield _case([7, 1, 3, 4, -2, 2, 5, None, None, 3], 12, "two paths that add up")
     yield _case([0, 0, 0], 0, "every path sums to zero")
     yield _case([1000, 1000], 2000, "the extremes of the stated value range")
 

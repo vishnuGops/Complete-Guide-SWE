@@ -102,9 +102,9 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], 1, 1, "the same node twice")
     yield _case([1, 2], 1, 2, "a root and its only child")
     yield _case([1, 2], 2, 2, "a leaf with itself")
-    yield _case([3, 5, 1, 6, 2, 0, 8], 5, 1, "in different subtrees")
-    yield _case([3, 5, 1, 6, 2, 0, 8], 5, 6, "one is above the other")
-    yield _case([3, 5, 1, 6, 2, 0, 8], 6, 8, "two leaves far apart")
+    yield _case([10, 2, 15, 12, 5, 8, 3], 2, 15, "in different subtrees")
+    yield _case([10, 2, 15, 12, 5, 8, 3], 15, 3, "one is above the other")
+    yield _case([10, 2, 15, 12, 5, 8, 3], 12, 3, "two leaves far apart")
     yield _case([-(10**9), 10**9], -(10**9), 10**9, "the extremes of the stated range")
 
     for n in (3, 8, 30, 150):

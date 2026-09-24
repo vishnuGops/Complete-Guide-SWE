@@ -47,5 +47,6 @@ Each booking ends exactly as the next begins, so they can share a room.
 ## Notes
 
 Counting overlaps booking by booking is `O(n^2)`. At the stated maximum that is
-a hundred million comparisons and it will not finish. Nor can you count per
-minute: the times run to `10^9`.
+a hundred million comparisons: too slow for the time limit in Python, though
+Java's JIT gets through it, and either way it misses the `O(n log n)` target.
+Nor can you count per minute: the times run to `10^9`.

@@ -3,7 +3,7 @@
   "id": "window-average-peak",
   "slug": "window-average-peak",
   "title": "Peak Window Start",
-  "version": 1,
+  "version": 2,
   "topic": "arrays",
   "patterns": ["sliding window", "fixed window", "running total"],
   "tier": "Easy",

@@ -46,8 +46,8 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("ab", "ab", ["ab"], "the start is the target")
     yield _case("a", "b", ["b"], "one letter, one step")
     yield _case("a", "b", ["c"], "the target is missing")
-    yield _case("hit", "cog", ["hot", "dot", "dog", "lot", "log", "cog"], "a ladder of five")
-    yield _case("hit", "cog", ["hot", "dot", "dog", "lot", "log"], "the target is not in the list")
+    yield _case("bed", "cot", ["bad", "bat", "cat", "cot", "bet", "bot"], "a ladder of four")
+    yield _case("bed", "cot", ["bad", "bat", "cat", "bet", "bot"], "the target is not in the list")
     yield _case("aa", "bb", ["ab", "bb"], "two steps through a shared letter")
     yield _case("aa", "bb", ["bb"], "no rung in between")
 
@@ -76,4 +76,4 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     words = list(dict.fromkeys(chain[1:] + decoys))[:5000]
     if chain[-1] not in words:
         words[-1] = chain[-1]
-    yield _case(chain[0], chain[-1], words, "the stated maxima, where comparing every pair cannot finish")
+    yield _case(chain[0], chain[-1], words, "the stated maxima, the worst case for comparing every pair")

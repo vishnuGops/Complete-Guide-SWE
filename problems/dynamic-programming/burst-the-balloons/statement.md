@@ -25,12 +25,12 @@ The largest total score.
 
 ### Example 1
 
-Input: `balloons = [3, 1, 5, 8]`
+Input: `balloons = [2, 4, 1, 6]`
 
-Output: `167`
+Output: `90`
 
-Burst the 1 (3·1·5 = 15), then the 5 (3·5·8 = 120), then the 3 (1·3·8 = 24),
-then the 8 (1·8·1 = 8).
+Burst the 1 (4·1·6 = 24), then the 4 (2·4·6 = 48), then the 2 (1·2·6 = 12),
+then the 6 (1·6·1 = 6).
 
 ### Example 2
 
@@ -42,11 +42,12 @@ Both neighbours are missing, so the score is 1·7·1.
 
 ### Example 3
 
-Input: `balloons = [1, 5]`
+Input: `balloons = [3, 2]`
 
-Output: `10`
+Output: `9`
 
-Burst the 1 first (1·1·5 = 5), then the 5 (1·5·1 = 5).
+Burst the 2 first (3·2·1 = 6), then the 3 (1·3·1 = 3). The other order scores
+only 6 + 2 = 8.
 
 ## Notes
 

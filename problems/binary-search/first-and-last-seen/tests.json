@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "a run of two",
-      "args": [[5,7,7,8,8,10],8],
-      "expected": [3,4],
-      "explanation": "The first 8 is at position 3 and the last at 4."
+      "args": [[2,3,6,6,9,11],6],
+      "expected": [2,3],
+      "explanation": "The first 6 is at position 2 and the last at 3."
     },
     {
       "name": "the target is absent",
-      "args": [[5,7,7,8,8,10],6],
+      "args": [[2,3,6,6,9,11],7],
       "expected": [-1,-1],
-      "explanation": "6 is between 5 and 7 but is not in the row."
+      "explanation": "7 is between 6 and 9 but is not in the row."
     },
     {
       "name": "the target fills the row",

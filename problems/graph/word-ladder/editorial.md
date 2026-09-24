@@ -8,7 +8,8 @@ exactly one position.
 
 **The trap is finding the neighbours.** Comparing a word against every other word
 is `O(words · length)` per step and `O(words² · length)` overall — over two
-hundred million character comparisons at the stated maxima.
+hundred million character comparisons at the stated maxima, which Python does
+not finish inside the time limit and Java's JIT does.
 
 **The blanked-out form** avoids all of it. For each position, replace that letter
 with a placeholder: `hot` gives `*ot`, `h*t` and `ho*`. Two words differ in

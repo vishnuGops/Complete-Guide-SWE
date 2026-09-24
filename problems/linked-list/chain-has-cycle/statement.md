@@ -10,7 +10,8 @@ Say whether the chain loops.
 
 ## Output
 
-`true` if following the links never reaches an end, `false` if it does.
+`true` if following the links never reaches an end, `false` if it does. An
+empty chain does not loop.
 
 ## Constraints
 
@@ -22,11 +23,11 @@ Say whether the chain loops.
 
 ### Example 1
 
-Input: `head = [3, 2, 0, -4]`, with the last link pointing back at the second
+Input: `head = [8, -5, 6, 1, 9]`, with the last link pointing back at the third
 
 Output: `true`
 
-Following the chain reaches `-4`, goes back to `2`, and goes round for ever.
+Following the chain reaches `9`, goes back to `6`, and goes round for ever.
 
 ### Example 2
 
@@ -50,11 +51,3 @@ Input: `head = [7]`, with the only link pointing at itself
 Output: `true`
 
 One link is enough for a loop.
-
-### Example 5
-
-Input: `head = []`
-
-Output: `false`
-
-An empty chain cannot loop.

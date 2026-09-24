@@ -3,7 +3,7 @@
   "id": "build-from-traversals",
   "slug": "build-from-traversals",
   "title": "Rebuild From Two Readings",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree construction", "hash map"],
   "tier": "Medium",

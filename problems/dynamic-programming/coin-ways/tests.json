@@ -2,16 +2,16 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "name": "four ways to make five",
-      "args": [[1,2,5],5],
+      "name": "four ways to make six",
+      "args": [[1,3,4],6],
       "expected": 4,
-      "explanation": "5, 2+2+1, 2+1+1+1 and 1+1+1+1+1."
+      "explanation": "3+3, 4+1+1, 3+1+1+1 and 1+1+1+1+1+1."
     },
     {
       "name": "no way at all",
-      "args": [[2],3],
+      "args": [[4,6],7],
       "expected": 0,
-      "explanation": "Every total made of 2s is even."
+      "explanation": "Every total made of 4s and 6s is even."
     },
     {
       "name": "making nothing",
@@ -21,6 +21,8 @@
     }
   ],
   "hidden": [
+    {"name":"no way at all","args":[[3],5],"expected":0},
+    {"name":"four ways to make ten","args":[[2,3,5],10],"expected":4},
     {"name":"the extremes of the stated ranges","args":[[1000],1000],"expected":1},
     {"name":"every coin is larger than the amount","args":[[3,5,7],2],"expected":0},
     {"name":"one coin, one way","args":[[1],500],"expected":1},
@@ -35,6 +37,11 @@
     {"args":[[393,310,239,655,333,275,639,642],613],"expected":0},
     {"args":[[966,246,326,797,934,720,761,764,787,730],947],"expected":0},
     {"args":[[590,205,427],851],"expected":0},
+    {
+      "name": "small coins, over two billion ways",
+      "args": [[2,3,5,7,11,13,17],932],
+      "expected": 2140976929
+    },
     {
       "name": "the stated maxima with 12 coins",
       "args": [[839,276,544,776,185,547,90,849,78,97,466,125],1000],

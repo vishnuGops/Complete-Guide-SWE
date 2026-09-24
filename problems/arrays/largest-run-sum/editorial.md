@@ -28,8 +28,8 @@ any run ending at or before `i`.
   a row of all-negative values answers `0` instead of the least negative value.
   Start both numbers at `values[0]`.
 - **Summing every slice.** Two nested loops with a running sum is `O(n^2)`; at
-  the stated maximum that is a hundred million additions, which does not finish
-  inside the time limit here.
+  the stated maximum that is fifty million additions, which Python does not
+  finish inside the time limit. Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Resetting on any negative value.** The rule is to drop the _running total_
   when it goes negative, not to drop negative values: `[4, -1, 2]` is a better
   run than either `[4]` or `[2]`.

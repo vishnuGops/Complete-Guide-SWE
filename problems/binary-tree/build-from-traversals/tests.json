@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "a tree with both subtrees",
-      "args": [[3,9,20,15,7],[9,3,15,20,7]],
-      "expected": [3,9,20,null,null,15,7],
-      "explanation": "9 is left of 3 in the in-order reading, so it is the left subtree."
+      "args": [[8,4,6,11,10],[4,6,8,10,11]],
+      "expected": [8,4,11,null,6,10],
+      "explanation": "8 is first in pre-order, so it is the root; in-order puts 4 and 6 on its left and 10 and 11 on its right."
     },
     {
       "name": "a single node",
@@ -22,6 +22,11 @@
   ],
   "hidden": [
     {"name":"one child, on the right","args":[[1,2],[1,2]],"expected":[1,null,2]},
+    {
+      "name": "a tree with both subtrees",
+      "args": [[5,2,1,9,7],[1,2,5,7,9]],
+      "expected": [5,2,9,1,null,7]
+    },
     {
       "name": "the extremes of the stated range",
       "args": [[-1000000000,1000000000],[1000000000,-1000000000]],
@@ -47340,7 +47345,7 @@
       ]
     },
     {
-      "name": "the stated maximum as a chain, where scanning cannot finish",
+      "name": "the stated maximum as a chain, the worst case for scanning",
       "args": [
         [
           -471739441,

@@ -3,7 +3,7 @@
   "id": "window-maximum",
   "slug": "window-maximum",
   "title": "Largest In Every Window",
-  "version": 1,
+  "version": 2,
   "topic": "data-structures",
   "patterns": ["monotonic deque", "sliding window"],
   "tier": "Hard",

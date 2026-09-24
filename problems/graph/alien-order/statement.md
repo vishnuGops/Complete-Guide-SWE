@@ -27,17 +27,21 @@ consistent.
 
 ### Example 1
 
-Input: `words = ["wrt", "wrf", "er", "ett", "rftt"]`
+Input: `words = ["pt", "pm", "tm", "tr", "mrs", "ms"]`
 
-Output: `"wertf"`
+Output: `"ptmrs"`
+
+The neighbouring pairs say `t` before `m`, `p` before `t`, `m` before `r`, `t`
+before `m` again, and `r` before `s`: one chain through all five letters.
 
 ### Example 2
 
-Input: `words = ["z", "x", "z"]`
+Input: `words = ["b", "a", "ac"]`
 
-Output: `""`
+Output: `"bac"`
 
-`z` comes before `x` and `x` before `z`.
+The only fact is `b` before `a`, and `c` could go anywhere. Of the orders that
+fit — `bac`, `bca` and `cba` — `bac` comes first in our alphabet.
 
 ### Example 3
 

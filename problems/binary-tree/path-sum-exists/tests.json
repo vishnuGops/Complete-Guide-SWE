@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "a path that adds up",
-      "args": [[5,4,8,11,null,13,4,7,2],22],
+      "args": [[4,9,1,2,null,6,8],11],
       "expected": true,
-      "explanation": "5 + 4 + 11 + 2 reaches a leaf at exactly 22."
+      "explanation": "4 + 1 + 6 reaches a leaf at exactly 11."
     },
     {
       "name": "the root is not a path",
@@ -25,6 +25,7 @@
     {"name":"a single node that does not","args":[[1],2],"expected":false},
     {"name":"the root alone is not a path","args":[[1,2],1],"expected":false},
     {"name":"the only path","args":[[1,2],3],"expected":true},
+    {"name":"a path that adds up","args":[[3,8,2,-1,null,7,4,5],15],"expected":true},
     {"name":"negative values, so the remainder can come back","args":[[1,-2,3],-1],"expected":true},
     {"name":"the extremes of the stated value range","args":[[1000,1000],2000],"expected":true},
     {"args":[[-3,11,-14],-17],"expected":true},

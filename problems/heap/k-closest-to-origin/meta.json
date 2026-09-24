@@ -3,7 +3,7 @@
   "id": "k-closest-to-origin",
   "slug": "k-closest-to-origin",
   "title": "The K Nearest Points",
-  "version": 1,
+  "version": 2,
   "topic": "heap",
   "patterns": ["heap", "top k"],
   "tier": "Medium",

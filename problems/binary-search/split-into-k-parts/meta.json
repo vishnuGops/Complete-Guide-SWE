@@ -3,7 +3,7 @@
   "id": "split-into-k-parts",
   "slug": "split-into-k-parts",
   "title": "Fairest Split Into K",
-  "version": 1,
+  "version": 2,
   "topic": "binary-search",
   "patterns": ["binary search on the answer", "feasibility check", "greedy"],
   "tier": "Hard",

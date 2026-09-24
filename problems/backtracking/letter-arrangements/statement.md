@@ -28,11 +28,11 @@ Every letter string the digits could spell, as a list of strings. An empty
 
 ### Example 1
 
-Input: `digits = "23"`
+Input: `digits = "58"`
 
-Output: `["ad","ae","af","bd","be","bf","cd","ce","cf"]`
+Output: `["jt","ju","jv","kt","ku","kv","lt","lu","lv"]`
 
-Three letters on the 2, three on the 3, so nine strings.
+Three letters on the 5, three on the 8, so nine strings.
 
 ### Example 2
 

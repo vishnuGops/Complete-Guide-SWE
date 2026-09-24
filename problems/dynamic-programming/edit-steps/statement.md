@@ -25,11 +25,11 @@ The fewest edits that turn `start` into `into`.
 
 ### Example 1
 
-Input: `start = "horse"`, `into = "ros"`
+Input: `start = "garden"`, `into = "grin"`
 
 Output: `3`
 
-Replace the `h` with `r`, delete the `r`, delete the `e`.
+Delete the `a`, replace the `d` with `i`, delete the `e`.
 
 ### Example 2
 

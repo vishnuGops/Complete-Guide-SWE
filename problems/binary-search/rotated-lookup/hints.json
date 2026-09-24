@@ -3,6 +3,6 @@
     "Cut the series anywhere. What can you say about the two halves you get?",
     "At least one half is always sorted normally - the rotation point can only be in one of them.",
     "Work out which half is sorted by comparing its ends, then check whether the target lies inside that half's range. If it does, search there; if not, search the other half.",
-    "With low, mid and high: if values[low] <= values[mid] the left half is sorted, so recurse left when values[low] <= target < values[mid]; otherwise the right half is sorted, so recurse right when values[mid] < target <= values[high]."
+    "Keep a live range between two ends. Each step looks at the middle, decides which side is in order, asks whether the target could lie within that side's two ends, and discards the side that cannot hold it. Which of those comparisons are strict is yours to settle - a range of two readings is where a wrong one shows."
   ]
 }

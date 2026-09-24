@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "an uneven tree",
-      "args": [[3,9,20,null,null,15,7]],
-      "expected": 3,
-      "explanation": "The deepest path goes through 20."
+      "args": [[1,7,4,2,null,null,9,null,5]],
+      "expected": 4,
+      "explanation": "The deepest path goes 1, 7, 2, 5; the right side stops at 9."
     },
     {"name":"the empty tree","args":[[]],"expected":0,"explanation":"There are no nodes to count."},
     {
@@ -18,6 +18,7 @@
   "hidden": [
     {"name":"a single node","args":[[1]],"expected":1},
     {"name":"the child on the other side","args":[[1,null,2]],"expected":2},
+    {"name":"an uneven tree","args":[[8,3,6,null,null,1,null,2]],"expected":4},
     {
       "name": "a chain of five",
       "args": [[145097759,778947799,null,-940886889,null,927418477,null,-1302459]],

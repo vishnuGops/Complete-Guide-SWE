@@ -73,10 +73,10 @@ def _case(values: List[Any], name: str = None) -> Dict[str, Any]:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([], "the empty tree")
-    yield _case([1], "a single node")
+    yield _case([9], "a single node")
     yield _case([1, 2], "a root with a left child only")
     yield _case([1, None, 2], "a root with a right child only")
-    yield _case([3, 9, 20, None, None, 15, 7], "three levels")
+    yield _case([4, None, 7, 2, 9], "three levels")
     yield _case([-(10**9), 10**9], "the extremes of the stated range")
 
     for n in (3, 8, 25, 120):

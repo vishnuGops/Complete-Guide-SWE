@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "the best rectangle is two columns wide",
-      "args": [[2,1,5,6,2,3]],
-      "expected": 10,
-      "explanation": "Height 5 across the columns 5 and 6 beats every wider, shorter option."
+      "args": [[1,3,6,7,2,4]],
+      "expected": 12,
+      "explanation": "Height 6 across the columns 6 and 7 beats every wider, shorter option."
     },
     {
       "name": "every column the same height",
@@ -20,6 +20,7 @@
     {"name":"no height anywhere","args":[[0,0,0]],"expected":0},
     {"name":"strictly increasing, so only the sentinel settles it","args":[[1,2,3,4]],"expected":6},
     {"name":"strictly decreasing","args":[[4,3,2,1]],"expected":6},
+    {"name":"two tall neighbours between shorter columns","args":[[4,2,7,8,1,5]],"expected":14},
     {"name":"the extremes of the stated height range","args":[[10000,10000]],"expected":20000},
     {"name":"a zero splitting the row in two","args":[[3,0,3]],"expected":3},
     {"args":[[6,0,3,2,2]],"expected":6},
@@ -12835,7 +12836,7 @@
       "expected": 25005000
     },
     {
-      "name": "the stated maximum, where trying every span cannot finish",
+      "name": "the stated maximum, at random",
       "args": [
         [
           6942,

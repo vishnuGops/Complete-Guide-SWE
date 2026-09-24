@@ -3,7 +3,7 @@
   "id": "lowest-shared-ancestor",
   "slug": "lowest-shared-ancestor",
   "title": "Their Nearest Shared Ancestor",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["lowest common ancestor", "depth-first search"],
   "tier": "Medium",

@@ -34,11 +34,11 @@ def _dictionary(rng: random.Random, letters: int, count: int, length: int) -> Li
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case(["a"], "one word of one letter")
     yield _case(["ab"], "one word, two letters, in an unknown order")
-    yield _case(["z", "x"], "one fact")
-    yield _case(["z", "x", "z"], "a contradiction")
+    yield _case(["n", "m"], "one fact")
+    yield _case(["k", "h", "k"], "a contradiction")
     yield _case(["abc", "ab"], "a word before its own prefix")
     yield _case(["ab", "abc"], "a prefix before its word, which is fine")
-    yield _case(["wrt", "wrf", "er", "ett", "rftt"], "five words, five letters")
+    yield _case(["sq", "sw", "qw", "qe", "ej"], "five words, five letters")
     yield _case(["ba", "bc", "ac"], "facts from two positions")
 
     for letters, count, length in ((3, 6, 3), (5, 15, 4), (8, 40, 5), (12, 120, 6)):

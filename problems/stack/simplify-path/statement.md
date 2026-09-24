@@ -30,24 +30,26 @@ The tidy form of the path.
 
 ### Example 1
 
-Input: `path = "/home//user/"`
+Input: `path = "/music///jazz/"`
 
-Output: `"/home/user"`
+Output: `"/music/jazz"`
 
-The doubled slash is one separator, and the trailing slash goes.
+The run of three slashes is one separator, and the trailing slash goes.
 
 ### Example 2
 
-Input: `path = "/a/./b/../../c/"`
+Input: `path = "/usr/local/./bin/../../lib/"`
 
-Output: `"/c"`
+Output: `"/usr/lib"`
 
-`.` is dropped; the first `..` leaves `a`, and the second leaves the root.
+`.` is dropped; the first `..` undoes `bin` and the second undoes `local`, so
+`lib` goes straight under `usr`.
 
 ### Example 3
 
-Input: `path = "/../"`
+Input: `path = "/../docs"`
 
-Output: `"/"`
+Output: `"/docs"`
 
-There is nothing above the root, so the result is the root itself.
+There is nothing above the root, so the `..` is dropped and `docs` sits directly
+under the root.

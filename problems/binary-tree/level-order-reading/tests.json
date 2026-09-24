@@ -3,14 +3,14 @@
   "samples": [
     {
       "name": "three levels",
-      "args": [[3,9,20,null,null,15,7]],
-      "expected": [[3],[9,20],[15,7]],
-      "explanation": "9 has no children, so the third level comes entirely from 20."
+      "args": [[6,2,13,5,null,8,1]],
+      "expected": [[6],[2,13],[5,8,1]],
+      "explanation": "2 has only a left child, so the third level is 5 from under 2, then 8 and 1 from under 13."
     },
     {
       "name": "a single node",
-      "args": [[1]],
-      "expected": [[1]],
+      "args": [[-5]],
+      "expected": [[-5]],
       "explanation": "One level holding one value."
     },
     {
@@ -21,8 +21,10 @@
     }
   ],
   "hidden": [
+    {"name":"a single node","args":[[9]],"expected":[[9]]},
     {"name":"a root with a left child only","args":[[1,2]],"expected":[[1],[2]]},
     {"name":"a root with a right child only","args":[[1,null,2]],"expected":[[1],[2]]},
+    {"name":"three levels","args":[[4,null,7,2,9]],"expected":[[4],[7],[2,9]]},
     {
       "name": "the extremes of the stated range",
       "args": [[-1000000000,1000000000]],

@@ -35,7 +35,7 @@ The 2nd from the end is the 4.
 
 Input: `head = [1]`, `n = 1`
 
-Output: `[]`
+Output: `null`
 
 Removing the only link leaves the empty chain.
 

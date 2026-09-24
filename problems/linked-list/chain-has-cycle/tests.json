@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "the textbook loop",
-      "args": [[3,2,0,-4],1],
+      "args": [[8,-5,6,1,9],2],
       "expected": true,
-      "explanation": "Four links; the last points back at the second, so the walk never ends."
+      "explanation": "Five links; the last points back at the third. The walk never ends."
     },
     {
       "name": "two links, closed",
@@ -24,18 +24,14 @@
       "args": [[7],0],
       "expected": true,
       "explanation": "A loop of one is still a loop."
-    },
-    {
-      "name": "nothing at all",
-      "args": [[],-1],
-      "expected": false,
-      "explanation": "An empty chain cannot loop."
     }
   ],
   "hidden": [
+    {"args":[[],-1],"expected":false},
     {"args":[[5],-1],"expected":false},
     {"args":[[5],0],"expected":true},
     {"args":[[1,2],1],"expected":true},
+    {"args":[[6,0,-3,9],1],"expected":true},
     {"args":[[4,4,4,4],-1],"expected":false},
     {"args":[[4,4,4,4],2],"expected":true},
     {

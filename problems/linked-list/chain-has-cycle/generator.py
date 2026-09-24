@@ -18,7 +18,7 @@ def generate(rng: random.Random):
     yield {"args": [[5], 0]}
     yield {"args": [[1, 2], 0]}
     yield {"args": [[1, 2], 1]}
-    yield {"args": [[3, 2, 0, -4], 1]}
+    yield {"args": [[6, 0, -3, 9], 1]}
 
     # Repeated values in an open chain: the case a set of values gets wrong.
     yield {"args": [[4, 4, 4, 4], -1]}

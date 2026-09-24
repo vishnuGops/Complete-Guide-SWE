@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "two possible addresses",
-      "args": ["25525511135"],
-      "expected": ["255.255.11.135","255.255.111.35"],
+      "args": ["24924910125"],
+      "expected": ["249.249.10.125","249.249.101.25"],
       "explanation": "The last two numbers can be split in two places."
     },
     {
-      "name": "all zeroes",
-      "args": ["0000"],
-      "expected": ["0.0.0.0"],
-      "explanation": "`00` is not a legal number, so each zero stands alone."
+      "name": "zeroes that must stand alone",
+      "args": ["00010"],
+      "expected": ["0.0.0.10"],
+      "explanation": "`00` and `01` are not legal numbers, so each of the first three zeroes stands alone."
     },
     {
       "name": "too many digits",
@@ -23,17 +23,23 @@
   "hidden": [
     {"name":"one digit","args":["0"],"expected":[]},
     {"name":"one digit, not zero","args":["1"],"expected":[]},
+    {"name":"all zeroes","args":["0000"],"expected":["0.0.0.0"]},
     {"name":"five zeroes, which cannot work","args":["00000"],"expected":[]},
     {
       "name": "the largest numbers, twelve digits",
       "args": ["255255255255"],
       "expected": ["255.255.255.255"]
     },
+    {
+      "name": "two possible addresses",
+      "args": ["10025514225"],
+      "expected": ["100.255.14.225","100.255.142.25"]
+    },
     {"name":"every number one too large","args":["256256256256"],"expected":[]},
     {
       "name": "zeroes in the middle",
-      "args": ["101023"],
-      "expected": ["1.0.10.23","1.0.102.3","10.1.0.23","10.10.2.3","101.0.2.3"]
+      "args": ["205061"],
+      "expected": ["2.0.50.61","20.5.0.61","20.50.6.1","205.0.6.1"]
     },
     {"args":["9109"],"expected":["9.1.0.9"]},
     {"args":["9191"],"expected":["9.1.9.1"]},

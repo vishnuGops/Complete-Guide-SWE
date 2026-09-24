@@ -3,7 +3,7 @@
   "id": "first-not-below",
   "slug": "first-not-below",
   "title": "First Reading Not Below",
-  "version": 1,
+  "version": 2,
   "topic": "binary-search",
   "patterns": ["boundary binary search", "lower bound", "sorted input"],
   "tier": "Easy",

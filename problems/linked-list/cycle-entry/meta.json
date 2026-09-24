@@ -3,7 +3,7 @@
   "id": "cycle-entry",
   "slug": "cycle-entry",
   "title": "Where The Loop Begins",
-  "version": 1,
+  "version": 2,
   "topic": "linked-list",
   "patterns": ["fast and slow pointers", "invariant"],
   "tier": "Medium",

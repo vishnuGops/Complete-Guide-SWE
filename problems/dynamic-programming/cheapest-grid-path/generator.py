@@ -25,7 +25,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([[0]], "one cell of no toll")
     yield _case([[1, 2, 3]], "a single row")
     yield _case([[1], [2], [3]], "a single column")
-    yield _case([[1, 3, 1], [1, 5, 1], [4, 2, 1]], "three by three")
+    yield _case([[4, 2, 7], [3, 6, 1], [5, 1, 2]], "three by three")
     yield _case([[100, 100], [100, 100]], "the extremes of the stated toll range")
     yield _case([[0, 100], [1, 0]], "a greedy first step is wrong")
     yield _case([[0, 0, 0], [0, 0, 0]], "every toll zero")

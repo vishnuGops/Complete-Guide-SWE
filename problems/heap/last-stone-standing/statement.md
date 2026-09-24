@@ -25,12 +25,12 @@ The weight of the last stone, or `0`.
 
 ### Example 1
 
-Input: `stones = [2, 7, 4, 1, 8, 1]`
+Input: `stones = [4, 9, 2, 7, 3, 6]`
 
 Output: `1`
 
-8 and 7 leave a 1; then 4 and 2 leave a 2; then 2 and 1 leave a 1; then 1 and 1
-destroy each other; one stone of weight 1 is left.
+9 and 7 leave a 2; then 6 and 4 leave a 2; then 3 and one 2 leave a 1; then the
+two 2s destroy each other; one stone of weight 1 is left.
 
 ### Example 2
 

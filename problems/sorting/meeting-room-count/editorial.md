@@ -40,7 +40,8 @@ room" rather than "how many".
 
 ## Pitfalls
 
-- **Comparing every pair.** `O(n^2)` and does not finish at the stated maximum.
+- **Comparing every pair.** `O(n^2)`, which Python does not finish at the stated
+  maximum. Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Counting per minute.** A timeline array is the obvious sweep and the times
   run to `10^9`; it does not fit and does not finish.
 - **Treating touching bookings as overlapping.** `ends[j] <= start`, not `<`.

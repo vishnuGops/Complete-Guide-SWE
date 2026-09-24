@@ -41,6 +41,6 @@ An empty chain contributes nothing.
 
 Input: `first = []`, `second = []`
 
-Output: `[]`
+Output: `null`
 
 Two empty chains merge to an empty chain.

@@ -3,7 +3,7 @@
   "id": "longest-palindrome-run",
   "slug": "longest-palindrome-run",
   "title": "Longest Palindrome Inside",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["two-dimensional dp", "strings"],
   "tier": "Medium",

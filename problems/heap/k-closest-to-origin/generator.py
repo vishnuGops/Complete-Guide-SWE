@@ -18,8 +18,8 @@ def _case(points: List[List[int]], k: int, name: str = None) -> Dict[str, Any]:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([[0, 0]], 1, "the origin itself")
-    yield _case([[1, 3], [-2, 2]], 1, "one point wanted")
-    yield _case([[3, 3], [5, -1], [-2, 4]], 2, "two of three")
+    yield _case([[4, 2], [-1, -3]], 1, "one point wanted")
+    yield _case([[2, -5], [4, 4], [-3, 1]], 2, "two of three")
     yield _case([[1, 0], [0, 1]], 2, "a tie broken by x")
     yield _case([[1, 1], [1, -1], [-1, 1], [-1, -1]], 4, "four points all one ring away")
     yield _case([[-(10**4), -(10**4)], [10**4, 10**4]], 2, "the extremes of the stated range")

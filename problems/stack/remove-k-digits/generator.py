@@ -27,8 +27,8 @@ def _number(rng: random.Random, length: int, alphabet: str = "0123456789") -> st
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("0", 0, "a single zero, nothing removed")
     yield _case("0", 1, "a single zero, removed")
-    yield _case("10", 2, "everything removed")
-    yield _case("10200", 1, "a leading zero appears")
+    yield _case("52", 2, "everything removed")
+    yield _case("70400", 1, "a leading zero appears")
     yield _case("12345", 2, "already ascending, so the removals come off the end")
     yield _case("54321", 2, "already descending")
     yield _case("112", 1, "position matters more than size")

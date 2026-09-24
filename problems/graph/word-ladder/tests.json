@@ -2,14 +2,14 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "name": "a ladder of five",
-      "args": ["hit","cog",["hot","dot","dog","lot","log","cog"]],
-      "expected": 5,
-      "explanation": "hit → hot → dot → dog → cog."
+      "name": "a ladder of four",
+      "args": ["pin","mat",["pan","pat","man","mat","pit","pen"]],
+      "expected": 4,
+      "explanation": "pin → pan → pat → mat, one of several ladders of four words."
     },
     {
       "name": "the target is not in the list",
-      "args": ["hit","cog",["hot","dot","dog","lot","log"]],
+      "args": ["pin","mat",["pan","pat","man","pit","pen"]],
       "expected": 0,
       "explanation": "A ladder must end on a word from the list."
     },
@@ -23,6 +23,16 @@
   "hidden": [
     {"name":"one letter, one step","args":["a","b",["b"]],"expected":2},
     {"name":"the target is missing","args":["a","b",["c"]],"expected":0},
+    {
+      "name": "a ladder of four",
+      "args": ["bed","cot",["bad","bat","cat","cot","bet","bot"]],
+      "expected": 4
+    },
+    {
+      "name": "the target is not in the list",
+      "args": ["bed","cot",["bad","bat","cat","bet","bot"]],
+      "expected": 0
+    },
     {"name":"two steps through a shared letter","args":["aa","bb",["ab","bb"]],"expected":3},
     {"name":"no rung in between","args":["aa","bb",["bb"]],"expected":0},
     {"args":["ac","bb",["aa","ba","bb","ca","ab","ac","bc","cc"]],"expected":3},
@@ -1953,7 +1963,7 @@
       "expected": 20
     },
     {
-      "name": "the stated maxima, where comparing every pair cannot finish",
+      "name": "the stated maxima, the worst case for comparing every pair",
       "args": [
         "jjaicbhjdi",
         "jdbjbfbeeb",

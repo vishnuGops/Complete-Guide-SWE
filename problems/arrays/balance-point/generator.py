@@ -9,10 +9,21 @@ from typing import Any, Dict, Iterator, List
 
 
 def _balanced(rng: random.Random, n: int, lo: int, hi: int) -> List[int]:
-    left = [rng.randint(lo, hi) for _ in range(n)]
-    right = [rng.randint(lo, hi) for _ in range(n)]
-    # Adjust one element so the two sides weigh the same.
-    right[0] += sum(left) - sum(right)
+    """`n` weights in [lo, hi] that balance at index (n - 1) // 2."""
+    left = [rng.randint(lo, hi) for _ in range((n - 1) // 2)]
+    right = [rng.randint(lo, hi) for _ in range(n - 1 - len(left))]
+    # Spread the difference over the right-hand side rather than dumping it on
+    # one element, which used to push a weight far outside the stated range.
+    diff = sum(left) - sum(right)
+    for i in range(len(right)):
+        step = max(lo - right[i], min(hi - right[i], diff))
+        right[i] += step
+        diff -= step
+    for i in range(len(left)):
+        step = max(lo - left[i], min(hi - left[i], -diff))
+        left[i] += step
+        diff += step
+    assert diff == 0
     return left + [rng.randint(lo, hi)] + right
 
 
@@ -29,13 +40,13 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         yield {"args": [[rng.randint(-40, 40) for _ in range(n)]]}
 
     for _ in range(3):
-        yield {"args": [_balanced(rng, rng.randint(3, 60), -1000, 1000)]}
+        yield {"args": [_balanced(rng, rng.randint(7, 121), -1000, 1000)]}
 
     for _ in range(2):
         n = rng.randint(500, 1500)
         yield {"args": [[rng.randint(-(10**6), 10**6) for _ in range(n)]]}
 
-    yield {"args": [_balanced(rng, 2000, -1000, 1000)], "name": "large row that balances"}
+    yield {"args": [_balanced(rng, 4001, -1000, 1000)], "name": "large row that balances"}
 
     # The stated maximum (D21, P6-0): the statement allows 10^4 and the largest
     # case here used to be 4001, so nothing tested what the constraint claims.

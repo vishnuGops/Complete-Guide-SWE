@@ -104,6 +104,9 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], [1], "two single nodes, equal")
     yield _case([1], [2], "two single nodes, different")
     yield _case([1, 2], [1, None, 2], "the same values on opposite sides")
+    # Equal in-order readings, different shapes: comparing the values a
+    # traversal visits, without the gaps, calls these the same.
+    yield _case([2, 1], [1, None, 2], "the same in-order reading, different shapes")
     yield _case([1, 2, 3], [1, 2, 3], "identical trees")
     yield _case([-(10**9)], [10**9], "the extremes of the stated range")
 

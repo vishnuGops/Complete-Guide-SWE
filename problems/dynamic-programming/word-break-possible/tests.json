@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "two words",
-      "args": ["applepen",["apple","pen"]],
+      "args": ["moonbeam",["moon","beam"]],
       "expected": true,
-      "explanation": "apple + pen."
+      "explanation": "moon + beam."
     },
     {
       "name": "it almost works",
-      "args": ["catsandog",["cats","dog","sand","and","cat"]],
+      "args": ["sealionfish",["sea","seal","lion","ion","fin"]],
       "expected": false,
-      "explanation": "Both promising starts leave `og`, which is not a word."
+      "explanation": "`sea lion` and `seal ion` both read cleanly up to `fish`, and no word starts there."
     },
     {
       "name": "one letter",
@@ -22,6 +22,17 @@
   ],
   "hidden": [
     {"name":"one letter, not a word","args":["a",["b"]],"expected":false},
+    {"name":"two words","args":["treetop",["tree","top"]],"expected":true},
+    {
+      "name": "it almost works",
+      "args": ["carpetsx",["car","carp","pet","pets","et","ets"]],
+      "expected": false
+    },
+    {
+      "name": "the longest first word is the wrong one",
+      "args": ["abcd",["abc","ab","cd"]],
+      "expected": true
+    },
     {"name":"one word, ten times","args":["aaaaaaaaaa",["a"]],"expected":true},
     {
       "name": "thirty a's and a b, which no reading reaches",

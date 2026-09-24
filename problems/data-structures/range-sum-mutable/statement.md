@@ -44,4 +44,6 @@ A stretch of one reading is its own total.
 
 The two easy designs each make one operation `O(n)`: the plain row makes `total`
 linear, and a table of running totals makes `set` linear. At the stated maxima
-that is two hundred million steps either way.
+that is up to two hundred million steps, each of them a cheap addition, and it
+finishes: the `O(log n)` per operation is the target, not something a timeout
+enforces.

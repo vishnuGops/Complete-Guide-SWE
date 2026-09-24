@@ -17,8 +17,9 @@ The index where the highest-total window begins.
 
 - `1 <= width <= values.length <= 8000`
 - `-10^6 <= values[i] <= 10^6`
-- Recomputing each window from scratch costs `O(n * width)` and will not finish
-  the largest tests in time.
+- Recomputing each window from scratch costs `O(n * width)`: sixteen million
+  additions on the largest test. That still finishes, so it is the `O(n)` target
+  that rules it out, not the clock.
 
 ## Examples
 
@@ -32,12 +33,12 @@ The three windows total `3`, `5` and `7`. The last one wins and starts at index 
 
 ### Example 2
 
-Input: `values = [5, -1, -1, 5]`, `width = 2`
+Input: `values = [2, -1, 6, 1, 5, 2]`, `width = 2`
 
-Output: `0`
+Output: `2`
 
-The windows total `4`, `-2` and `4`. The first and last tie, so the smaller
-starting index wins.
+The windows total `1`, `5`, `7`, `6` and `7`. The ones starting at 2 and at 4
+tie, so the smaller starting index wins.
 
 ### Example 3
 

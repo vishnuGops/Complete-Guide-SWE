@@ -34,12 +34,12 @@ def _path(rng: random.Random, pieces: int) -> str:
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("/", "the root itself")
     yield _case("//", "two slashes and nothing else")
-    yield _case("/../", "going above the root")
+    yield _case("/..", "going above the root")
     yield _case("/../../../", "going above the root repeatedly")
     yield _case("/...", "three dots is an ordinary folder")
     yield _case("/a/../a/../a", "the same folder entered and left twice")
-    yield _case("/home//user/", "doubled and trailing slashes")
-    yield _case("/a/./b/../../c/", "dots and double dots")
+    yield _case("/var//log/", "doubled and trailing slashes")
+    yield _case("/p/./q/../../r/", "dots and double dots")
 
     for pieces in (1, 3, 8, 30, 120):
         yield _case(_path(rng, pieces))

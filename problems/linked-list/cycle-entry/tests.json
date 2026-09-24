@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "a run-up of one",
-      "args": [[3,2,0,-4],1],
-      "expected": 1,
-      "explanation": "Four links, the last pointing back at the second; the loop begins there."
+      "args": [[8,-5,6,1,9],2],
+      "expected": 2,
+      "explanation": "Five links; the last points back at the third. The loop begins there."
     },
     {
       "name": "the whole chain is the loop",
@@ -24,18 +24,14 @@
       "args": [[7],0],
       "expected": 0,
       "explanation": "A loop of one begins where it is."
-    },
-    {
-      "name": "nothing at all",
-      "args": [[],-1],
-      "expected": -1,
-      "explanation": "An empty chain cannot loop."
     }
   ],
   "hidden": [
+    {"args":[[],-1],"expected":-1},
     {"args":[[5],-1],"expected":-1},
     {"args":[[5],0],"expected":0},
     {"args":[[1,2],1],"expected":1},
+    {"args":[[6,0,-3,9],1],"expected":1},
     {"args":[[4,4,4,4],2],"expected":2},
     {"args":[[4,4,4,4],-1],"expected":-1},
     {

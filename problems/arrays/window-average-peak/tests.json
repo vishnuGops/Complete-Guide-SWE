@@ -9,9 +9,9 @@
     },
     {
       "name": "tie goes to the earlier window",
-      "args": [[5,-1,-1,5],2],
-      "expected": 0,
-      "explanation": "The first and last windows both total 4, and the smaller starting index wins."
+      "args": [[2,-1,6,1,5,2],2],
+      "expected": 2,
+      "explanation": "The windows starting at 2 and at 4 both total 7, and the smaller starting index wins."
     },
     {
       "name": "single window",

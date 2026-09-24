@@ -20,9 +20,9 @@ A list of `readings.length - k + 1` integers: position `i` is the largest of
 
 ### Example 1
 
-Input: `readings = [1, 3, -1, -3, 5, 3, 6, 7]`, `k = 3`
+Input: `readings = [4, -2, 6, 1, 0, -5, 3, 8]`, `k = 3`
 
-Output: `[3, 3, 5, 5, 6, 7]`
+Output: `[6, 6, 6, 1, 3, 8]`
 
 ### Example 2
 

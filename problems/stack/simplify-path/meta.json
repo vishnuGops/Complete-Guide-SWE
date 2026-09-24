@@ -3,7 +3,7 @@
   "id": "simplify-path",
   "slug": "simplify-path",
   "title": "Tidy The Path",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["stack", "strings"],
   "tier": "Medium",

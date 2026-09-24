@@ -3,6 +3,6 @@
     "Sorting answers this, but it costs O(n log n). What question would you have to ask about a number to grow a run without sorting?",
     "Membership: given v, is v + 1 also present? A set answers that in constant time.",
     "Only start counting from a number that begins a run - one where v - 1 is absent. Every run then gets walked exactly once.",
-    "Put the values in a set. For each value v with v - 1 not in the set, walk v + 1, v + 2 and so on while they are present, and record the length. The inner walk is bounded by the total number of distinct values, so the whole thing stays linear."
+    "Build the set once, then loop over it, skipping every value that is not the start of a run. From each start, walk forwards while the run continues and keep the longest length seen. Each value belongs to exactly one walk, which is why the total stays linear."
   ]
 }

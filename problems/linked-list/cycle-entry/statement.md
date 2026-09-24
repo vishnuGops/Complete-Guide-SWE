@@ -12,6 +12,7 @@ is part of it, counting the head as `0`.
 ## Output
 
 The position of the link the loop begins at, or `-1` if the chain does not loop.
+An empty chain does not loop.
 
 ## Constraints
 
@@ -23,11 +24,11 @@ The position of the link the loop begins at, or `-1` if the chain does not loop.
 
 ### Example 1
 
-Input: `head = [3, 2, 0, -4]`, with the last link pointing back at the second
+Input: `head = [8, -5, 6, 1, 9]`, with the last link pointing back at the third
 
-Output: `1`
+Output: `2`
 
-The run-up is one link long, so the loop begins at position `1`.
+The run-up is two links long, so the loop begins at position `2`.
 
 ### Example 2
 
@@ -48,11 +49,3 @@ Output: `-1`
 Input: `head = [7]`, with the only link pointing at itself
 
 Output: `0`
-
-### Example 5
-
-Input: `head = []`
-
-Output: `-1`
-
-An empty chain cannot loop.

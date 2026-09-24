@@ -30,17 +30,19 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [1, 2, 2, 3, 4, 4, 3]`
+Input: `root = [7, 4, 4, 9, -2, -2, 9]`
 
 Output: `true`
 
+The two 4s match, and below them `9, -2` mirrors `-2, 9`.
+
 ### Example 2
 
-Input: `root = [1, 2, 2, null, 3, null, 3]`
+Input: `root = [6, 5, 5, 8, null, 8]`
 
 Output: `false`
 
-Both 2s have a right child and no left child; a reflection would need one of
+Both 5s have a left child and no right child; a reflection would need one of
 each.
 
 ### Example 3

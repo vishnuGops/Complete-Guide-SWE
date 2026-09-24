@@ -1,5 +1,5 @@
 A _reading_ of a word is what is left after deleting some of its letters, keeping
-the rest in order. `ace` is a reading of `abcde`.
+the rest in order. `pat` is a reading of `plant`.
 
 Report the length of the longest reading that both words share.
 
@@ -22,21 +22,22 @@ The length of the longest sequence that is a reading of both.
 
 ### Example 1
 
-Input: `first = "abcde"`, `second = "ace"`
+Input: `first = "kitchen"`, `second = "thin"`
 
 Output: `3`
 
-`ace`.
+`thn`. The whole of `thin` is not shared: its `i` comes after the `t`, and in
+`kitchen` it comes before.
 
 ### Example 2
 
-Input: `first = "abc"`, `second = "abc"`
+Input: `first = "loop"`, `second = "loop"`
 
-Output: `3`
+Output: `4`
 
 ### Example 3
 
-Input: `first = "abc"`, `second = "def"`
+Input: `first = "cat"`, `second = "dog"`
 
 Output: `0`
 

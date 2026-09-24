@@ -24,7 +24,7 @@ Two loose ends, and both matter.
 nothing is ever popped. What remains is ascending, so its largest digits are at
 the _end_, and the remaining `k` deletions come off the back.
 
-**Leading zeroes.** `"10200"` with `k = 1` leaves `"0200"`, which is the number 200. Strip the leading zeroes at the end, and if nothing survives, the answer is
+**Leading zeroes.** `"30020"` with `k = 1` leaves `"0020"`, which is the number 20. Strip the leading zeroes at the end, and if nothing survives, the answer is
 `"0"` — which also covers `k` equal to the whole length.
 
 Each digit is pushed once and popped at most once, so the pass is `O(n)`.

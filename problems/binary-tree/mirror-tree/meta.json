@@ -3,7 +3,7 @@
   "id": "mirror-tree",
   "slug": "mirror-tree",
   "title": "Its Own Reflection",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree traversal", "depth-first search"],
   "tier": "Easy",

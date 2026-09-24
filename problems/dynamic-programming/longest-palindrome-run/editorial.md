@@ -33,9 +33,9 @@ Same `O(n²)` worst case — a string of one repeated letter — and `O(1)` spac
 with no table at all. The insight it rests on is the same one: a palindrome is
 its centre plus matching pairs outwards.
 
-**Forgetting the even centres** is the classic bug, and `"cbbd"` is there to
-catch it: a solution that only expands from letters finds `"b"` and never
-`"bb"`.
+**Forgetting the even centres** is the classic bug, and `"tnoonk"` is there to
+catch it: a solution that only expands from letters finds `"t"` and never
+`"noon"`.
 
 **The tie rule needs `>` rather than `>=`.** Centres are visited left to right,
 so the first run of a given length is the earliest one; replacing only on a
@@ -52,7 +52,7 @@ quadratic walk is a millisecond.
 
 ## Pitfalls
 
-- **Only odd centres.** `"cbbd"` comes back as a single letter.
+- **Only odd centres.** `"tnoonk"` comes back as a single letter.
 - **`>=` on the length.** The last longest run is reported rather than the first.
 - **Checking every substring from scratch.** `O(n³)`, which is a billion
   character comparisons at `n = 1000`.

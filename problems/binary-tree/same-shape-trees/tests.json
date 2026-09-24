@@ -24,6 +24,11 @@
     {"name":"one empty, one not","args":[[],[1]],"expected":false},
     {"name":"two single nodes, equal","args":[[1],[1]],"expected":true},
     {"name":"two single nodes, different","args":[[1],[2]],"expected":false},
+    {
+      "name": "the same in-order reading, different shapes",
+      "args": [[2,1],[1,null,2]],
+      "expected": false
+    },
     {"name":"the extremes of the stated range","args":[[-1000000000],[1000000000]],"expected":false},
     {"args":[[-17,17,4],[-17,17,4]],"expected":true},
     {"args":[[-17,17,4],[-17,17,5]],"expected":false},

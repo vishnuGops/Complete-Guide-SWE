@@ -78,6 +78,14 @@ Required sections, enforced by the validator: `## Input`, `## Output`,
 - **Three samples minimum**, each earning its place: a plain case, an edge, and
   one that would catch a plausible wrong approach. Every sample needs an
   explanation — it is shown in the statement, so it explains rather than repeats.
+- **Invent the example inputs.** A classic problem's well-known example —
+  `[2, 7, 11, 15]`, `"horse"` and `"ros"`, `[3, 9, 20, null, null, 15, 7]` — is
+  part of someone else's statement even when the wording around it is ours. The
+  P6-8 audit replaced about forty of them; the only inputs worth keeping are the
+  ones with no alternative, such as the empty list.
+- **An untouched starter should fail.** Pick samples, or the Java starter's
+  placeholder, so the placeholder passes at most one sample. A first Run that
+  shows two green samples for `return false;` teaches the wrong thing.
 - Target complexity goes in `meta.targetComplexity`; the coach quotes it as the
   bar to meet, so `O(n)` there means an `O(n²)` accepted solution is not done.
 
@@ -156,6 +164,19 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
 - Size that case for the trap, not for show. Where a quadratic solution is the
   plausible wrong answer, go large enough that it times out; where it is not,
   a few thousand elements is plenty and keeps `tests.json` reviewable.
+- **Say which language a timeout holds in.** At `n = 10^4` a quadratic loop is
+  fifty million steps: Python does not finish it in four seconds, and Java's
+  JIT does in two. A statement or editorial that says "does not finish" names
+  the language, or names the target complexity instead. Measure before you
+  claim it — `sorted` on every window, or `bisect.insort` into a list, is C
+  speed and finishes more often than the complexity suggests (P6-8).
+- **Keep the helpers inside the constraints.** A generator that balances a row by
+  dumping the difference on one element, or pads a word by inserting past the
+  limit, produces cases the statement forbids. Clamp in the helper, not at the
+  call site.
+- **A hand-written case equal to a sample is dropped** from `hidden[]`, because
+  Run and Submit already cover it. Change a sample, and change its hand-written
+  copy in `generator.py` too, or the old input comes back as a hidden test.
 
 ## 7. Before you open a PR
 
@@ -164,7 +185,11 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
 - [ ] Constraints are explicit, and the generator respects every one of them.
 - [ ] ≥ 3 samples, each with an explanation; ≥ 10 hidden tests from the generator.
 - [ ] Edge cases present: empty, single, duplicates, negatives, maximum size.
-- [ ] Hints are a ladder and rung 4 is not the solution.
+- [ ] Hints are a ladder and rung 4 is not the solution: the shape of the loop
+      or recursion, not its exact conditions or a formula for the answer.
+- [ ] Example inputs are invented, and the untouched Java starter passes at
+      most one sample.
+- [ ] Every "does not finish" claim is measured, and says which language.
 - [ ] Editorial explains the approach, the complexity and the usual pitfall.
 - [ ] Both references idiomatic; both starters compile; no `public class`.
 - [ ] `rating` sits in its tier's band and reflects the solving time you expect.

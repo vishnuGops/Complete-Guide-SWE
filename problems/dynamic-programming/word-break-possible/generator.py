@@ -24,8 +24,10 @@ def _dictionary(rng: random.Random, count: int, alphabet: str, longest: int) -> 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("a", ["a"], "one letter")
     yield _case("a", ["b"], "one letter, not a word")
-    yield _case("applepen", ["apple", "pen"], "two words")
-    yield _case("catsandog", ["cats", "dog", "sand", "and", "cat"], "it almost works")
+    yield _case("treetop", ["tree", "top"], "two words")
+    yield _case("carpetsx", ["car", "carp", "pet", "pets", "et", "ets"], "it almost works")
+    # Taking the longest word that fits leaves `d`; the reading is `ab cd`.
+    yield _case("abcd", ["abc", "ab", "cd"], "the longest first word is the wrong one")
     yield _case("aaaaaaaaaa", ["a"], "one word, ten times")
     yield _case("a" * 30 + "b", ["a", "aa", "aaa"], "thirty a's and a b, which no reading reaches")
 

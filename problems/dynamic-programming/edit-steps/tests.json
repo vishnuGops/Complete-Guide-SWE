@@ -3,7 +3,7 @@
   "samples": [
     {
       "name": "three edits",
-      "args": ["horse","ros"],
+      "args": ["garden","grin"],
       "expected": 3,
       "explanation": "One replacement and two deletions."
     },
@@ -19,7 +19,8 @@
     {"name":"both empty","args":["",""],"expected":0},
     {"name":"into nothing","args":["abc",""],"expected":3},
     {"name":"one replacement","args":["a","b"],"expected":1},
-    {"name":"the classic pair","args":["intention","execution"],"expected":5},
+    {"name":"three edits","args":["plated","pad"],"expected":3},
+    {"name":"two nine-letter words","args":["shoreline","shortlist"],"expected":3},
     {"args":["ababb","abbabab"],"expected":2},
     {"args":["ababb","bbbba"],"expected":3},
     {"args":["bbbaccacaaba","babccacaabaa"],"expected":3},
@@ -60,31 +61,31 @@
       "name": "the stated maxima, eighty edits apart",
       "args": [
         "uoxpnptsdyigjnxjswzlnqgtugxktunwebrrlvzlaqybikwjxvuonjsypcrhjieddcuuvznjxgzmrgfuksbtycitkwpawdgylakhwqpmmkidhoiygqixklaycclvlygfjkrxywzhjdwtxahcfavsvdhfrzjqckskkxlrevdmdvjflwxkwtjflxxjxrdjmkuvfosmysqiwbhaqxgsepfkahftkyzdktiekgtpmtooxfrsskhirbpnkjlklyvmwiaifthtwqibytsjqtdqvtvtjwftjodrnspyhnmornkbpyqsglztutpvfbczvfmawxtfjvnjqrrwzfngyysppuvgulsrhgvgrsrhmhzsltazwrdqynxfgmltiuwnrltiwkttidhfoapcdcyrmaduvwrcqpuwbjmehqjxofesrbfssumgalwtfolcmwgazznvvdwsoafthcolqkaekudbytgzmqcktmivhhefqejythldtdvlzveyqnhy",
-        "uoqqpnptsdyigjnxjxswzlnqgtugxoktunwerrlvzlaqybikwjxvuonjsypcrhjieddcuuzgjxgzmrgfuksbtycitkwpawpdgylakhwqpmkkidhoiyguqixklaycfvcycgjrxywzhdwetxahfarvsvdhrzjqckskkxlrvdmdvjflwxkwmjflxxjxrdjmkuvfosmysqiwbhqcxgsepfkavftxyzdktiekghpmtooxfgsskhirbpnklknlnvewiaidfthtwqibytsjqtdqvtvttjwftjoeydrnxvpyhnornkbpyqsggztutpvfbcevfjmawwxtfjvnjrwhzfnwgyspuugulsrhgvgnsrhmhzstltzwrdqynxfgmltiuwnrltiwkttidhfolypcdcyrmaduvwtrcqpuwjmehqjxofesrbfssumgalwtfolcvmbgazzznvvdwloafthscolqkaemudbytgnmqcktmvfhyhefqejythldtdvlzdeyqnhgy"
+        "uoqqpnptsdyigjnxjswzlnngtugxkotunwebrlvzlaqybikwjxvuonjsypcrqjieddcuuvngxgzmrgfiksbtycitkmpawdpgylakhwqpmmkidhoiyzgqixklaycclfcgfcwrywzhjdwtxahcatsvdhfzjqckskkxlrevdmvjflwxkwtjflxxjxrjmkuvffsmysqiwbhaqxcsepfkahftvyxdktiekgthmtooxfrgskhirbpnkjlkynmwiaefthtwqibytsjqtdqvtvtjtwftjodjrnspyyhnxyrnkbyqsglztutpgfbczvfmawetfjvnjqrrwzhngysppuuwgurhgvgrsrhmhznltazrdqynxfgmltbwnrctiwkttidhfoapydcyrmaduvrctqpuwbjmehqjxoyferbfssumgalwtfolcmwgbzznvvjvzdwpoathcolqkaeskudbytgzmqcktmivhefqejyfulydtdvlzveyqdhy"
       ],
-      "expected": 70
+      "expected": 68
     },
     {
       "name": "the stated maxima, unrelated",
       "args": [
         "uoxpnptsdyigjnxjswzlnqgtugxktunwebrrlvzlaqybikwjxvuonjsypcrhjieddcuuvznjxgzmrgfuksbtycitkwpawdgylakhwqpmmkidhoiygqixklaycclvlygfjkrxywzhjdwtxahcfavsvdhfrzjqckskkxlrevdmdvjflwxkwtjflxxjxrdjmkuvfosmysqiwbhaqxgsepfkahftkyzdktiekgtpmtooxfrsskhirbpnkjlklyvmwiaifthtwqibytsjqtdqvtvtjwftjodrnspyhnmornkbpyqsglztutpvfbczvfmawxtfjvnjqrrwzfngyysppuvgulsrhgvgrsrhmhzsltazwrdqynxfgmltiuwnrltiwkttidhfoapcdcyrmaduvwrcqpuwbjmehqjxofesrbfssumgalwtfolcmwgazznvvdwsoafthcolqkaekudbytgzmqcktmivhhefqejythldtdvlzveyqnhy",
-        "jqqvaqnitvmashzllhnivssbidztpvaflilfqaqnqgxqxliuhbamxsvynubhaqvylelkfezomqqmcdpswpnboarugkgnfqvwxwjfvibawauyfkiirjmbscuobqxcrynodzwtqpvenraqjgsuqmqxdyiylkovnagptbazdshifmnyzmftiiqhmajloxgczyupzsfedjokyvygxljhtkwuksyupgritdevjkwmvjzghevhaixytghvjeduhgcnoifjpfkpjxafapoifbpbzksohthibrnoxrbnrnwjfaqtoyvqnjdmjxvbneizftfqycpxtkvbomcirafraztqqqhcwcsfeucmxgzaikslqaxbzycfbbqelzaggesocqeuthhvxtgebdptwotojfjtxuzawgpdrndfzdbvpzftmlzhlwkpbdmaprcvqudywbsriwwteyibaasputbxsmqqjldegctuenenkxstwuixjzcuwsmzblsuegej"
+        "hwtdljqqvaqnitvmashzllhnivssbidztpvaflilfqaqnqgxqxliuhbamxsvynubhaqvylelkfezomqqmcdpswpnboarugkgnfqvwxwjfvibawauyfkiirjmbscuobqxcrynodzwtqpvenraqjgsuqmqxdyiylkovnagptbazdshifmnyzmftiiqhmajloxgczyupzsfedjokyvygxljhtkwuksyupgritdevjkwmvjzghevhaixytghvjeduhgcnoifjpfkpjxafapoifbpbzksohthibrnoxrbnrnwjfaqtoyvqnjdmjxvbneizftfqycpxtkvbomcirafraztqqqhcwcsfeucmxgzaikslqaxbzycfbbqelzaggesocqeuthhvxtgebdptwotojfjtxuzawgpdrndfzdbvpzftmlzhlwkpbdmaprcvqudywbsriwwteyibaasputbxsmqqjldegctuenenkxstwuixjzcuwsmzbls"
       ],
-      "expected": 449
+      "expected": 447
     },
     {
       "name": "the stated maxima over two letters",
       "args": [
-        "bbababbbabbbaaabbababbaabaabbabbaaaaabbbbaaabbbbbaabaabbabaababababbababbabbbabbabbaaabaaaaaababbbaabbabbabbaabbaabaabbbaabbabbabbaaaaabbaaaabbaaabbabaaababbbabaabbbbabbbbbbbbbaabbaaabaabbbbbabbbabaabbabaaaabbaaabaaaaabbbaabbbbbbaaabbabbbbabbbbbbbabbbabaaaaabbbbbbbbabababaaabaaaaaabbaabaaababbababaababbbbbbaaaabbbbabbabaaaabaabbbabaabbbbbabbababaaaaaaaaabbbbaaabbbbabbbbaaabaabbbbabaabbbaababbabbbbbababbbababaababaabaabbaaabbaaaababababaaaaaabbabbbbaaabbbbbbaaaababaaaaaaababbaaabbababababbbaabbab",
-        "aaaabbaabaabaabbaaaaaaababbbbbbababaaabbababaaababaababaaababaaaaaabaaabbabaabbbabbbbbaababaaaaaabaabbbbbbaababababbababbabaabbaaaaabbaabaaababbabbabbababaaababbabaaaaababbbbbbbbbababbababbbbaababbbabaaaaabaaabaabbaaabababbbaabbbababaaababbbabbaaaaaaaaaabbbaaaabbbbbabbaababaaaaaabbbbbababbaabaabbababbbbbabaaabababaabbabbbababbabababababbbbaabbabbabbaaababababbabbbbabaaabababaaabbabbbbabababbbaaabbbababbaababbbbbabbabbaaabababaabaabaaaabaabbaababbabbbabbbaaaaaaaabbbaabbbabaaababbaabbabaaaababbbbb"
+        "aaabbbababbbabbbaaabbababbaabaabbabbaaaaabbbbaaabbbbbaabaabbabaababababbababbabbbabbabbaaabaaaaaababbbaabbabbabbaabbaabaabbbaabbabbabbaaaaabbaaaabbaaabbabaaababbbabaabbbbabbbbbbbbbaabbaaabaabbbbbabbbabaabbabaaaabbaaabaaaaabbbaabbbbbbaaabbabbbbabbbbbbbabbbabaaaaabbbbbbbbabababaaabaaaaaabbaabaaababbababaababbbbbbaaaabbbbabbabaaaabaabbbabaabbbbbabbababaaaaaaaaabbbbaaabbbbabbbbaaabaabbbbabaabbbaababbabbbbbababbbababaababaabaabbaaabbaaaababababaaaaaabbabbbbaaabbbbbbaaaababaaaaaaababbaaabbababababbbaa",
+        "bbabaaaabbaabaabaabbaaaaaaababbbbbbababaaabbababaaababaababaaababaaaaaabaaabbabaabbbabbbbbaababaaaaaabaabbbbbbaababababbababbabaabbaaaaabbaabaaababbabbabbababaaababbabaaaaababbbbbbbbbababbababbbbaababbbabaaaaabaaabaabbaaabababbbaabbbababaaababbbabbaaaaaaaaaabbbaaaabbbbbabbaababaaaaaabbbbbababbaabaabbababbbbbabaaabababaabbabbbababbabababababbbbaabbabbabbaaababababbabbbbabaaabababaaabbabbbbabababbbaaabbbababbaababbbbbabbabbaaabababaabaabaaaabaabbaababbabbbabbbaaaaaaaabbbaabbbabaaababbaabbabaaaabab"
       ],
-      "expected": 152
+      "expected": 153
     },
     {
       "name": "the stated maximum from nothing",
       "args": [
         "",
-        "cbcaacacbaacaccccccbbbbcaaaabbbacabacbacbbccabbbacabacbcbaaabbabbaccacbccabbaabaacabaaaaaccbbacccbccaaacaacacbcabbccbbaacaaccaabbabcaabcbaabaacbccbbbbaccaaaccaaaaccccabbaacbbcabbbbcabbaaaacaabaccabbbaccaaacbbcbaccbcbcaccbacacabcbbbbbcbbaccccaabccbabbcccacbbbbaccbbaaaabbbbacaacaccaabaabcacabacbbaacabaabaabaccacbacacaccababaabbcabcacaabcaabcbcaabacccabcaaaacbccabcabcacababbaabbaaccbbabbbbbabbcbbbbcbbccabcccabbccbbaacaababcababcbbacaaabaabbcaccabcabcbccbcbbacbcaacacaaacbbacaabaccaaccbcabcbababbbbac"
+        "bcbccbbcbcaacacbaacaccccccbbbbcaaaabbbacabacbacbbccabbbacabacbcbaaabbabbaccacbccabbaabaacabaaaaaccbbacccbccaaacaacacbcabbccbbaacaaccaabbabcaabcbaabaacbccbbbbaccaaaccaaaaccccabbaacbbcabbbbcabbaaaacaabaccabbbaccaaacbbcbaccbcbcaccbacacabcbbbbbcbbaccccaabccbabbcccacbbbbaccbbaaaabbbbacaacaccaabaabcacabacbbaacabaabaabaccacbacacaccababaabbcabcacaabcaabcbcaabacccabcaaaacbccabcabcacababbaabbaaccbbabbbbbabbcbbbbcbbccabcccabbccbbaacaababcababcbbacaaabaabbcaccabcabcbccbcbbacbcaacacaaacbbacaabaccaaccbcabcbab"
       ],
       "expected": 500
     }

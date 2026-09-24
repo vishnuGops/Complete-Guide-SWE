@@ -19,11 +19,11 @@ The `k`-th largest value in `readings`.
 
 ### Example 1
 
-Input: `readings = [3, 2, 1, 5, 6, 4]`, `k = 2`
+Input: `readings = [4, 9, 1, 7, 3, 8]`, `k = 2`
 
-Output: `5`
+Output: `8`
 
-Sorted downwards the readings are 6, 5, 4, 3, 2, 1, and the second is 5.
+Sorted downwards the readings are 9, 8, 7, 4, 3, 1, and the second is 8.
 
 ### Example 2
 

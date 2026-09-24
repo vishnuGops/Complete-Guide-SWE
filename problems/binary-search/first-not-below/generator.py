@@ -32,6 +32,8 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
         threshold = rng.choice([values[0], values[-1], rng.randint(-(10**6), 10**6)])
         yield {"args": [values, threshold]}
 
-    big = _sorted_values(rng, 2000, 10**9)
+    # One short of the bound on each side, so a threshold of 10^9 is above
+    # everything and still inside the stated range.
+    big = _sorted_values(rng, 2000, 10**9 - 1)
     yield {"args": [big, big[len(big) // 3]], "name": "maximum size, target present"}
-    yield {"args": [big, 10**9 + 1], "name": "maximum size, above everything"}
+    yield {"args": [big, 10**9], "name": "maximum size, above everything"}

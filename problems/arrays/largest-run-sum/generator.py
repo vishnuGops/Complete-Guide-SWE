@@ -37,4 +37,4 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     n = 10**4
     values = [rng.randint(-(10**4), 2000) for _ in range(n)]
     values[n // 2] = 10**4
-    yield _case(values, "the stated maximum, where a quadratic scan cannot finish")
+    yield _case(values, "the stated maximum")

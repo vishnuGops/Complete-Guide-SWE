@@ -22,19 +22,20 @@ The `k` nearest points, in the order described.
 
 ### Example 1
 
-Input: `points = [[1, 3], [-2, 2]]`, `k = 1`
+Input: `points = [[2, 4], [-3, 1]]`, `k = 1`
 
-Output: `[[-2, 2]]`
+Output: `[[-3, 1]]`
 
-`[-2, 2]` is `sqrt(8)` from the origin and `[1, 3]` is `sqrt(10)`.
+`[-3, 1]` is `sqrt(10)` from the origin and `[2, 4]` is `sqrt(20)`.
 
 ### Example 2
 
-Input: `points = [[3, 3], [5, -1], [-2, 4]]`, `k = 2`
+Input: `points = [[4, 1], [-2, -5], [1, -3]]`, `k = 2`
 
-Output: `[[3, 3], [-2, 4]]`
+Output: `[[1, -3], [4, 1]]`
 
-The distances squared are 18, 26 and 20.
+The distances squared are 17, 29 and 10, so `[1, -3]` comes first and `[4, 1]`
+second.
 
 ### Example 3
 

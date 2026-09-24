@@ -21,7 +21,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([7, 7, 7], "every reading equal")
     yield _case([5, 4, 3, 2, 1], "only falling")
     yield _case([1, 2, 3, 4, 5], "only rising")
-    yield _case([10, 9, 2, 5, 3, 7, 101, 18], "a run of four")
+    yield _case([4, 11, 5, 6, 0, 13, 7, 2], "a run of four")
     yield _case([-(10**9), 10**9], "the extremes of the stated range")
     yield _case([1, 1, 2, 2, 3, 3], "every value twice")
 

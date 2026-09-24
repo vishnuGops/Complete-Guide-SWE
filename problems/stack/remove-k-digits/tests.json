@@ -3,19 +3,19 @@
   "samples": [
     {
       "name": "three digits removed",
-      "args": ["1432219",3],
-      "expected": "1219",
-      "explanation": "The 4, the 3 and a 2 go, leaving 1219."
+      "args": ["5142873",3],
+      "expected": "1273",
+      "explanation": "The 5, the 4 and the 8 go, leaving 1273."
     },
     {
       "name": "a leading zero appears",
-      "args": ["10200",1],
-      "expected": "200",
-      "explanation": "`0200` is the number 200 and is written that way."
+      "args": ["30020",1],
+      "expected": "20",
+      "explanation": "`0020` is the number 20 and is written that way."
     },
     {
       "name": "everything removed",
-      "args": ["10",2],
+      "args": ["406",3],
       "expected": "0",
       "explanation": "An empty result is the number zero."
     }
@@ -23,6 +23,8 @@
   "hidden": [
     {"name":"a single zero, nothing removed","args":["0",0],"expected":"0"},
     {"name":"a single zero, removed","args":["0",1],"expected":"0"},
+    {"name":"everything removed","args":["52",2],"expected":"0"},
+    {"name":"a leading zero appears","args":["70400",1],"expected":"400"},
     {
       "name": "already ascending, so the removals come off the end",
       "args": ["12345",2],

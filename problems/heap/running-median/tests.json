@@ -32,6 +32,25 @@
       "expected": [1000000000,1000000000]
     },
     {
+      "name": "two readings at the bottom of the range",
+      "args": [],
+      "ops": [{"method":"add","args":[-1000000000]},{"method":"add","args":[-999999999]}],
+      "expected": [-1000000000,-999999999.5]
+    },
+    {
+      "name": "middles near 10^9, mid-stream",
+      "args": [],
+      "ops": [
+        {"method":"add","args":[999999995]},
+        {"method":"add","args":[-3]},
+        {"method":"add","args":[999999999]},
+        {"method":"add","args":[999999998]},
+        {"method":"add","args":[1000000000]},
+        {"method":"add","args":[999999996]}
+      ],
+      "expected": [999999995,499999996,999999995,999999996.5,999999998,999999997]
+    },
+    {
       "name": "strictly ascending",
       "args": [],
       "ops": [

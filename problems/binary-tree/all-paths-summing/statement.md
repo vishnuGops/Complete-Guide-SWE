@@ -36,19 +36,21 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [5, 4, 8, 11, null, 13, 4, 7, 2, null, null, 5, 1]`, `target = 22`
+Input: `root = [6, 2, 4, 5, 1, null, 3, null, null, 6]`, `target = 13`
 
-Output: `[[5, 4, 11, 2], [5, 8, 4, 5]]`
+Output: `[[6, 2, 5], [6, 4, 3]]`
 
-Two paths reach 22; the one through the left subtree comes first.
+Two paths reach 13; the one through the left subtree comes first. The third,
+6 + 2 + 1 + 6, overshoots to 15.
 
 ### Example 2
 
-Input: `root = [1, 2, 3]`, `target = 5`
+Input: `root = [1, -2, 3, 4]`, `target = 3`
 
-Output: `[]`
+Output: `[[1, -2, 4]]`
 
-The paths sum to 3 and 4.
+1 - 2 + 4 = 3 at the leaf. Values can be negative, so a total that has passed
+the target can come back to it.
 
 ### Example 3
 

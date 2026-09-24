@@ -3,6 +3,6 @@
     "count has to answer without looking at the items. What would have to be stored for that to be possible?",
     "Two maps: one from item to its tag, and one from tag to how many items carry it. The second is the one that makes count constant time.",
     "The hard part is keeping the two consistent. Every operation that changes an item's tag has to decrement the old tag's count before incrementing the new one.",
-    "Write add as: look up the item's current tag; if it has one, decrement that tag's count (and drop the entry at zero); then store the new tag and increment its count. remove is the first half of that on its own."
+    "Route every change to an item's tag through one place that retires the old tag before it records the new one, so the two maps cannot drift apart. Removing an item is the retiring half on its own."
   ]
 }

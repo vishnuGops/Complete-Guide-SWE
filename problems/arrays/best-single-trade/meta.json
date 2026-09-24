@@ -3,7 +3,7 @@
   "id": "best-single-trade",
   "slug": "best-single-trade",
   "title": "Best Single Trade",
-  "version": 1,
+  "version": 2,
   "topic": "arrays",
   "patterns": ["one pass", "running total"],
   "tier": "Medium",

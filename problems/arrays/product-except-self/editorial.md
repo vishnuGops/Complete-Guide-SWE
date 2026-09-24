@@ -33,6 +33,7 @@ right product.
   and the problem asks you not to.
 - **Recomputing a product per position.** Multiplying the other `n-1` readings
   for each position is `O(n^2)`; at the stated maximum that is a hundred
-  million multiplications, which does not finish here.
+  million multiplications, which Python does not finish inside the time limit.
+  Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Counting the output as extra space.** It is the answer, not scratch space —
   but a second array of prefix products _is_ scratch, and is avoidable.

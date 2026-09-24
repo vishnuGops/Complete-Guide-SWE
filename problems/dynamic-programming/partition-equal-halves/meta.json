@@ -3,7 +3,7 @@
   "id": "partition-equal-halves",
   "slug": "partition-equal-halves",
   "title": "Split Into Equal Halves",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["knapsack", "one-dimensional dp"],
   "tier": "Medium",

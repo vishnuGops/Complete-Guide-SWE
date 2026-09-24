@@ -47,4 +47,5 @@ Nothing cancels: no single value is zero and the pair sums to 5.
 ## Notes
 
 Summing every stretch is `O(n^2)` even with a running total. At the stated
-maximum that is fifty million additions and it will not finish here.
+maximum that is fifty million additions: too slow for the time limit in Python,
+though Java's JIT gets through it. Either way it misses the `O(n)` target.

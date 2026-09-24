@@ -38,8 +38,9 @@ The two invariants worth stating, because everything else follows from them:
 
 ## Pitfalls
 
-- **Sorting each window.** `O(n k log k)`, and at the stated maximum with `k`
-  around `n / 2` it does not finish. Inserting into a sorted list with a binary
+- **Sorting each window.** `O(n k log k)`. At the stated maximum with `k`
+  around `n / 2` it runs close to Python's time limit and inside Java's, so it
+  is the target, not the clock, that rules it out. Inserting into a sorted list with a binary
   search is better but still moves `O(k)` elements per step.
 - **Trusting `heap.size()`.** Once lazy deletion is in play the physical size
   includes readings that have left. Rebalance on the counters.

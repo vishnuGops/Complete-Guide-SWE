@@ -3,7 +3,7 @@
   "id": "edit-steps",
   "slug": "edit-steps",
   "title": "Fewest Edits",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["edit distance", "two-dimensional dp"],
   "tier": "Hard",

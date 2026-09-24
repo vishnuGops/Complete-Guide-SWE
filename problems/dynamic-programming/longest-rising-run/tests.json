@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "a run of four",
-      "args": [[10,9,2,5,3,7,101,18]],
+      "args": [[6,2,8,3,9,4,1,12]],
       "expected": 4,
-      "explanation": "2, 5, 7, 101 is one of several runs of four."
+      "explanation": "2, 3, 4, 12 is one of several runs of four."
     },
     {
       "name": "every reading equal",
@@ -23,6 +23,7 @@
   "hidden": [
     {"name":"one reading","args":[[1]],"expected":1},
     {"name":"only rising","args":[[1,2,3,4,5]],"expected":5},
+    {"name":"a run of four","args":[[4,11,5,6,0,13,7,2]],"expected":4},
     {"name":"the extremes of the stated range","args":[[-1000000000,1000000000]],"expected":2},
     {"name":"every value twice","args":[[1,1,2,2,3,3]],"expected":3},
     {"args":[[-3,2,2,3]],"expected":3},

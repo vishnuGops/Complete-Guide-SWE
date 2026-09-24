@@ -23,11 +23,11 @@ one.
 
 ### Example 1
 
-Input: `tolls = [[1, 3, 1], [1, 5, 1], [4, 2, 1]]`
+Input: `tolls = [[2, 1, 4], [5, 1, 3], [6, 2, 2]]`
 
-Output: `7`
+Output: `8`
 
-1 → 3 → 1 → 1 → 1 along the top and down the right.
+2 → 1 → 1 → 2 → 2: right, down through the middle, down again, then right.
 
 ### Example 2
 

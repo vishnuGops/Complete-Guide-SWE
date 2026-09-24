@@ -3,7 +3,7 @@
   "id": "decode-ways",
   "slug": "decode-ways",
   "title": "Ways To Read The Digits",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["one-dimensional dp", "state machine"],
   "tier": "Medium",

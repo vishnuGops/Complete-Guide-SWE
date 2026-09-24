@@ -3,7 +3,7 @@
   "id": "burst-the-balloons",
   "slug": "burst-the-balloons",
   "title": "Best Order To Burst",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["two-dimensional dp", "memoisation"],
   "tier": "Hard",

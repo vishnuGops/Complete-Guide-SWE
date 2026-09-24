@@ -18,19 +18,19 @@ Every value must go into exactly one group.
 
 ### Example 1
 
-Input: `values = [1, 5, 11, 5]`
+Input: `values = [2, 9, 4, 3]`
 
 Output: `true`
 
-`[1, 5, 5]` and `[11]`, both totalling 11.
+`[2, 4, 3]` and `[9]`, both totalling 9.
 
 ### Example 2
 
-Input: `values = [1, 2, 3, 5]`
+Input: `values = [4, 6, 2, 3]`
 
 Output: `false`
 
-The total is 11, which is odd, so no division is possible.
+The total is 15, which is odd, so no division is possible.
 
 ### Example 3
 

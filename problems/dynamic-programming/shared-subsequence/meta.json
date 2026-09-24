@@ -3,7 +3,7 @@
   "id": "shared-subsequence",
   "slug": "shared-subsequence",
   "title": "Longest Shared Reading",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["longest common subsequence", "two-dimensional dp"],
   "tier": "Medium",

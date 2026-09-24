@@ -40,4 +40,6 @@ Output: `[1]`
 
 Merging the series one at a time into a growing result re-walks everything
 already merged, which is `O(k · N)`. At the stated maxima — ten thousand series
-of one reading each — that is fifty million steps and will not finish.
+of one reading each — that is fifty million steps: too slow for the time limit
+in Python, though Java's JIT gets through it. Either way it misses the
+`O(N log k)` target.

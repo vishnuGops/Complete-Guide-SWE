@@ -24,7 +24,7 @@ whole problem, because they are what the zeroes break.
   that position is zero — and, because every later count multiplies through it,
   the whole answer is zero.
 
-**The two-digit test is a range, not a length.** `06` is two digits and is not a
+**The two-digit test is a range, not a length.** `07` is two digits and is not a
 letter; the test is `10 <= value <= 26`, which rules out every leading zero
 without a separate check.
 
@@ -43,7 +43,7 @@ capped there.
 ## Pitfalls
 
 - **Treating `0` as a letter.** It is not one, and `"0"` reads zero ways.
-- **Allowing `06` as a two-digit letter.** The range test excludes it; a
+- **Allowing `07` as a two-digit letter.** The range test excludes it; a
   length test does not.
 - **`ways(0) = 0`.** Everything collapses.
 - **Forgetting that a leading zero anywhere kills the whole count.**

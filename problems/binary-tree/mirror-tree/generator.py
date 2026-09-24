@@ -113,8 +113,11 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1, 2], "a root with one child")
     yield _case([1, 2, 2], "two children with equal values")
     yield _case([1, 2, 3], "two children with different values")
-    yield _case([1, 2, 2, 3, 4, 4, 3], "a reflection")
-    yield _case([1, 2, 2, None, 3, None, 3], "the same values, the wrong sides")
+    yield _case([2, 3, 3, 4, 5, 5, 4], "a reflection")
+    yield _case([9, 1, 1, None, 0, None, 0], "the same values, the wrong sides")
+    # Reads 2, 2, 1, 2, 2 in order - a palindrome - and is not a reflection:
+    # the in-order palindrome check the editorial warns about passes it.
+    yield _case([1, 2, 2, 2, None, 2], "an in-order palindrome that is not a reflection")
     yield _case([-(10**9), 10**9, 10**9], "the extremes of the stated range")
 
     for n in (1, 3, 7, 20, 90):

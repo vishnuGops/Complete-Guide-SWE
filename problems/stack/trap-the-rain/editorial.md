@@ -44,8 +44,8 @@ it is the shape that generalises to two dimensions.
 
 ## Pitfalls
 
-- **Recomputing the maxima per column.** `O(n^2)`, and it does not finish at the
-  stated maximum.
+- **Recomputing the maxima per column.** `O(n^2)`, which Python does not finish
+  at the stated maximum. Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Advancing the taller side.** The argument only works when the shorter side
   moves; advancing the other one settles a column whose binding wall is still
   unknown.

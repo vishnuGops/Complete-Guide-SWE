@@ -3,7 +3,7 @@
   "id": "last-stone-standing",
   "slug": "last-stone-standing",
   "title": "What Is Left Of The Stones",
-  "version": 1,
+  "version": 2,
   "topic": "heap",
   "patterns": ["heap"],
   "tier": "Easy",

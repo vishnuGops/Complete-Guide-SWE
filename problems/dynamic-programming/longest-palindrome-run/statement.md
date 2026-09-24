@@ -20,17 +20,19 @@ The longest palindromic substring, earliest one if there is a tie.
 
 ### Example 1
 
-Input: `word = "babad"`
+Input: `word = "xyxzyz"`
 
-Output: `"bab"`
+Output: `"xyx"`
 
-`"aba"` is also three long; `"bab"` starts earlier.
+`"zyz"` is also three long; `"xyx"` starts earlier.
 
 ### Example 2
 
-Input: `word = "cbbd"`
+Input: `word = "tnoonk"`
 
-Output: `"bb"`
+Output: `"noon"`
+
+Its centre falls between the two `o`s, not on a letter.
 
 ### Example 3
 

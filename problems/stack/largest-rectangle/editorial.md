@@ -45,7 +45,8 @@ inner loop.
 
 ## Pitfalls
 
-- **Trying every span.** `O(n^2)`, and it does not finish at the stated maximum.
+- **Trying every span.** `O(n^2)`, which Python does not finish at the stated
+  maximum. Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Forgetting the sentinel.** A row that only increases — `[1,2,3]` — leaves
   everything on the stack and answers 0.
 - **Getting the width wrong.** It is `i - left`, where `left` is one past the

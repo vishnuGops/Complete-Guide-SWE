@@ -2,7 +2,7 @@
   "hints": [
     "Write down, for each position, which position its reading has to end up in. What kind of object is that?",
     "It is a permutation, and every permutation splits into cycles: a reading goes here, whatever was here goes there, and eventually you come back to where you started.",
-    "A cycle of length `L` needs exactly `L - 1` swaps, and cycles never interfere with one another. So the answer is `n` minus the number of cycles.",
+    "Cycles never interfere: fixing one leaves the others as they were. So work out by hand how many swaps a cycle of two needs, then a cycle of three, and the answer becomes a count over the cycles.",
     "Build the permutation by sorting the positions by their readings, then walk it marking what you have visited; each unvisited start opens a new cycle."
   ]
 }

@@ -20,8 +20,8 @@ def _case(balloons: List[int], name: str = None) -> Dict[str, Any]:
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([7], "one balloon")
     yield _case([0], "one balloon worth nothing")
-    yield _case([1, 5], "two balloons")
-    yield _case([3, 1, 5, 8], "four balloons")
+    yield _case([4, 9], "two balloons")
+    yield _case([5, 2, 7, 1], "four balloons")
     yield _case([100, 100], "the extremes of the stated range")
     yield _case([0, 0, 0], "every balloon worth nothing")
     yield _case([5, 0, 5], "a zero between two others")

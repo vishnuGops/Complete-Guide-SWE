@@ -24,15 +24,15 @@ Report whether the log contains two equal readings at positions `i` and `j` with
 
 ### Example 1
 
-Input: `readings = [1, 2, 3, 1]`, `k = 3`
+Input: `readings = [4, 9, 6, 4]`, `k = 3`
 
 Output: `true`
 
-The two 1s are at positions 0 and 3, which is exactly 3 apart.
+The two 4s are at positions 0 and 3, which is exactly 3 apart.
 
 ### Example 2
 
-Input: `readings = [1, 2, 3, 1]`, `k = 2`
+Input: `readings = [4, 9, 6, 4]`, `k = 2`
 
 Output: `false`
 

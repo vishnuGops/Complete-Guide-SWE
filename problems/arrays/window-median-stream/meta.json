@@ -3,7 +3,7 @@
   "id": "window-median-stream",
   "slug": "window-median-stream",
   "title": "Median Of The Last K",
-  "version": 1,
+  "version": 2,
   "topic": "arrays",
   "patterns": ["sliding window", "two heaps"],
   "tier": "Hard",

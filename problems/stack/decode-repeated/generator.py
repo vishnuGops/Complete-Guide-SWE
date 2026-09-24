@@ -47,7 +47,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("a", "a single letter")
     yield _case("abc", "nothing to expand")
     yield _case("1[a]", "a count of one")
-    yield _case("3[a]2[bc]", "two runs side by side")
+    yield _case("3[c]2[de]", "two runs side by side")
     yield _case("2[a3[b]]", "nested counts")
     yield _case("12[a]", "a two-digit count")
     yield _case("2[a]3[b]", "the count must reset between runs")

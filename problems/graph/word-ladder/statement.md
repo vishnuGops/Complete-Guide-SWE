@@ -27,21 +27,22 @@ The number of words in the shortest ladder, or `0`.
 
 ### Example 1
 
-Input: `start = "hit"`, `target = "cog"`,
-`words = ["hot", "dot", "dog", "lot", "log", "cog"]`
+Input: `start = "pin"`, `target = "mat"`,
+`words = ["pan", "pat", "man", "mat", "pit", "pen"]`
 
-Output: `5`
+Output: `4`
 
-`hit → hot → dot → dog → cog`.
+`pin → pan → pat → mat`. `pin → pit → pat → mat` is just as short; the length is
+what counts.
 
 ### Example 2
 
-Input: `start = "hit"`, `target = "cog"`,
-`words = ["hot", "dot", "dog", "lot", "log"]`
+Input: `start = "pin"`, `target = "mat"`,
+`words = ["pan", "pat", "man", "pit", "pen"]`
 
 Output: `0`
 
-`cog` is not in the list, so no ladder can end there.
+`mat` is not in the list, so no ladder can end there.
 
 ### Example 3
 
@@ -55,4 +56,5 @@ The ladder is one word long.
 
 Comparing every pair of words to find which differ by one letter is
 `O(words² · length)`. At the stated maxima that is more than two hundred million
-character comparisons, and it will not finish.
+character comparisons: too slow for the time limit in Python, though Java's JIT
+gets through it. Either way it misses the `O(words · length²)` target.

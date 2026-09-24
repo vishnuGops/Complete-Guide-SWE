@@ -1,8 +1,13 @@
 {
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
-    {"name":"three readings","args":["226"],"expected":3,"explanation":"2 2 6, 2 26 and 22 6."},
-    {"name":"a leading zero","args":["06"],"expected":0,"explanation":"Nothing can be read."},
+    {"name":"three readings","args":["217"],"expected":3,"explanation":"2 1 7, 21 7 and 2 17."},
+    {
+      "name": "a leading zero",
+      "args": ["0512"],
+      "expected": 0,
+      "explanation": "The first 0 has nothing before it to pair with, so nothing can be read."
+    },
     {
       "name": "a zero that must pair up",
       "args": ["10"],
@@ -13,8 +18,10 @@
   "hidden": [
     {"name":"a single zero","args":["0"],"expected":0},
     {"name":"a single digit","args":["1"],"expected":1},
+    {"name":"a leading zero","args":["09"],"expected":0},
     {"name":"the other zero that can pair up","args":["20"],"expected":1},
     {"name":"a zero that cannot pair up","args":["30"],"expected":0},
+    {"name":"three readings","args":["118"],"expected":3},
     {"name":"zeroes in the middle","args":["2101"],"expected":1},
     {"name":"a pair that is too large","args":["27"],"expected":1},
     {"name":"two zeroes in a row","args":["100"],"expected":0},

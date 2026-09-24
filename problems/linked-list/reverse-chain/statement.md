@@ -39,6 +39,6 @@ Output: `[2, 1]`
 
 Input: `head = []`
 
-Output: `[]`
+Output: `null`
 
 The empty chain reverses to itself.

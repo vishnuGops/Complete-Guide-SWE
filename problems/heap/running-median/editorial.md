@@ -46,3 +46,7 @@ easier version first is the point of its place in this topic.
 - **Integer overflow when averaging**, and integer _division_ when averaging —
   `(a + b) / 2` on two integers truncates.
 - **Sorting the readings on every call.** Correct, and `O(n log n)` per reading.
+  Keeping one sorted list and inserting with a binary search is `O(n)` per
+  reading, but the shift is a single memory move, and at `10^4` readings it
+  finishes comfortably in both languages. The heaps are the target because they
+  are `O(log n)`, not because anything slower times out here.

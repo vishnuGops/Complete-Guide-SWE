@@ -24,7 +24,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1, 2, 3, 4], "strictly increasing, so only the sentinel settles it")
     yield _case([4, 3, 2, 1], "strictly decreasing")
     yield _case([2, 2, 2], "every column the same")
-    yield _case([2, 1, 5, 6, 2, 3], "the worked example")
+    yield _case([4, 2, 7, 8, 1, 5], "two tall neighbours between shorter columns")
     yield _case([10**4, 10**4], "the extremes of the stated height range")
     yield _case([3, 0, 3], "a zero splitting the row in two")
 
@@ -39,5 +39,5 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case(list(range(1, n + 1)), "the stated maximum, strictly increasing")
     yield _case(
         [rng.randint(0, 10**4) for _ in range(n)],
-        "the stated maximum, where trying every span cannot finish",
+        "the stated maximum, at random",
     )

@@ -3,19 +3,19 @@
   "samples": [
     {
       "name": "three letters shared",
-      "args": ["abcde","ace"],
+      "args": ["kitchen","thin"],
       "expected": 3,
-      "explanation": "`ace` is a reading of both."
+      "explanation": "`thn` is a reading of both; the `i` comes before the `t` in `kitchen`."
     },
     {
       "name": "identical words",
-      "args": ["abc","abc"],
-      "expected": 3,
+      "args": ["loop","loop"],
+      "expected": 4,
       "explanation": "The whole word is shared."
     },
     {
       "name": "nothing shared",
-      "args": ["abc","def"],
+      "args": ["cat","dog"],
       "expected": 0,
       "explanation": "No letter appears in both."
     }
@@ -23,6 +23,9 @@
   "hidden": [
     {"name":"one letter, shared","args":["a","a"],"expected":1},
     {"name":"one letter, not shared","args":["a","b"],"expected":0},
+    {"name":"identical words","args":["moon","moon"],"expected":4},
+    {"name":"nothing shared","args":["sun","dog"],"expected":0},
+    {"name":"three letters shared","args":["bridge","bid"],"expected":3},
     {"name":"the same letters, reversed","args":["abc","cba"],"expected":1},
     {"name":"one letter repeated","args":["aaaa","aa"],"expected":2},
     {"args":["bbbb","baaaaa"],"expected":1},

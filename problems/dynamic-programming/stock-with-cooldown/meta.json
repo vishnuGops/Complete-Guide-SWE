@@ -3,7 +3,7 @@
   "id": "stock-with-cooldown",
   "slug": "stock-with-cooldown",
   "title": "Trades With A Cooldown",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["state machine", "one-dimensional dp"],
   "tier": "Medium",

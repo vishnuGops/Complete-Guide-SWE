@@ -3,7 +3,7 @@
   "id": "running-median",
   "slug": "running-median",
   "title": "The Median So Far",
-  "version": 1,
+  "version": 2,
   "topic": "heap",
   "patterns": ["design", "two heaps"],
   "tier": "Hard",

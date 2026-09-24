@@ -27,10 +27,10 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("0000", "all zeroes")
     yield _case("00000", "five zeroes, which cannot work")
     yield _case("255255255255", "the largest numbers, twelve digits")
-    yield _case("25525511135", "two possible addresses")
+    yield _case("10025514225", "two possible addresses")
     yield _case("1111111111111", "too many digits")
     yield _case("256256256256", "every number one too large")
-    yield _case("101023", "zeroes in the middle")
+    yield _case("205061", "zeroes in the middle")
 
     for pool in ([0, 1, 9], [0, 10, 99], [100, 255, 256], [0, 255], list(range(0, 256, 37))):
         for _ in range(2):

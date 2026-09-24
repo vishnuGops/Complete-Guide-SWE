@@ -31,7 +31,8 @@ missed — and the easiest way to notice is that `[0]` would answer 0 instead of
 ## Pitfalls
 
 - **Summing every stretch.** `O(n^2)`; at the stated maximum that is fifty
-  million additions, which does not finish here.
+  million additions, which Python does not finish inside the time limit.
+  Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 - **Forgetting the seed.** `{0: 1}` is the moment before the first change, and
   without it the answer is wrong on every input whose first minutes cancel.
 - **Counting after the fact with `c · (c-1) / 2`.** Also correct, but it is an

@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "a reflection",
-      "args": [[1,2,2,3,4,4,3]],
+      "args": [[7,4,4,9,-2,-2,9]],
       "expected": true,
-      "explanation": "Each level reads the same forwards and backwards, shape included."
+      "explanation": "Each level reads the same forwards and backwards: 4 and 4, then 9, -2, -2, 9."
     },
     {
       "name": "the same values, the wrong sides",
-      "args": [[1,2,2,null,3,null,3]],
+      "args": [[6,5,5,8,null,8]],
       "expected": false,
-      "explanation": "The mirror of a right child is a left child."
+      "explanation": "Both 5s have a left child and no right child; the mirror of a left child is a right child."
     },
     {
       "name": "the empty tree",
@@ -25,6 +25,13 @@
     {"name":"a root with one child","args":[[1,2]],"expected":false},
     {"name":"two children with equal values","args":[[1,2,2]],"expected":true},
     {"name":"two children with different values","args":[[1,2,3]],"expected":false},
+    {"name":"a reflection","args":[[2,3,3,4,5,5,4]],"expected":true},
+    {"name":"the same values, the wrong sides","args":[[9,1,1,null,0,null,0]],"expected":false},
+    {
+      "name": "an in-order palindrome that is not a reflection",
+      "args": [[1,2,2,2,null,2]],
+      "expected": false
+    },
     {
       "name": "the extremes of the stated range",
       "args": [[-1000000000,1000000000,1000000000]],

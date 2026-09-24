@@ -31,11 +31,11 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [5, 4, 8, 11, null, 13, 4, 7, 2]`, `target = 22`
+Input: `root = [4, 9, 1, 2, null, 6, 8]`, `target = 11`
 
 Output: `true`
 
-5 + 4 + 11 + 2 = 22.
+4 + 1 + 6 = 11, and 6 is a leaf.
 
 ### Example 2
 

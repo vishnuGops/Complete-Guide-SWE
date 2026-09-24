@@ -3,7 +3,7 @@
   "id": "kth-largest-value",
   "slug": "kth-largest-value",
   "title": "The K-th Largest Reading",
-  "version": 1,
+  "version": 2,
   "topic": "sorting",
   "patterns": ["top k", "heap"],
   "tier": "Medium",

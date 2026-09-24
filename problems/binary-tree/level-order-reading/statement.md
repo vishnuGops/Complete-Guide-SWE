@@ -28,15 +28,18 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [3, 9, 20, null, null, 15, 7]`
+Input: `root = [6, 2, 13, 5, null, 8, 1]`
 
-Output: `[[3], [9, 20], [15, 7]]`
+Output: `[[6], [2, 13], [5, 8, 1]]`
+
+2 has only a left child, so the third level reads 5 from under 2, then 8 and 1
+from under 13.
 
 ### Example 2
 
-Input: `root = [1]`
+Input: `root = [-5]`
 
-Output: `[[1]]`
+Output: `[[-5]]`
 
 ### Example 3
 

@@ -19,7 +19,7 @@ def _case(readings: List[int], k: int, name: str = None) -> Dict[str, Any]:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([9], 1, "a window of one")
-    yield _case([1, 3, -1, -3, 5, 3, 6, 7], 3, "a window of three")
+    yield _case([2, -4, 5, 0, -1, 7, 3, 1], 3, "a window of three")
     yield _case([7, 7, 7], 2, "every reading equal")
     yield _case([1, 2, 3, 4, 5], 5, "one window, the whole row")
     yield _case([5, 4, 3, 2, 1], 2, "strictly decreasing")

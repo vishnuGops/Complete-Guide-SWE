@@ -3,8 +3,8 @@
   "samples": [
     {
       "name": "an odd window of three",
-      "args": [[1,3,-1,-3,5,3,6,7],3],
-      "expected": [1,-1,-1,3,5,6],
+      "args": [[5,-2,8,0,3,9,-4,6],3],
+      "expected": [5,0,3,3,3,6],
       "explanation": "Each window sorts to three values; the middle one is reported."
     },
     {
@@ -29,10 +29,16 @@
     },
     {"name":"k = n, so there is one window","args":[[3,1,4,1,5],5],"expected":[3]},
     {"name":"every reading equal","args":[[2,2,2,2],2],"expected":[2,2,2]},
+    {"name":"the extremes of the stated range","args":[[-1000000000,1000000000],2],"expected":[0]},
     {
-      "name": "the extremes, whose sum overflows a 32-bit int",
-      "args": [[-1000000000,1000000000],2],
-      "expected": [0]
+      "name": "even windows near 10^9",
+      "args": [[1000000000,999999997,999999999,999999998,1000000000],2],
+      "expected": [999999998.5,999999998,999999998.5,999999999]
+    },
+    {
+      "name": "even windows near -10^9",
+      "args": [[-1000000000,-999999998,-999999999,-1000000000],2],
+      "expected": [-999999999,-999999998.5,-999999999.5]
     },
     {"name":"an even window over rising readings","args":[[1,2,3,4,5,6],4],"expected":[2.5,3.5,4.5]},
     {"args":[[-5,-12,11,-63,-10,23,70],3],"expected":[-5,-12,-10,-10,23]},
@@ -3178,7 +3184,7 @@
       ]
     },
     {
-      "name": "the stated maximum with k near n / 2, where re-sorting cannot finish",
+      "name": "the stated maximum with k near n / 2",
       "args": [
         [
           -382972510,

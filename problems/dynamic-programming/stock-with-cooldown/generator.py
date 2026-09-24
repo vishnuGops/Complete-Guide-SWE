@@ -20,7 +20,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], "one day")
     yield _case([1, 2], "two days")
     yield _case([2, 1], "two days, falling")
-    yield _case([1, 2, 3, 0, 2], "two trades around a cooldown")
+    yield _case([3, 5, 1, 4, 2, 6], "two trades around a cooldown")
     yield _case([5, 4, 3], "prices only fall")
     yield _case([1, 2, 3, 4, 5], "prices only rise")
     yield _case([0, 1000], "the extremes of the stated range")

@@ -3,7 +3,7 @@
   "id": "letter-arrangements",
   "slug": "letter-arrangements",
   "title": "Letters From A Keypad",
-  "version": 1,
+  "version": 2,
   "topic": "backtracking",
   "patterns": ["combinations", "backtracking", "strings"],
   "tier": "Medium",

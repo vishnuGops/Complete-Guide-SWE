@@ -3,7 +3,7 @@
   "id": "path-sum-exists",
   "slug": "path-sum-exists",
   "title": "Is There A Path That Sums",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree traversal", "depth-first search"],
   "tier": "Easy",

@@ -243,7 +243,7 @@ no JSON encoding and would silently become `null` inside a harness.
 | string array           | `["a", "bc"]`                           | `list[str]`          | `String[]`                         |
 | linked list            | `[1, 2, 3]`                             | `Optional[ListNode]` | `ListNode`                         |
 | list of linked lists   | `[[1, 2], [3]]`                         | `List[ListNode]`     | `ListNode[]`                       |
-| binary tree            | `[3, 9, 20, null, null, 15, 7]`         | `Optional[TreeNode]` | `TreeNode`                         |
+| binary tree            | `[6, 2, 14, null, null, 11, 18]`        | `Optional[TreeNode]` | `TreeNode`                         |
 | graph                  | `[[0, 1], [1, 2]]` plus an `n` argument | `list[list[int]]`    | `int[][]`                          |
 | absent / void          | `null`                                  | `None`               | `null`                             |
 
@@ -302,7 +302,7 @@ exactly the signature the starter declares - one parameter, the head of a chain
 that happens to loop:
 
 ```json
-{ "args": [[3, 2, 0, -4], 1], "expected": true }
+{ "args": [[5, 8, 1, -6], 1], "expected": true }
 ```
 
 Four nodes, the last pointing at the second. `-1` builds an ordinary chain, and
@@ -322,14 +322,14 @@ it is an edge list, indistinguishable from the one that went in (see §5.4).
 Level-order with explicit `null` for absent children, trailing nulls omitted:
 
 ```
-      3
+      6
      / \
-    9   20
+    2   14
        /  \
-      15   7
+      11   18
 ```
 
-is `[3, 9, 20, null, null, 15, 7]`. `[]` is an empty tree. A `null` in the middle
+is `[6, 2, 14, null, null, 11, 18]`. `[]` is an empty tree. A `null` in the middle
 of the array means "this position has no node", and its children are not listed.
 
 ### 5.4 Graphs

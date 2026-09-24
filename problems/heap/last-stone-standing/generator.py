@@ -20,7 +20,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([5], "a single stone")
     yield _case([1, 1], "two equal stones")
     yield _case([2, 1], "two unequal stones")
-    yield _case([2, 7, 4, 1, 8, 1], "a pile of six")
+    yield _case([5, 11, 3, 8, 2, 6], "a pile of six")
     yield _case([1000, 1000], "the extremes of the stated range, equal")
     yield _case([1000, 1], "the extremes, unequal")
     yield _case([3, 3, 3, 3], "four equal stones, all destroyed")

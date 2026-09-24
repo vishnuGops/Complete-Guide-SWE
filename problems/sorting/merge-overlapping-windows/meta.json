@@ -3,7 +3,7 @@
   "id": "merge-overlapping-windows",
   "slug": "merge-overlapping-windows",
   "title": "Merge Maintenance Windows",
-  "version": 2,
+  "version": 3,
   "topic": "sorting",
   "patterns": ["intervals", "sorted input", "sweep"],
   "tier": "Medium",

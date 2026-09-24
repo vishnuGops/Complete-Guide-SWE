@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "one point wanted",
-      "args": [[[1,3],[-2,2]],1],
-      "expected": [[-2,2]],
-      "explanation": "8 is less than 10."
+      "args": [[[2,4],[-3,1]],1],
+      "expected": [[-3,1]],
+      "explanation": "10 is less than 20."
     },
     {
       "name": "two of three",
-      "args": [[[3,3],[5,-1],[-2,4]],2],
-      "expected": [[3,3],[-2,4]],
-      "explanation": "The distances squared are 18, 26 and 20."
+      "args": [[[4,1],[-2,-5],[1,-3]],2],
+      "expected": [[1,-3],[4,1]],
+      "explanation": "The distances squared are 17, 29 and 10, so the nearest two are 10 then 17."
     },
     {
       "name": "a tie broken by x",
@@ -22,6 +22,8 @@
   ],
   "hidden": [
     {"name":"the origin itself","args":[[[0,0]],1],"expected":[[0,0]]},
+    {"name":"one point wanted","args":[[[4,2],[-1,-3]],1],"expected":[[-1,-3]]},
+    {"name":"two of three","args":[[[2,-5],[4,4],[-3,1]],2],"expected":[[-3,1],[2,-5]]},
     {
       "name": "four points all one ring away",
       "args": [[[1,1],[1,-1],[-1,1],[-1,-1]],4],

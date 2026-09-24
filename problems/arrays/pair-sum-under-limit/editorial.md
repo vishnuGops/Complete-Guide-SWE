@@ -25,5 +25,7 @@ arrives sorted.
 - Counting `1` instead of `high - low` when a pair fits turns the answer into the
   number of steps rather than the number of pairs.
 - Advancing both pointers when a pair fits skips the pairs in between.
-- The count can reach about `2 * 10^8` for the largest inputs, which overflows a
-  32-bit accumulator in Java; use `long`.
+- The count is at most `10000 * 9999 / 2 = 49,995,000`, every pair fitting,
+  which a 32-bit `int` holds. The signature returns `long` anyway: at `10^5`
+  parcels the same count would be about `5 * 10^9` and would not fit, and a
+  `long` accumulator is the habit that survives the constraint growing.

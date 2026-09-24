@@ -9,7 +9,7 @@ parameter to a new list, which leaves the caller's array untouched.
 
 ## Input
 
-- `values` — a list of integers, `1 <= values.length <= 10^5`
+- `values` — a list of integers, `1 <= values.length <= 10^4`
 - `shift` — a non-negative integer, possibly much larger than `values.length`
 
 ## Output

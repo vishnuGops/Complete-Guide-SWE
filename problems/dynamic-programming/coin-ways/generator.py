@@ -36,8 +36,8 @@ def _safe(coins: List[int], amount: int) -> bool:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], 0, "making nothing")
-    yield _case([2], 3, "no way at all")
-    yield _case([1, 2, 5], 5, "four ways to make five")
+    yield _case([3], 5, "no way at all")
+    yield _case([2, 3, 5], 10, "four ways to make ten")
     yield _case([1000], 1000, "the extremes of the stated ranges")
     yield _case([3, 5, 7], 2, "every coin is larger than the amount")
     yield _case([1], 500, "one coin, one way")
@@ -54,6 +54,12 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     for _ in range(3):
         coins = rng.sample(range(200, 1001), rng.randint(3, 12))
         yield _case(coins, rng.randint(500, 1000))
+
+    # Small coins against a large amount: 2,140,976,929 ways, just inside a
+    # signed 32-bit integer. Enumerating them one by one - what
+    # `sum-combinations` does - cannot finish in either language, which is the
+    # trap this problem is flagged for; large coins alone never reach it.
+    yield _case([2, 3, 5, 7, 11, 13, 17], 932, "small coins, over two billion ways")
 
     # The stated maxima, chosen so the count stays inside a 32-bit integer.
     for count in (12, 16, 20):

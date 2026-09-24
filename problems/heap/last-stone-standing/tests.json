@@ -3,7 +3,7 @@
   "samples": [
     {
       "name": "a pile of six",
-      "args": [[2,7,4,1,8,1]],
+      "args": [[4,9,2,7,3,6]],
       "expected": 1,
       "explanation": "Four rounds leave a single stone of weight 1."
     },
@@ -17,6 +17,7 @@
   ],
   "hidden": [
     {"name":"two unequal stones","args":[[2,1]],"expected":1},
+    {"name":"a pile of six","args":[[5,11,3,8,2,6]],"expected":1},
     {"name":"the extremes of the stated range, equal","args":[[1000,1000]],"expected":0},
     {"name":"the extremes, unequal","args":[[1000,1]],"expected":999},
     {"name":"four equal stones, all destroyed","args":[[3,3,3,3]],"expected":0},

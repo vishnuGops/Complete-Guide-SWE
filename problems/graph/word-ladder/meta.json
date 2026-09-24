@@ -3,7 +3,7 @@
   "id": "word-ladder",
   "slug": "word-ladder",
   "title": "One Letter At A Time",
-  "version": 1,
+  "version": 2,
   "topic": "graph",
   "patterns": ["breadth-first search", "hash set"],
   "tier": "Hard",

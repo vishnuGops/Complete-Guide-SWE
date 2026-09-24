@@ -19,7 +19,7 @@ def generate(rng: random.Random):
     # passes the second and fails the first.
     yield {"args": [[1, 2], 0]}
     yield {"args": [[1, 2], 1]}
-    yield {"args": [[3, 2, 0, -4], 1]}
+    yield {"args": [[6, 0, -3, 9], 1]}
     yield {"args": [[4, 4, 4, 4], 2]}
     yield {"args": [[4, 4, 4, 4], -1]}
 

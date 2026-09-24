@@ -25,9 +25,12 @@ The expanded string.
 
 ### Example 1
 
-Input: `shorthand = "3[a]2[bc]"`
+Input: `shorthand = "2[xy]3[z]"`
 
-Output: `"aaabcbc"`
+Output: `"xyxyzzz"`
+
+`2[xy]` gives `xyxy` and `3[z]` gives `zzz`; each count repeats only its own
+bracketed run.
 
 ### Example 2
 

@@ -37,19 +37,20 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [3, 5, 1, 6, 2, 0, 8]`, `first = 5`, `second = 1`
+Input: `root = [7, 3, 11, 9, 1, 4, 6]`, `first = 9`, `second = 11`
 
-Output: `3`
+Output: `7`
 
-The two are in different subtrees of the root, so the root is the answer.
+9 hangs below 3 on the root's left and 11 is on its right, so the two meet only
+at the root.
 
 ### Example 2
 
-Input: `root = [3, 5, 1, 6, 2, 0, 8]`, `first = 5`, `second = 6`
+Input: `root = [7, 3, 11, 9, 1, 4, 6]`, `first = 3`, `second = 1`
 
-Output: `5`
+Output: `3`
 
-6 is beneath 5, and a node counts as its own ancestor.
+1 is beneath 3, and a node counts as its own ancestor.
 
 ### Example 3
 

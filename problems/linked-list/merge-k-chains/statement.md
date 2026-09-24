@@ -49,4 +49,6 @@ Empty chains contribute nothing.
 
 Merging the chains one at a time into a growing result re-walks everything
 already merged, which is `O(k · N)`. At the stated maxima — ten thousand chains
-of one link each — that is fifty million link steps and will not finish.
+of one link each — that is fifty million link steps: too slow for the time limit
+in Python, though Java's JIT gets through it. Either way it misses the
+`O(N log k)` target.

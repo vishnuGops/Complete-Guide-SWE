@@ -3,13 +3,13 @@
   "samples": [
     {
       "name": "buy the dip, sell the peak after it",
-      "args": [[7,1,5,3,6,4]],
-      "expected": 5,
-      "explanation": "Buy at 1 on day two, sell at 6 on day five."
+      "args": [[6,2,8,4,9,3]],
+      "expected": 7,
+      "explanation": "Buy at 2 on day two, sell at 9 on day five."
     },
     {
       "name": "prices only fall",
-      "args": [[7,6,4,3,1]],
+      "args": [[9,8,5,4,2]],
       "expected": 0,
       "explanation": "Every sale would be below its purchase, so no trade is made."
     },

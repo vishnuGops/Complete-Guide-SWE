@@ -19,11 +19,11 @@ The length of the longest strictly increasing subsequence.
 
 ### Example 1
 
-Input: `readings = [10, 9, 2, 5, 3, 7, 101, 18]`
+Input: `readings = [6, 2, 8, 3, 9, 4, 1, 12]`
 
 Output: `4`
 
-`2, 5, 7, 101` — or `2, 3, 7, 18`, which is also four.
+`2, 3, 4, 12` — or `6, 8, 9, 12`, which is also four.
 
 ### Example 2
 

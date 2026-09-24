@@ -36,8 +36,8 @@ still belongs in the answer.
 
 - **Missing the prefix contradiction.** The only failure with no letters
   involved.
-- **Taking facts from beyond the first difference.** `"wrt"` before `"wrf"` says
-  `t` before `f` and nothing about `w` or `r`.
+- **Taking facts from beyond the first difference.** `"tr"` before `"mrs"` says
+  `t` before `m` and nothing about `r` or `s`.
 - **Comparing every pair of words.** Quadratic, and it adds nothing.
 - **Leaving out letters with no constraints.** Every letter that appears is in
   the answer.

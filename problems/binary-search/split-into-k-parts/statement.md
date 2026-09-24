@@ -24,11 +24,11 @@ The smallest possible value of the largest run total, over all ways of cutting
 
 ### Example 1
 
-Input: `loads = [7, 2, 5, 10, 8]`, `k = 2`
+Input: `loads = [4, 3, 9, 2, 8]`, `k = 2`
 
-Output: `18`
+Output: `16`
 
-Cutting after the 5 gives `[7, 2, 5]` = 14 and `[10, 8]` = 18. Every other cut
+Cutting after the 9 gives `[4, 3, 9]` = 16 and `[2, 8]` = 10. Every other cut
 is worse.
 
 ### Example 2
@@ -41,12 +41,12 @@ One job each, so the cost is the largest single job.
 
 ### Example 3
 
-Input: `loads = [1, 4, 4]`, `k = 3`
+Input: `loads = [2, 9, 1, 3]`, `k = 3`
 
-Output: `4`
+Output: `9`
 
-More workers than useful cuts changes nothing here: the largest job still
-decides.
+The cost can never be below the largest job, 9, and `[2]`, `[9]`, `[1, 3]`
+keeps every worker within it, so the largest job decides.
 
 ## Notes
 

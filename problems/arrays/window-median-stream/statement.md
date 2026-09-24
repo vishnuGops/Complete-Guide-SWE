@@ -25,13 +25,11 @@ Answers within `10^-6` of the expected value are accepted.
 
 ### Example 1
 
-Input: `readings = [1, 3, -1, -3, 5, 3, 6, 7]`, `k = 3`
+Input: `readings = [5, -2, 8, 0, 3, 9, -4, 6]`, `k = 3`
 
-Output: `[1, -1, -1, 3, 5, 6]`
+Output: `[5, 0, 3, 3, 3, 6]`
 
-The first window is `[1, 3, -1]`, which sorts to `[-1, 1, 3]`, so its median is
-
-1. The second is `[3, -1, -3]`, sorting to `[-3, -1, 3]`, median -1.
+The first window is `[5, -2, 8]`, which sorts to `[-2, 5, 8]`, so its median is 5. The second is `[-2, 8, 0]`, sorting to `[-2, 0, 8]`, median 0.
 
 ### Example 2
 
@@ -53,5 +51,6 @@ There is one full window, and every reading in it is the same.
 ## Notes
 
 Sorting each window costs `O(k log k)` and there are `n - k + 1` of them. At the
-stated maximum with `k` near `n / 2` that is hundreds of millions of
-comparisons, and it will not finish. Aim for `O(log k)` per step.
+stated maximum with `k` near `n / 2` that is tens of millions of comparisons,
+which runs close to Python's four-second limit and well inside Java's. It may
+pass; it is not the `O(log k)` per step the problem asks for.

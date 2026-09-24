@@ -1,6 +1,6 @@
 Maintenance windows are booked as `[start, end]` with `start <= end`, and they
 arrive in no particular order. Two windows that overlap - or that merely touch,
-like `[1, 4]` and `[4, 5]` - are really one longer outage.
+like `[3, 5]` and `[5, 8]` - are really one longer outage.
 
 Merge them and return the result **sorted by start**.
 
@@ -24,19 +24,19 @@ touch.
 
 ### Example 1
 
-Input: `windows = [[1, 3], [2, 6], [8, 10], [15, 18]]`
+Input: `windows = [[2, 5], [4, 7], [9, 12], [15, 16]]`
 
-Output: `[[1, 6], [8, 10], [15, 18]]`
+Output: `[[2, 7], [9, 12], [15, 16]]`
 
-`[1, 3]` and `[2, 6]` overlap and become `[1, 6]`. The other two touch nothing.
+`[2, 5]` and `[4, 7]` overlap and become `[2, 7]`. The other two touch nothing.
 
 ### Example 2
 
-Input: `windows = [[1, 4], [4, 5]]`
+Input: `windows = [[2, 7], [7, 9]]`
 
-Output: `[[1, 5]]`
+Output: `[[2, 9]]`
 
-They share the instant `4`, which is enough to make them one outage.
+They share the instant `7`, which is enough to make them one outage.
 
 ### Example 3
 

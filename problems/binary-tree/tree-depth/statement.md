@@ -4,8 +4,8 @@ the root down to a leaf.
 An empty tree has depth 0; a single node has depth 1.
 
 A tree is written as its levels, top to bottom and left to right, with `null`
-where a node is missing. `[3, 9, 20, null, null, 15, 7]` is a root of 3 whose
-children are 9 and 20, where 9 has no children and 20's are 15 and 7.
+where a node is missing. `[2, 5, 4, null, 8]` is a root of 2 whose children
+are 5 and 4, where 5 has only a right child, 8, and 4 has no children.
 
 ## Input
 
@@ -30,11 +30,12 @@ raised above that; an iterative one needs nothing.
 
 ### Example 1
 
-Input: `root = [3, 9, 20, null, null, 15, 7]`
+Input: `root = [1, 7, 4, 2, null, null, 9, null, 5]`
 
-Output: `3`
+Output: `4`
 
-The longest path is 3 → 20 → 15, which is three nodes.
+The longest path is 1 → 7 → 2 → 5, which is four nodes; the right side stops
+at 9 after three.
 
 ### Example 2
 

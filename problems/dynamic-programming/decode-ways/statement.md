@@ -3,7 +3,7 @@ which is `26`. The separators have been lost.
 
 Count the ways the digits could be read back as letters.
 
-A number with a leading zero is not a letter, so `06` cannot be read as `f`, and
+A number with a leading zero is not a letter, so `07` cannot be read as `g`, and
 a `0` on its own cannot be read at all.
 
 ## Input
@@ -23,19 +23,20 @@ The number of readings.
 
 ### Example 1
 
-Input: `digits = "226"`
+Input: `digits = "217"`
 
 Output: `3`
 
-`bbf` (2 2 6), `bz` (2 26) and `vf` (22 6).
+`bag` (2 1 7), `ug` (21 7) and `bq` (2 17).
 
 ### Example 2
 
-Input: `digits = "06"`
+Input: `digits = "0512"`
 
 Output: `0`
 
-A leading zero is not a letter.
+The first `0` has nothing before it to join, and a leading zero is not a
+letter — so nothing can be read, however readable the rest is.
 
 ### Example 3
 

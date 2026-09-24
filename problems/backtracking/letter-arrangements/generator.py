@@ -18,10 +18,10 @@ def _case(digits: str, name: str = None) -> Dict[str, Any]:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("", "no digits")
-    yield _case("2", "one digit with three letters")
+    yield _case("3", "one digit with three letters")
     yield _case("7", "one digit with four letters")
     yield _case("9", "the other four-letter digit")
-    yield _case("23", "two digits")
+    yield _case("46", "two digits")
     yield _case("79", "both four-letter digits")
     yield _case("2345", "four different digits")
     yield _case("22", "the same digit twice")

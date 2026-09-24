@@ -2,10 +2,10 @@
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
     {
-      "name": "the classic mixed row",
-      "args": [[-2,1,-3,4,-1,2,1,-5,4]],
-      "expected": 6,
-      "explanation": "`[4, -1, 2, 1]` sums to 6; no other run reaches it."
+      "name": "a mixed row",
+      "args": [[3,-4,2,5,-1,4,-6,1]],
+      "expected": 10,
+      "explanation": "`[2, 5, -1, 4]` sums to 10; no other run reaches it."
     },
     {
       "name": "every value negative",
@@ -2039,7 +2039,7 @@
       "expected": 134674
     },
     {
-      "name": "the stated maximum, where a quadratic scan cannot finish",
+      "name": "the stated maximum",
       "args": [
         [
           -4846,

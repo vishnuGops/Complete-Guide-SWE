@@ -44,5 +44,6 @@ per `i`. Identical work, and the shape people usually find first.
   work — `"aaaa…ab"` with `a` and `aa`.
 - **`reachable[0] = false`.** Nothing is ever reachable.
 - **Scanning the dictionary for each span.** A set makes it a look-up.
-- **Greedily taking the longest word that fits.** `"catsandog"` would take `cats`
-  and stop; the answer needs both branches considered.
+- **Greedily taking the longest word that fits.** `"abcd"` with `abc`, `ab` and
+  `cd` takes `abc` and is left with `d`, though `ab cd` reads; the answer needs
+  both branches considered.

@@ -25,17 +25,19 @@ The number of ways to make the amount.
 
 ### Example 1
 
-Input: `coins = [1, 2, 5]`, `amount = 5`
+Input: `coins = [1, 3, 4]`, `amount = 6`
 
 Output: `4`
 
-`5`, `2+2+1`, `2+1+1+1` and `1+1+1+1+1`.
+`3+3`, `4+1+1`, `3+1+1+1` and `1+1+1+1+1+1`.
 
 ### Example 2
 
-Input: `coins = [2]`, `amount = 3`
+Input: `coins = [4, 6]`, `amount = 7`
 
 Output: `0`
+
+Every total made of 4s and 6s is even.
 
 ### Example 3
 
@@ -48,5 +50,6 @@ One way to make nothing: take no coins.
 ## Notes
 
 Enumerating the ways and counting them is what `sum-combinations` does, and there
-can be astronomically many. This question asks only _how many_, which a table
+can be astronomically many: seven small coins make 932 in over two billion ways,
+and one of the hidden tests is exactly that. This question asks only _how many_, which a table
 answers without ever writing one down.

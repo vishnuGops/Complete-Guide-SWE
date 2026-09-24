@@ -32,9 +32,9 @@ def _with_core(rng: random.Random, core: str, extra: int, alphabet: str) -> str:
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("a", "a", "one letter, shared")
     yield _case("a", "b", "one letter, not shared")
-    yield _case("abc", "abc", "identical words")
-    yield _case("abc", "def", "nothing shared")
-    yield _case("abcde", "ace", "three letters shared")
+    yield _case("moon", "moon", "identical words")
+    yield _case("sun", "dog", "nothing shared")
+    yield _case("bridge", "bid", "three letters shared")
     yield _case("abc", "cba", "the same letters, reversed")
     yield _case("aaaa", "aa", "one letter repeated")
 

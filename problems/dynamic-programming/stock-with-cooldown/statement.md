@@ -24,15 +24,16 @@ The largest total profit, or `0` if no trade is worth making.
 
 ### Example 1
 
-Input: `prices = [1, 2, 3, 0, 2]`
+Input: `prices = [2, 6, 4, 1, 7, 5]`
 
-Output: `3`
+Output: `10`
 
-Buy at 1, sell at 2 (profit 1); wait a day; buy at 0, sell at 2 (profit 2).
+Buy at 2, sell at 6 (profit 4); rest on the day of 4; buy at 1, sell at 7
+(profit 6).
 
 ### Example 2
 
-Input: `prices = [1]`
+Input: `prices = [6]`
 
 Output: `0`
 
@@ -40,8 +41,9 @@ One day is not enough to buy and sell.
 
 ### Example 3
 
-Input: `prices = [5, 4, 3]`
+Input: `prices = [1, 2, 1, 2, 1, 2]`
 
-Output: `0`
+Output: `2`
 
-Prices only fall, so doing nothing is best.
+Every rise is worth 1, but each sale forces a rest day, so only two of the three
+rises can be taken.

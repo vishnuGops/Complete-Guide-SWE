@@ -3,15 +3,15 @@
   "samples": [
     {
       "name": "in different subtrees",
-      "args": [[3,5,1,6,2,0,8],5,1],
-      "expected": 3,
-      "explanation": "Nothing below the root is an ancestor of both."
+      "args": [[7,3,11,9,1,4,6],9,11],
+      "expected": 7,
+      "explanation": "9 is under the root's left side and 11 is its right child; nothing below the root is an ancestor of both."
     },
     {
       "name": "one is above the other",
-      "args": [[3,5,1,6,2,0,8],5,6],
-      "expected": 5,
-      "explanation": "A node counts as its own ancestor, so 5 is the answer."
+      "args": [[7,3,11,9,1,4,6],3,1],
+      "expected": 3,
+      "explanation": "A node counts as its own ancestor, so 3 is the answer."
     },
     {
       "name": "the same node twice",
@@ -23,7 +23,9 @@
   "hidden": [
     {"name":"a root and its only child","args":[[1,2],1,2],"expected":1},
     {"name":"a leaf with itself","args":[[1,2],2,2],"expected":2},
-    {"name":"two leaves far apart","args":[[3,5,1,6,2,0,8],6,8],"expected":3},
+    {"name":"in different subtrees","args":[[10,2,15,12,5,8,3],2,15],"expected":10},
+    {"name":"one is above the other","args":[[10,2,15,12,5,8,3],15,3],"expected":15},
+    {"name":"two leaves far apart","args":[[10,2,15,12,5,8,3],12,3],"expected":10},
     {
       "name": "the extremes of the stated range",
       "args": [[-1000000000,1000000000],-1000000000,1000000000],

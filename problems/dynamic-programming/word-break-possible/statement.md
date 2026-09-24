@@ -23,18 +23,19 @@ Each word may be used as often as you like.
 
 ### Example 1
 
-Input: `letters = "applepen"`, `dictionary = ["apple","pen"]`
+Input: `letters = "moonbeam"`, `dictionary = ["moon","beam"]`
 
 Output: `true`
 
 ### Example 2
 
-Input: `letters = "catsandog"`,
-`dictionary = ["cats","dog","sand","and","cat"]`
+Input: `letters = "sealionfish"`,
+`dictionary = ["sea","seal","lion","ion","fin"]`
 
 Output: `false`
 
-`cats and og` and `cat sand og` both fail at the end.
+`sea lion` and `seal ion` both read cleanly up to `fish`, and no word starts
+there.
 
 ### Example 3
 

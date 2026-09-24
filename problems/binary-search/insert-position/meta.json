@@ -3,7 +3,7 @@
   "id": "insert-position",
   "slug": "insert-position",
   "title": "Where It Would Go",
-  "version": 1,
+  "version": 2,
   "topic": "binary-search",
   "patterns": ["boundary binary search", "lower bound"],
   "tier": "Easy",

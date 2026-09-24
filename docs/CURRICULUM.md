@@ -19,17 +19,20 @@ a package contains.
 | Patterns      | From the closed vocabulary in `packages/shared/src/patterns.ts`.          |
 | Flags         | See below.                                                                |
 
-Three flags, each of which changes what has to exist before the problem can be
+Four flags, each of which changes what has to exist before the problem can be
 written:
 
 - **trap** — the target complexity beats the obvious approach, so the problem
   needs a hidden test at the stated maximum that the obvious approach cannot
-  finish (D21). The editorial says which approach times out; that claim must be
-  true.
+  finish (D21). The editorial says which approach times out, and in which
+  language; that claim must be true.
 - **node** — the signature uses `ListNode` or `TreeNode`. P2-12 proved both
   decode in both languages; these are the problems that rely on it.
 - **checker** — no single right answer, so the problem ships a `checker.ts`
   (D6) rather than an expected value.
+- **unordered** — the answer is a collection whose order does not matter, so it
+  is compared with `unorderedList` or `unorderedListOfLists` rather than a
+  checker, and the statement says any order is accepted.
 
 Two heap rows are gone, both because the problem was already in the catalogue
 under another name. `meeting-rooms-heap` is `meeting-room-count` (Sorting 3) and
@@ -84,6 +87,35 @@ series is `O(n + m)`, which finishes at any size whose `tests.json` is a
 reasonable weight, so no honest maximum-size case defeats the obvious approach.
 Its statement names the `O(log(min(n, m)))` target instead of claiming a timeout
 that would not happen (P6-2, D21).
+
+Four more lose their trap flags after the catalogue audit (P6-8), for the same
+reason: at every size a `tests.json` can reasonably carry, the obvious approach
+finishes. `running-median` keeps one sorted list and inserts with a binary
+search, `O(n)` per reading but a single memory move, and 10^4 readings take tens
+of milliseconds. `range-sum-mutable` and `range-minimum` scan the stretch per
+query, two hundred million cheap steps that finish in both languages. And
+`window-median-stream` re-sorts each window, which at its stated maximum runs
+close to Python's limit and inside Java's - a trap nobody can rely on. Their
+statements now name the target instead of a timeout. `window-average-peak` was
+never flagged, but its statement claimed recomputing each window would not
+finish; it does, and the claim is gone.
+
+`coin-ways` keeps its flag and now earns it: seven small coins make 932 in
+2,140,976,929 ways, just inside a 32-bit integer, and enumerating them cannot
+finish in either language. Before P6-8 the largest answer in its tests was 7379,
+and enumeration passed.
+
+**The quadratic traps at `n = 10^4` are Python traps.** Java's JIT gets through
+fifty to a hundred million simple steps inside its two seconds, so for
+`largest-run-sum`, `product-except-self`, `zero-sum-stretch`,
+`pair-sum-under-limit`, `meeting-room-count`, `trap-the-rain`,
+`largest-rectangle`, `build-from-traversals`, `course-order`, `merge-k-chains`,
+`merge-k-series` and `word-ladder` the statements and editorials now say the
+timeout holds in Python and that in Java it is the target complexity that rules
+the quadratic answer out. Raising those bounds to `10^5` would make the trap
+real in both languages, but `tests.json` is already 110 MB with sixteen files
+over the 2 MB warning, and a dozen more maximum-size cases would multiply that
+for a property the target complexity already states (P6-8, D21).
 
 Ratings are a first estimate. Calibration against solving time is P6-7's job,
 and a rating that turns out wrong is a one-line change plus a version bump.
@@ -157,7 +189,7 @@ prefix sum, in-place rearrangement, intervals as a first taste.
 | 9   | `best-single-trade`        | Best Single Trade         | Medium | 4      | function | one pass, running total                        |                  |
 | 10  | `largest-run-sum`          | Largest Run Sum           | Medium | 5      | function | one pass, running total, invariant             | trap             |
 | 11  | `product-except-self`      | Everything But Me         | Medium | 6      | function | prefix sum, two passes, in-place               | trap             |
-| 12  | `window-median-stream`     | Median Of The Last K      | Hard   | 8      | function | sliding window, two heaps                      | trap             |
+| 12  | `window-median-stream`     | Median Of The Last K      | Hard   | 8      | function | sliding window, two heaps                      |                  |
 | 13  | `min-window-cover`         | Shortest Covering Stretch | Hard   | 8      | function | sliding window, frequency map, two pointers    | trap             |
 
 ### HashMap (`hashmap`) — 11 problems
@@ -165,19 +197,19 @@ prefix sum, in-place rearrangement, intervals as a first taste.
 Patterns to cover: frequency maps, canonical keys, set membership, complement
 lookups, and the first design problem.
 
-| #   | Slug                    | Title                             | Tier   | Rating | Mode       | Patterns                               | Flags            |
-| --- | ----------------------- | --------------------------------- | ------ | ------ | ---------- | -------------------------------------- | ---------------- |
-| 0   | `first-unique-symbol`   | First Symbol That Stands Alone    | Easy   | 2      | function   | frequency map, two passes, strings     | **seeded**       |
-| 1   | `same-letters`          | Built From The Same Letters       | Easy   | 2      | function   | frequency map, canonical key, strings  |                  |
-| 2   | `anagram-groups`        | Words Built From The Same Letters | Medium | 5      | function   | frequency map, grouping, canonical key | **seeded**       |
-| 3   | `pair-difference-count` | Value Pairs A Fixed Gap Apart     | Medium | 4      | function   | hash set, complement lookup, counting  | **seeded**       |
-| 4   | `sequence-run-length`   | Longest Consecutive Run           | Medium | 5      | function   | hash set, amortised scan               | trap, **seeded** |
-| 5   | `tag-index`             | Tag Index                         | Medium | 5      | operations | design, two maps, invariant            | **seeded**       |
-| 6   | `repeat-within-window`  | Repeat Within Reach               | Easy   | 3      | function   | hash map, sliding window               |                  |
-| 7   | `zero-sum-stretch`      | Stretch That Cancels Out          | Medium | 6      | function   | prefix sum, hash map, counting         | trap             |
-| 8   | `first-missing-count`   | The Smallest Missing Count        | Medium | 6      | function   | hash set, counting, in-place           | trap             |
-| 9   | `word-pattern-match`    | Same Shape, Different Words       | Medium | 5      | function   | two maps, canonical key, strings       |                  |
-| 10  | `sparse-vector-dot`     | Dot Product Of Sparse Readings    | Medium | 5      | operations | design, hash map, two pointers         |                  |
+| #   | Slug                    | Title                             | Tier   | Rating | Mode       | Patterns                               | Flags                 |
+| --- | ----------------------- | --------------------------------- | ------ | ------ | ---------- | -------------------------------------- | --------------------- |
+| 0   | `first-unique-symbol`   | First Symbol That Stands Alone    | Easy   | 2      | function   | frequency map, two passes, strings     | **seeded**            |
+| 1   | `same-letters`          | Built From The Same Letters       | Easy   | 2      | function   | frequency map, canonical key, strings  |                       |
+| 2   | `anagram-groups`        | Words Built From The Same Letters | Medium | 5      | function   | frequency map, grouping, canonical key | unordered, **seeded** |
+| 3   | `pair-difference-count` | Value Pairs A Fixed Gap Apart     | Medium | 4      | function   | hash set, complement lookup, counting  | **seeded**            |
+| 4   | `sequence-run-length`   | Longest Consecutive Run           | Medium | 5      | function   | hash set, amortised scan               | trap, **seeded**      |
+| 5   | `tag-index`             | Tag Index                         | Medium | 5      | operations | design, two maps, invariant            | **seeded**            |
+| 6   | `repeat-within-window`  | Repeat Within Reach               | Easy   | 3      | function   | hash map, sliding window               |                       |
+| 7   | `zero-sum-stretch`      | Stretch That Cancels Out          | Medium | 6      | function   | prefix sum, hash map, counting         | trap                  |
+| 8   | `first-missing-count`   | The Smallest Missing Count        | Medium | 6      | function   | hash set, counting, in-place           | trap                  |
+| 9   | `word-pattern-match`    | Same Shape, Different Words       | Medium | 5      | function   | two maps, canonical key, strings       |                       |
+| 10  | `sparse-vector-dot`     | Dot Product Of Sparse Readings    | Medium | 5      | operations | design, hash map, two pointers         |                       |
 
 ### Sorting (`sorting`) — 10 problems
 
@@ -212,7 +244,7 @@ search on the answer, and rotated input.
 | 4   | `first-and-last-seen`  | First And Last Sighting    | Medium | 5      | function | boundary binary search, sorted input                   |                  |
 | 5   | `peak-reading`         | A Local Peak               | Medium | 5      | function | binary search, invariant                               |                  |
 | 6   | `rotation-point`       | Where The Series Turns     | Medium | 5      | function | binary search, rotated array                           |                  |
-| 7   | `split-into-k-parts`   | Fairest Split Into K       | Hard   | 8      | function | binary search on the answer, feasibility check         | trap             |
+| 7   | `split-into-k-parts`   | Fairest Split Into K       | Hard   | 8      | function | binary search on the answer, feasibility check, greedy | trap             |
 | 8   | `square-root-floor`    | Whole Square Root          | Easy   | 3      | function | binary search on the answer                            |                  |
 | 9   | `median-of-two-sorted` | Median Of Two Series       | Hard   | 9      | function | binary search, sorted input, invariant                 |                  |
 
@@ -235,7 +267,7 @@ and merging. Every problem here is **node**-flagged.
 | 3   | `drop-nth-from-end`   | Drop The N-th From The End | Medium | 4      | function | fast and slow pointers, dummy head                  | node       |
 | 4   | `chain-has-cycle`     | Does The Chain Loop        | Medium | 4      | function | fast and slow pointers, invariant                   | node       |
 | 5   | `cycle-entry`         | Where The Loop Begins      | Medium | 6      | function | fast and slow pointers, invariant                   | node, trap |
-| 6   | `remove-duplicates`   | Collapse Repeated Links    | Easy   | 3      | function | one pass, dummy head                                | node       |
+| 6   | `remove-duplicates`   | Collapse Repeated Links    | Medium | 4      | function | one pass, dummy head                                | node       |
 | 7   | `partition-around`    | Split The Chain Around     | Medium | 5      | function | dummy head, stable partition                        | node       |
 | 8   | `add-two-numbers`     | Add Two Digit Chains       | Medium | 5      | function | one pass, dummy head                                | node       |
 | 9   | `reorder-chain`       | Fold The Chain             | Medium | 6      | function | fast and slow pointers, linked list reversal, merge | node       |
@@ -245,7 +277,7 @@ and merging. Every problem here is **node**-flagged.
 
 `chain-has-cycle` and `cycle-entry` were blocked until P2-15 (2026-09-18), which
 added a cycle argument the harness consumes while building the chain: the test
-carries `[[3, 2, 0, -4], 1]` and the solution is handed a head, not an index.
+carries `[[8, -5, 6, 1, 9], 2]` and the solution is handed a head, not an index.
 Both are written.
 
 ### Stack (`stack`) — 12 problems
@@ -323,18 +355,18 @@ invariants, construction from traversals, and serialisation.
 Patterns to cover: top-k, the two-heap median trick, k-way merges, and streams —
 which is where `operations` mode earns its place a second time.
 
-| #   | Slug                  | Title                       | Tier   | Rating | Mode       | Patterns                          | Flags |
-| --- | --------------------- | --------------------------- | ------ | ------ | ---------- | --------------------------------- | ----- |
-| 0   | `kth-largest-stream`  | K-th Largest, As It Arrives | Easy   | 3      | operations | design, heap, top k               |       |
-| 1   | `k-most-frequent`     | The K Most Common           | Medium | 5      | function   | frequency map, heap, top k        |       |
-| 2   | `k-closest-to-origin` | The K Nearest Points        | Medium | 5      | function   | heap, top k                       |       |
-| 3   | `running-median`      | The Median So Far           | Hard   | 8      | operations | design, two heaps                 | trap  |
-| 4   | `merge-k-series`      | Merge K Ordered Series      | Hard   | 8      | function   | k-way merge, heap                 | trap  |
-| 5   | `last-stone-standing` | What Is Left Of The Stones  | Easy   | 3      | function   | heap                              |       |
-| 6   | `task-cooldown`       | Tasks With A Cooldown       | Medium | 7      | function   | heap, greedy, counting            | trap  |
-| 7   | `cheapest-k-sums`     | K Cheapest Pairings         | Medium | 7      | function   | heap, k-way merge                 | trap  |
-| 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       |       |
-| 9   | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap  |
+| #   | Slug                  | Title                       | Tier   | Rating | Mode       | Patterns                          | Flags   |
+| --- | --------------------- | --------------------------- | ------ | ------ | ---------- | --------------------------------- | ------- |
+| 0   | `kth-largest-stream`  | K-th Largest, As It Arrives | Easy   | 3      | operations | design, heap, top k               |         |
+| 1   | `k-most-frequent`     | The K Most Common           | Medium | 5      | function   | frequency map, heap, top k        |         |
+| 2   | `k-closest-to-origin` | The K Nearest Points        | Medium | 5      | function   | heap, top k                       |         |
+| 3   | `running-median`      | The Median So Far           | Hard   | 8      | operations | design, two heaps                 |         |
+| 4   | `merge-k-series`      | Merge K Ordered Series      | Hard   | 8      | function   | k-way merge, heap                 | trap    |
+| 5   | `last-stone-standing` | What Is Left Of The Stones  | Easy   | 3      | function   | heap                              |         |
+| 6   | `task-cooldown`       | Tasks With A Cooldown       | Medium | 7      | function   | heap, greedy, counting            | trap    |
+| 7   | `cheapest-k-sums`     | K Cheapest Pairings         | Medium | 7      | function   | heap, k-way merge                 | trap    |
+| 8   | `reorganise-string`   | No Two The Same In A Row    | Medium | 6      | function   | heap, frequency map, greedy       | checker |
+| 9   | `smallest-range-k`    | Narrowest Range Covering K  | Hard   | 9      | function   | heap, k-way merge, sliding window | trap    |
 
 ### Graph (`graph`) — 13 problems
 
@@ -356,17 +388,17 @@ is covered by the tree problems and by `count-components`.
 | --- | ----------------------- | --------------------------- | ------ | ------ | ---------- | ---------------------------------------- | ----- |
 | 0   | `count-components`      | How Many Separate Groups    | Medium | 4      | function   | depth-first search, union find           |       |
 | 1   | `path-exists`           | Can You Get There           | Easy   | 3      | function   | breadth-first search, depth-first search |       |
-| 2   | `course-order`          | An Order That Works         | Medium | 5      | function   | topological sort, depth-first search     | trap  |
-| 3   | `detect-cycle-directed` | Does It Loop Back           | Medium | 5      | function   | depth-first search, invariant            |       |
-| 4   | `two-colour-graph`      | Two Colours, No Clashes     | Medium | 4      | function   | bipartite check, breadth-first search    |       |
-| 5   | `cheapest-route`        | Cheapest Route              | Medium | 6      | function   | shortest path, heap                      | trap  |
-| 6   | `network-delay`         | When The Last One Hears     | Medium | 6      | function   | shortest path, heap                      | trap  |
-| 7   | `redundant-link`        | The Link That Closes A Loop | Medium | 5      | function   | union find                               |       |
-| 8   | `accounts-merge`        | One Person, Many Addresses  | Medium | 6      | function   | union find, grouping                     |       |
-| 9   | `word-ladder`           | One Letter At A Time        | Hard   | 7      | function   | breadth-first search, hash set           | trap  |
-| 10  | `alien-order`           | The Order Of A New Alphabet | Hard   | 8      | function   | topological sort, strings                | trap  |
-| 11  | `minimum-spanning-cost` | Cheapest Way To Connect     | Hard   | 7      | function   | union find, sorted input, greedy         | trap  |
-| 12  | `graph-union-find`      | Connections, As They Come   | Medium | 5      | operations | design, union find, amortised O(1)       |       |
+| 2   | `course-order`          | An Order That Works         | Medium | 6      | function   | topological sort, depth-first search     | trap  |
+| 3   | `detect-cycle-directed` | Does It Loop Back           | Medium | 6      | function   | depth-first search, invariant            |       |
+| 4   | `two-colour-graph`      | Two Colours, No Clashes     | Medium | 5      | function   | bipartite check, breadth-first search    |       |
+| 5   | `cheapest-route`        | Cheapest Route              | Medium | 7      | function   | shortest path, heap                      | trap  |
+| 6   | `network-delay`         | When The Last One Hears     | Medium | 7      | function   | shortest path, heap                      | trap  |
+| 7   | `redundant-link`        | The Link That Closes A Loop | Medium | 6      | function   | union find                               |       |
+| 8   | `accounts-merge`        | One Person, Many Addresses  | Medium | 7      | function   | union find, grouping                     |       |
+| 9   | `word-ladder`           | One Letter At A Time        | Hard   | 8      | function   | breadth-first search, hash set           | trap  |
+| 10  | `alien-order`           | The Order Of A New Alphabet | Hard   | 9      | function   | topological sort, strings                | trap  |
+| 11  | `minimum-spanning-cost` | Cheapest Way To Connect     | Hard   | 8      | function   | union find, sorted input, greedy         | trap  |
+| 12  | `graph-union-find`      | Connections, As They Come   | Medium | 6      | operations | design, union find, amortised O(1)       |       |
 
 ---
 
@@ -375,23 +407,25 @@ is covered by the tree problems and by `count-components`.
 ### Backtracking (`backtracking`) — 12 problems
 
 Patterns to cover: the shape of the recursion, pruning, and the difference
-between permutations, combinations and subsets. Several are **checker**
-problems, because the order of the answers does not matter.
+between permutations, combinations and subsets. Most are **unordered**
+problems, because the order of the answers does not matter - compared as a set
+by an `unordered` comparator rather than a `checker.ts`, since each answer is
+still definite once order is set aside.
 
-| #   | Slug                     | Title                     | Tier   | Rating | Mode     | Patterns                                | Flags         |
-| --- | ------------------------ | ------------------------- | ------ | ------ | -------- | --------------------------------------- | ------------- |
-| 0   | `all-subsets`            | Every Subset              | Medium | 4      | function | subsets, backtracking                   | checker       |
-| 1   | `all-permutations`       | Every Ordering            | Medium | 5      | function | permutations, backtracking              | checker       |
-| 2   | `combinations-of-k`      | Every Choice Of K         | Medium | 5      | function | combinations, backtracking              | checker       |
-| 3   | `sum-combinations`       | Ways To Reach The Total   | Medium | 6      | function | combinations, backtracking, pruning     | checker       |
-| 4   | `subsets-with-repeats`   | Subsets Without Repeats   | Medium | 6      | function | subsets, backtracking, sorted input     | checker       |
-| 5   | `letter-arrangements`    | Letters From A Keypad     | Medium | 5      | function | combinations, backtracking, strings     | checker       |
-| 6   | `split-into-palindromes` | Cut Into Palindromes      | Medium | 7      | function | backtracking, pruning, strings          | checker       |
-| 7   | `n-queens-count`         | How Many Queen Placements | Hard   | 8      | function | backtracking, pruning, bit masking      | trap          |
-| 8   | `solve-the-grid`         | Fill The Number Grid      | Hard   | 9      | function | backtracking, pruning, mutated argument | trap          |
-| 9   | `restore-addresses`      | Where The Dots Go         | Medium | 7      | function | backtracking, strings, pruning          | checker       |
-| 10  | `generate-brackets`      | Every Balanced Fragment   | Medium | 6      | function | backtracking, matching pairs            | checker       |
-| 11  | `word-break-all`         | Every Way To Read It      | Hard   | 8      | function | backtracking, memoisation, strings      | checker, trap |
+| #   | Slug                     | Title                     | Tier   | Rating | Mode     | Patterns                                | Flags           |
+| --- | ------------------------ | ------------------------- | ------ | ------ | -------- | --------------------------------------- | --------------- |
+| 0   | `all-subsets`            | Every Subset              | Medium | 4      | function | subsets, backtracking                   | unordered       |
+| 1   | `all-permutations`       | Every Ordering            | Medium | 5      | function | permutations, backtracking              | unordered       |
+| 2   | `combinations-of-k`      | Every Choice Of K         | Medium | 5      | function | combinations, backtracking              | unordered       |
+| 3   | `sum-combinations`       | Ways To Reach The Total   | Medium | 6      | function | combinations, backtracking, pruning     | unordered       |
+| 4   | `subsets-with-repeats`   | Subsets Without Repeats   | Medium | 6      | function | subsets, backtracking, sorted input     | unordered       |
+| 5   | `letter-arrangements`    | Letters From A Keypad     | Medium | 5      | function | combinations, backtracking, strings     | unordered       |
+| 6   | `split-into-palindromes` | Cut Into Palindromes      | Medium | 7      | function | backtracking, pruning, strings          | unordered       |
+| 7   | `n-queens-count`         | How Many Queen Placements | Hard   | 8      | function | backtracking, pruning, bit masking      | trap            |
+| 8   | `solve-the-grid`         | Fill The Number Grid      | Hard   | 9      | function | backtracking, pruning, mutated argument | trap            |
+| 9   | `restore-addresses`      | Where The Dots Go         | Medium | 7      | function | backtracking, strings, pruning          | unordered       |
+| 10  | `generate-brackets`      | Every Balanced Fragment   | Medium | 6      | function | backtracking, matching pairs            | unordered       |
+| 11  | `word-break-all`         | Every Way To Read It      | Hard   | 8      | function | backtracking, memoisation, strings      | unordered, trap |
 
 ### Dynamic Programming (`dynamic-programming`) — 18 problems
 
@@ -452,8 +486,8 @@ with the same contract, group sizes included. Batch E is 12 problems (P6-6).
 | 2   | `wildcard-dictionary`   | A Dictionary With Blanks    | Medium | 7      | operations | design, trie, depth-first search |         |
 | 3   | `least-recently-used`   | Keep The Recent Ones        | Medium | 7      | operations | design, cache eviction, hash map | trap    |
 | 4   | `least-frequently-used` | Keep The Popular Ones       | Hard   | 9      | operations | design, cache eviction, two maps | trap    |
-| 5   | `range-sum-mutable`     | Sums That Keep Changing     | Medium | 7      | operations | design, fenwick tree             | trap    |
-| 6   | `range-minimum`         | Smallest In Any Range       | Hard   | 8      | operations | design, segment tree             | trap    |
+| 5   | `range-sum-mutable`     | Sums That Keep Changing     | Medium | 7      | operations | design, fenwick tree             |         |
+| 6   | `range-minimum`         | Smallest In Any Range       | Hard   | 8      | operations | design, segment tree             |         |
 | 7   | `window-maximum`        | Largest In Every Window     | Hard   | 8      | function   | monotonic deque, sliding window  | trap    |
 | 8   | `insert-delete-random`  | Add, Remove, Pick At Random | Medium | 6      | operations | design, hash map, randomisation  | checker |
 | 9   | `time-keyed-store`      | Values Through Time         | Medium | 6      | operations | design, binary search, hash map  |         |
@@ -468,15 +502,15 @@ with the same contract, group sizes included. Batch E is 12 problems (P6-6).
 | ----- | --------------------------------------- | -------- |
 | A     | Arrays, HashMap, Sorting, Binary Search | 45       |
 | B     | Linked List, Stack, Matrix              | 36       |
-| C     | Binary Tree, Heap, Graph                | 42       |
+| C     | Binary Tree, Heap, Graph                | 39       |
 | D     | Backtracking, DP, Bit Manipulation      | 39       |
-| E     | Advanced data structures                | 13       |
-| —     | **Total**                               | **175**  |
+| E     | Advanced data structures                | 12       |
+| —     | **Total**                               | **171**  |
 
-Twenty of those exist. The remaining 155 are the work of P6-2 … P6-6, and the
-number is deliberately under the "about two hundred" of the original plan: a
-problem that teaches nothing the one before it did not is worse than no problem,
-and the tables above were cut twice on that rule.
+All 171 exist (M3, 2026-09-18). Twenty were the seed and the rest were P6-2 …
+P6-6. The number is deliberately under the "about two hundred" of the original
+plan: a problem that teaches nothing the one before it did not is worse than no
+problem, and the tables above were cut twice on that rule.
 
 ## 10. Rules this document is held to
 
@@ -486,6 +520,20 @@ and the tables above were cut twice on that rule.
   approach cannot finish (D21), and an editorial that says so.
 - Every **node** problem depends on the harness typing P2-12 settled. Do not
   write one without a judge integration test covering the shape it uses.
-- Every **checker** problem ships `checker.ts` and says in the statement that
-  any order is accepted.
+- Every **checker** problem ships `checker.ts`. Every **unordered** problem says
+  in the statement that any order is accepted.
+- `meta.json` is the source of truth for tier, rating, patterns and comparator.
+  A rating changed there is changed here in the same commit.
 - Ratings are a first estimate; P6-7 calibrates them against solving time.
+
+## 11. Revisions
+
+- **2026-09-24 (P6-8).** Synced to `meta.json` after the catalogue audit: the
+  totals (Batch C is 39 and Batch E 12, 171 in all), eleven graph ratings that
+  moved up by one during P6-3 (`word-ladder` and `minimum-spanning-cost` sat at
+  7, outside the Hard band), `remove-duplicates` at Medium 4, `greedy` on
+  `split-into-k-parts`, and the backtracking rows, which said **checker** but use
+  order-free comparators - hence the new **unordered** flag. `reorganise-string`
+  gains the **checker** flag it always had in `meta.json`. Trap flags dropped
+  from `running-median`, `range-sum-mutable`, `range-minimum` and
+  `window-median-stream`, with the reasons in section 1.

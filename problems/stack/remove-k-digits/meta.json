@@ -3,7 +3,7 @@
   "id": "remove-k-digits",
   "slug": "remove-k-digits",
   "title": "Smallest After Removing",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["monotonic stack", "greedy", "strings"],
   "tier": "Medium",

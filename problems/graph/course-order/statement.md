@@ -53,5 +53,6 @@ With no rules, the smallest order is simply ascending.
 ## Notes
 
 Repeatedly scanning every course for one whose prerequisites are all done is
-`O(n^2)`. At the stated maximum that is a hundred million checks and it will not
-finish.
+`O(n^2)`. At the stated maximum that is a hundred million checks: too slow for
+the time limit in Python, though Java's JIT gets through it. Either way it misses
+the target.

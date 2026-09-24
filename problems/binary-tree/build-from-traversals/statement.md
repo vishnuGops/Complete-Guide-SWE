@@ -28,16 +28,21 @@ The rebuilt tree.
 ## Notes
 
 Searching `inorder` for the root of each subtree is `O(n)` per node and `O(n^2)`
-overall. At the stated maximum that is a hundred million comparisons and it will
-not finish.
+overall. On a deep tree at the stated maximum that is fifty million comparisons:
+too slow for the time limit in Python, though Java's JIT gets through it. Either
+way it misses the `O(n)` target.
 
 ## Examples
 
 ### Example 1
 
-Input: `preorder = [3, 9, 20, 15, 7]`, `inorder = [9, 3, 15, 20, 7]`
+Input: `preorder = [8, 4, 6, 11, 10]`, `inorder = [4, 6, 8, 10, 11]`
 
-Output: `[3, 9, 20, null, null, 15, 7]`
+Output: `[8, 4, 11, null, 6, 10]`
+
+8 comes first in pre-order, so it is the root. In-order puts `4, 6` to its left
+and `10, 11` to its right, and the same split, applied again, hangs 6 to the
+right of 4 and 10 to the left of 11.
 
 ### Example 2
 

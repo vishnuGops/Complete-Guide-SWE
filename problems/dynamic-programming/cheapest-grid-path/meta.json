@@ -3,7 +3,7 @@
   "id": "cheapest-grid-path",
   "slug": "cheapest-grid-path",
   "title": "Cheapest Way Across",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["dp on grids", "two-dimensional dp"],
   "tier": "Medium",

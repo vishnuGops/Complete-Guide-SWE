@@ -26,24 +26,24 @@ if the target belongs after everything.
 
 ### Example 1
 
-Input: `readings = [1, 3, 5, 6]`, `target = 5`
+Input: `readings = [-3, 0, 4, 9, 15]`, `target = 4`
 
 Output: `2`
 
-5 is already at position 2.
+4 is already at position 2.
 
 ### Example 2
 
-Input: `readings = [1, 3, 5, 6]`, `target = 2`
+Input: `readings = [-3, 0, 4, 9, 15]`, `target = -1`
 
 Output: `1`
 
-2 belongs between 1 and 3.
+-1 belongs between -3 and 0.
 
 ### Example 3
 
-Input: `readings = [1, 3, 5, 6]`, `target = 7`
+Input: `readings = [-3, 0, 4, 9, 15]`, `target = 20`
 
-Output: `4`
+Output: `5`
 
-7 belongs after everything, which is the position one past the end.
+20 belongs after everything, which is the position one past the end.

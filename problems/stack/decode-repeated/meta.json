@@ -3,7 +3,7 @@
   "id": "decode-repeated",
   "slug": "decode-repeated",
   "title": "Expand The Shorthand",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["stack", "strings"],
   "tier": "Medium",

@@ -22,15 +22,15 @@ value is never positive.
 
 ### Example 1
 
-Input: `prices = [7, 1, 5, 3, 6, 4]`
+Input: `prices = [6, 2, 8, 4, 9, 3]`
 
-Output: `5`
+Output: `7`
 
-Buy on the second day at 1 and sell on the fifth at 6.
+Buy on the second day at 2 and sell on the fifth at 9.
 
 ### Example 2
 
-Input: `prices = [7, 6, 4, 3, 1]`
+Input: `prices = [9, 8, 5, 4, 2]`
 
 Output: `0`
 

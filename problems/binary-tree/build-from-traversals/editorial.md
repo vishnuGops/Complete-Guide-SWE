@@ -30,8 +30,9 @@ build(preStart, inStart, count):
 ```
 
 **The trap is `position of value in inorder`.** Scanning for it is `O(n)` per
-node and `O(n^2)` overall — a hundred million comparisons at the stated maximum,
-which does not finish. Building a map from value to in-order position once, up
+node and `O(n^2)` overall — fifty million comparisons on a deep tree at the
+stated maximum, which Python does not finish inside the time limit and Java's
+JIT does, so in Java it is the target that rules it out. Building a map from value to in-order position once, up
 front, makes each lookup `O(1)` and the whole build `O(n)`. That the values are
 distinct is what makes the map well-defined, and is why the statement says so.
 

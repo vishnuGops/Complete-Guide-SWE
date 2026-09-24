@@ -44,7 +44,7 @@ All three 1s go, including the head.
 
 Input: `head = [1, 1]`
 
-Output: `[]`
+Output: `null`
 
 Every value repeats, so nothing is left.
 

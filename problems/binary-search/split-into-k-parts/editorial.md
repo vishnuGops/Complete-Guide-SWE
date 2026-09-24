@@ -36,8 +36,8 @@ That is `O(n log S)` where `S` is the total — about 34 passes at the stated
 maximum, against the `O(n^2 k)` table the problem is usually first attacked with.
 
 Note what the answer is _not_: it is not `ceil(sum / k)`. That value ignores the
-requirement that runs be unbroken, and `[7, 2, 5, 10, 8]` with `k = 2` gives 16
-rather than the true 18.
+requirement that runs be unbroken, and `[4, 3, 9, 2, 8]` with `k = 2` gives 13
+rather than the true 16.
 
 ## Complexity
 

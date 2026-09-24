@@ -3,7 +3,7 @@
   "id": "longest-rising-run",
   "slug": "longest-rising-run",
   "title": "Longest Rising Run",
-  "version": 1,
+  "version": 2,
   "topic": "dynamic-programming",
   "patterns": ["longest increasing subsequence", "binary search"],
   "tier": "Medium",

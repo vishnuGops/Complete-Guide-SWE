@@ -36,8 +36,8 @@ sort works.
 
 **The answer to avoid** is folding the chains in one at a time. Merging chain `i`
 into a result that already holds `i` chains' worth of links re-walks all of them,
-so the total is `O(k · N)`. At the stated maxima that is fifty million steps and
-does not finish.
+so the total is `O(k · N)`. At the stated maxima that is fifty million steps,
+which Python does not finish inside the time limit. Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 
 ## Complexity
 

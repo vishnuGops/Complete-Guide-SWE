@@ -3,14 +3,14 @@
   "samples": [
     {
       "name": "a tie broken by position",
-      "args": ["babad"],
-      "expected": "bab",
-      "explanation": "`aba` is equally long and starts later."
+      "args": ["xyxzyz"],
+      "expected": "xyx",
+      "explanation": "`zyz` is equally long and starts later."
     },
     {
       "name": "an even palindrome",
-      "args": ["cbbd"],
-      "expected": "bb",
+      "args": ["tnoonk"],
+      "expected": "noon",
       "explanation": "Palindromes need not have a middle letter."
     },
     {
@@ -24,6 +24,8 @@
     {"name":"one letter","args":["a"],"expected":"a"},
     {"name":"two different letters","args":["ab"],"expected":"a"},
     {"name":"two equal letters","args":["aa"],"expected":"aa"},
+    {"name":"a tie broken by position","args":["mnmpop"],"expected":"mnm"},
+    {"name":"an even palindrome","args":["wxxv"],"expected":"xx"},
     {"name":"two palindromes of equal length","args":["abacdfgdcaba"],"expected":"aba"},
     {"name":"every substring is a palindrome","args":["aaaa"],"expected":"aaaa"},
     {"args":["babaab"],"expected":"baab"},

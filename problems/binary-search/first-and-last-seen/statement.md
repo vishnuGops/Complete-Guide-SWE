@@ -24,19 +24,19 @@ A list of two integers: the smallest and largest index holding `target`, or
 
 ### Example 1
 
-Input: `readings = [5, 7, 7, 8, 8, 10]`, `target = 8`
+Input: `readings = [2, 3, 6, 6, 9, 11]`, `target = 6`
 
-Output: `[3, 4]`
+Output: `[2, 3]`
 
-The 8s occupy positions 3 and 4.
+The 6s occupy positions 2 and 3.
 
 ### Example 2
 
-Input: `readings = [5, 7, 7, 8, 8, 10]`, `target = 6`
+Input: `readings = [2, 3, 6, 6, 9, 11]`, `target = 7`
 
 Output: `[-1, -1]`
 
-There is no 6.
+There is no 7.
 
 ### Example 3
 

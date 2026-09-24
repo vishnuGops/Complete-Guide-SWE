@@ -45,3 +45,7 @@ stretch.
 Minimum has no inverse — you cannot subtract one range's minimum from another's,
 the way `range-sum-mutable` subtracts prefix sums. That is exactly why this needs
 a different structure.
+
+Scanning the stretch on every query is `O(n)` per query, and at these sizes it
+finishes; the `O(log n)` per operation is the target, not something a timeout
+enforces.

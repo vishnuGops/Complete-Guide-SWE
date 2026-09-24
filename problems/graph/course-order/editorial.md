@@ -30,8 +30,9 @@ gives _a_ valid order, which is what the problem would ask for if any answer wer
 accepted; here it usually gives the wrong one.
 
 **The trap** is scanning all `n` courses at each step to find an available one.
-That is `O(n^2)` — a hundred million checks at the stated maximum — for
-something the `waiting` counts already say.
+That is `O(n^2)` — a hundred million checks at the stated maximum, too slow for
+Python's time limit though not for Java's JIT — for something the `waiting`
+counts already say.
 
 Depth-first search is the other standard answer: post-order, reversed, gives a
 topological order, and grey/black colouring detects the cycle. It cannot easily

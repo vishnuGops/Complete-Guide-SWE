@@ -1,12 +1,19 @@
 {
   "$schema": "../../../docs/schema/tests.schema.json",
   "samples": [
-    {"name":"four balloons","args":[[3,1,5,8]],"expected":167,"explanation":"15 + 120 + 24 + 8."},
+    {"name":"four balloons","args":[[2,4,1,6]],"expected":90,"explanation":"24 + 48 + 12 + 6."},
     {"name":"one balloon","args":[[7]],"expected":7,"explanation":"1 times 7 times 1."},
-    {"name":"two balloons","args":[[1,5]],"expected":10,"explanation":"5 + 5 either way round."}
+    {
+      "name": "two balloons",
+      "args": [[3,2]],
+      "expected": 9,
+      "explanation": "Bursting the 2 first gives 6 + 3; the other order gives only 6 + 2."
+    }
   ],
   "hidden": [
     {"name":"one balloon worth nothing","args":[[0]],"expected":0},
+    {"name":"two balloons","args":[[4,9]],"expected":45},
+    {"name":"four balloons","args":[[5,2,7,1]],"expected":119},
     {"name":"the extremes of the stated range","args":[[100,100]],"expected":10100},
     {"name":"every balloon worth nothing","args":[[0,0,0]],"expected":0},
     {"name":"a zero between two others","args":[[5,0,5]],"expected":30},

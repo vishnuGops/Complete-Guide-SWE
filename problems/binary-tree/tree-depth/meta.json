@@ -3,7 +3,7 @@
   "id": "tree-depth",
   "slug": "tree-depth",
   "title": "How Deep It Goes",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree traversal", "depth-first search"],
   "tier": "Easy",

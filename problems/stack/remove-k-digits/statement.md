@@ -23,23 +23,23 @@ The smallest number obtainable by deleting exactly `k` digits, as a string.
 
 ### Example 1
 
-Input: `digits = "1432219"`, `k = 3`
+Input: `digits = "5142873"`, `k = 3`
 
-Output: `"1219"`
+Output: `"1273"`
 
-Removing the 4, the 3 and one 2 leaves 1219.
+Removing the 5, the 4 and the 8 leaves 1273.
 
 ### Example 2
 
-Input: `digits = "10200"`, `k = 1`
+Input: `digits = "30020"`, `k = 1`
 
-Output: `"200"`
+Output: `"20"`
 
-Removing the 1 leaves `"0200"`, whose leading zero is dropped.
+Removing the 3 leaves `"0020"`, whose leading zeroes are dropped.
 
 ### Example 3
 
-Input: `digits = "10"`, `k = 2`
+Input: `digits = "406"`, `k = 3`
 
 Output: `"0"`
 

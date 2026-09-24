@@ -3,7 +3,7 @@
   "id": "alien-order",
   "slug": "alien-order",
   "title": "The Order Of A New Alphabet",
-  "version": 1,
+  "version": 2,
   "topic": "graph",
   "patterns": ["topological sort", "strings"],
   "tier": "Hard",

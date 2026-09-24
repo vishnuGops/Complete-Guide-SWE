@@ -27,7 +27,8 @@ def _valley(rng: random.Random, n: int, high: int) -> List[int]:
             level = max(0, level - rng.randint(0, 3))
         else:
             level = min(high, level + rng.randint(0, 3))
-        out.append(level + rng.randint(0, 2))
+        # Clamped: the jitter used to lift a column to 10002, past the stated bound.
+        out.append(min(high, level + rng.randint(0, 2)))
     return out
 
 
@@ -40,7 +41,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1, 2, 3], "a row that only rises")
     yield _case([0, 0, 0, 0], "no height anywhere")
     yield _case([10**4, 0, 10**4], "the extremes of the stated height range")
-    yield _case([0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1], "the worked example")
+    yield _case([3, 0, 1, 4, 0, 2, 0, 3, 1], "several dips of different depths")
 
     for n, high in ((5, 5), (20, 10), (90, 30), (400, 8)):
         yield _case(_valley(rng, n, high))
@@ -54,5 +55,5 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case(_valley(rng, n, 10**4), "the stated maximum, as a valley")
     yield _case(
         [rng.randint(0, 10**4) for _ in range(n)],
-        "the stated maximum, where recomputing the maxima cannot finish",
+        "the stated maximum, at random",
     )

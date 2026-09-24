@@ -34,7 +34,9 @@ what the reference does, because the tree can be a chain 2000 nodes deep.
 
 ## Pitfalls
 
-- **Treating a node with one child as a leaf.** Example 2 exists for this.
+- **Treating a node with one child as a leaf.** Its empty side is not the end of
+  a path: in `[1, 2]` with target 1 the root is not a leaf, so the answer is
+  `false`. Example 2 is the same mistake on a root with two children.
 - **Returning `needed == 0` at a null.** Same bug, written differently.
 - **Pruning on a negative remainder.** Values can be negative here.
 - **The empty tree.** No paths, so `false` whatever the target — including 0.

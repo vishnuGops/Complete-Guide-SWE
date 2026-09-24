@@ -3,7 +3,7 @@
   "id": "balance-point",
   "slug": "balance-point",
   "title": "Balance Point",
-  "version": 2,
+  "version": 3,
   "topic": "arrays",
   "patterns": ["prefix sum", "running total", "one pass"],
   "tier": "Easy",

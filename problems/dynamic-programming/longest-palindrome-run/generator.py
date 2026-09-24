@@ -35,8 +35,8 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("ab", "two different letters")
     yield _case("aa", "two equal letters")
     yield _case("abc", "nothing longer than a letter")
-    yield _case("babad", "a tie broken by position")
-    yield _case("cbbd", "an even palindrome")
+    yield _case("mnmpop", "a tie broken by position")
+    yield _case("wxxv", "an even palindrome")
     yield _case("abacdfgdcaba", "two palindromes of equal length")
     yield _case("aaaa", "every substring is a palindrome")
 

@@ -35,7 +35,8 @@ allocates two lists to answer a question that needs neither.
 
 ## Pitfalls
 
-- **Comparing null-free traversals.** Example 2 is there for exactly this.
+- **Comparing null-free traversals.** Example 2 is there for exactly this, and
+  in-order is no safer: `[2, 1]` and `[1, null, 2]` both read `1, 2`.
 - **Checking only one side's null-ness.** `a is null and b is null` must be
   distinguished from `a is null or b is null`.
 - **Returning early on the first _match_.** The answer is an `and` over the whole

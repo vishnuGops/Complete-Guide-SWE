@@ -22,11 +22,12 @@ The largest sum over every contiguous, non-empty slice of `values`.
 
 ### Example 1
 
-Input: `values = [-2, 1, -3, 4, -1, 2, 1, -5, 4]`
+Input: `values = [3, -4, 2, 5, -1, 4, -6, 1]`
 
-Output: `6`
+Output: `10`
 
-The run `[4, -1, 2, 1]` adds up to 6, and nothing else beats it.
+The run `[2, 5, -1, 4]` adds up to 10, and nothing else beats it. Carrying the
+opening 3 across the -4 would only cost 1.
 
 ### Example 2
 

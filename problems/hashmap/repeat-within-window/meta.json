@@ -3,7 +3,7 @@
   "id": "repeat-within-window",
   "slug": "repeat-within-window",
   "title": "Repeat Within Reach",
-  "version": 1,
+  "version": 2,
   "topic": "hashmap",
   "patterns": ["hash map", "sliding window"],
   "tier": "Easy",

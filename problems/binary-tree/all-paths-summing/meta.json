@@ -3,7 +3,7 @@
   "id": "all-paths-summing",
   "slug": "all-paths-summing",
   "title": "Every Path That Sums",
-  "version": 1,
+  "version": 2,
   "topic": "binary-tree",
   "patterns": ["tree traversal", "depth-first search", "backtracking"],
   "tier": "Medium",

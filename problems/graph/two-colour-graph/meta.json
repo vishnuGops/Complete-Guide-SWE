@@ -3,7 +3,7 @@
   "id": "two-colour-graph",
   "slug": "two-colour-graph",
   "title": "Two Colours, No Clashes",
-  "version": 1,
+  "version": 2,
   "topic": "graph",
   "patterns": ["bipartite check", "breadth-first search"],
   "tier": "Medium",

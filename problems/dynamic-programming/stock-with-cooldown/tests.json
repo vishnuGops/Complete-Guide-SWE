@@ -3,24 +3,26 @@
   "samples": [
     {
       "name": "two trades around a cooldown",
-      "args": [[1,2,3,0,2]],
-      "expected": 3,
-      "explanation": "1 + 2, with the mandatory idle day in between."
+      "args": [[2,6,4,1,7,5]],
+      "expected": 10,
+      "explanation": "2 to 6, then 1 to 7, with the mandatory idle day in between."
     },
-    {"name":"one day","args":[[1]],"expected":0,"explanation":"Nothing can be bought and sold."},
+    {"name":"one day","args":[[6]],"expected":0,"explanation":"Nothing can be bought and sold."},
     {
-      "name": "prices only fall",
-      "args": [[5,4,3]],
-      "expected": 0,
-      "explanation": "Doing nothing is allowed and is best."
+      "name": "alternating, where every rise cannot be taken",
+      "args": [[1,2,1,2,1,2]],
+      "expected": 2,
+      "explanation": "Each sale forces a rest day, so only two of the three rises can be taken."
     }
   ],
   "hidden": [
+    {"name":"one day","args":[[1]],"expected":0},
     {"name":"two days","args":[[1,2]],"expected":1},
     {"name":"two days, falling","args":[[2,1]],"expected":0},
+    {"name":"two trades around a cooldown","args":[[3,5,1,4,2,6]],"expected":6},
+    {"name":"prices only fall","args":[[5,4,3]],"expected":0},
     {"name":"prices only rise","args":[[1,2,3,4,5]],"expected":4},
     {"name":"the extremes of the stated range","args":[[0,1000]],"expected":1000},
-    {"name":"alternating, where every rise cannot be taken","args":[[1,2,1,2,1,2]],"expected":2},
     {"name":"every price the same","args":[[7,7,7,7]],"expected":0},
     {"args":[[1,5,2]],"expected":4},
     {"args":[[0,5,5]],"expected":5},

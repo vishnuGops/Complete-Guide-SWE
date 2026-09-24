@@ -3,7 +3,7 @@
   "id": "restore-addresses",
   "slug": "restore-addresses",
   "title": "Where The Dots Go",
-  "version": 1,
+  "version": 2,
   "topic": "backtracking",
   "patterns": ["backtracking", "strings", "pruning"],
   "tier": "Medium",

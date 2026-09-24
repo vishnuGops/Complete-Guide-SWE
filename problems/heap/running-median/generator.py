@@ -25,6 +25,13 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _sequence([5, 5], "duplicates")
     yield _sequence([-(10**9), 10**9], "the extremes of the stated range")
     yield _sequence([10**9, 10**9], "two readings at the top of the range")
+    # The two middle readings sum past a 32-bit int on the negative side, and
+    # again mid-stream rather than on the second call.
+    yield _sequence([-(10**9), -(10**9) + 1], "two readings at the bottom of the range")
+    yield _sequence(
+        [10**9 - 5, -3, 10**9 - 1, 10**9 - 2, 10**9, 10**9 - 4],
+        "middles near 10^9, mid-stream",
+    )
     yield _sequence(list(range(1, 21)), "strictly ascending")
     yield _sequence(list(range(20, 0, -1)), "strictly descending")
     yield _sequence([7] * 15, "every reading the same")

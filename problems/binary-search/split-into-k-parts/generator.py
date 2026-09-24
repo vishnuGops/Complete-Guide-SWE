@@ -19,7 +19,7 @@ def _case(loads: List[int], k: int, name: str = None) -> Dict[str, Any]:
 
 def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([5], 1, "one job, one worker")
-    yield _case([7, 2, 5, 10, 8], 1, "one worker takes everything")
+    yield _case([5, 1, 7, 3, 6], 1, "one worker takes everything")
     yield _case([1, 2, 3, 4, 5], 5, "one job each")
     yield _case([0, 0, 0, 0], 2, "every job is empty")
     yield _case([10**6, 1, 1], 2, "one enormous job among small ones")

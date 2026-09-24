@@ -3,7 +3,7 @@
   "id": "trap-the-rain",
   "slug": "trap-the-rain",
   "title": "Water Held Between",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["monotonic stack", "two pointers"],
   "tier": "Hard",

@@ -54,3 +54,16 @@ and the map delete last is safe.
 - **Scanning the array for the value.** That is the `O(n)` removal the design
   exists to avoid.
 - **Assuming the array stays in insertion order.** It deliberately does not.
+
+## What the tests can and cannot see
+
+`pick` may return any member, so its answer is checked by a property rather
+than a value: the checker replays the calls and accepts any `pick` that returns
+a value in the set at that moment. That catches a wrong `add` or `remove` and a
+`pick` of something already removed, but it cannot see _how_ the value was
+chosen. A plain hash set that returns, say, its first member on every `pick`
+passes, although it is neither `O(1)` random access nor random at all, and so
+does one that copies the set into a list on every call. Telling uniform from
+fixed would take many calls and a statistical test, which a single run cannot
+settle without flaking. The array-and-map design is what the problem asks for;
+the tests hold you to its answers, and this editorial to its shape.

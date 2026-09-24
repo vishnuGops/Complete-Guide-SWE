@@ -22,11 +22,11 @@ The length of the longest run of consecutive integers present in the list.
 
 ### Example 1
 
-Input: `values = [100, 4, 200, 1, 3, 2]`
+Input: `values = [31, 6, 8, 40, 7, 5, 30]`
 
 Output: `4`
 
-`1, 2, 3, 4` are all present, and no longer run is.
+`5, 6, 7, 8` are all present, and the only other run, `30, 31`, is shorter.
 
 ### Example 2
 

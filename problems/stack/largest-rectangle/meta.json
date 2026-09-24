@@ -3,7 +3,7 @@
   "id": "largest-rectangle",
   "slug": "largest-rectangle",
   "title": "Widest Solid Block",
-  "version": 1,
+  "version": 2,
   "topic": "stack",
   "patterns": ["monotonic stack", "invariant"],
   "tier": "Hard",

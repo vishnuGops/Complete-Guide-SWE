@@ -21,11 +21,13 @@ The area of the largest rectangle that fits.
 
 ### Example 1
 
-Input: `heights = [2, 1, 5, 6, 2, 3]`
+Input: `heights = [1, 3, 6, 7, 2, 4]`
 
-Output: `10`
+Output: `12`
 
-The columns of height 5 and 6 together give a rectangle 2 wide and 5 tall.
+The columns of height 6 and 7 together give a rectangle 2 wide and 6 tall. The
+widest options, 2 tall across five columns or 1 tall across six, reach only 10
+and 6.
 
 ### Example 2
 
@@ -46,4 +48,5 @@ One column is its own rectangle.
 ## Notes
 
 Trying every pair of left and right edges is `O(n^2)`. At the stated maximum that
-is a hundred million spans and it will not finish.
+is fifty million spans: too slow for the time limit in Python, though Java's JIT
+gets through it. Either way it misses the `O(n)` target.

@@ -33,7 +33,8 @@ popped once: `O(N log k)` time, `O(k)` space.
 
 **The answer to avoid** is merging the series one at a time into a growing
 result: that re-walks everything already merged, `O(k · N)`, which at the stated
-maxima is fifty million steps and does not finish.
+maxima is fifty million steps. Python does not finish that inside the time
+limit; Java's JIT gets through it, so there the target complexity is the bar rather than the clock.
 
 In Python a heap of bare tuples works because the tie-breaker — the series index
 — is comparable; a heap of `(value, list)` raises when two values are equal.

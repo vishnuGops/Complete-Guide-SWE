@@ -22,10 +22,14 @@ def _word(rng: random.Random, n: int, alphabet: str) -> str:
     return "".join(rng.choice(alphabet) for _ in range(n))
 
 
-def _edited(rng: random.Random, word: str, edits: int, alphabet: str) -> str:
+def _edited(rng: random.Random, word: str, edits: int, alphabet: str, longest: int = 500) -> str:
     letters = list(word)
     for _ in range(edits):
         kind = rng.choice(["insert", "delete", "replace"])
+        # An insert at the stated maximum length becomes a replacement, so the
+        # edited word stays inside the constraint.
+        if kind == "insert" and len(letters) >= longest:
+            kind = "replace"
         if kind == "insert" or not letters:
             letters.insert(rng.randint(0, len(letters)), rng.choice(alphabet))
         elif kind == "delete":
@@ -41,8 +45,8 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case("abc", "", "into nothing")
     yield _case("abc", "abc", "already equal")
     yield _case("a", "b", "one replacement")
-    yield _case("horse", "ros", "three edits")
-    yield _case("intention", "execution", "the classic pair")
+    yield _case("plated", "pad", "three edits")
+    yield _case("shoreline", "shortlist", "two nine-letter words")
 
     for n, alphabet, edits in ((5, "ab", 2), (12, "abc", 4), (30, "abcde", 10), (60, string.ascii_lowercase, 20)):
         word = _word(rng, n, alphabet)

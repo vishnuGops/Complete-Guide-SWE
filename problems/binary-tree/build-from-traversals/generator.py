@@ -122,7 +122,7 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     yield _case([1], [1], "a single node")
     yield _case([1, 2], [2, 1], "one child, on the left")
     yield _case([1, 2], [1, 2], "one child, on the right")
-    yield _case([3, 9, 20, 15, 7], [9, 3, 15, 20, 7], "a tree with both subtrees")
+    yield _case([5, 2, 1, 9, 7], [1, 2, 5, 7, 9], "a tree with both subtrees")
     yield _case([-(10**9), 10**9], [10**9, -(10**9)], "the extremes of the stated range")
 
     for n in (3, 8, 30, 150):
@@ -153,4 +153,4 @@ def generate(rng: random.Random) -> Iterator[Dict[str, Any]]:
     pre, into = _readings(_distinct_tree(rng, 10**4, 10**9))
     yield _case(pre, into, "the stated maximum")
     pre, into = _readings(_distinct_chain(rng, 10**4, 10**9, left=True))
-    yield _case(pre, into, "the stated maximum as a chain, where scanning cannot finish")
+    yield _case(pre, into, "the stated maximum as a chain, the worst case for scanning")

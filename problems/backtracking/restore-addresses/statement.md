@@ -25,17 +25,18 @@ there are none.
 
 ### Example 1
 
-Input: `digits = "25525511135"`
+Input: `digits = "24924910125"`
 
-Output: `["255.255.11.135","255.255.111.35"]`
+Output: `["249.249.10.125","249.249.101.25"]`
 
 ### Example 2
 
-Input: `digits = "0000"`
+Input: `digits = "00010"`
 
-Output: `["0.0.0.0"]`
+Output: `["0.0.0.10"]`
 
-Each number is a single zero; `00` would be a leading zero.
+The first three numbers are single zeroes, because `00` and `01` would have
+leading zeroes. Only the last number can take two digits.
 
 ### Example 3
 

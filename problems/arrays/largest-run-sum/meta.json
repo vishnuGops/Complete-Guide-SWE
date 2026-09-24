@@ -3,7 +3,7 @@
   "id": "largest-run-sum",
   "slug": "largest-run-sum",
   "title": "Largest Run Sum",
-  "version": 1,
+  "version": 2,
   "topic": "arrays",
   "patterns": ["one pass", "running total", "invariant"],
   "tier": "Medium",

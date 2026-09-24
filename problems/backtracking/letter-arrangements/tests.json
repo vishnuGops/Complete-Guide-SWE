@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "two digits",
-      "args": ["23"],
-      "expected": ["ad","ae","af","bd","be","bf","cd","ce","cf"],
-      "explanation": "Every letter of the 2 paired with every letter of the 3."
+      "args": ["58"],
+      "expected": ["jt","ju","jv","kt","ku","kv","lt","lu","lv"],
+      "explanation": "Every letter of the 5 paired with every letter of the 8."
     },
     {
       "name": "no digits",
@@ -21,8 +21,9 @@
     }
   ],
   "hidden": [
-    {"name":"one digit with three letters","args":["2"],"expected":["a","b","c"]},
+    {"name":"one digit with three letters","args":["3"],"expected":["d","e","f"]},
     {"name":"the other four-letter digit","args":["9"],"expected":["w","x","y","z"]},
+    {"name":"two digits","args":["46"],"expected":["gm","gn","go","hm","hn","ho","im","in","io"]},
     {
       "name": "both four-letter digits",
       "args": ["79"],

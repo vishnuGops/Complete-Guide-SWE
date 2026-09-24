@@ -3,9 +3,9 @@
   "samples": [
     {
       "name": "two runs side by side",
-      "args": ["3[a]2[bc]"],
-      "expected": "aaabcbc",
-      "explanation": "Each count applies to its own bracketed run."
+      "args": ["2[xy]3[z]"],
+      "expected": "xyxyzzz",
+      "explanation": "Each count applies only to its own bracketed run."
     },
     {
       "name": "nested counts",
@@ -23,6 +23,7 @@
   "hidden": [
     {"name":"a single letter","args":["a"],"expected":"a"},
     {"name":"a count of one","args":["1[a]"],"expected":"a"},
+    {"name":"two runs side by side","args":["3[c]2[de]"],"expected":"cccdede"},
     {"name":"a two-digit count","args":["12[a]"],"expected":"aaaaaaaaaaaa"},
     {"name":"the count must reset between runs","args":["2[a]3[b]"],"expected":"aabbb"},
     {"name":"four levels of nesting","args":["2[2[2[2[a]]]]"],"expected":"aaaaaaaaaaaaaaaa"},
