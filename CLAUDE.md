@@ -33,12 +33,15 @@ Two tasks are not to be started and say so in their rows: **P7-10** needs measur
 
 ```
 npm install                 # all workspaces
-npm run dev                 # web + server with hot reload
+npm run dev                 # web + server with hot reload (dev:web and dev:server are its two halves, and internal: the e2e config starts them separately)
+npm run build               # shared, then server, then web; what `npm start`, perf:lighthouse and screenshots run from
 npm start                   # production build, then app + API on 127.0.0.1:5174 (one process; Ctrl+C stops it)
 npm test                    # Vitest unit + contract + judge integration (npm run test:watch for watch mode)
 npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
-npm run test:integration    # only *.integration.test.ts (spawns real python/java)
-npm run test:e2e            # Playwright (its own database: DEVPROMAX_DB=data/e2e.db); beside a running dev server, set DEVPROMAX_PORT to a free port
+npm run test:integration    # only *.integration.test.ts, one file at a time (spawns real python/java); the whole-catalogue case needs DEVPROMAX_CATALOGUE_TESTS=1
+npm run test:coverage       # npm test with v8 coverage: a summary here, HTML in coverage/; measured, never a gate
+npm run test:e2e            # Playwright on its own ports (5183 web, 5184 API; DEVPROMAX_E2E_WEB_PORT / DEVPROMAX_E2E_API_PORT) and a data/e2e.db emptied every run; safe beside `npm run dev`
+npm run test:e2e:flake-budget -w @devpromax/web   # after a CI-mode e2e run: fail if more than the budget passed only on retry
 npm run perf:lighthouse     # Lighthouse over the built app in both themes; run `npm run build` first
 npm run screenshots         # retake the README's screenshots from the built app
 npm run lint && npm run typecheck           # lint:fix, format and format:check also exist
@@ -48,8 +51,8 @@ npm run problems:gen <slug>                   # regenerate hidden tests from gen
 npm run problems:gen -- --check [slug]        # fail if tests no longer match their generator
 npm run problems:schema [--check]             # regenerate docs/schema/*.json from the zod schemas
 npm run doctor                                # check python/java/javac and their versions (P8-3), and list the optional formatters (P9-5)
-npm run db:backup [-- <file>]                 # consistent copy of the practice database (VACUUM INTO)
-npm run db:restore -- <file>                  # put a backup back; the displaced one is kept beside it
+npm run db:backup [-- <file>] [--include-key] # consistent copy of the practice database (VACUUM INTO); the API key is left out unless asked
+npm run db:restore -- <file>                  # put a backup back; the displaced one (and its WAL) is kept beside it; refuses while the app is running
 ```
 
 Do not invent others without adding them here.

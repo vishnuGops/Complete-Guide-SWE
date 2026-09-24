@@ -60,7 +60,7 @@ Solved away.
 or a Submit. It scores five rubric dimensions, picks the lowest hint rung that unblocks you, and
 will not produce a full solution unless the problem is already solved _and_ you asked for one. It
 needs your own Anthropic or Gemini key, set in Settings, and tells you what a turn costs before you
-spend it.
+spend it. Putting a key in for the first time? Follow [docs/API_KEY_TESTING.md](docs/API_KEY_TESTING.md).
 
 **Format** tidies your code with `black` or `google-java-format`, if you have them; neither comes
 with DevProMax, and the button only appears for a language whose formatter was found. `Ctrl+S` saves
@@ -133,3 +133,4 @@ npm run perf:lighthouse    # performance and accessibility, both themes, on the 
 - [docs/CURRICULUM.md](docs/CURRICULUM.md) — the catalogue, topic by topic
 - [docs/DESIGN.md](docs/DESIGN.md) — the design system and its review checklist
 - [docs/COACH_PROMPTS.md](docs/COACH_PROMPTS.md) — how the coach is instructed
+- [docs/API_KEY_TESTING.md](docs/API_KEY_TESTING.md) — checking AI Help against a real key, safely
