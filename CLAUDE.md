@@ -8,7 +8,9 @@ DevProMax is a local-first, LeetCode-style DSA training app for **Python and Jav
 
 Current state: **release 1.0 (M5, 2026-09-22)**, then the whole-codebase audit (M5.1, 2026-09-24) and a janitorial pass (P8-9). The catalogue is 171 validated problems with generated hidden tests; the learning loop, the coach, interview and mock-interview modes, the Docker executor, the OpenAI-compatible provider, optional formatting and the DESIGN.md v2 redesign are all shipped. What each task did and why is in the archive and in `CHANGELOG.md`.
 
-Two tasks are not to be started and say so in their rows: **P7-10** needs measured human solving times, and **P9-3** (more languages) is deferred by the owner until the existing app is solid.
+The current work is phase **P10**, a one-click Windows installer that bundles its own Node, Python and JDK (D26, milestone M6). P10-6 (licence) and P10-7 (code signing) each start with an owner decision.
+
+Four tasks are not to be started and say so in their rows: **P7-10** needs measured human solving times; **P9-3** (more languages) is deferred by the owner until the existing app is solid; **P10-10** (Docker image) needs a decision on D15; and **P10-11** (macOS) needs an Apple Developer account.
 
 ## Stack (decided, see ROADMAP D1–D25)
 
