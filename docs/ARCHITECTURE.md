@@ -20,6 +20,7 @@ apps/server  (Fastify, 127.0.0.1 only)
    ├── coach/      provider adapters (Anthropic, Gemini, OpenAI-compatible)
    ├── toolchain/  doctor, optional formatters
    ├── cli/        npm-script entry points (problems:*, db:*, doctor)
+   ├── launch/     the installed copy's launcher (section 8)
    └── judge/      workspaces, executors, harnesses, comparators
                       │  spawn
                       ▼
@@ -622,3 +623,47 @@ Settings → Branches → `main`, require these checks before merging:
 `static (ubuntu-latest)`, `static (windows-latest)`,
 `test (ubuntu-latest, py3.12)`, `test (windows-latest, py3.12)`,
 `test (ubuntu-latest, py3.10)`, `e2e (ubuntu-latest)`.
+
+---
+
+## 8. The installed copy
+
+D26: people who are not the developer get a per-user Windows installer that
+brings its own Node, Python and a jlinked JDK. Nothing in the server knows it is
+installed beyond `DEVPROMAX_BUNDLED` (which changes advice, not behaviour); what
+makes it an installed copy is the launcher in `apps/server/src/launch/`, run by
+the bundled `node.exe` from a Start menu shortcut (P10-3).
+
+- **Layout.** The bundle keeps the repository's relative layout, so `config.ts`
+  finds `problems/` and `apps/web/dist` from `dist/` as it does in a checkout,
+  and adds `runtime/{node,python,jdk}` beside it. `runtime/` being there is what
+  makes a copy installed; without it the launcher is `npm run launch` in a
+  checkout and uses the machine's runtimes.
+- **Environment.** An installed copy overrides the user's variables rather than
+  deferring to them: `DEVPROMAX_PYTHON`, `DEVPROMAX_JAVA` and `DEVPROMAX_JAVAC`
+  are the bundled runtimes, `DEVPROMAX_DATA` is `%LOCALAPPDATA%\DevProMax\data`
+  (outside the program directory, so upgrades and uninstalls leave it alone),
+  and `DEVPROMAX_DB`, `DEVPROMAX_EXECUTOR` and `NODE_OPTIONS` are removed. Both
+  modes set `NODE_ENV=production`, the port, and `DEVPROMAX_LOG_FILE` under
+  `data/logs/`.
+- **Port.** 5174 unless something else holds it, and then the next free one -
+  remembered in `data/launcher.json` and tried first next time, because the
+  theme, the welcome flag and the pane sizes are per-origin `localStorage` and a
+  wandering port would reset them. If `/health` on the port answers
+  `app: 'devpromax'`, the server is already running: the launcher opens a tab on
+  it and exits, so a second click on the shortcut never starts a second server.
+- **Console.** The server runs as a child in the launcher's console with
+  inherited output, so the window shows the address and "close this window to
+  stop". Closing it reaches the server as SIGHUP (P3-10); the launcher does not
+  forward that or Ctrl+C, since the server receives both itself and a second
+  signal means "exit now". A start-up failure keeps the window open until a key
+  is pressed. The browser is opened with `rundll32 url.dll,FileProtocolHandler`,
+  never through `cmd`, which would split a URL at `&`.
+- **Subcommands.** `backup [file]`, `restore <file>` and `doctor` run the
+  compiled `cli/db.js` and `cli/doctor.js` with the launcher's environment, so an
+  installed user without `npm` reaches the same data and runtimes; `--pause`
+  keeps a shortcut's window open on the answer.
+- **Paths the code page cannot spell** (P10-1). The judge names every file
+  relative to its workspace, so a data directory under a profile named `测试` is
+  fine; a JDK there is not, and the doctor says so. The installer picks its
+  directory by the same rule.

@@ -38,6 +38,7 @@ npm install                 # all workspaces
 npm run dev                 # web + server with hot reload (dev:web and dev:server are its two halves, and internal: the e2e config starts them separately)
 npm run build               # shared, then server, then web; what `npm start`, perf:lighthouse and screenshots run from
 npm start                   # production build, then app + API on 127.0.0.1:5174 (one process; Ctrl+C stops it)
+npm run launch              # production build, then the installed copy's launcher (P10-3) against this machine's runtimes: reuses a running server, remembers its port in data/launcher.json, opens the browser; `npm run launch -- backup|restore <file>|doctor` are its subcommands
 npm test                    # Vitest unit + contract + judge integration (npm run test:watch for watch mode)
 npm run test:unit           # everything except *.integration.test.ts (seconds, Node only)
 npm run test:integration    # only *.integration.test.ts, one file at a time (spawns real python/java); the whole-catalogue case needs DEVPROMAX_CATALOGUE_TESTS=1
