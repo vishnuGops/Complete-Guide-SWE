@@ -1,4 +1,5 @@
 import type {
+  AboutResponse,
   ApiError as ApiErrorBody,
   ConnectionTestResponse,
   BookmarkResponse,
@@ -256,6 +257,8 @@ export const api = {
 
   settings: (): Promise<SettingsView> => request('/api/settings'),
   runtimeCheck: (): Promise<RuntimeReport> => request('/api/settings/doctor'),
+  /** The version, and where this copy keeps its data (P10-2). */
+  about: (): Promise<AboutResponse> => request('/api/settings/about'),
   /** Which formatters this machine has (P9-5); `refresh` looks again. */
   formatters: (refresh = false): Promise<FormattersResponse> =>
     request(refresh ? '/api/format?refresh=1' : '/api/format'),

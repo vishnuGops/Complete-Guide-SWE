@@ -9,6 +9,7 @@ import {
   PYTHON_COMMAND,
   type ExecutorKind,
 } from '../judge/executors/commands.js';
+import { BUNDLED } from '../config.js';
 import { ansiCodePage, resolveCommand, roundTrips, unrepresentable } from './codePage.js';
 
 /**
@@ -33,6 +34,22 @@ import { ansiCodePage, resolveCommand, roundTrips, unrepresentable } from './cod
 /** Minimums from CLAUDE.md > Environment. The harness uses no newer syntax. */
 export const MINIMUM_PYTHON = { major: 3, minor: 10 } as const;
 export const MINIMUM_JAVA = 21;
+
+/**
+ * What to do about a broken runtime in an installed copy (ROADMAP P10-2, D26).
+ *
+ * The usual advice - install Python, set `DEVPROMAX_PYTHON` - is wrong there
+ * twice over: the launcher overrides that variable with the runtime it brought,
+ * and the user never installed a runtime to begin with. What they can do is put
+ * the copy back, and the data survives that because it is not in it.
+ */
+export const REINSTALL_GUIDANCE =
+  'This runtime comes with DevProMax, so the installed copy is damaged. Install DevProMax again over it; your practice history is kept.';
+
+/** The advice for an installed copy, or the one for a checkout. */
+function advice(bundled: boolean, checkout: string): string {
+  return bundled ? REINSTALL_GUIDANCE : checkout;
+}
 
 /** Long enough for a JVM on a cold cache, short enough not to hang a start-up. */
 const PROBE_TIMEOUT_MS = 20_000;
@@ -130,9 +147,9 @@ function parseJavaVersion(text: string): number | null {
   return first;
 }
 
-async function checkPython(): Promise<RuntimeCheck> {
-  const result = await probe(PYTHON_COMMAND, ['--version']);
-  const base = { name: 'python' as const, command: PYTHON_COMMAND };
+async function checkPython(command: string, bundled: boolean): Promise<RuntimeCheck> {
+  const result = await probe(command, ['--version']);
+  const base = { name: 'python' as const, command };
 
   if (isStoreAlias(result)) {
     return {
@@ -140,8 +157,10 @@ async function checkPython(): Promise<RuntimeCheck> {
       ok: false,
       version: null,
       problem: 'the `python` on your PATH is the Microsoft Store alias, not Python.',
-      guidance:
+      guidance: advice(
+        bundled,
         'Install Python 3.10 or newer from python.org, or set DEVPROMAX_PYTHON to the full path of a real python.exe. Turning off the alias under Settings › Apps › App execution aliases also works.',
+      ),
     };
   }
 
@@ -150,9 +169,11 @@ async function checkPython(): Promise<RuntimeCheck> {
       ...base,
       ok: false,
       version: null,
-      problem: `\`${PYTHON_COMMAND} --version\` failed: ${result.failure}.`,
-      guidance:
+      problem: `\`${command} --version\` failed: ${result.failure}.`,
+      guidance: advice(
+        bundled,
         'Install Python 3.10 or newer from python.org, or set DEVPROMAX_PYTHON to the interpreter you want the judge to use.',
+      ),
     };
   }
 
@@ -162,8 +183,11 @@ async function checkPython(): Promise<RuntimeCheck> {
       ...base,
       ok: false,
       version: null,
-      problem: `\`${PYTHON_COMMAND} --version\` answered something unexpected.`,
-      guidance: 'Set DEVPROMAX_PYTHON to the interpreter you want the judge to use.',
+      problem: `\`${command} --version\` answered something unexpected.`,
+      guidance: advice(
+        bundled,
+        'Set DEVPROMAX_PYTHON to the interpreter you want the judge to use.',
+      ),
     };
   }
 
@@ -178,8 +202,10 @@ async function checkPython(): Promise<RuntimeCheck> {
       ok: false,
       version: text,
       problem: `Python ${text} is older than the 3.10 the harness needs.`,
-      guidance:
+      guidance: advice(
+        bundled,
         'Install Python 3.10 or newer, or point DEVPROMAX_PYTHON at a newer interpreter you already have.',
+      ),
     };
   }
 
@@ -196,6 +222,7 @@ async function checkPython(): Promise<RuntimeCheck> {
 async function codePageProblem(
   name: 'java' | 'javac',
   command: string,
+  bundled: boolean,
 ): Promise<RuntimeCheck | null> {
   const codePage = await ansiCodePage();
   if (codePage === null) return null;
@@ -209,8 +236,9 @@ async function codePageProblem(
     ok: false,
     version: null,
     problem: `${location} is under a folder name Windows cannot pass to Java: this system's code page (${String(codePage)}) has no character for ${chars}.`,
-    guidance:
-      'Move the JDK to a folder whose path uses only characters from your Windows language settings, such as C:\\Java, or point DEVPROMAX_JAVA and DEVPROMAX_JAVAC at a JDK that is in one.',
+    guidance: bundled
+      ? 'DevProMax is installed in a folder Java cannot be started from. Uninstall it, keeping your data, and install it again into a folder such as C:\\DevProMax.'
+      : 'Move the JDK to a folder whose path uses only characters from your Windows language settings, such as C:\\Java, or point DEVPROMAX_JAVA and DEVPROMAX_JAVAC at a JDK that is in one.',
   };
 }
 
@@ -218,14 +246,17 @@ async function checkJava(
   name: 'java' | 'javac',
   command: string,
   args: readonly string[],
+  bundled: boolean,
 ): Promise<RuntimeCheck> {
-  const misplaced = await codePageProblem(name, command);
+  const misplaced = await codePageProblem(name, command, bundled);
   if (misplaced !== null) return misplaced;
 
   const result = await probe(command, args);
   const base = { name, command };
-  const guidance =
-    'Install a JDK 21 or newer - Temurin from adoptium.net is the usual choice - or set DEVPROMAX_JAVA and DEVPROMAX_JAVAC to the ones you want used. A JRE is not enough: the judge compiles.';
+  const guidance = advice(
+    bundled,
+    'Install a JDK 21 or newer - Temurin from adoptium.net is the usual choice - or set DEVPROMAX_JAVA and DEVPROMAX_JAVAC to the ones you want used. A JRE is not enough: the judge compiles.',
+  );
 
   if (result.failure !== undefined) {
     return {
@@ -377,14 +408,30 @@ async function checkImage(language: 'python' | 'java'): Promise<RuntimeCheck> {
  * load. In Docker it is the daemon and the two images - and not the local
  * runtimes, which the judge then never touches.
  */
-export async function runDoctor(executor: ExecutorKind = EXECUTOR_KIND): Promise<RuntimeReport> {
+export interface DoctorOptions {
+  /** An installed copy's advice rather than a checkout's (P10-2); `DEVPROMAX_BUNDLED` by default. */
+  bundled?: boolean;
+  /** The three local commands; the configured ones by default. */
+  commands?: { python: string; java: string; javac: string };
+}
+
+export async function runDoctor(
+  executor: ExecutorKind = EXECUTOR_KIND,
+  options: DoctorOptions = {},
+): Promise<RuntimeReport> {
+  const bundled = options.bundled ?? BUNDLED;
+  const commands = options.commands ?? {
+    python: PYTHON_COMMAND,
+    java: JAVA_COMMAND,
+    javac: JAVAC_COMMAND,
+  };
   const checks =
     executor === 'docker'
       ? await Promise.all([checkDockerDaemon(), checkImage('python'), checkImage('java')])
       : await Promise.all([
-          checkPython(),
-          checkJava('java', JAVA_COMMAND, ['-version']),
-          checkJava('javac', JAVAC_COMMAND, ['-version']),
+          checkPython(commands.python, bundled),
+          checkJava('java', commands.java, ['-version'], bundled),
+          checkJava('javac', commands.javac, ['-version'], bundled),
         ]);
 
   return {

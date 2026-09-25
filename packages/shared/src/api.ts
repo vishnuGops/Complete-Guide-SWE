@@ -422,7 +422,7 @@ export const nextProblemResponseSchema = z.object({
 export type NextProblemResponse = z.infer<typeof nextProblemResponseSchema>;
 
 // ---------------------------------------------------------------------------
-// GET /api/doctor
+// GET /api/settings/doctor
 // ---------------------------------------------------------------------------
 
 /** `docker` is the daemon, checked only when the judge runs in containers (P9-2). */
@@ -465,6 +465,40 @@ export const runtimeReportSchema = z.object({
   checkedAt: z.iso.datetime(),
 });
 export type RuntimeReport = z.infer<typeof runtimeReportSchema>;
+
+// ---------------------------------------------------------------------------
+// GET /health and GET /api/settings/about (ROADMAP P10-2)
+// ---------------------------------------------------------------------------
+
+/** What `/health` says the app is, so a launcher can tell its own server from a stranger. */
+export const APP_ID = 'devpromax';
+
+/**
+ * `/health`, outside `/api` and header-free: the end-to-end config waits on it,
+ * and the launcher (P10-3) asks it whether the port it remembered is still ours.
+ */
+export const healthResponseSchema = z.object({
+  ok: z.literal(true),
+  app: z.literal(APP_ID),
+  version: z.string(),
+});
+export type HealthResponse = z.infer<typeof healthResponseSchema>;
+
+/** Settings › About: which build this is, and where it keeps what it writes. */
+export const aboutResponseSchema = z.object({
+  /** The root `package.json`'s version, which the installer and release tag read too. */
+  version: z.string(),
+  /**
+   * Started by the installed launcher with its own Python and JDK
+   * (`DEVPROMAX_BUNDLED=1`): there is no `npm`, and no runtime to point elsewhere.
+   */
+  bundled: z.boolean(),
+  /** The data directory: the database, judge workspaces, logs. */
+  dataDir: z.string(),
+  /** Where the log goes when it is not the console (`DEVPROMAX_LOG_FILE`). */
+  logFile: z.string().nullable(),
+});
+export type AboutResponse = z.infer<typeof aboutResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // GET /api/dashboard

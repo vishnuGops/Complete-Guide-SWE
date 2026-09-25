@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {
+  AboutResponse,
   ConnectionTestResponse,
   RuntimeReport,
   SettingsUpdate,
@@ -21,7 +22,19 @@ import { fakeServer, path, renderApp, someSettings } from '../../test/harness.js
  */
 
 /** A fake `PUT /api/settings` that merges like the real one, so the view updates. */
-function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: RuntimeReport) {
+/** A checkout's About (P10-2); an installed copy's is `bundled`. */
+const CHECKOUT: AboutResponse = {
+  version: '1.0.0',
+  bundled: false,
+  dataDir: 'C:\\dev\\devpromax\\data',
+  logFile: null,
+};
+
+function settingsServer(
+  initial: SettingsView = someSettings(),
+  runtimeReport?: RuntimeReport,
+  about: AboutResponse = CHECKOUT,
+) {
   const state = { view: initial };
   const writes: SettingsUpdate[] = [];
   const runtimes: RuntimeReport = runtimeReport ?? {
@@ -117,6 +130,10 @@ function settingsServer(initial: SettingsView = someSettings(), runtimeReport?: 
       // the button should see an answer rather than an error.
       match: path('/api/settings/doctor'),
       body: () => runtimes,
+    },
+    {
+      match: path('/api/settings/about'),
+      body: () => about,
     },
     {
       // The formatters (P9-5): black found, google-java-format not - until a
@@ -592,5 +609,51 @@ describe('Settings, reset all progress', () => {
       expect(trigger).toHaveFocus();
     });
     expect(await screen.findByText(/^Cleared 3 submissions/)).toBeInTheDocument();
+  });
+});
+
+describe('an installed copy (P10-2)', () => {
+  const INSTALLED: AboutResponse = {
+    version: '1.2.0',
+    bundled: true,
+    dataDir: 'C:\\Users\\ada\\AppData\\Local\\DevProMax\\data',
+    logFile: 'C:\\Users\\ada\\AppData\\Local\\DevProMax\\data\\logs\\devpromax.log',
+  };
+
+  it('says which version this is and where its data and log are', async () => {
+    settingsServer(someSettings(), undefined, INSTALLED);
+    renderApp(<Settings />, { route: '/settings' });
+
+    expect(await screen.findByText('1.2.0')).toBeInTheDocument();
+    expect(screen.getByText(INSTALLED.dataDir)).toBeInTheDocument();
+    expect(screen.getByText(INSTALLED.logFile ?? '')).toBeInTheDocument();
+    expect(screen.getByText(/Uninstalling asks before it deletes this/)).toBeInTheDocument();
+  });
+
+  it('shows a checkout no log file row and no uninstaller', async () => {
+    settingsServer();
+    renderApp(<Settings />, { route: '/settings' });
+
+    expect(await screen.findByText(CHECKOUT.dataDir)).toBeInTheDocument();
+    expect(screen.queryByText('Log file')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Uninstalling/)).not.toBeInTheDocument();
+  });
+
+  it('does not tell someone with no npm and no runtimes of their own to use either', async () => {
+    settingsServer(someSettings(), undefined, INSTALLED);
+    renderApp(<Settings />, { route: '/settings' });
+    const user = userEvent.setup();
+
+    // The runtimes are the installer's, and the launcher overrides the
+    // variables a checkout would set to change them.
+    expect(await screen.findByText(/DevProMax brings its own Python and JDK/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Check now' }));
+    expect(await screen.findAllByText('it is not on your PATH.')).toHaveLength(2);
+    expect(screen.queryByText('DEVPROMAX_JAVA')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reset…' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('Back up DevProMax data in the Start menu');
+    expect(dialog).not.toHaveTextContent('npm');
   });
 });

@@ -8,6 +8,7 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query';
 import type {
+  AboutResponse,
   BookmarkResponse,
   ConnectionTestResponse,
   DashboardResponse,
@@ -58,6 +59,7 @@ export const keys = {
   interview: ['interview'] as const,
   settings: ['settings'] as const,
   runtimeCheck: ['runtime-check'] as const,
+  about: ['about'] as const,
   formatters: ['formatters'] as const,
 };
 
@@ -244,6 +246,18 @@ export function useSettings() {
  * opening Settings to change the font size should wait for that. `refetch` is
  * the button.
  */
+/**
+ * Which build this is and where it keeps its data (P10-2). Neither changes
+ * while the server runs, so it is asked once.
+ */
+export function useAbout() {
+  return useQuery<AboutResponse>({
+    queryKey: keys.about,
+    queryFn: api.about,
+    staleTime: Infinity,
+  });
+}
+
 export function useRuntimeCheck() {
   return useQuery<RuntimeReport>({
     queryKey: keys.runtimeCheck,

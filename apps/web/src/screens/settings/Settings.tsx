@@ -5,9 +5,10 @@ import {
   type ResetProgressResponse,
   type SettingsUpdate,
 } from '@devpromax/shared';
-import { useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
+import { useAbout, useResetProgress, useSettings, useUpdateSettings } from '../../api/hooks.js';
 import { ThemeToggle } from '../../app/ThemeToggle.js';
 import { RuntimeSection } from './RuntimeSection.js';
+import { AboutSection } from './AboutSection.js';
 import { PageHeader } from '../../app/PageHeader.js';
 import { useAppTheme } from '../../app/useAppTheme.js';
 import { Button, Card, ConfirmDialog, ErrorState, Loading, Skeleton } from '../../ui/index.js';
@@ -80,6 +81,9 @@ export function Settings() {
   const { data: settings, isPending, error, refetch } = useSettings();
   const update = useUpdateSettings();
   const reset = useResetProgress();
+  const about = useAbout();
+  // An installed copy has no project folder and no npm (P10-2, D26).
+  const bundled = about.data?.bundled === true;
   const { theme, setTheme } = useAppTheme();
   const [confirming, setConfirming] = useState(false);
 
@@ -144,7 +148,7 @@ export function Settings() {
             }}
           />
 
-          <RuntimeSection />
+          <RuntimeSection bundled={bundled} />
 
           <Section title="Appearance" description="Applies to the whole app, including the editor.">
             <Row label="Theme" hint="System follows your operating system.">
@@ -276,6 +280,8 @@ export function Settings() {
               </p>
             )}
           </Section>
+
+          <AboutSection about={about.data} error={about.error} />
         </div>
       </div>
 
@@ -283,7 +289,7 @@ export function Settings() {
         open={confirming}
         onOpenChange={setConfirming}
         title="Reset all progress?"
-        description="Every submission, status, draft and activity record is deleted, and every coach conversation and mock interview with them. This cannot be undone. To keep a copy first, run npm run db:backup in the project folder."
+        description={`Every submission, status, draft and activity record is deleted, and every coach conversation and mock interview with them. This cannot be undone. To keep a copy first, ${bundled ? 'use Back up DevProMax data in the Start menu' : 'run npm run db:backup in the project folder'}.`}
         confirmLabel="Delete everything"
         onConfirm={() => {
           reset.mutate();

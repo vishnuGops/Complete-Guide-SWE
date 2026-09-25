@@ -1,12 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import {
   settingsUpdateSchema,
+  type AboutResponse,
   type ConnectionTestResponse,
   type ResetProgressResponse,
   type RuntimeReport,
   type SettingsView,
 } from '@devpromax/shared';
+import { BUNDLED, paths } from '../../config.js';
 import { runDoctor } from '../../toolchain/doctor.js';
+import { APP_VERSION } from '../../version.js';
 import { parseInput } from '../errors.js';
 import {
   readSettings,
@@ -42,6 +45,18 @@ export function registerSettingsRoutes(app: FastifyInstance, deps: ApiDeps): voi
    * would tell them it is still missing.
    */
   app.get('/api/settings/doctor', async (): Promise<RuntimeReport> => runDoctor());
+
+  /**
+   * Settings › About (ROADMAP P10-2): the version, and where this copy keeps
+   * what it writes - which an installed user needs to know to back it up, and
+   * which is not in their project folder because they have none.
+   */
+  app.get('/api/settings/about', async (): Promise<AboutResponse> => ({
+    version: APP_VERSION,
+    bundled: BUNDLED,
+    dataDir: paths.data,
+    logFile: paths.logFile,
+  }));
 
   app.put('/api/settings', async (request): Promise<SettingsView> => {
     const patch = parseInput(settingsUpdateSchema, request.body, 'body');

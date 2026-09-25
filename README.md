@@ -113,6 +113,7 @@ Everything is optional. Most preferences (editor, judge limits, theme, coach) li
 | `DEVPROMAX_PORT`                                                                   | Server port (default `5174`)                                             |
 | `DEVPROMAX_DATA`                                                                   | Move the whole `data/` directory                                         |
 | `DEVPROMAX_DB`                                                                     | Move just the database file                                              |
+| `DEVPROMAX_LOG_FILE`                                                               | Write the server log to this file instead of the console                 |
 | `COACH_API_KEY`                                                                    | Coach API key; overrides the one saved in Settings                       |
 | `DEVPROMAX_BLACK`                                                                  | Path to `black`, if it isn't on `PATH` or reachable as `python -m black` |
 | `DEVPROMAX_GOOGLE_JAVA_FORMAT`                                                     | Path to google-java-format's `-all-deps.jar`                             |

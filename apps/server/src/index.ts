@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
-import Fastify, { type FastifyBaseLogger } from 'fastify';
+import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
+import { APP_ID, type HealthResponse } from '@devpromax/shared';
 import type { ProviderOptions } from './coach/index.js';
 import { createCatalogue, type Catalogue } from './api/services/catalogue.js';
 import { applyErrorHandling, badRequest } from './api/errors.js';
@@ -11,7 +12,8 @@ import { serverConfig } from './config.js';
 import { doctorSummary, runDoctor } from './toolchain/doctor.js';
 import { formatters, type Formatters } from './toolchain/formatters.js';
 import { createDatabase, type Repositories } from './db/index.js';
-import { logger } from './logger.js';
+import { logger, logsRequests } from './logger.js';
+import { APP_VERSION } from './version.js';
 import { EXECUTOR_KIND, killLiveChildren, sweepStaleWorkspaces } from './judge/index.js';
 import { hasWebBuild, registerWeb } from './api/web.js';
 
@@ -31,6 +33,8 @@ export interface BuildOptions {
   formatters?: Formatters;
   /** Tests pass `silentLogger`; production uses the configured pino instance. */
   logger?: FastifyBaseLogger;
+  /** A log line per request; by default in development only (ROADMAP P10-2). */
+  logRequests?: boolean;
   /**
    * Serve `apps/web/dist` from this process (ROADMAP P3-6, D24).
    *
@@ -48,7 +52,12 @@ export async function buildServer(options: BuildOptions = {}) {
   // Widened to FastifyBaseLogger on purpose: keeping pino's concrete Logger type
   // makes the instance type incompatible with plain `FastifyInstance`, which
   // every plugin signature in this project uses.
-  const app = Fastify({ loggerInstance: options.logger ?? (logger as FastifyBaseLogger) });
+  const app = Fastify({
+    loggerInstance: options.logger ?? (logger as FastifyBaseLogger),
+    logController: new LogController({
+      disableRequestLogging: !(options.logRequests ?? logsRequests()),
+    }),
+  });
 
   // Opening the database applies any pending migration, so a build that adds one
   // migrates on first start rather than failing at the first query that needs it.
@@ -108,8 +117,13 @@ export async function buildServer(options: BuildOptions = {}) {
   });
 
   // Outside /api on purpose: a health check that needed the client header would
-  // not be a health check anything else could use.
-  app.get('/health', async () => ({ ok: true }));
+  // not be a health check anything else could use. It says whose it is, because
+  // the launcher (P10-3) has to tell its own server from a stranger on the port.
+  app.get('/health', async (): Promise<HealthResponse> => ({
+    ok: true,
+    app: APP_ID,
+    version: APP_VERSION,
+  }));
 
   // Last, so nothing it registers can shadow a route above it (P3-6, D24).
   // Absent in development, where Vite serves the UI, and in tests.
@@ -202,9 +216,9 @@ export async function start() {
   // the address is not a log entry - it is the answer to "where do I go".
   const url = `http://${serverConfig.host}:${String(serverConfig.port)}`;
   const lines = hasWebBuild()
-    ? [`DevProMax is running at ${url}`]
+    ? [`DevProMax ${APP_VERSION} is running at ${url}`]
     : [
-        `DevProMax API is running at ${url}`,
+        `DevProMax ${APP_VERSION} API is running at ${url}`,
         'No web build found - run `npm run build` to serve the app from here.',
       ];
   // Said only when it is not the default: someone who set DEVPROMAX_EXECUTOR

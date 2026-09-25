@@ -438,6 +438,21 @@ Fastify, bound to `127.0.0.1`, behind the four checks in section 2. Every route 
 and delegates to a service in `apps/server/src/api/services/` that can be
 tested without a server.
 
+`GET /health` answers `{ ok: true, app: 'devpromax', version }` with no header
+required: the end-to-end config waits on it, `db:restore` asks it whether the app
+is running, and the installed launcher (P10-3) asks it whether the port it
+remembered is still its own server rather than a stranger (P10-2). The version is
+the root `package.json`'s, read once at start-up by `version.ts`; the workspaces
+carry the same number, and a test says so.
+
+**Logging** (P10-2). Development logs every request through `pino-pretty`.
+Production does not log ordinary requests - an installed copy's console is the
+only window its user sees, and prints the address and nothing else when all is
+well - while failures are still logged by the error handler with the request they
+failed on. `DEVPROMAX_LOG_FILE` sends the log to a file instead of the console,
+rotated at start-up once it passes 5 MB, three generations kept, with the same
+redaction; the launcher points it at `data/logs/devpromax.log`.
+
 | Route                                     | Does                                                                                                                |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/problems`                       | List + filters (`topic`, `tier`, `status`, `q`, `language`) + sort                                                  |
@@ -452,6 +467,7 @@ tested without a server.
 | `POST /api/settings/test-connection`      | One authenticated call to the configured provider                                                                   |
 | `POST /api/settings/reset-progress`       | Wipes practice, keeps notes, bookmarks and settings                                                                 |
 | `GET /api/settings/doctor`                | Spawns `python`, `java` and `javac` and reports versions and problems (P8-3); in Docker mode, the daemon and images |
+| `GET /api/settings/about`                 | The version, whether this is an installed copy (`DEVPROMAX_BUNDLED`), the data folder and the log file (P10-2)      |
 | `POST /api/problems/:slug/hints`          | Opens a hint rung; the body names the rung, so a doubled request is idempotent (P7-1)                               |
 | `POST /api/problems/:slug/editorial`      | Unlocks the editorial early, recorded and permanent (P7-2)                                                          |
 | `POST /api/problems/:slug/re-verify`      | Re-submits the last accepted code against the tests as they stand (P7-9)                                            |

@@ -1,5 +1,13 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MINIMUM_JAVA, MINIMUM_PYTHON, runDoctor } from './doctor.js';
+import {
+  MINIMUM_JAVA,
+  MINIMUM_PYTHON,
+  REINSTALL_GUIDANCE,
+  doctorSummary,
+  runDoctor,
+} from './doctor.js';
 
 /**
  * The first-run doctor against the real machine (ROADMAP P8-3).
@@ -72,4 +80,38 @@ describe('the Docker checks (P9-2)', () => {
       }
     }
   }, 60_000);
+});
+
+describe('an installed copy (P10-2)', () => {
+  // Runtimes that are not there, the way a damaged install looks. The spawns
+  // fail at once, so this costs nothing; it is here because it spawns at all.
+  const missing = path.join(os.tmpdir(), 'devpromax-no-such-runtime');
+  const commands = {
+    python: path.join(missing, 'python.exe'),
+    java: path.join(missing, 'java.exe'),
+    javac: path.join(missing, 'javac.exe'),
+  };
+
+  it('says to reinstall, not to install Python or set a variable the launcher overrides', async () => {
+    const report = await runDoctor('local', { bundled: true, commands });
+
+    expect(report.ok).toBe(false);
+    for (const check of report.checks) {
+      expect(check.problem).not.toBeNull();
+      expect(check.guidance).toBe(REINSTALL_GUIDANCE);
+    }
+    const summary = doctorSummary(report) ?? '';
+    expect(summary).toContain('Install DevProMax again');
+    expect(summary).not.toContain('DEVPROMAX_');
+    expect(summary).not.toContain('python.org');
+  });
+
+  it('keeps the checkout advice for a checkout', async () => {
+    const report = await runDoctor('local', { bundled: false, commands });
+
+    const guidance = report.checks.map((check) => check.guidance ?? '');
+    expect(guidance[0]).toContain('DEVPROMAX_PYTHON');
+    expect(guidance[1]).toContain('JDK 21');
+    expect(guidance).not.toContain(REINSTALL_GUIDANCE);
+  });
 });

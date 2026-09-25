@@ -129,8 +129,13 @@ test.describe('the production server', () => {
     expect(coldStartMs).toBeLessThan(budget);
   });
 
-  test('prints where it is running', () => {
-    expect(output).toContain(`DevProMax is running at ${BASE}`);
+  test('prints where it is running, and which version', () => {
+    const version = (
+      JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')) as {
+        version: string;
+      }
+    ).version;
+    expect(output).toContain(`DevProMax ${version} is running at ${BASE}`);
     // The other branch of that message is for an API with no UI behind it; a
     // built checkout must not be told to go and build.
     expect(output).not.toContain('No web build found');
@@ -167,6 +172,14 @@ test.describe('the production server', () => {
     // set `Host` - which is also why this could not be tested from the browser.
     const status = await statusWithHost('evil.example.com');
     expect(status).toBe(421);
+  });
+
+  test('keeps request lines off the console (P10-2)', () => {
+    // By now it has served pages, the API and a refused Host. An installed
+    // copy's console is the one window its user sees, and two JSON lines per
+    // request scrolled everything that mattered off it.
+    expect(output).not.toContain('incoming request');
+    expect(output).not.toContain('request completed');
   });
 
   test('stops when it is asked to', async () => {

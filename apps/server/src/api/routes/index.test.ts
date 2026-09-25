@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import {
   COACH_API_KEY_ENV,
+  aboutResponseSchema,
+  healthResponseSchema,
   type ProblemDetail,
   type DashboardResponse,
   type Interview,
@@ -17,10 +19,11 @@ import {
   type Verdict,
 } from '@devpromax/shared';
 import type { FetchLike } from '../../coach/index.js';
-import { serverConfig } from '../../config.js';
+import { paths, serverConfig } from '../../config.js';
 import { createDatabase, IN_MEMORY, type Repositories } from '../../db/index.js';
 import { buildServer } from '../../index.js';
 import { silentLogger } from '../../logger.js';
+import { APP_VERSION } from '../../version.js';
 import type { RunProblemOptions } from '../../judge/index.js';
 import {
   json,
@@ -197,6 +200,20 @@ describe('hardening applies to real routes', () => {
     });
 
     expect(response.statusCode).toBe(200);
+  });
+
+  it('says whose it is and which version, so a launcher can tell it from a stranger (P10-2)', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/health',
+      headers: { host: '127.0.0.1:5174' },
+    });
+
+    expect(healthResponseSchema.parse(response.json())).toEqual({
+      ok: true,
+      app: 'devpromax',
+      version: APP_VERSION,
+    });
   });
 });
 
@@ -1315,6 +1332,18 @@ describe('the runtime check (P8-3)', () => {
     }
     expect(body.ok).toBe(body.checks.every((check) => check.ok));
   }, 60_000);
+});
+
+describe('about (P10-2)', () => {
+  it('reports the version and where this copy keeps its data', async () => {
+    const body = aboutResponseSchema.parse((await api('GET', '/api/settings/about')).json());
+
+    expect(body.version).toBe(APP_VERSION);
+    expect(body.dataDir).toBe(paths.data);
+    // A checkout under test: not the installed copy, and logging to the console.
+    expect(body.bundled).toBe(false);
+    expect(body.logFile).toBeNull();
+  });
 });
 
 describe('the welcome (P8-3)', () => {

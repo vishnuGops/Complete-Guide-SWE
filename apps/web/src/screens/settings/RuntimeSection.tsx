@@ -40,7 +40,15 @@ const OVERRIDE: Record<ExecutorKind, Record<RuntimeName, string>> = {
   },
 };
 
-function CheckRow({ check, executor }: { check: RuntimeCheck; executor: ExecutorKind }) {
+function CheckRow({
+  check,
+  executor,
+  bundled,
+}: {
+  check: RuntimeCheck;
+  executor: ExecutorKind;
+  bundled: boolean;
+}) {
   return (
     <li className="border-border border-b py-2 last:border-b-0">
       <p className="flex items-baseline gap-2 text-sm">
@@ -60,17 +68,23 @@ function CheckRow({ check, executor }: { check: RuntimeCheck; executor: Executor
           {check.guidance !== null && (
             <p className="text-fg-muted mt-1 text-xs">{check.guidance}</p>
           )}
-          <p className="text-fg-subtle mt-1 text-xs">
-            Or set <code className="font-mono">{OVERRIDE[executor][check.name]}</code> and start the
-            app again.
-          </p>
+          {/*
+            Not in an installed copy (P10-2): its launcher sets these variables
+            to the runtimes it brought, over whatever the user sets.
+          */}
+          {!bundled && (
+            <p className="text-fg-subtle mt-1 text-xs">
+              Or set <code className="font-mono">{OVERRIDE[executor][check.name]}</code> and start
+              the app again.
+            </p>
+          )}
         </>
       )}
     </li>
   );
 }
 
-export function RuntimeSection() {
+export function RuntimeSection({ bundled = false }: { bundled?: boolean }) {
   const check = useRuntimeCheck();
 
   return (
@@ -82,7 +96,9 @@ export function RuntimeSection() {
         <p className="text-fg-muted text-sm">
           {check.isFetching
             ? 'Checking…'
-            : 'Python and a JDK 21 or newer. Check them when you have changed an installation.'}
+            : bundled
+              ? 'DevProMax brings its own Python and JDK. Check them if a Run fails for no reason in your code.'
+              : 'Python and a JDK 21 or newer. Check them when you have changed an installation.'}
         </p>
       ) : (
         <>
@@ -94,7 +110,12 @@ export function RuntimeSection() {
           )}
           <ul>
             {check.data.checks.map((entry) => (
-              <CheckRow key={entry.name} check={entry} executor={check.data.executor} />
+              <CheckRow
+                key={entry.name}
+                check={entry}
+                executor={check.data.executor}
+                bundled={bundled}
+              />
             ))}
           </ul>
           <p className="text-fg-subtle mt-2 text-xs" role="status">

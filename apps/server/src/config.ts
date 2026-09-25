@@ -35,7 +35,21 @@ export const paths = {
   judgeWorkspaces: path.join(dataDir, 'judge'),
   /** The built web app, served by the same process in production (D24, P3-6). */
   webDist: path.join(repoRoot, 'apps', 'web', 'dist'),
+  /**
+   * Where the log goes instead of the console (ROADMAP P10-2). The launcher
+   * sets it to `data/logs/devpromax.log`, so an installed user's one window
+   * stays readable and a bug report has something to attach.
+   */
+  logFile: process.env.DEVPROMAX_LOG_FILE ? path.resolve(process.env.DEVPROMAX_LOG_FILE) : null,
 } as const;
+
+/**
+ * Started by the installed launcher, with the Python and JDK it brought
+ * (ROADMAP P10-2, D26). Changes what the app tells a user to do about a broken
+ * runtime - there is nothing to install and no variable to set, only a copy of
+ * DevProMax to repair - and how it tells them to back up without `npm`.
+ */
+export const BUNDLED = process.env.DEVPROMAX_BUNDLED === '1';
 
 /**
  * The port, checked rather than coerced (ROADMAP P3-6).
