@@ -470,7 +470,7 @@ export function ProblemList() {
             )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 relative overflow-y-auto">
             {isPending ? (
               <ListSkeleton />
             ) : data.items.length === 0 ? (

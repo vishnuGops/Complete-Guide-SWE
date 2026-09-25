@@ -274,7 +274,7 @@ export function Interview() {
     <div className="flex h-full min-h-0 flex-col">
       {header}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+      <div className="min-h-0 flex-1 relative overflow-y-auto px-6 pb-6">
         <div className="flex max-w-3xl flex-col gap-4">
           {sitting === null || sitting.endedAt !== null ? (
             <>

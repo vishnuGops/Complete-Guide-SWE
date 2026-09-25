@@ -155,7 +155,7 @@ export const Filters = memo(function Filters({
   return (
     <aside
       className={cn(
-        'bg-surface border-border shadow-card w-60 shrink-0 overflow-y-auto rounded-xl border',
+        'bg-surface border-border shadow-card w-60 shrink-0 relative overflow-y-auto rounded-xl border',
         className,
       )}
       aria-label="Filters"

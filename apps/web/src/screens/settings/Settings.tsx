@@ -137,7 +137,7 @@ export function Settings() {
         the title rather than centred: the page reads top to bottom and the
         controls line up in one column down all of it.
       */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+      <div className="min-h-0 flex-1 relative overflow-y-auto px-6 pb-6">
         <div className="flex max-w-3xl flex-col gap-4">
           <CoachSection
             coach={settings.coach}

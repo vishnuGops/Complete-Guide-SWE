@@ -812,7 +812,7 @@ export function Workspace() {
 
       {!layout.panelCollapsed && (
         <>
-          <TabsContent value="testcases" className="min-h-0 flex-1 overflow-y-auto pt-0">
+          <TabsContent value="testcases" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
             {shape && (
               <TestcasePanel
                 samples={problem.samples}

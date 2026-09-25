@@ -308,7 +308,7 @@ export function CommandPalette({
             role="listbox"
             aria-label="Results"
             aria-busy={busy}
-            className="max-h-96 overflow-y-auto pb-1"
+            className="max-h-96 relative overflow-y-auto pb-1"
           >
             {rows === 0 && (
               <p className="text-fg-muted px-4 py-3 text-sm">

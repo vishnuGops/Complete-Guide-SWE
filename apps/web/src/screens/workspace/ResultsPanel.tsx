@@ -237,7 +237,7 @@ function Stream({ label, text }: { label: string; text: string }) {
       <summary className="focus-ring-inset text-fg-muted cursor-pointer px-2 py-1 text-xs">
         {label} ({text.split('\n').length} lines)
       </summary>
-      <pre className="text-fg-muted max-h-48 overflow-auto px-2 pb-2 font-mono text-xs leading-5">
+      <pre className="text-fg-muted max-h-48 relative overflow-auto px-2 pb-2 font-mono text-xs leading-5">
         {text}
       </pre>
     </details>
@@ -440,7 +440,7 @@ function ResultsPanelBody({ result, onJumpToLine }: ResultsPanelProps) {
       )}
 
       {result.verdict === 'CE' ? (
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 relative overflow-y-auto">
           <CompileErrors
             errors={result.compileErrors}
             {...(onJumpToLine ? { onJump: onJumpToLine } : {})}
@@ -449,7 +449,7 @@ function ResultsPanelBody({ result, onJumpToLine }: ResultsPanelProps) {
       ) : (
         <div className="flex min-h-0 flex-1">
           <ul
-            className="border-border w-44 shrink-0 overflow-y-auto border-r"
+            className="border-border w-44 shrink-0 relative overflow-y-auto border-r"
             aria-label="Test results"
           >
             {result.tests.map((test, index) => (
@@ -496,7 +496,7 @@ function ResultsPanelBody({ result, onJumpToLine }: ResultsPanelProps) {
             one that audits the panel after a run.
           */}
           <div
-            className="focus-ring-inset min-w-0 flex-1 overflow-y-auto"
+            className="focus-ring-inset min-w-0 flex-1 relative overflow-y-auto"
             tabIndex={0}
             role="group"
             aria-label="Selected test"

@@ -325,7 +325,11 @@ function Notes({ slug, note }: { slug: string; note: string | null }) {
         body.trim() === '' ? (
           <p className="text-fg-muted text-sm">Nothing written down for this problem yet.</p>
         ) : (
-          <Markdown className="min-h-0 flex-1 overflow-y-auto" content={body} trust="coach" />
+          <Markdown
+            className="min-h-0 flex-1 relative overflow-y-auto"
+            content={body}
+            trust="coach"
+          />
         )
       ) : (
         <textarea
@@ -733,7 +737,7 @@ function StatementPanelBody({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="description" className="min-h-0 flex-1 overflow-y-auto pt-0">
+      <TabsContent value="description" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
         <div className="px-5 py-4">
           <Markdown content={problem.statement} assetSlug={summary.slug} />
 
@@ -749,7 +753,7 @@ function StatementPanelBody({
       </TabsContent>
 
       {!hideAssistance && (
-        <TabsContent value="hints" className="min-h-0 flex-1 overflow-y-auto pt-0">
+        <TabsContent value="hints" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
           <Hints hints={problem.hints} revealed={revealedHints} onReveal={onRevealHint} />
         </TabsContent>
       )}
@@ -758,12 +762,12 @@ function StatementPanelBody({
         Kept mounted: it holds a half-typed question and a streaming answer, and
         both used to be thrown away by a glance at the Description (P4-12).
       */}
-      <StickyTabsContent value="coach" className="min-h-0 flex-1 overflow-y-auto pt-0">
+      <StickyTabsContent value="coach" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
         {coach}
       </StickyTabsContent>
 
       {!hideAssistance && (
-        <TabsContent value="editorial" className="min-h-0 flex-1 overflow-y-auto pt-0">
+        <TabsContent value="editorial" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
           <Editorial problem={problem} language={language} code={code} />
         </TabsContent>
       )}
@@ -776,7 +780,7 @@ function StatementPanelBody({
         <Notes slug={summary.slug} note={problem.note} />
       </StickyTabsContent>
 
-      <TabsContent value="submissions" className="min-h-0 flex-1 overflow-y-auto pt-0">
+      <TabsContent value="submissions" className="min-h-0 flex-1 relative overflow-y-auto pt-0">
         <Submissions
           slug={summary.slug}
           code={code}

@@ -25,6 +25,13 @@ import { useAppTheme } from './useAppTheme.js';
  * The whole shell is `h-screen` with `min-h-0` bodies, which is what lets the
  * workspace's own cards scroll independently instead of the page growing a
  * scrollbar and pushing the editor off the bottom.
+ *
+ * Every one of those scrolling cards is also `relative`. An `overflow: auto`
+ * box is not a containing block by itself, so without it each `sr-only` label
+ * inside (one per row of the problem list) is placed against the viewport
+ * instead, escapes the scroller, and stretches the document to the height of
+ * everything the card scrolls: the page grew a second scrollbar that ran on past
+ * the last card. `e2e/smoke.spec.ts` checks the document never scrolls.
  */
 export function AppShell() {
   // Applies the stored theme to the document; the control is in Settings.

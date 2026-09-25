@@ -710,7 +710,7 @@ export function Progress() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 max-[1279px]:px-4">
+      <div className="min-h-0 flex-1 relative overflow-y-auto px-6 pb-6 max-[1279px]:px-4">
         {/*
           An empty catalogue reaches this screen as cards of nothing, which reads
           like a bug in the dashboard rather than an absence of problems. Say
