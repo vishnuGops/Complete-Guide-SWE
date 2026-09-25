@@ -9,6 +9,7 @@ import {
   PYTHON_COMMAND,
   type ExecutorKind,
 } from '../judge/executors/commands.js';
+import { ansiCodePage, resolveCommand, roundTrips, unrepresentable } from './codePage.js';
 
 /**
  * The first-run doctor (ROADMAP P8-3).
@@ -185,11 +186,42 @@ async function checkPython(): Promise<RuntimeCheck> {
   return { ...base, ok: true, version: text, problem: null, guidance: null };
 }
 
+/**
+ * A JDK under a folder the ANSI code page cannot spell (ROADMAP P10-1).
+ *
+ * Checked before the probe, because the probe's own failure - "could not find
+ * java.dll", from a JDK that plainly has one - says nothing about why, and a
+ * JDK that somehow answered would still fail the moment the judge used it.
+ */
+async function codePageProblem(
+  name: 'java' | 'javac',
+  command: string,
+): Promise<RuntimeCheck | null> {
+  const codePage = await ansiCodePage();
+  if (codePage === null) return null;
+  const location = resolveCommand(command);
+  if (location === null || roundTrips(location, codePage) !== false) return null;
+
+  const chars = unrepresentable(location, codePage).join(' ');
+  return {
+    name,
+    command,
+    ok: false,
+    version: null,
+    problem: `${location} is under a folder name Windows cannot pass to Java: this system's code page (${String(codePage)}) has no character for ${chars}.`,
+    guidance:
+      'Move the JDK to a folder whose path uses only characters from your Windows language settings, such as C:\\Java, or point DEVPROMAX_JAVA and DEVPROMAX_JAVAC at a JDK that is in one.',
+  };
+}
+
 async function checkJava(
   name: 'java' | 'javac',
   command: string,
   args: readonly string[],
 ): Promise<RuntimeCheck> {
+  const misplaced = await codePageProblem(name, command);
+  if (misplaced !== null) return misplaced;
+
   const result = await probe(command, args);
   const base = { name, command };
   const guidance =

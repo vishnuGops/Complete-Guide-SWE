@@ -23,9 +23,10 @@ export interface Workspace {
 
 export async function createWorkspace(root: string = paths.judgeWorkspaces): Promise<Workspace> {
   const id = randomUUID();
-  // Resolved, not joined: every path handed to a harness has to be absolute.
-  // The subprocess runs with its cwd set to the workspace, so a relative path
-  // would resolve against the workspace itself rather than against ours.
+  // Resolved, not joined: a relative root would resolve differently for us and
+  // for a subprocess whose cwd is the workspace. The local launcher names the
+  // workspace's files *to* the subprocess relative to it (ROADMAP P10-1), and
+  // works that out from this absolute path.
   const dir = path.resolve(root, id);
   await fs.mkdir(dir, { recursive: true });
   return workspaceAt(id, dir);

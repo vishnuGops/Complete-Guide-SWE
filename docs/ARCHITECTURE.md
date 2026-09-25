@@ -218,8 +218,12 @@ saw the verdict.
 Both harnesses implement the same contract, which is why the judge core knows
 nothing about either language beyond how to start one:
 
-- **In**: `payload.json` — mode, entry, expect, per-test timeout, absolute paths,
-  and the tests.
+- **In**: `payload.json` — mode, entry, expect, per-test timeout, the solution
+  and results paths, and the tests. Locally every path a harness or compiler is
+  given is relative to the workspace, which is its working directory, because
+  Windows hands a JVM its arguments in the ANSI code page and an absolute path
+  through a folder that page cannot spell arrives as `??` (P10-1); under Docker
+  they are the container's `/ws/...`.
 - **Out**: `results.jsonl` — one record per test, flushed immediately.
 - **Ready**: `{"event":"ready"}` once the solution has loaded and its entry
   point is found (P2-17). A batch that ends without it is a load failure, not a

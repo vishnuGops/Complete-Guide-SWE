@@ -63,8 +63,8 @@ export interface Launcher {
   /** The workspace directory itself, as the program will see it. */
   dir(workspace: Workspace): string;
 
-  /** `LaunchOptions.shared`, as the program will see it. */
-  shared(hostDir: string): string;
+  /** `LaunchOptions.shared`, as a program running in `workspace` will see it. */
+  shared(workspace: Workspace, hostDir: string): string;
 
   /** The class-path separator of the machine the program runs on. */
   readonly pathDelimiter: string;
@@ -83,13 +83,34 @@ const LOCAL_COMMANDS: Record<Program, string> = {
   java: JAVA_COMMAND,
 };
 
-/** The runtimes on this machine, run as plain subprocesses (ROADMAP D3). */
+/**
+ * `target` as a program whose working directory is `workspace` should be told
+ * it: relative wherever that is possible (ROADMAP P10-1).
+ *
+ * Windows hands a JVM its command line in the ANSI code page, so an absolute
+ * path through a directory named `测试` reached `javac` on a cp1252 machine as
+ * `??` - "Invalid filename" - and every Java run failed for anyone whose profile
+ * name the code page cannot spell. A relative path never mentions the parts it
+ * cannot spell. Across drives there is no relative path, and the absolute one
+ * is the best there is; the judge keeps its cache beside its workspaces, so that
+ * takes a data directory split over two drives by hand.
+ */
+export function relativeTo(workspace: Workspace, target: string): string {
+  const relative = path.relative(workspace.dir, target);
+  if (relative === '') return '.';
+  return path.isAbsolute(relative) ? target : relative;
+}
+
+/**
+ * The runtimes on this machine, run as plain subprocesses (ROADMAP D3), each
+ * with the workspace as its working directory and every path named from there.
+ */
 export const localLauncher: Launcher = {
   kind: 'local',
   startupMs: 0,
-  path: (workspace, name) => workspace.file(name),
-  dir: (workspace) => workspace.dir,
-  shared: (hostDir) => hostDir,
+  path: (_workspace, name) => name,
+  dir: () => '.',
+  shared: relativeTo,
   pathDelimiter: path.delimiter,
   run: (program, args, workspace, options) =>
     runProcess({

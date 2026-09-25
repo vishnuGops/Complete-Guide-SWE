@@ -118,7 +118,7 @@ export function createJavaExecutor(launcher: Launcher): Executor {
         // javac used to compile its thousand lines beside every solution, which
         // was most of a Java Run's compile time.
         '-cp',
-        launcher.shared(harness.dir),
+        launcher.shared(workspace, harness.dir),
         '-d',
         launcher.dir(workspace),
         launcher.path(workspace, SOLUTION_FILE),
@@ -184,7 +184,7 @@ export function createJavaExecutor(launcher: Launcher): Executor {
     run(workspace: Workspace, payload: HarnessPayload, limits: RunLimits): Promise<HarnessRun> {
       const classPath = [
         launcher.dir(workspace),
-        ...(limits.shared === undefined ? [] : [launcher.shared(limits.shared)]),
+        ...(limits.shared === undefined ? [] : [launcher.shared(workspace, limits.shared)]),
       ].join(launcher.pathDelimiter);
 
       return runHarness(

@@ -125,7 +125,9 @@ describe('dockerLauncher paths', () => {
     // Linux container a backslash.
     expect(dockerLauncher.path(workspace as never, 'solution.py')).toBe('/ws/solution.py');
     expect(dockerLauncher.dir(workspace as never)).toBe('/ws');
-    expect(dockerLauncher.shared('C:\\data\\devpromax-judge-cache\\h')).toBe('/devpromax');
+    expect(dockerLauncher.shared(workspace as never, 'C:\\data\\devpromax-judge-cache\\h')).toBe(
+      '/devpromax',
+    );
     // A Linux class path, whatever the host's separator is.
     expect(dockerLauncher.pathDelimiter).toBe(':');
   });
