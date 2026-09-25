@@ -125,7 +125,7 @@ function isStoreAlias(result: Probe): boolean {
   );
 }
 
-function parsePythonVersion(text: string): { major: number; minor: number } | null {
+export function parsePythonVersion(text: string): { major: number; minor: number } | null {
   // `python --version` prints to stdout on 3.4+ and to stderr on 2.x; both are
   // passed in here, because a 2.x install is one of the answers this gives.
   const match = /Python (\d+)\.(\d+)/.exec(text);
@@ -139,7 +139,7 @@ function parsePythonVersion(text: string): { major: number; minor: number } | nu
  * `javac 21.0.4` and `openjdk version "21.0.4" 2024-07-16` both mean 21. Java 8
  * and earlier say `1.8.0_412`, where the number that matters is the second one.
  */
-function parseJavaVersion(text: string): number | null {
+export function parseJavaVersion(text: string): number | null {
   const match = /(\d+)(?:\.(\d+))?(?:\.\d+)?/.exec(text.replace(/^[^\d]*/, ''));
   if (!match) return null;
   const first = Number(match[1]);

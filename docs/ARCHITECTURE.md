@@ -634,6 +634,21 @@ installed beyond `DEVPROMAX_BUNDLED` (which changes advice, not behaviour); what
 makes it an installed copy is the launcher in `apps/server/src/launch/`, run by
 the bundled `node.exe` from a Start menu shortcut (P10-3).
 
+- **Bundle.** `npm run package:win` (P10-4, `cli/package.ts`) builds
+  `release/DevProMax-<version>-win-x64/` from a clean build: Node's `node.exe`
+  alone, python-build-standalone with its GUI toolkit, test suite and pip
+  removed, and Temurin cut by jlink to `java.base` and `jdk.compiler` with a
+  class-data-sharing archive (javac starts in 235 ms instead of 362 on the home
+  server). Each runtime is pinned by URL and SHA-256 in `installer/runtimes.json`.
+  The server's production dependencies come from `npm ci --omit=dev` over a
+  staging copy of the manifests and the lockfile, with the shared package copied
+  in rather than linked and dependencies' own test files left out; only the
+  files the problem loader reads are copied from `problems/`. Custom checkers
+  ship as `.ts` and are imported by Node's own type stripping, as in production
+  from a checkout. The script refuses a bundle with a symlink, a native module
+  (D14), a `.env`, a test or a `data/` folder, and checks that the bundle's own
+  doctor passes with nothing but Windows on `PATH`. 341 MB, of which `problems/`
+  is 106 MB.
 - **Layout.** The bundle keeps the repository's relative layout, so `config.ts`
   finds `problems/` and `apps/web/dist` from `dist/` as it does in a checkout,
   and adds `runtime/{node,python,jdk}` beside it. `runtime/` being there is what

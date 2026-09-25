@@ -55,6 +55,7 @@ npm run problems:gen -- --check [slug]        # fail if tests no longer match th
 npm run problems:schema [-- --check]          # regenerate (or verify) docs/schema/*.json from the zod schemas
 npm run doctor                                # check python/java/javac and their versions (P8-3), and list the optional formatters (P9-5)
 npm run db:backup -- [<file>] [--include-key] # consistent copy of the practice database (VACUUM INTO); the API key is left out unless asked
+npm run package:win                           # the portable Windows bundle in release/DevProMax-<version>-win-x64/ (P10-4): a clean build, the runtimes pinned in installer/runtimes.json (downloads cached in release/.cache), production dependencies; fails on a native module, a test, data/ or a runtime below the floor, and unless the bundle's own doctor passes with only Windows on PATH
 npm run db:restore -- <file>                  # put a backup back; the displaced one (and its WAL) is kept beside it; refuses while the app is running
 ```
 

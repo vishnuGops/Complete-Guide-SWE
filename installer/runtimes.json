@@ -1,0 +1,23 @@
+{
+  "$comment": "The runtimes the bundle ships (ROADMAP P10-4, D26), pinned by URL and SHA-256. A hash mismatch stops the build. Bumping one is a change to this file and nothing else; docs/RELEASING.md (P10-8) will say how.",
+  "win-x64": {
+    "node": {
+      "version": "24.21.0",
+      "url": "https://nodejs.org/dist/v24.21.0/win-x64/node.exe",
+      "sha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32"
+    },
+    "python": {
+      "version": "3.13.15",
+      "build": "python-build-standalone 20260924",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.13.15%2B20260924-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+      "sha256": "e42fa944748a50e9ff481cbb817ef8a6e3da6fbcf0cf6f29b554e1acb8c7384d"
+    },
+    "jdk": {
+      "version": "25.0.4.1+1",
+      "build": "Eclipse Temurin",
+      "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4.1_1.zip",
+      "sha256": "00c847d804f4a78e9f04f2683faf14fed898535b177b7fc704486cb0284e9283",
+      "source": "https://github.com/adoptium/jdk25u/tree/jdk-25.0.4.1+1"
+    }
+  }
+}

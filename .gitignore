@@ -4,6 +4,7 @@ node_modules/
 # build outputs
 dist/
 build/
+release/
 *.tsbuildinfo
 
 # runtime data (SQLite DB + judge workspaces) — never commit
